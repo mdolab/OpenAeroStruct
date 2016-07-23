@@ -1,7 +1,7 @@
 % This is a Matlab routine to test the Python aero-struct coupled system
 
 % Setup mesh and coupled system parameters
-[mesh, params] = coupled_setup(2,3);
+[mesh, params] = coupled_setup(4,6);
 
 M = 50;      % max iterations
 tol = 1e-6;  % relative convergence tolerance
@@ -37,4 +37,7 @@ disp(loads)
 fprintf('Mesh...\n')
 disp(mesh)
 % fprintf('Resids...\n')
+
+coupled_plotdata(mesh,loads);
+
 
