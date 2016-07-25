@@ -5,8 +5,6 @@ It uses a vortex lattice method (VLM) expanded from Phillips' Modern Adaption of
 The `coupled.py` module isolates the aerodynamic and structure analysis into a coupled system comprising two "black boxes". 
 The coupled system modules can be called from Matlab using the `.m` files in the repository. 
 
-![Optimized CRM-type wing with 30 panels](/example.png?raw=true "Example Optimization Result and Visualization")
-
 ## Installation and Configuration
 
 To use OpenAeroStruct, you must first install the following software and dependencies:
@@ -18,13 +16,11 @@ To use OpenAeroStruct, you must first install the following software and depende
 
 Python, Numpy, and Scipy can be easily installed together using Anaconda, which can be downloaded here: https://www.continuum.io/downloads
 
-By default, the Python package manager `pip` comes installed with Anaconda. OpenMDAO can be easily installed by opening the Anaconda prompt and entering
+By default, the Python package manager `pip` comes installed with Anaconda. OpenMDAO can be easily installed by opening the Anaconda prompt, which should be located where you installed Anaconda. Once you open the prompt, enter
 
     pip install openmdao 
 
-Next, download the repository directly (https://github.com/samtx/OpenAeroStruct) or clone the OpenAeroStruct repository from GitHub to get the required files:
-
-    git clone https://github.com/samtx/OpenAeroStruct.git
+Next, download the repository directly from this link: https://github.com/samtx/OpenAeroStruct/archive/master.zip and add the folder to your Matlab path. 
 
 ## Calling OpenAeroStruct coupled system modules from Matlab
 
@@ -50,7 +46,7 @@ or
 
     >> pyversion '/usr/bin/python'
 
-Matlab loads the Python interpreter when a valid Python command is entered. This action sets the `pyversion` output variable `isloaded` to 1. The path to the Python executable can only be changed when Python isn't loaded in Matlab. To change the path after Python is loaded you must restart Matlab.
+Matlab loads the Python interpreter when a valid Python command is entered. This action sets the [`pyversion`](http://www.mathworks.com/help/matlab/ref/pyversion.html) output variable `isloaded` to 1. The path to the Python executable can only be changed when Python isn't loaded in Matlab. To change the path after Python is loaded you must restart Matlab.
 
 Here is an [example Python command](http://www.mathworks.com/help/matlab/matlab_external/call-user-defined-custom-module.html) to use for testing:
 
@@ -68,7 +64,16 @@ N =
 
 Refer to the Matlab script `run_coupled.m` for an example on solving the aerostructural coupled system in Matlab.
 
-To write your own script or function, you must first call `coupled_setup.m` to create the initial wing mesh and the Python dict object containing system parameters needed for the aerodynamics and structures modules. You must specify the number of spanwise inboard and outboard points on the airplane wing as integer arguments to the function. The points will be mirrored to the other side of the wing to produce a full mesh of N = 2(n_inb+n_outb)-3 spanwise points. Each spanwise point has two chordwise points, one of the leading edge and the other on the trailing edge of the wing. The initial mesh sets all points to an elevation of 0.    
+To write your own script or function, you must first call `coupled_setup.m` to create the initial wing mesh and the Python dict object containing system parameters needed for the aerodynamics and structures modules. You must specify the number of spanwise inboard and outboard points on the airplane wing as integer arguments to the function. 
+
+```
+% Setup mesh and coupled system parameters
+n_inb = 4;  % number of inboard points
+n_outb = 6; % number of outboard points
+[mesh, params] = coupled_setup(n_inb, n_outb);
+```
+
+The points will be mirrored to the other side of the wing to produce a full mesh of N = 2(n_inb+n_outb)-3 spanwise points. Each spanwise point has two chordwise points, one of the leading edge and the other on the trailing edge of the wing. The initial mesh sets all points to an elevation of 0. The `mesh` array has shape (N, 3) with the column representing the x, y, and z coordinates in space for the wing.
 
 To produce the array of loads on the wing, pass the wing mesh and the params dict to the `coupled_aero.m` function.
 
@@ -76,7 +81,7 @@ To produce the array of loads on the wing, pass the wing mesh and the params dic
 loads = coupled_aero(mesh, params);
 ```
 
-The `loads` array is an (N, 6) matrix of the force and moment loads on the wing applied at the control points. The control points are along each spanwise pair of points at the 0.35*chord. Columns 1-3 are the x, y, and z components of the force vectors, while columns 4-6 are the x, y, and z components of the moment vectors.
+The `loads` array is an (N/2, 6) matrix of the force and moment loads on the wing applied at the control points. The control points are along each spanwise pair of points at the 0.35*chord. Columns 1-3 are the x, y, and z components of the force vectors, while columns 4-6 are the x, y, and z components of the moment vectors.
 
 To find the new mesh based upon the aerodynamic loads, call the `coupled_struct.m` function.
 
