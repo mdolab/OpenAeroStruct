@@ -10,7 +10,8 @@ function [dm, params] = coupled_setup(n_inb, n_outb, varargin)
 %    check  =  (optional, boolean) should the output of the OpenMDAO setup
 %               process be printed. Default is false.
 %    fname  =  (optional, string) The filename or output method that the
-%               setup check should be written to. Default is sys.stdout
+%               setup check should be written to. Default is sys.stdout,
+%               which prints to screen.
 % OUTPUTS:
 %    dm     =  matlab matrix of points defining the wing mesh.
 %    params =  python dict object of parameters for the coupled_aero and
@@ -20,7 +21,7 @@ function [dm, params] = coupled_setup(n_inb, n_outb, varargin)
 nvarargs = length(varargin);
 if nvarargs == 1
     check = logical(varargin{1});
-    outstream = py.sys.stdout;
+    outstream = py.sys.stdout;  % print to screen
 elseif nvarargs == 2
     check = logical(varargin{1});
     outstream = varargin{2};
@@ -29,8 +30,8 @@ else
     outstream = py.sys.stdout;
 end
 
-% Setup
-out = py.coupled.setup(n_inb, n_outb, check, outstream);
+% Call setup() function from coupled.py Python module 
+out = py.coupled.setup(n_inb, n_outb, check, outstream); 
 def_mesh = out{1};   % initial mesh for wing
 params = out{2};     % parameters for aero and struct modules
 dm = np2mat(def_mesh); % convert numpy ndarray to matlab array
