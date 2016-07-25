@@ -18,39 +18,13 @@ To use OpenAeroStruct, you must first install the following software and depende
 
 Python, Numpy, and Scipy can be easily installed together using Anaconda, which can be downloaded here: https://www.continuum.io/downloads
 
-To use OpenAeroStruct, you must first install OpenMDAO 1.7.0 by following the instructions here: https://github.com/openmdao/openmdao. If you are unfamiliar with OpenMDAO and wish to modify the internals of OpenAeroStruct, you should examine the OpenMDAO documentation at http://openmdao.readthedocs.io/en/1.7.0/. The tutorials provided with OpenMDAO, especially The Sellar Problem, are helpful to understand the basics of using OpenMDAO to solve an optimization problem.
-
 By default, the Python package manager `pip` comes installed with Anaconda. OpenMDAO can be easily installed by opening the Anaconda prompt and entering
 
     pip install openmdao 
 
-Next, clone the OpenAeroStruct repository from GitHub to get the required files:
+Next, download the repository directly (https://github.com/samtx/OpenAeroStruct) or clone the OpenAeroStruct repository from GitHub to get the required files:
 
-    git clone https://github.com/johnjasa/OpenAeroStruct.git
-
-Lastly, from within the OpenAeroStruct folder, make the Fortran files:
-
-    make
-
-Note that the code will run without compiling the Fortran library, but it will run significantly faster when using Fortran.
-
-## Usage
-
-`run_vlm.py` is for aero-only analysis and optimization. It can use a single lifting surface or multiple separate lifting surfaces.
-
-`run_spatialbeam.py` is for structural-only analysis and optimization. It can use a single structural component or multiple structural components, where each component represents a spar within a lifting surface.
-
-`run_aerostruct.py` performs aerostructural analysis and optimization.
-
-
-For each case, you can view the optimization results using `plot_all.py`. Examine its docstring for keyword information.
-
-An example workflow would be:
-
-    python run_aerostruct.py 1
-    python plot_all.py as
-
-The keywords used for each file are explained in their respective docstrings at the top of the file.
+    git clone https://github.com/samtx/OpenAeroStruct.git
 
 ## Calling OpenAeroStruct coupled system modules from Matlab
 
@@ -119,12 +93,3 @@ Other Matlab files of interest:
 - `coupled_plotdata.m` plots the wings mesh, force vectors, and moment vectors in 3D. This is still a work in progress.
 
 For a full example of solving the aerostructural coupled system by iterating until both arrays convergence, see the `run_coupled.m` Matlab script.
-
-## Known Issues
-
-* Aerostructural optimization sometimes fails to converge for certain geometries. The example provided in `run_aerostruct.py` should converge.
-* Aerostructural optimization using multiple lifting surfaces does not converge.
-* The residual of the structural system solution for very large problems is sometimes too large and prevents convergence of the optimization problem.
-* Internal documentation is lacking.
-* `plot_all.py` does not correctly display multiple structural components, but does work for multiple surfaces if using only aerodynamic optimization.
-* Multiple surface optimization for structures is not optimally coded.
