@@ -54,6 +54,7 @@ zlabel(axes1,'Z-axis');
 zlimits = .015;
 % zlim(axes1,[-zlimits*.5,zlimits]);
 fill3(M1,M2,M3,[204 229 255]./255);  % fill in wing
+fill3(M1,M2,M3+.0001,'g');  % fill in wing
 plot3(Lx,Ly,Lz,'-ro','LineWidth',1.5,'MarkerFaceColor','r','MarkerSize',10); % vector origins
 % scalemag = 1e-5;    % scale vectors to make them relative to wing size
 scalemag = 1;
