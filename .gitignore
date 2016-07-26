@@ -10,3 +10,7 @@
 *.so
 *.out
 *.0
+doc/_build/
+doc/*.rst
+
+!doc/index.rst

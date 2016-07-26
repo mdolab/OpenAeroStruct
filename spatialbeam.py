@@ -7,13 +7,14 @@ from openmdao.api import Component, Group
 from scipy.linalg import lu_factor, lu_solve
 import scipy.sparse
 import scipy.sparse.linalg
+from time import time
 
 try:
     import lib
     fortran_flag = True
 except:
     fortran_flag = False
-sparse_flag = False
+sparse_flag = True
 
 
 def norm(vec):
@@ -60,7 +61,7 @@ def _assemble_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
     for i_surf, row in enumerate(fem_ind):
         n_fem, i_fem = row
 
-        # create truncated versions of the input arrays to assemble
+        # Create truncated versions of the input arrays to assemble
         # smaller matrices that we later assemble into a full matrix
         num_cons = 1  # just one constraint per structural component
         size_ = 6 * (n_fem + num_cons)
@@ -77,7 +78,7 @@ def _assemble_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
         E_vec = E*numpy.ones(num_elems)
         G_vec = G*numpy.ones(num_elems)
 
-        # dense Fortran
+        # Dense Fortran
         if fortran_flag and not sparse_flag:
             mtx_ = lib.assemblestructmtx(nodes, A_, J_, Iy_, Iz_,
                                          K_a, K_t, K_y, K_z,
@@ -93,7 +94,7 @@ def _assemble_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
             rhs_[:6*n_fem] = loads_.reshape((6*n_fem))
             rhs[6*(i_fem+i_surf):6*(i_fem+n_fem+i_surf+num_cons)] = rhs_
 
-        # sparse Fortran
+        # Sparse Fortran
         elif fortran_flag and sparse_flag:
             nnz = 144 * num_elems
 
@@ -103,7 +104,7 @@ def _assemble_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
                                       nodes, elem_IDs_+1, const2, const_y,
                                       const_z, S_a, S_t, S_y, S_z)
 
-            data2 = numpy.ones(6*num_cons)*1.e9
+            data2 = numpy.ones(6*num_cons) * 1.e9
             rows2 = numpy.arange(6*num_cons) + 6*n_fem
             cols2 = numpy.zeros(6*num_cons)
             for ind in xrange(6):
@@ -120,12 +121,15 @@ def _assemble_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
             rhs_[:6*n_fem] = loads_.reshape((6*n_fem))
             rhs[6*(i_fem+i_surf):6*(i_fem+n_fem+i_surf+num_cons)] = rhs_
 
-        # dense Python
+        # Dense Python
         else:
             num_nodes = num_elems + 1
 
             mtx_[:] = 0.
+
+            # Loop over each element
             for ielem in xrange(num_elems):
+                # Obtain the element nodes
                 P0 = nodes[elem_IDs_[ielem, 0], :]
                 P1 = nodes[elem_IDs_[ielem, 1], :]
 
@@ -171,16 +175,22 @@ def _assemble_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
 
                 in0, in1 = elem_IDs[ielem, :]
 
+                # Populate the full matrix with stiffness
+                # contributions from each node
                 mtx_[6*in0:6*in0+6, 6*in0:6*in0+6] += res[:6, :6]
                 mtx_[6*in1:6*in1+6, 6*in0:6*in0+6] += res[6:, :6]
                 mtx_[6*in0:6*in0+6, 6*in1:6*in1+6] += res[:6, 6:]
                 mtx_[6*in1:6*in1+6, 6*in1:6*in1+6] += res[6:, 6:]
 
+            # Include a scaled identity matrix in the rows and columns
+            # corresponding to the structural constraints
             for ind in xrange(num_cons):
                 for k in xrange(6):
                     mtx_[6*num_nodes + 6*ind + k, 6*cons[i_surf]+k] = 1.e9
                     mtx_[6*cons[i_surf]+k, 6*num_nodes + 6*ind + k] = 1.e9
 
+            # Populate the right-hand side of the linear system using the
+            # prescribed or computed loads
             rhs_[:] = 0.0
             rhs_[:6*n_fem] = loads_.reshape((6*n_fem))
             rhs[6*(i_fem+i_surf):6*(i_fem+n_fem+i_surf+num_cons)] = rhs_
@@ -188,6 +198,7 @@ def _assemble_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
             mtx[(i_fem+i_surf)*6:(i_fem+n_fem+num_cons+i_surf)*6,
                 (i_fem+i_surf)*6:(i_fem+n_fem+num_cons+i_surf)*6] = mtx_
 
+    # Create the sparse matrix if sparse_flag == True
     if fortran_flag and sparse_flag:
         data = numpy.concatenate(data_list)
         rows = numpy.concatenate(rows_list)
@@ -265,6 +276,7 @@ class SpatialBeamFEM(Component):
         self.num_surf = fem_ind.shape[0]
         elem_IDs = numpy.zeros((tot_n_fem-self.num_surf, 2), int)
 
+        # Store the node IDs for each element
         for i_surf, row in enumerate(fem_ind):
             nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = \
                 aero_ind[i_surf, :]
@@ -324,7 +336,7 @@ class SpatialBeamFEM(Component):
     def solve_nonlinear(self, params, unknowns, resids):
         self.cons = numpy.zeros((self.num_surf))
 
-        # find constrained nodes based on closeness to specified cg point
+        # Find constrained nodes based on closeness to specified cg point
         for i_surf, row in enumerate(self.fem_ind):
             n_fem, i_fem = row
             nodes = params['nodes'][i_fem:i_fem+n_fem]
@@ -343,6 +355,7 @@ class SpatialBeamFEM(Component):
                              self.const_z, self.n, self.size,
                              self.mtx, self.rhs)
 
+        # Check to solve as a dense or sparse system
         if type(self.mtx) == numpy.ndarray:
             unknowns['disp_aug'] = numpy.linalg.solve(self.mtx, self.rhs)
         else:
@@ -439,6 +452,8 @@ class SpatialBeamDisp(Component):
         self.arange = numpy.arange(6*tot_n_fem)
 
     def solve_nonlinear(self, params, unknowns, resids):
+        # Obtain the relevant portions of disp_aug and store the displacements
+        # in disp
         for i_surf, row in enumerate(self.fem_ind):
             n_fem, i_fem = row
             unknowns['disp'][i_fem:i_fem+n_fem] = \
@@ -596,6 +611,7 @@ class SpatialBeamWeight(Component):
         nodes = params['nodes']
         num_elems = self.elem_IDs.shape[0]
 
+        # Calculate the volume and weight of the total structure
         volume = 0.
         for ielem in xrange(num_elems):
             in0, in1 = self.elem_IDs[ielem, :]

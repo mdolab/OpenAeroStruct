@@ -24,7 +24,7 @@ from b_spline import get_bspline_mtx
 # Single structural component
 if not sys.argv[1].endswith('m'):
     num_x = 2  # number of chordwise node points
-    num_y = 9  # number of spanwise node points, can only be odd numbers
+    num_y = 11  # number of spanwise node points, can only be odd numbers
     span = 10.  # full wingspan
     chord = 5.  # root chord
     cosine_spacing = 0.  # spacing distribution; 0 is uniform, 1 is cosine

@@ -43,7 +43,6 @@ class FunctionalBreguetRange(Component):
         unknowns['fuelburn'] = numpy.sum((W0 + Ws) * (numpy.exp(R * CT / a / M * CD / CL) - 1))
 
 
-
 class FunctionalEquilibrium(Component):
     """ L = W constraint """
 
