@@ -5,7 +5,7 @@
 n_inboard = 4;  % number of inboard points
 n_outboard = 6; % number of outboard points
 [mesh, params] = coupled_setup(n_inboard, n_outboard);
-
+origmesh = mesh;
 M = 25;      % max iterations
 tol = 1e-6;  % relative convergence tolerance
 loads = zeros(size(mesh,1)/2,6);  % initial loads array
@@ -48,4 +48,5 @@ disp(mesh)
 % fprintf('Resids...\n')
 
 % Plot the data
-coupled_plotdata(mesh,loads);
+coupled_plotmesh(mesh,origmesh);
+coupled_plotloads(mesh,loads);
