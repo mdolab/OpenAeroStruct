@@ -18,6 +18,21 @@ function [dm, params] = coupled_setup(n_inb, n_outb, varargin)
 %              coupled_struct functions
 %
 
+% ------------------------   TROUBLESHOOTING   -------------------------
+% Python Module Not on Python Search Path
+% If command is a valid Python command, make sure the Python module is on the Python search path. To test if module mymod is on the path, type:
+% 
+% py.importlib.import_module('mymod')
+% If Python cannot find the module, MATLAB displays a Python error message.
+% 
+% To add mymod, in folder modpath, to the path, type:
+% 
+% P = py.sys.path;
+% if count(P,'modpath') == 0
+%     insert(P,int32(0),'modpath');
+% end
+
+
 nvarargs = length(varargin);
 if nvarargs == 1
     check = logical(varargin{1});
