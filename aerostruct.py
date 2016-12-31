@@ -1409,14 +1409,16 @@ def struct(loads, params):
     jac_thickness = params.get('jac_thickness')
     check = params.get('check')
     out_stream = params.get('out_stream')
+    fem_origin = params.get('fem_origin', 0.35)
+
 
     geometry_mesh(mesh, aero_ind, twist)
     materials_tube(fem_ind)
-    nodes = compute_nodes(mesh, fem_ind, aero_ind, fem_origin=0.35)
+    nodes = compute_nodes(mesh, fem_ind, aero_ind, fem_origin)
     disp_aug = spatial_beam_FEM(
         A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x=5)
     disp = spatial_beam_disp(disp_aug, fem_ind)
     def_mesh = transfer_displacements(
-        mesh, disp, aero_ind, fem_ind, fem_origin=0.35)
+        mesh, disp, aero_ind, fem_ind, fem_origin)
 
     return def_mesh  # Output the def_mesh matrix
