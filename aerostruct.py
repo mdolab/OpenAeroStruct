@@ -33,11 +33,16 @@ warnings.filterwarnings("ignore")
 #       insert(py.sys.path,int32(0),'');
 #   end
 
+
 """
 --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
-                                    GEOMETRY
 
+                                GEOMETRY / SETUP
+
+
+--------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 From geometry.py: Manipulate geometry mesh based on high-level design parameters """
 
@@ -49,10 +54,10 @@ def setup(num_inboard=3, num_outboard=4):
     # W0 = 0.5 * 2.5e6 # [N] (MTOW of B777 is 3e5 kg with fuel)
     # CT = 9.81 * 17.e-6 # [1/s] (9.81 N/kg * 17e-6 kg/N/s)
     # R = 14.3e6 # [m] maximum range
-    M = 0.84 # at cruise
+    M = 0.84  # at cruise
     alpha = 3.  # [deg.]
     rho = 0.38  # [kg/m^3] at 35,000 ft
-    a = 295.4 # [m/s] at 35,000 ft
+    a = 295.4  # [m/s] at 35,000 ft
     v = a * M
     # CL0 = 0.2
     # CD0 = 0.015
@@ -79,6 +84,7 @@ def setup(num_inboard=3, num_outboard=4):
     dihedral = 0.  # dihedral angle in degrees
     sweep = 0.  # shearing sweep angle in degrees
     taper = 1.  # taper ratio
+    fem_origin = 0.35
     # Initial displacements of zero
     tot_n_fem = numpy.sum(fem_ind[:, 0])
     disp = numpy.zeros((tot_n_fem, 6))
@@ -86,10 +92,10 @@ def setup(num_inboard=3, num_outboard=4):
     tot_n_fem = numpy.sum(fem_ind[:, 0])
     num_surf = fem_ind.shape[0]
     jac_twist = get_bspline_mtx(num_twist, num_y)
-    jac_thickness = get_bspline_mtx(num_thickness, tot_n_fem-num_surf)
+    jac_thickness = get_bspline_mtx(num_thickness, tot_n_fem - num_surf)
     # # Define ...
     twist_cp = numpy.zeros(num_twist)
-    thickness_cp = numpy.ones(num_thickness)*numpy.max(t)
+    thickness_cp = numpy.ones(num_thickness) * numpy.max(t)
     twist = cp2pt(twist_cp, jac_twist)
     thickness = cp2pt(thickness_cp, jac_thickness)
     mesh = geometry_mesh(mesh, aero_ind, twist, 0, 0, 1, span=58.7630524)
@@ -124,9 +130,11 @@ def setup(num_inboard=3, num_outboard=4):
         'num_surf': num_surf,
         'jac_twist': jac_twist,
         'jac_thickness': jac_thickness,
+        'fem_origin': fem_origin
     }
 
     return (def_mesh, params)
+
 
 def cp2pt(cp, jac):
     """
@@ -183,20 +191,24 @@ def get_bspline_mtx(num_cp, num_pt, order=4):
             j2 = order
             n = i0 + j1
             if knots[n + l] != knots[n]:
-                basis[j1 - 1] = (knots[n + l] - t) / (knots[n + l] - knots[n]) * basis[j1]
+                basis[j1 - 1] = (knots[n + l] - t) / \
+                    (knots[n + l] - knots[n]) * basis[j1]
             else:
                 basis[j1 - 1] = 0.
             for j in range(j1 + 1, j2):
                 n = i0 + j
                 if knots[n + l - 1] != knots[n - 1]:
-                    basis[j - 1] = (t - knots[n - 1]) / (knots[n + l - 1] - knots[n - 1]) * basis[j - 1]
+                    basis[j - 1] = (t - knots[n - 1]) / \
+                        (knots[n + l - 1] - knots[n - 1]) * basis[j - 1]
                 else:
                     basis[j - 1] = 0.
                 if knots[n + l] != knots[n]:
-                    basis[j - 1] += (knots[n + l] - t) / (knots[n + l] - knots[n]) * basis[j]
+                    basis[j - 1] += (knots[n + l] - t) / \
+                        (knots[n + l] - knots[n]) * basis[j]
             n = i0 + j2
             if knots[n + l - 1] != knots[n - 1]:
-                basis[j2 - 1] = (t - knots[n - 1]) / (knots[n + l - 1] - knots[n - 1]) * basis[j2 - 1]
+                basis[j2 - 1] = (t - knots[n - 1]) / \
+                    (knots[n + l - 1] - knots[n - 1]) * basis[j2 - 1]
             else:
                 basis[j2 - 1] = 0.
         data[ipt, :] = basis
@@ -381,26 +393,26 @@ def gen_crm_mesh(n_points_inboard=3, n_points_outboard=4,
     #   crm base mesh from crm_data.py
     # eta, xle, yle, zle, twist, chord
     raw_crm_points = numpy.array([
-     [0., 904.294, 0.0, 174.126, 6.7166, 536.181],  # 0
-     [.1, 989.505, 115.675, 175.722, 4.4402, 468.511],
-     [.15, 1032.133, 173.513, 176.834, 3.6063, 434.764],
-     [.2, 1076.030, 231.351, 177.912, 2.2419, 400.835],
-     [.25, 1120.128, 289.188, 177.912, 2.2419, 366.996],
-     [.3, 1164.153, 347.026, 178.886, 1.5252, 333.157],
-     [.35, 1208.203, 404.864, 180.359, .9379, 299.317],  # 6 yehudi break
-     [.4, 1252.246, 462.701, 182.289, .4285, 277.288],
-     [.45, 1296.289, 520.539, 184.904, -.2621, 263],
-     [.5, 1340.329, 578.377, 188.389, -.6782, 248.973],
-     [.55, 1384.375, 636.214, 192.736, -.9436, 234.816],
-     [.60, 1428.416, 694.052, 197.689, -1.2067, 220.658],
-     [.65, 1472.458, 751.890, 203.294, -1.4526, 206.501],
-     [.7, 1516.504, 809.727, 209.794, -1.6350, 192.344],
-     [.75, 1560.544, 867.565, 217.084, -1.8158, 178.186],
-     [.8, 1604.576, 925.402, 225.188, -2.0301, 164.029],
-     [.85, 1648.616, 983.240, 234.082, -2.2772, 149.872],
-     [.9, 1692.659, 1041.078, 243.625, -2.5773, 135.714],
-     [.95, 1736.710, 1098.915, 253.691, -3.1248, 121.557],
-     [1., 1780.737, 1156.753, 263.827, -3.75, 107.4]  # 19
+        [0., 904.294, 0.0, 174.126, 6.7166, 536.181],  # 0
+        [.1, 989.505, 115.675, 175.722, 4.4402, 468.511],
+        [.15, 1032.133, 173.513, 176.834, 3.6063, 434.764],
+        [.2, 1076.030, 231.351, 177.912, 2.2419, 400.835],
+        [.25, 1120.128, 289.188, 177.912, 2.2419, 366.996],
+        [.3, 1164.153, 347.026, 178.886, 1.5252, 333.157],
+        [.35, 1208.203, 404.864, 180.359, .9379, 299.317],  # 6 yehudi break
+        [.4, 1252.246, 462.701, 182.289, .4285, 277.288],
+        [.45, 1296.289, 520.539, 184.904, -.2621, 263],
+        [.5, 1340.329, 578.377, 188.389, -.6782, 248.973],
+        [.55, 1384.375, 636.214, 192.736, -.9436, 234.816],
+        [.60, 1428.416, 694.052, 197.689, -1.2067, 220.658],
+        [.65, 1472.458, 751.890, 203.294, -1.4526, 206.501],
+        [.7, 1516.504, 809.727, 209.794, -1.6350, 192.344],
+        [.75, 1560.544, 867.565, 217.084, -1.8158, 178.186],
+        [.8, 1604.576, 925.402, 225.188, -2.0301, 164.029],
+        [.85, 1648.616, 983.240, 234.082, -2.2772, 149.872],
+        [.9, 1692.659, 1041.078, 243.625, -2.5773, 135.714],
+        [.95, 1736.710, 1098.915, 253.691, -3.1248, 121.557],
+        [1., 1780.737, 1156.753, 263.827, -3.75, 107.4]  # 19
     ])
     # le = numpy.vstack((raw_crm_points[:,1],
     #                 raw_crm_points[:,2],
@@ -416,11 +428,11 @@ def gen_crm_mesh(n_points_inboard=3, n_points_outboard=4,
     # wing
     crm_base_points = raw_crm_points[(0, 6, 19), :]
     le_base = numpy.vstack((crm_base_points[:, 1],
-                    crm_base_points[:, 2],
-                    crm_base_points[:, 3]))
+                            crm_base_points[:, 2],
+                            crm_base_points[:, 3]))
     te_base = numpy.vstack((crm_base_points[:, 1] + crm_base_points[:, 5],
-                    crm_base_points[:, 2],
-                    crm_base_points[:, 3]))
+                            crm_base_points[:, 2],
+                            crm_base_points[:, 3]))
     mesh = numpy.empty((2, 3, 3))
     mesh[0, :, :] = le_base.T
     mesh[1, :, :] = te_base.T
@@ -564,32 +576,36 @@ def transfer_displacements(mesh, disp, aero_ind, fem_ind, fem_origin=0.35):
 
 """
 --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
 
                                     AERODYNAMICS
 
+
+--------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 From vlm.py: """
 
 
 def aero(def_mesh=None, params=None):
     # Unpack variables
-    num_y = params.get('num_y')
-    span = params.get('span')
-    twist_cp = params.get('twist_cp')
-    thickness_cp = params.get('thickness_cp')
-    v = params.get('v')
-    alpha = params.get('alpha')
-    rho = params.get('rho')
-    r = params.get('r')
-    t = params.get('t')
     aero_ind = params.get('aero_ind')
+    alpha = params.get('alpha')
+    v = params.get('v')
+    rho = params.get('rho')
     fem_ind = params.get('fem_ind')
-    num_thickness = params.get('num_thickness')
-    num_twist = params.get('num_twist')
-    sweep = params.get('sweep')
-    taper = params.get('taper')
-    disp = params.get('disp')
-    dihedral = params.get('dihedral')
+    fem_origin = params.get('fem_origin', 0.35)
+
+    # num_y = params.get('num_y')
+    # span = params.get('span')
+    # twist_cp = params.get('twist_cp')
+    # thickness_cp = params.get('thickness_cp')
+    # num_thickness = params.get('num_thickness')
+    # num_twist = params.get('num_twist')
+    # sweep = params.get('sweep')
+    # taper = params.get('taper')
+    # disp = params.get('disp')
+    # dihedral = params.get('dihedral')
 
     # # Define Jacobians for b-spline controls
     # tot_n_fem = numpy.sum(fem_ind[:, 0])
@@ -597,10 +613,13 @@ def aero(def_mesh=None, params=None):
     # jac_twist = get_bspline_mtx(num_twist, num_y)
     # jac_thickness = get_bspline_mtx(num_thickness, tot_n_fem - num_surf)
 
-    b_pts, mid_b, c_pts, widths, normals, S_ref = vlm_geometry(aero_ind, def_mesh)
-    circulations = vlm_circulations(aero_ind, def_mesh, b_pts, c_pts, normals, v, alpha)
-    sec_forces = vlm_forces(def_mesh, aero_ind, b_pts, mid_b, circulations, alpha=3, v=10, rho=rho)
-    loads = transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin=0.35)
+    b_pts, mid_b, c_pts, widths, normals, S_ref = vlm_geometry(
+        aero_ind, def_mesh)
+    circulations = vlm_circulations(
+        aero_ind, def_mesh, b_pts, c_pts, normals, v, alpha)
+    sec_forces = vlm_forces(def_mesh, aero_ind, b_pts,
+                            mid_b, circulations, alpha, v, rho)
+    loads = transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin)
     return loads
 
 
@@ -639,12 +658,13 @@ def vlm_geometry(aero_ind, def_mesh):
     tot_n = numpy.sum(aero_ind[:, 2])
     tot_bpts = numpy.sum(aero_ind[:, 3])
     tot_panels = numpy.sum(aero_ind[:, 4])
-    b_pts = numpy.zeros((tot_bpts, 3),dtype=DTYPE)
-    mid_b = numpy.zeros((tot_panels, 3), dtype=DTYPE)
-    c_pts = numpy.zeros((tot_panels, 3))
-    widths = numpy.zeros((tot_panels))
-    out_normals = numpy.zeros((tot_panels, 3))
-    S_ref = numpy.zeros((num_surf))
+
+    B_PTS = numpy.zeros((tot_bpts, 3), dtype=DTYPE)
+    MID_B = numpy.zeros((tot_panels, 3), dtype=DTYPE)
+    C_PTS = numpy.zeros((tot_panels, 3))
+    WIDTHS = numpy.zeros((tot_panels))
+    NORMALS = numpy.zeros((tot_panels, 3))
+    S_REF = numpy.zeros((num_surf))
 
     for i_surf, row in enumerate(aero_ind):
         nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = row
@@ -663,13 +683,13 @@ def vlm_geometry(aero_ind, def_mesh):
         norms = numpy.sqrt(numpy.sum(normals**2, axis=2))
         for j in range(3):
             normals[:, :, j] /= norms
-        b_pts[i_bpts: i_bpts + n_bpts, :] = b_pts.reshape(-1, b_pts.shape[-1])
-        mid_b[i_panels: i_panels + n_panels, :] = mid_b.reshape(-1, mid_b.shape[-1])
-        c_pts[i_panels: i_panels + n_panels, :] = c_pts.reshape(-1, c_pts.shape[-1])
-        widths[i_panels: i_panels + n_panels] = widths.flatten()
-        out_normals[i_panels: i_panels + n_panels, :] = normals.reshape(-1, normals.shape[-1], order='F')
-        S_ref[i_surf] = 0.5 * numpy.sum(norms)
-    return b_pts, mid_b, c_pts, widths, out_normals, S_ref
+        B_PTS[i_bpts: i_bpts + n_bpts, :] = b_pts.reshape(-1, b_pts.shape[-1])
+        MID_B[i_panels: i_panels + n_panels, :] = mid_b.reshape(-1, mid_b.shape[-1])
+        C_PTS[i_panels: i_panels + n_panels, :] = c_pts.reshape(-1, c_pts.shape[-1])
+        WIDTHS[i_panels: i_panels + n_panels] = widths.flatten()
+        NORMALS[i_panels: i_panels + n_panels, :] = normals.reshape(-1, normals.shape[-1], order='F')
+        S_REF[i_surf] = 0.5 * numpy.sum(norms)
+    return B_PTS, MID_B, C_PTS, WIDTHS, NORMALS, S_REF
 
 
 def assemble_AIC_mtx(mtx, flat_mesh, aero_ind, points, b_pts, alpha, skip=False):
@@ -721,7 +741,7 @@ def assemble_AIC_mtx(mtx, flat_mesh, aero_ind, points, b_pts, alpha, skip=False)
         for i_points, row in enumerate(aero_ind):
             nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = row
             pts = points[i_panels: i_panels +
-                n_panels].reshape(nx - 1, ny - 1, 3)
+                         n_panels].reshape(nx - 1, ny - 1, 3)
             small_mat = numpy.zeros((n_panels, n_panels_, 3)).astype("complex")
             if fortran_flag:
                 small_mat[:, :, :] = lib.assembleaeromtx(ny, nx, ny_, nx_,
@@ -765,11 +785,11 @@ def assemble_AIC_mtx(mtx, flat_mesh, aero_ind, points, b_pts, alpha, skip=False)
                                 edges += _calc_vorticity(D, A, P)
                                 if skip and el_loc == cp_loc:
                                     small_mat[cp_loc, el_loc,
-                                        :] = trailing + edges
+                                              :] = trailing + edges
                                 else:
                                     bound = _calc_vorticity(A, B, P)
                                     small_mat[cp_loc, el_loc,
-                                        :] = trailing + edges + bound
+                                              :] = trailing + edges + bound
             mtx[i_panels: i_panels + n_panels,
                 i_panels_: i_panels_ + n_panels_, :] = small_mat
     mtx /= 4 * numpy.pi
@@ -885,11 +905,11 @@ def vlm_forces(def_mesh, aero_ind, b_pts, mid_b, circ, alpha=3, v=10, rho=3):
         bound = b_pts[:, 1:, :] - b_pts[:, : -1, :]
 
         cross = numpy.cross(vel[i_panels: i_panels + n_panels],
-                          bound.reshape(-1, bound.shape[-1], order='F'))
+                            bound.reshape(-1, bound.shape[-1], order='F'))
 
         for ind in xrange(3):
             sec_forces[i_panels: i_panels + n_panels,
-                ind] = (rho * circ[i_panels: i_panels + n_panels] * cross[:, ind])
+                       ind] = (rho * circ[i_panels: i_panels + n_panels] * cross[:, ind])
     return sec_forces
 
 
@@ -929,14 +949,14 @@ def transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin=0.35):
         sec_forces = numpy.sum(sec_forces, axis=0)
         w = 0.25
         a_pts = 0.5 * (1 - w) * mesh[: -1, : -1, : ] + \
-                0.5 *   w   * mesh[1: , : -1, : ] + \
-                0.5 * (1 - w) * mesh[: -1,  1: , : ] + \
-                0.5 * w * mesh[1:,  1:, :]
+            0.5 *   w   * mesh[1: , : -1, : ] + \
+            0.5 * (1 - w) * mesh[: -1,  1: , : ] + \
+            0.5 * w * mesh[1:,  1:, :]
         w = fem_origin
         s_pts = 0.5 * (1 - w) * mesh[: -1, : -1, : ] + \
-                0.5 *   w   * mesh[1: , : -1, : ] + \
-                0.5 * (1 - w) * mesh[: -1,  1: , : ] + \
-                0.5 * w * mesh[1:,  1:, :]
+            0.5 *   w   * mesh[1: , : -1, : ] + \
+            0.5 * (1 - w) * mesh[: -1,  1: , : ] + \
+            0.5 * w * mesh[1:,  1:, :]
         moment = numpy.zeros((ny - 1, 3), dtype=DTYPE)
         for ind in xrange(ny - 1):
             r = a_pts[0, ind, :] - s_pts[0, ind, :]
@@ -953,9 +973,13 @@ def transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin=0.35):
 
 """
 --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
 
                                     STRUCTURES
 
+
+--------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 From spatialbeam.py: Define the structural analysis component using spatial beam theory. """
 
@@ -985,11 +1009,11 @@ def radii(mesh, t_c=0.15):
 
 
 def assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
-                     K_a, K_t, K_y, K_z,
-                     elem_IDs, cons,
-                     E, G, x_gl, T,
-                     K_elem, S_a, S_t, S_y, S_z, T_elem,
-                     const2, const_y, const_z, n, size, mtx, rhs):
+                        K_a, K_t, K_y, K_z,
+                        elem_IDs, cons,
+                        E, G, x_gl, T,
+                        K_elem, S_a, S_t, S_y, S_z, T_elem,
+                        const2, const_y, const_z, n, size, mtx, rhs):
     """
     Assemble the structural stiffness matrix based on 6 degrees of freedom
     per element.
@@ -1022,7 +1046,7 @@ def assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
         Iy_ = Iy[i_fem - i_surf: i_fem - i_surf + n_fem - 1]
         Iz_ = Iz[i_fem - i_surf: i_fem - i_surf + n_fem - 1]
         elem_IDs_ = elem_IDs[i_fem - i_surf: i_fem -
-            i_surf + n_fem - 1, :] - i_fem
+                             i_surf + n_fem - 1, :] - i_fem
         loads_ = loads[i_fem: i_fem + n_fem]
 
         num_elems = elem_IDs_.shape[0]
@@ -1044,16 +1068,16 @@ def assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
             rhs_[:] = 0.0
             rhs_[: 6 * n_fem] = loads_.reshape((6 * n_fem))
             rhs[6 * (i_fem + i_surf): 6 *
-                     (i_fem + n_fem + i_surf + num_cons)] = rhs_
+                (i_fem + n_fem + i_surf + num_cons)] = rhs_
 
         # sparse Fortran
         elif fortran_flag and sparse_flag:
             nnz = 144 * num_elems
 
             data1, rows1, cols1 = lib.assemblesparsemtx(num_elems, tot_n_fem, nnz, x_gl, E_vec,
-                                      G_vec, A_, J_, Iy_, Iz_,
-                                      nodes, elem_IDs_ + 1, const2, const_y,
-                                      const_z, S_a, S_t, S_y, S_z)
+                                                        G_vec, A_, J_, Iy_, Iz_,
+                                                        nodes, elem_IDs_ + 1, const2, const_y,
+                                                        const_z, S_a, S_t, S_y, S_z)
 
             data2 = numpy.ones(6 * num_cons) * 1.e9
             rows2 = numpy.arange(6 * num_cons) + 6 * n_fem
@@ -1073,7 +1097,7 @@ def assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
             rhs_[:] = 0.0
             rhs_[: 6 * n_fem] = loads_.reshape((6 * n_fem))
             rhs[6 * (i_fem + i_surf): 6 *
-                     (i_fem + n_fem + i_surf + num_cons)] = rhs_
+                (i_fem + n_fem + i_surf + num_cons)] = rhs_
 
         # dense Python
         else:
@@ -1127,7 +1151,7 @@ def assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
                 in0, in1 = elem_IDs[ielem, :]
 
                 mtx_[6 * in0: 6 * in0 + 6, 6 *
-                    in0: 6 * in0 + 6] += res[: 6, : 6]
+                     in0: 6 * in0 + 6] += res[: 6, : 6]
                 mtx_[6 * in1: 6 * in1 + 6, 6 * in0: 6 * in0 + 6] += res[6:, : 6]
                 mtx_[6 * in0: 6 * in0 + 6, 6 * in1: 6 * in1 + 6] += res[: 6, 6:]
                 mtx_[6 * in1: 6 * in1 + 6, 6 * in1: 6 * in1 + 6] += res[6:, 6:]
@@ -1135,14 +1159,14 @@ def assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
             for ind in xrange(num_cons):
                 for k in xrange(6):
                     mtx_[6 * num_nodes + 6 * ind +
-                        k, 6 * cons[i_surf] + k] = 1.e9
+                         k, 6 * cons[i_surf] + k] = 1.e9
                     mtx_[6 * cons[i_surf] + k, 6 *
-                        num_nodes + 6 * ind + k] = 1.e9
+                         num_nodes + 6 * ind + k] = 1.e9
 
             rhs_[:] = 0.0
             rhs_[: 6 * n_fem] = loads_.reshape((6 * n_fem))
             rhs[6 * (i_fem + i_surf): 6 *
-                     (i_fem + n_fem + i_surf + num_cons)] = rhs_
+                (i_fem + n_fem + i_surf + num_cons)] = rhs_
 
             mtx[(i_fem + i_surf) * 6: (i_fem + n_fem + num_cons + i_surf) * 6,
                 (i_fem + i_surf) * 6: (i_fem + n_fem + num_cons + i_surf) * 6] = mtx_
@@ -1245,9 +1269,9 @@ def spatial_beam_FEM(A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x=5
         cons[i_surf] = idx
     mtx, rhs = \
         assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
-                         K_a, K_t, K_y, K_z, elem_IDs, cons, E, G, x_gl, T,
-                         K_elem, S_a, S_t, S_y, S_z, T_elem, const2, const_y,
-                         const_z, n_fem, size, mtx, rhs)
+                            K_a, K_t, K_y, K_z, elem_IDs, cons, E, G, x_gl, T,
+                            K_elem, S_a, S_t, S_y, S_z, T_elem, const2, const_y,
+                            const_z, n_fem, size, mtx, rhs)
     if type(mtx) == numpy.ndarray:
         disp_aug = numpy.linalg.solve(mtx, rhs)
     else:
@@ -1281,14 +1305,15 @@ def spatial_beam_disp(disp_aug, fem_ind):
     tot_n_fem = numpy.sum(fem_ind[:, 0])
     size = 6 * tot_n_fem + 6 * num_surf
     disp = numpy.zeros((tot_n_fem, 6))
-    arange=numpy.arange(6 * tot_n_fem)
+    arange = numpy.arange(6 * tot_n_fem)
     for i_surf, row in enumerate(fem_ind):
-        n_fem, i_fem=row
-        disp[i_fem:i_fem + n_fem]=disp_aug[(i_fem + i_surf) * 6:(
+        n_fem, i_fem = row
+        disp[i_fem:i_fem + n_fem] = disp_aug[(i_fem + i_surf) * 6:(
             i_fem + n_fem + i_surf) * 6].reshape((n_fem, 6))
     return disp
 
-def compute_nodes(mesh, fem_ind, aero_ind, fem_origin = 0.35):
+
+def compute_nodes(mesh, fem_ind, aero_ind, fem_origin=0.35):
     """
     Compute FEM nodes based on aerodynamic mesh.
 
@@ -1305,15 +1330,16 @@ def compute_nodes(mesh, fem_ind, aero_ind, fem_origin = 0.35):
         Flattened array with coordinates for each FEM node.
 
     """
-    num_surf=fem_ind.shape[0]
-    tot_n_fem=numpy.sum(fem_ind[:, 0])
-    tot_n=numpy.sum(aero_ind[:, 2])
-    nodes=numpy.zeros((tot_n_fem, 3))
+    num_surf = fem_ind.shape[0]
+    tot_n_fem = numpy.sum(fem_ind[:, 0])
+    tot_n = numpy.sum(aero_ind[:, 2])
+    nodes = numpy.zeros((tot_n_fem, 3))
     for i_surf, row in enumerate(fem_ind):
-        nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels=aero_ind[i_surf, :]
-        n_fem, i_fem=row
-        this_mesh=mesh[i:i + n, :].reshape(nx, ny, 3)
-        nodes[i_fem:i_fem + n_fem]=(1 - fem_origin) * this_mesh[0, :, :] + fem_origin * this_mesh[-1, :, :]
+        nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = aero_ind[i_surf, :]
+        n_fem, i_fem = row
+        this_mesh = mesh[i:i + n, :].reshape(nx, ny, 3)
+        nodes[i_fem:i_fem + n_fem] = (1 - fem_origin) * \
+            this_mesh[0, :, :] + fem_origin * this_mesh[-1, :, :]
     return nodes
 
 
@@ -1339,58 +1365,58 @@ def matrials_tube(r, thickness, fem_ind):
         Polar moment of inertia for each FEM element.
 
     """
-    A=numpy.zeros((tot_n_fem - num_surf))
-    Iy=numpy.zeros((tot_n_fem - num_surf))
-    Iz=numpy.zeros((tot_n_fem - num_surf))
-    J=numpy.zeros((tot_n_fem - num_surf))
-    r1=r - 0.5 * thickness
-    r2=r + 0.5 * thickness
-    A=numpy.pi * (r2**2 - r1**2)
-    Iy=numpy.pi * (r2**4 - r1**4) / 4.
-    Iz=numpy.pi * (r2**4 - r1**4) / 4.
-    J=numpy.pi * (r2**4 - r1**4) / 2.
+    A = numpy.zeros((tot_n_fem - num_surf))
+    Iy = numpy.zeros((tot_n_fem - num_surf))
+    Iz = numpy.zeros((tot_n_fem - num_surf))
+    J = numpy.zeros((tot_n_fem - num_surf))
+    r1 = r - 0.5 * thickness
+    r2 = r + 0.5 * thickness
+    A = numpy.pi * (r2**2 - r1**2)
+    Iy = numpy.pi * (r2**4 - r1**4) / 4.
+    Iz = numpy.pi * (r2**4 - r1**4) / 4.
+    J = numpy.pi * (r2**4 - r1**4) / 2.
     return A, Iy, Iz, J
+
 
 def struct(loads, params):
     # Unpack variables
-    mesh=params.get('mesh')
-    num_x=params.get('num_x')
-    num_y=params.get('num_y')
-    span=params.get('span')
-    twist_cp=params.get('twist_cp')
-    thickness_cp=params.get('thickness_cp')
-    v=params.get('v')
-    alpha=params.get('alpha')
-    rho=params.get('rho')
-    r=params.get('r')
-    t=params.get('t')
-    aero_ind=params.get('aero_ind')
-    fem_ind=params.get('fem_ind')
-    num_thickness=params.get('num_thickness')
-    num_twist=params.get('num_twist')
-    sweep=params.get('sweep')
-    taper=params.get('taper')
-    disp=params.get('disp')
-    dihedral=params.get('dihedral')
-    E=params.get('E')
-    G=params.get('G')
-    stress=params.get('stress')
-    mrho=params.get('mrho')
-    tot_n_fem=params.get('tot_n_fem')
-    num_surf=params.get('num_surf')
-    jac_twist=params.get('jac_twist')
-    jac_thickness=params.get('jac_thickness')
-    check=params.get('check')
-    out_stream=params.get('out_stream')
-
+    mesh = params.get('mesh')
+    num_x = params.get('num_x')
+    num_y = params.get('num_y')
+    span = params.get('span')
+    twist_cp = params.get('twist_cp')
+    thickness_cp = params.get('thickness_cp')
+    v = params.get('v')
+    alpha = params.get('alpha')
+    rho = params.get('rho')
+    r = params.get('r')
+    t = params.get('t')
+    aero_ind = params.get('aero_ind')
+    fem_ind = params.get('fem_ind')
+    num_thickness = params.get('num_thickness')
+    num_twist = params.get('num_twist')
+    sweep = params.get('sweep')
+    taper = params.get('taper')
+    disp = params.get('disp')
+    dihedral = params.get('dihedral')
+    E = params.get('E')
+    G = params.get('G')
+    stress = params.get('stress')
+    mrho = params.get('mrho')
+    tot_n_fem = params.get('tot_n_fem')
+    num_surf = params.get('num_surf')
+    jac_twist = params.get('jac_twist')
+    jac_thickness = params.get('jac_thickness')
+    check = params.get('check')
+    out_stream = params.get('out_stream')
 
     geometry_mesh(mesh, aero_ind, twist)
     materials_tube(fem_ind)
-    nodes=compute_nodes(mesh, fem_ind, aero_ind, fem_origin=0.35)
-    disp_aug=spatial_beam_FEM(
+    nodes = compute_nodes(mesh, fem_ind, aero_ind, fem_origin=0.35)
+    disp_aug = spatial_beam_FEM(
         A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x=5)
-    disp=spatial_beam_disp(disp_aug, fem_ind)
-    def_mesh=transfer_displacements(
+    disp = spatial_beam_disp(disp_aug, fem_ind)
+    def_mesh = transfer_displacements(
         mesh, disp, aero_ind, fem_ind, fem_origin=0.35)
 
     return def_mesh  # Output the def_mesh matrix

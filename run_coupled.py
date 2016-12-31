@@ -2,13 +2,14 @@
 
 from __future__ import print_function
 import coupled
+import numpy
 import aerostruct
 import warnings
 import sys
 
 # to disable openmdao warnings which will create an error in Matlab
 warnings.filterwarnings("ignore")
-
+numpy.set_printoptions(precision=8)
 
 def main(num_inboard=2, num_outboard=3, check=False):
 
@@ -26,11 +27,17 @@ def main(num_inboard=2, num_outboard=3, check=False):
     loads = coupled.aero(def_mesh, params)
     print('loads matrix... loads.shape =', loads.shape)
     print(loads)
+    loads_coupled = loads
 
     print('\nRun aerostruct.aero()...')
     loads = aerostruct.aero(def_mesh, params)
     print('loads matrix... loads.shape =', loads.shape)
     print(loads)
+    loads_aerostruct = loads
+
+    print('Difference:')
+    print(loads_coupled - loads_aerostruct)
+
 
     # print('\nRun struct()...')
     # def_mesh = coupled.struct(loads, params)
