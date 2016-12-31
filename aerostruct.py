@@ -42,6 +42,92 @@ warnings.filterwarnings("ignore")
 From geometry.py: Manipulate geometry mesh based on high-level design parameters """
 
 
+def setup(num_inboard=3, num_outboard=4):
+    ''' Setup the aerostruct mesh '''
+    # Define the aircraft properties, from CRM.py
+    span = 58.7630524  # [m] baseline CRM
+    # W0 = 0.5 * 2.5e6 # [N] (MTOW of B777 is 3e5 kg with fuel)
+    # CT = 9.81 * 17.e-6 # [1/s] (9.81 N/kg * 17e-6 kg/N/s)
+    # R = 14.3e6 # [m] maximum range
+    M = 0.84 # at cruise
+    alpha = 3.  # [deg.]
+    rho = 0.38  # [kg/m^3] at 35,000 ft
+    a = 295.4 # [m/s] at 35,000 ft
+    v = a * M
+    # CL0 = 0.2
+    # CD0 = 0.015
+    # Define spatialbeam properties, from aluminum.py
+    E = 200.e9  # [Pa]
+    G = 30.e9  # [Pa]
+    stress = 20.e6  # [Pa]
+    mrho = 3.e3  # [kg/m^3]
+    # Create the mesh with 3 inboard points and 4 outboard points.
+    # This will be mirrored to produce a mesh with ... spanwise points,
+    # or ...-1 spanwise panels
+    mesh = gen_crm_mesh(int(num_inboard), int(num_outboard), num_x=2)
+    num_x, num_y = mesh.shape[: 2]
+    num_twist = numpy.max([int((num_y - 1) / 5), 5])
+    r = radii(mesh)
+    # Set the number of thickness control points and the initial thicknesses
+    num_thickness = num_twist
+    t = r / 10
+    mesh = mesh.reshape(-1, mesh.shape[-1])
+    aero_ind = numpy.atleast_2d(numpy.array([num_x, num_y]))
+    fem_ind = [num_y]
+    aero_ind, fem_ind = get_inds(aero_ind, fem_ind)
+    # Set additional mesh parameters
+    dihedral = 0.  # dihedral angle in degrees
+    sweep = 0.  # shearing sweep angle in degrees
+    taper = 1.  # taper ratio
+    # Initial displacements of zero
+    tot_n_fem = numpy.sum(fem_ind[:, 0])
+    disp = numpy.zeros((tot_n_fem, 6))
+    # # Define Jacobians for b-spline controls
+    tot_n_fem = numpy.sum(fem_ind[:, 0])
+    num_surf = fem_ind.shape[0]
+    jac_twist = get_bspline_mtx(num_twist, num_y)
+    jac_thickness = get_bspline_mtx(num_thickness, tot_n_fem-num_surf)
+    # # Define ...
+    twist_cp = numpy.zeros(num_twist)
+    thickness_cp = numpy.ones(num_thickness)*numpy.max(t)
+    twist = cp2pt(twist_cp, jac_twist)
+    thickness = cp2pt(thickness_cp, jac_thickness)
+    mesh = geometry_mesh(mesh, aero_ind, twist, 0, 0, 1, span=58.7630524)
+    def_mesh = transfer_displacements(
+        mesh, disp, aero_ind, fem_ind, fem_origin=0.35)
+    # Output the def_mesh for the aero modules
+    # Other variables needed for aero and struct modules
+    params = {
+        'mesh': mesh,
+        'num_x': num_x,
+        'num_y': num_y,
+        'span': span,
+        'twist_cp': twist_cp,
+        'thickness_cp': thickness_cp,
+        'v': v,
+        'alpha': alpha,
+        'rho': rho,
+        'r': r,
+        't': t,
+        'aero_ind': aero_ind,
+        'fem_ind': fem_ind,
+        'num_thickness': num_thickness,
+        'num_twist': num_twist,
+        'sweep': sweep,
+        'taper': taper,
+        'dihedral': dihedral,
+        'E': E,
+        'G': G,
+        'stress': stress,
+        'mrho': mrho,
+        'tot_n_fem': tot_n_fem,
+        'num_surf': num_surf,
+        'jac_twist': jac_twist,
+        'jac_thickness': jac_thickness,
+    }
+
+    return (def_mesh, params)
+
 def cp2pt(cp, jac):
     """
     General function to translate from control points to actual points
@@ -447,20 +533,21 @@ def transfer_displacements(mesh, disp, aero_ind, fem_ind, fem_origin=0.35):
     """
     tot_n = numpy.sum(aero_ind[:, 2])
     tot_n_fem = numpy.sum(fem_ind[:, 0])
+    out_def_mesh = numpy.zeros((tot_n, 3), dtype=DTYPE)
     for i_surf, row in enumerate(fem_ind):
         nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = aero_ind[i_surf, :]
         n_fem, i_fem = row
-        mesh = mesh[i: i + n, :].reshape(nx, ny, 3)
-        disp = disp[i_fem: i_fem + n_fem]
+        mesh2 = mesh[i: i + n, :].reshape(nx, ny, 3)
+        disp2 = disp[i_fem: i_fem + n_fem]
         w = fem_origin
-        ref_curve = (1 - w) * mesh[0, :, :] + w * mesh[-1, :, :]
-        Smesh = numpy.zeros(mesh.shape, dtype=DTYPE)
+        ref_curve = (1 - w) * mesh2[0, :, :] + w * mesh2[-1, :, :]
+        Smesh = numpy.zeros(mesh2.shape, dtype=DTYPE)
         for ind in range(nx):
-            Smesh[ind, :, :] = mesh[ind, :, :] - ref_curve
-        def_mesh = numpy.zeros(mesh.shape, dtype=DTYPE)
+            Smesh[ind, :, :] = mesh2[ind, :, :] - ref_curve
+        def_mesh = numpy.zeros(mesh2.shape, dtype=DTYPE)
         cos, sin = numpy.cos, numpy.sin
         for ind in range(ny):
-            dx, dy, dz, rx, ry, rz = disp[ind, :]
+            dx, dy, dz, rx, ry, rz = disp2[ind, :]
             # 1 eye from the axis rotation matrices
             # -3 eye from subtracting Smesh three times
             T = -2 * numpy.eye(3, dtype=DTYPE)
@@ -471,98 +558,8 @@ def transfer_displacements(mesh, disp, aero_ind, fem_ind, fem_origin=0.35):
             def_mesh[:, ind, 0] += dx
             def_mesh[:, ind, 1] += dy
             def_mesh[:, ind, 2] += dz
-        def_mesh[i: i + n, :] = (def_mesh + mesh).reshape(n, 3).astype("complex")
-    return def_mesh
-
-
-def setup(num_inboard=3, num_outboard=4):
-    ''' Setup the aerostruct mesh '''
-    # Define the aircraft properties, from CRM.py
-    span = 58.7630524  # [m] baseline CRM
-    # W0 = 0.5 * 2.5e6 # [N] (MTOW of B777 is 3e5 kg with fuel)
-    # CT = 9.81 * 17.e-6 # [1/s] (9.81 N/kg * 17e-6 kg/N/s)
-    # R = 14.3e6 # [m] maximum range
-    M = 0.84 # at cruise
-    alpha = 3.  # [deg.]
-    rho = 0.38  # [kg/m^3] at 35,000 ft
-    a = 295.4 # [m/s] at 35,000 ft
-    v = a * M
-    # CL0 = 0.2
-    # CD0 = 0.015
-    # Define spatialbeam properties, from aluminum.py
-    E = 200.e9  # [Pa]
-    G = 30.e9  # [Pa]
-    stress = 20.e6  # [Pa]
-    mrho = 3.e3  # [kg/m^3]
-    # Create the mesh with 3 inboard points and 4 outboard points.
-    # This will be mirrored to produce a mesh with ... spanwise points,
-    # or ...-1 spanwise panels
-    mesh = gen_crm_mesh(int(num_inboard), int(num_outboard), num_x=2)
-    num_x, num_y = mesh.shape[: 2]
-    num_twist = numpy.max([int((num_y - 1) / 5), 5])
-    r = radii(mesh)
-    # Set the number of thickness control points and the initial thicknesses
-    num_thickness = num_twist
-    t = r / 10
-    mesh = mesh.reshape(-1, mesh.shape[-1])
-    aero_ind = numpy.atleast_2d(numpy.array([num_x, num_y]))
-    fem_ind = [num_y]
-    aero_ind, fem_ind = get_inds(aero_ind, fem_ind)
-    # Set additional mesh parameters
-    dihedral = 0.  # dihedral angle in degrees
-    sweep = 0.  # shearing sweep angle in degrees
-    taper = 1.  # taper ratio
-    # Initial displacements of zero
-    tot_n_fem = numpy.sum(fem_ind[:, 0])
-    disp = numpy.zeros((tot_n_fem, 6))
-    # # Define Jacobians for b-spline controls
-    tot_n_fem = numpy.sum(fem_ind[:, 0])
-    num_surf = fem_ind.shape[0]
-    jac_twist = get_bspline_mtx(num_twist, num_y)
-    jac_thickness = get_bspline_mtx(num_thickness, tot_n_fem-num_surf)
-    # # Define ...
-    twist_cp = numpy.zeros(num_twist)
-    thickness_cp = numpy.ones(num_thickness)*numpy.max(t)
-    twist = cp2pt(twist_cp, jac_twist)
-    thickness = cp2pt(thickness_cp, jac_thickness)
-    mesh = geometry_mesh(mesh, aero_ind, twist, 0, 0, 1, span=58.7630524)
-    def_mesh = transfer_displacements(
-        mesh, disp, aero_ind, fem_ind, fem_origin=0.35)
-    # Output the def_mesh for the aero modules
-    def_mesh = prob['def_mesh']
-    # Other variables needed for aero and struct modules
-    params = {
-        'mesh': mesh,
-        'num_x': num_x,
-        'num_y': num_y,
-        'span': span,
-        'twist_cp': twist_cp,
-        'thickness_cp': thickness_cp,
-        'v': v,
-        'alpha': alpha,
-        'rho': rho,
-        'r': r,
-        't': t,
-        'aero_ind': aero_ind,
-        'fem_ind': fem_ind,
-        'num_thickness': num_thickness,
-        'num_twist': num_twist,
-        'sweep': sweep,
-        'taper': taper,
-        'dihedral': dihedral,
-        'E': E,
-        'G': G,
-        'stress': stress,
-        'mrho': mrho,
-        'tot_n_fem': tot_n_fem,
-        'num_surf': num_surf,
-        'jac_twist': jac_twist,
-        'jac_thickness': jac_thickness,
-        'out_stream': out_stream,
-        'check': check
-    }
-
-    return (def_mesh, params)
+        out_def_mesh[i: i + n, :] = (def_mesh + mesh2).reshape(n, 3)
+    return out_def_mesh
 
 
 """
@@ -576,8 +573,6 @@ From vlm.py: """
 
 def aero(def_mesh=None, params=None):
     # Unpack variables
-    mesh = params.get('mesh')
-    num_x = params.get('num_x')
     num_y = params.get('num_y')
     span = params.get('span')
     twist_cp = params.get('twist_cp')
@@ -595,23 +590,17 @@ def aero(def_mesh=None, params=None):
     taper = params.get('taper')
     disp = params.get('disp')
     dihedral = params.get('dihedral')
-    check = params.get('check')
-    out_stream = params.get('out_stream')
 
-    # Define Jacobians for b-spline controls
-    tot_n_fem = numpy.sum(fem_ind[:, 0])
-    num_surf = fem_ind.shape[0]
-    jac_twist = get_bspline_mtx(num_twist, num_y)
-    jac_thickness = get_bspline_mtx(num_thickness, tot_n_fem - num_surf)
+    # # Define Jacobians for b-spline controls
+    # tot_n_fem = numpy.sum(fem_ind[:, 0])
+    # num_surf = fem_ind.shape[0]
+    # jac_twist = get_bspline_mtx(num_twist, num_y)
+    # jac_thickness = get_bspline_mtx(num_thickness, tot_n_fem - num_surf)
 
-    b_pts, mid_b, c_pts, widths, normals, S_ref = vlm_geometry(
-        aero_ind, def_mesh)
-    circulations = vlm_circulations(
-        aero_ind, def_mesh, b_pts, c_pts, normals, v, alpha)
-    sec_forces = vlm_forces(def_mesh, aero_ind, b_pts,
-                            mid_b, circulations, alpha=3, v=10, rho=3)
-    loads = transfer_loads(def_mesh, sec_forces,
-                           aero_ind, fem_ind, fem_origin=0.35)
+    b_pts, mid_b, c_pts, widths, normals, S_ref = vlm_geometry(aero_ind, def_mesh)
+    circulations = vlm_circulations(aero_ind, def_mesh, b_pts, c_pts, normals, v, alpha)
+    sec_forces = vlm_forces(def_mesh, aero_ind, b_pts, mid_b, circulations, alpha=3, v=10, rho=rho)
+    loads = transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin=0.35)
     return loads
 
 
