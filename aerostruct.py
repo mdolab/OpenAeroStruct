@@ -14,6 +14,13 @@ import os
 import scipy.sparse
 from scipy.linalg import lu_factor, lu_solve
 
+try:
+    import lib
+    fortran_flag = True
+except:
+    fortran_flag = False
+sparse_flag = False  # don't use sparse functions
+
 import numpy
 DTYPE = numpy.float64  # double precision float
 # import cython
@@ -623,6 +630,32 @@ def aero(def_mesh=None, params=None):
     return loads
 
 
+def calc_vorticity(A, B, P):
+    """ Calculates the influence coefficient for a vortex filament.
+
+    Parameters
+    ----------
+    A[3] : array_like
+        Coordinates for the start point of the filament.
+    B[3] : array_like
+        Coordinates for the end point of the filament.
+    P[3] : array_like
+        Coordinates for the collocation point where the influence coefficient
+        is computed.
+
+    Returns
+    -------
+    out[3] : array_like
+        Influence coefficient contribution for the described filament.
+
+    """
+    r1 = P - A
+    r2 = P - B
+    r1_mag = norm(r1)
+    r2_mag = norm(r2)
+    return (r1_mag + r2_mag) * numpy.cross(r1, r2) / (r1_mag * r2_mag * (r1_mag * r2_mag + r1.dot(r2)))
+
+
 def get_lengths(A, B, axis):
     return numpy.sqrt(numpy.sum((B - A)**2, axis=axis))
 
@@ -749,15 +782,15 @@ def assemble_AIC_mtx(mtx, flat_mesh, aero_ind, points, b_pts, alpha, skip=False)
                                                          mesh, skip)
             else:
                 # Spanwise loop through horseshoe elements
-                for el_j in xrange(ny_ - 1):
+                for el_j in range(ny_ - 1):
                     el_loc_j = el_j * (nx_ - 1)
                     C_te = mesh[-1, el_j + 1, :]
                     D_te = mesh[-1, el_j + 0, :]
                     # Spanwise loop through control points
-                    for cp_j in xrange(ny - 1):
+                    for cp_j in range(ny - 1):
                         cp_loc_j = cp_j * (nx - 1)
                         # Chordwise loop through control points
-                        for cp_i in xrange(nx - 1):
+                        for cp_i in range(nx - 1):
                             cp_loc = cp_i + cp_loc_j
                             P = pts[cp_i, cp_j]
                             r1 = P - D_te
@@ -771,7 +804,7 @@ def assemble_AIC_mtx(mtx, flat_mesh, aero_ind, points, b_pts, alpha, skip=False)
                             trailing = t1 - t3
                             edges = 0
                             # Chordwise loop through horseshoe elements
-                            for el_i in reversed(xrange(nx_ - 1)):
+                            for el_i in reversed(range(nx_ - 1)):
                                 el_loc = el_i + el_loc_j
                                 A = bpts[el_i, el_j + 0, :]
                                 B = bpts[el_i, el_j + 1, :]
@@ -781,13 +814,13 @@ def assemble_AIC_mtx(mtx, flat_mesh, aero_ind, points, b_pts, alpha, skip=False)
                                 else:
                                     C = bpts[el_i + 1, el_j + 1, :]
                                     D = bpts[el_i + 1, el_j + 0, :]
-                                edges += _calc_vorticity(B, C, P)
-                                edges += _calc_vorticity(D, A, P)
+                                edges += calc_vorticity(B, C, P)
+                                edges += calc_vorticity(D, A, P)
                                 if skip and el_loc == cp_loc:
                                     small_mat[cp_loc, el_loc,
                                               :] = trailing + edges
                                 else:
-                                    bound = _calc_vorticity(A, B, P)
+                                    bound = calc_vorticity(A, B, P)
                                     small_mat[cp_loc, el_loc,
                                               :] = trailing + edges + bound
             mtx[i_panels: i_panels + n_panels,
@@ -895,7 +928,7 @@ def vlm_forces(def_mesh, aero_ind, b_pts, mid_b, circ, alpha=3, v=10, rho=3):
     for i_surf, row in enumerate(aero_ind):
         nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = row
 
-        for ind in xrange(3):
+        for ind in range(3):
             vel[:, ind] = mtx[:, :, ind].dot(circ)
         vel[:, 0] += cosa * v
         vel[:, 2] += sina * v
@@ -907,7 +940,7 @@ def vlm_forces(def_mesh, aero_ind, b_pts, mid_b, circ, alpha=3, v=10, rho=3):
         cross = numpy.cross(vel[i_panels: i_panels + n_panels],
                             bound.reshape(-1, bound.shape[-1], order='F'))
 
-        for ind in xrange(3):
+        for ind in range(3):
             sec_forces[i_panels: i_panels + n_panels,
                        ind] = (rho * circ[i_panels: i_panels + n_panels] * cross[:, ind])
     return sec_forces
@@ -958,7 +991,7 @@ def transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin=0.35):
             0.5 * (1 - w) * mesh[: -1,  1: , : ] + \
             0.5 * w * mesh[1:,  1:, :]
         moment = numpy.zeros((ny - 1, 3), dtype=DTYPE)
-        for ind in xrange(ny - 1):
+        for ind in range(ny - 1):
             r = a_pts[0, ind, :] - s_pts[0, ind, :]
             F = sec_forces[ind, :]
             moment[ind, :] = numpy.cross(r, F)
@@ -984,12 +1017,51 @@ def transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin=0.35):
 From spatialbeam.py: Define the structural analysis component using spatial beam theory. """
 
 
-try:
-    import lib
-    fortran_flag = True
-except:
-    fortran_flag = False
-# sparse_flag = False
+def struct(loads, params):
+    # Unpack variables
+    mesh = params.get('mesh')
+    num_x = params.get('num_x')
+    num_y = params.get('num_y')
+    span = params.get('span')
+    twist_cp = params.get('twist_cp')
+    thickness_cp = params.get('thickness_cp')
+    v = params.get('v')
+    alpha = params.get('alpha')
+    rho = params.get('rho')
+    r = params.get('r')
+    t = params.get('t')
+    aero_ind = params.get('aero_ind')
+    fem_ind = params.get('fem_ind')
+    num_thickness = params.get('num_thickness')
+    num_twist = params.get('num_twist')
+    sweep = params.get('sweep')
+    taper = params.get('taper')
+    disp = params.get('disp')
+    dihedral = params.get('dihedral')
+    E = params.get('E')
+    G = params.get('G')
+    stress = params.get('stress')
+    mrho = params.get('mrho')
+    tot_n_fem = params.get('tot_n_fem')
+    num_surf = params.get('num_surf')
+    jac_twist = params.get('jac_twist')
+    jac_thickness = params.get('jac_thickness')
+    check = params.get('check')
+    out_stream = params.get('out_stream')
+    fem_origin = params.get('fem_origin', 0.35)
+    cg_x = params.get('cg_x', 5)
+
+
+    twist = cp2pt(twist_cp, jac_twist)
+    thickness = cp2pt(thickness_cp, jac_thickness)
+    geometry_mesh(mesh, aero_ind, twist)
+    A, Iy, Iz, J = materials_tube(r, thickness, fem_ind)
+    nodes = compute_nodes(mesh, fem_ind, aero_ind, fem_origin)
+    disp_aug = spatial_beam_FEM(A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x)
+    disp = spatial_beam_disp(disp_aug, fem_ind)
+    def_mesh = transfer_displacements(mesh, disp, aero_ind, fem_ind, fem_origin)
+
+    return def_mesh  # Output the def_mesh matrix
 
 
 def norm(vec):
@@ -1009,9 +1081,7 @@ def radii(mesh, t_c=0.15):
 
 
 def assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
-                        K_a, K_t, K_y, K_z,
-                        elem_IDs, cons,
-                        E, G, x_gl, T,
+                        K_a, K_t, K_y, K_z, elem_IDs, cons, E, G, x_gl, T,
                         K_elem, S_a, S_t, S_y, S_z, T_elem,
                         const2, const_y, const_z, n, size, mtx, rhs):
     """
@@ -1023,18 +1093,14 @@ def assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
     seems to be the fastest version across many matrix sizes.
 
     """
-
     data_list = []
     rows_list = []
     cols_list = []
-
     num_surf = fem_ind.shape[0]
     tot_n_fem = numpy.sum(fem_ind[:, 0])
     size = 6 * tot_n_fem + 6 * num_surf
-
     for i_surf, row in enumerate(fem_ind):
         n_fem, i_fem = row
-
         # create truncated versions of the input arrays to assemble
         # smaller matrices that we later assemble into a full matrix
         num_cons = 1  # just one constraint per structural component
@@ -1082,7 +1148,7 @@ def assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
             data2 = numpy.ones(6 * num_cons) * 1.e9
             rows2 = numpy.arange(6 * num_cons) + 6 * n_fem
             cols2 = numpy.zeros(6 * num_cons)
-            for ind in xrange(6):
+            for ind in range(6):
                 cols2[ind:: 6] = 6 * cons[i_surf] + ind
 
             data = numpy.concatenate([data1, data2, data2])
@@ -1099,12 +1165,20 @@ def assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
             rhs[6 * (i_fem + i_surf): 6 *
                 (i_fem + n_fem + i_surf + num_cons)] = rhs_
 
+        # sparse Python
+        elif not fortran_flag and sparse_flag:
+            data = numpy.concatenate(data_list)
+            rows = numpy.concatenate(rows_list)
+            cols = numpy.concatenate(cols_list)
+            mtx = scipy.sparse.csc_matrix((data, (rows, cols)),
+                                          shape=(size, size))
+
         # dense Python
         else:
             num_nodes = num_elems + 1
 
             mtx_[:] = 0.
-            for ielem in xrange(num_elems):
+            for ielem in range(num_elems):
                 P0 = nodes[elem_IDs_[ielem, 0], :]
                 P1 = nodes[elem_IDs_[ielem, 1], :]
 
@@ -1116,7 +1190,7 @@ def assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
                 T[1, :] = y_loc
                 T[2, :] = z_loc
 
-                for ind in xrange(4):
+                for ind in range(4):
                     T_elem[3 * ind: 3 * ind + 3, 3 * ind: 3 * ind + 3] = T
 
                 L = norm(P1 - P0)
@@ -1156,8 +1230,8 @@ def assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
                 mtx_[6 * in0: 6 * in0 + 6, 6 * in1: 6 * in1 + 6] += res[: 6, 6:]
                 mtx_[6 * in1: 6 * in1 + 6, 6 * in1: 6 * in1 + 6] += res[6:, 6:]
 
-            for ind in xrange(num_cons):
-                for k in xrange(6):
+            for ind in range(num_cons):
+                for k in range(6):
                     mtx_[6 * num_nodes + 6 * ind +
                          k, 6 * cons[i_surf] + k] = 1.e9
                     mtx_[6 * cons[i_surf] + k, 6 *
@@ -1171,14 +1245,8 @@ def assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
             mtx[(i_fem + i_surf) * 6: (i_fem + n_fem + num_cons + i_surf) * 6,
                 (i_fem + i_surf) * 6: (i_fem + n_fem + num_cons + i_surf) * 6] = mtx_
 
-    if fortran_flag and sparse_flag:
-        data = numpy.concatenate(data_list)
-        rows = numpy.concatenate(rows_list)
-        cols = numpy.concatenate(cols_list)
-        mtx = scipy.sparse.csc_matrix((data, (rows, cols)),
-                                      shape=(size, size))
 
-    rhs[numpy.abs(rhs) < 1e-6] = 0.
+    rhs[numpy.abs(rhs) < 1e-6] = 0.  # *should this have lower tolerance?
     return mtx, rhs
 
 
@@ -1225,39 +1293,39 @@ def spatial_beam_FEM(A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x=5
     const2 = numpy.array([
         [1, -1],
         [-1, 1],
-    ], dtype='complex')
+    ], dtype=DTYPE)
     const_y = numpy.array([
         [12, -6, -12, -6],
         [-6, 4, 6, 2],
         [-12, 6, 12, 6],
         [-6, 2, 6, 4],
-    ], dtype='complex')
+    ], dtype=DTYPE)
     const_z = numpy.array([
         [12, 6, -12, 6],
         [6, 4, -6, 2],
         [-12, -6, 12, -6],
         [6, 2, -6, 4],
-    ], dtype='complex')
-    x_gl = numpy.array([1, 0, 0], dtype='complex')
-    K_elem = numpy.zeros((12, 12), dtype='complex')
-    T_elem = numpy.zeros((12, 12), dtype='complex')
-    T = numpy.zeros((3, 3), dtype='complex')
+    ], dtype=DTYPE)
+    x_gl = numpy.array([1, 0, 0], dtype=DTYPE)
+    K_elem = numpy.zeros((12, 12), dtype=DTYPE)
+    T_elem = numpy.zeros((12, 12), dtype=DTYPE)
+    T = numpy.zeros((3, 3), dtype=DTYPE)
     num_nodes = tot_n_fem
     num_cons = num_surf
     size = 6 * num_nodes + 6 * num_cons
-    mtx = numpy.zeros((size, size), dtype='complex')
-    rhs = numpy.zeros(size, dtype='complex')
-    K_a = numpy.zeros((2, 2), dtype='complex')
-    K_t = numpy.zeros((2, 2), dtype='complex')
-    K_y = numpy.zeros((4, 4), dtype='complex')
-    K_z = numpy.zeros((4, 4), dtype='complex')
-    S_a = numpy.zeros((2, 12), dtype='complex')
+    mtx = numpy.zeros((size, size), dtype=DTYPE)
+    rhs = numpy.zeros(size, dtype=DTYPE)
+    K_a = numpy.zeros((2, 2), dtype=DTYPE)
+    K_t = numpy.zeros((2, 2), dtype=DTYPE)
+    K_y = numpy.zeros((4, 4), dtype=DTYPE)
+    K_z = numpy.zeros((4, 4), dtype=DTYPE)
+    S_a = numpy.zeros((2, 12), dtype=DTYPE)
     S_a[(0, 1), (0, 6)] = 1.
-    S_t = numpy.zeros((2, 12), dtype='complex')
+    S_t = numpy.zeros((2, 12), dtype=DTYPE)
     S_t[(0, 1), (3, 9)] = 1.
-    S_y = numpy.zeros((4, 12), dtype='complex')
+    S_y = numpy.zeros((4, 12), dtype=DTYPE)
     S_y[(0, 1, 2, 3), (2, 4, 8, 10)] = 1.
-    S_z = numpy.zeros((4, 12), dtype='complex')
+    S_z = numpy.zeros((4, 12), dtype=DTYPE)
     S_z[(0, 1, 2, 3), (1, 5, 7, 11)] = 1.
     cons = numpy.zeros((num_surf))
     # find constrained nodes based on closeness to specified cg point
@@ -1337,13 +1405,12 @@ def compute_nodes(mesh, fem_ind, aero_ind, fem_origin=0.35):
     for i_surf, row in enumerate(fem_ind):
         nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = aero_ind[i_surf, :]
         n_fem, i_fem = row
-        this_mesh = mesh[i:i + n, :].reshape(nx, ny, 3)
-        nodes[i_fem:i_fem + n_fem] = (1 - fem_origin) * \
-            this_mesh[0, :, :] + fem_origin * this_mesh[-1, :, :]
+        mesh2 = mesh[i:i + n, :].reshape(nx, ny, 3)
+        nodes[i_fem:i_fem + n_fem] = (1 - fem_origin) * mesh2[0, :, :] + fem_origin * mesh2[-1, :, :]
     return nodes
 
 
-def matrials_tube(r, thickness, fem_ind):
+def materials_tube(r, thickness, fem_ind):
     """ Compute geometric properties for a tube element.
 
     Parameters
@@ -1365,6 +1432,10 @@ def matrials_tube(r, thickness, fem_ind):
         Polar moment of inertia for each FEM element.
 
     """
+    n_fem, i_fem = fem_ind[0, :]
+    num_surf = fem_ind.shape[0]
+    tot_n_fem = numpy.sum(fem_ind[:, 0])
+    size = 6 * tot_n_fem + 6 * num_surf
     A = numpy.zeros((tot_n_fem - num_surf))
     Iy = numpy.zeros((tot_n_fem - num_surf))
     Iz = numpy.zeros((tot_n_fem - num_surf))
@@ -1376,49 +1447,3 @@ def matrials_tube(r, thickness, fem_ind):
     Iz = numpy.pi * (r2**4 - r1**4) / 4.
     J = numpy.pi * (r2**4 - r1**4) / 2.
     return A, Iy, Iz, J
-
-
-def struct(loads, params):
-    # Unpack variables
-    mesh = params.get('mesh')
-    num_x = params.get('num_x')
-    num_y = params.get('num_y')
-    span = params.get('span')
-    twist_cp = params.get('twist_cp')
-    thickness_cp = params.get('thickness_cp')
-    v = params.get('v')
-    alpha = params.get('alpha')
-    rho = params.get('rho')
-    r = params.get('r')
-    t = params.get('t')
-    aero_ind = params.get('aero_ind')
-    fem_ind = params.get('fem_ind')
-    num_thickness = params.get('num_thickness')
-    num_twist = params.get('num_twist')
-    sweep = params.get('sweep')
-    taper = params.get('taper')
-    disp = params.get('disp')
-    dihedral = params.get('dihedral')
-    E = params.get('E')
-    G = params.get('G')
-    stress = params.get('stress')
-    mrho = params.get('mrho')
-    tot_n_fem = params.get('tot_n_fem')
-    num_surf = params.get('num_surf')
-    jac_twist = params.get('jac_twist')
-    jac_thickness = params.get('jac_thickness')
-    check = params.get('check')
-    out_stream = params.get('out_stream')
-    fem_origin = params.get('fem_origin', 0.35)
-
-
-    geometry_mesh(mesh, aero_ind, twist)
-    materials_tube(fem_ind)
-    nodes = compute_nodes(mesh, fem_ind, aero_ind, fem_origin)
-    disp_aug = spatial_beam_FEM(
-        A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x=5)
-    disp = spatial_beam_disp(disp_aug, fem_ind)
-    def_mesh = transfer_displacements(
-        mesh, disp, aero_ind, fem_ind, fem_origin)
-
-    return def_mesh  # Output the def_mesh matrix
