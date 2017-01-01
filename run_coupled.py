@@ -26,21 +26,56 @@ def test_timing(num_inboard=3, num_outboard=4, n=100):
     for i in xrange(n):
         def_mesh, params = aerostruct.setup(num_inboard, num_outboard)
     toc2 = time.clock() - tic
-    print('Time per eval: {0} s  --> {1}x faster'.format(toc2 / n, (toc1) / (toc2)))
+    print('Time per eval: {0} s  --> {1}x faster'.format(toc2 / n, toc1/toc2))
 
     print('\nRun coupled.aero()...')
     tic = time.clock()
     for i in xrange(n):
-        loads = coupled.aero(def_mesh, params)
-    toc1 = time.clock() - tic
-    print('Time per eval: {0} s'.format(toc1 / n))
+        loads_coupled = coupled.aero(def_mesh, params)
+    toc3 = time.clock() - tic
+    print('Time per eval: {0} s'.format(toc3 / n))
 
     print('\nRun aerostruct.aero()...')
     tic = time.clock()
     for i in xrange(n):
+        loads_aerostruct = aerostruct.aero(def_mesh, params)
+    toc4 = time.clock() - tic
+    print('Time per eval: {0} s  --> {1}x faster'.format(toc4 / n, toc3/toc4))
+
+    print('\nRun coupled.struct()...')
+    tic = time.clock()
+    for i in xrange(n):
+        def_mesh2 = coupled.struct(loads_coupled, params)
+    toc5 = time.clock() - tic
+    print('Time per eval: {0} s'.format(toc5 / n))
+
+    print('\nRun aerostruct.struct()...')
+    tic = time.clock()
+    for i in xrange(n):
+        def_mesh2 = aerostruct.struct(loads_aerostruct, params)
+    toc6 = time.clock() - tic
+    print('Time per eval: {0} s  --> {1}x faster'.format(toc6 / n, toc5/toc6))
+
+
+def time_iterations(num_inboard=3, num_outboard=4, n=100):
+    print('\n...Time iterations... ')
+    print('Run coupled loop ...')
+    def_mesh, params = coupled.setup(num_inboard, num_outboard)
+    tic = time.clock()
+    for i in xrange(n):
+        loads = coupled.aero(def_mesh, params)
+        def_mesh = coupled.struct(loads, params)
+    toc1 = time.clock() - tic
+    print('Time per iteration: {0} s  '.format(toc1/n))
+
+    print('Run aerostruct loop ...')
+    def_mesh, params = aerostruct.setup(num_inboard, num_outboard)
+    tic = time.clock()
+    for i in xrange(n):
         loads = aerostruct.aero(def_mesh, params)
+        def_mesh = aerostruct.struct(loads, params)
     toc2 = time.clock() - tic
-    print('Time per eval: {0} s  --> {1}x faster'.format(toc2 / n, (toc1) / (toc2)))
+    print('Time per iteration: {0} s  --> {1}x faster'.format(toc2/n, toc1/toc2))
 
 
 def test_accuracy(num_inboard=3, num_outboard=4):
@@ -114,10 +149,11 @@ if __name__ == '__main__':
     print('Use Fortran: {0}'.format(fortran_flag))
 
     npts = [3, 5]
-    n = 1000
+    n = 300
     n_inboard = npts[0]
     n_outboard = npts[1]
 
     # main_coupled(n_inboard, n_outboard)
-    test_accuracy(n_inboard, n_outboard)
+    # test_accuracy(n_inboard, n_outboard)
     # test_timing(n_inboard, n_outboard, n)
+    time_iterations(n_inboard, n_outboard, n)
