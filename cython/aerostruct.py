@@ -143,6 +143,69 @@ def setup(num_inboard=3, num_outboard=4):
     return (def_mesh, params)
 
 
+def aerodynamics(def_mesh=None, params=None):
+    # Unpack variables
+    aero_ind = params.get('aero_ind')
+    alpha = params.get('alpha')
+    v = params.get('v')
+    rho = params.get('rho')
+    fem_ind = params.get('fem_ind')
+    fem_origin = params.get('fem_origin', 0.35)
+
+    # num_y = params.get('num_y')
+    # span = params.get('span')
+    # twist_cp = params.get('twist_cp')
+    # thickness_cp = params.get('thickness_cp')
+    # num_thickness = params.get('num_thickness')
+    # num_twist = params.get('num_twist')
+    # sweep = params.get('sweep')
+    # taper = params.get('taper')
+    # disp = params.get('disp')
+    # dihedral = params.get('dihedral')
+
+    # # Define Jacobians for b-spline controls
+    # tot_n_fem = numpy.sum(fem_ind[:, 0])
+    # num_surf = fem_ind.shape[0]
+    # jac_twist = get_bspline_mtx(num_twist, num_y)
+    # jac_thickness = get_bspline_mtx(num_thickness, tot_n_fem - num_surf)
+
+    b_pts, mid_b, c_pts, widths, normals, S_ref = vlm_geometry(
+        aero_ind, def_mesh)
+    circulations = vlm_circulations(
+        aero_ind, def_mesh, b_pts, c_pts, normals, v, alpha)
+    sec_forces = vlm_forces(def_mesh, aero_ind, b_pts,
+                            mid_b, circulations, alpha, v, rho)
+    loads = transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin)
+    return loads
+
+
+def structures(loads, params):
+    # Unpack variables
+    mesh = params.get('mesh')
+    twist_cp = params.get('twist_cp')
+    thickness_cp = params.get('thickness_cp')
+    r = params.get('r')
+    aero_ind = params.get('aero_ind')
+    fem_ind = params.get('fem_ind')
+    E = params.get('E')
+    G = params.get('G')
+    jac_twist = params.get('jac_twist')
+    jac_thickness = params.get('jac_thickness')
+    fem_origin = params.get('fem_origin', 0.35)
+    cg_x = params.get('cg_x', 5)
+
+    twist = cp2pt(twist_cp, jac_twist)
+    thickness = cp2pt(thickness_cp, jac_thickness)
+    geometry_mesh(mesh, aero_ind, twist)
+    A, Iy, Iz, J = materials_tube(r, thickness, fem_ind)
+    nodes = compute_nodes(mesh, fem_ind, aero_ind, fem_origin)
+    disp_aug = spatial_beam_FEM(A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x)
+    disp = spatial_beam_disp(disp_aug, fem_ind)
+    def_mesh = transfer_displacements(mesh, disp, aero_ind, fem_ind, fem_origin)
+
+    return def_mesh  # Output the def_mesh matrix
+
+
 def cp2pt(cp, jac):
     """
     General function to translate from control points to actual points
@@ -594,40 +657,7 @@ def transfer_displacements(mesh, disp, aero_ind, fem_ind, fem_origin=0.35):
 From vlm.py: """
 
 
-def aero(def_mesh=None, params=None):
-    # Unpack variables
-    aero_ind = params.get('aero_ind')
-    alpha = params.get('alpha')
-    v = params.get('v')
-    rho = params.get('rho')
-    fem_ind = params.get('fem_ind')
-    fem_origin = params.get('fem_origin', 0.35)
 
-    # num_y = params.get('num_y')
-    # span = params.get('span')
-    # twist_cp = params.get('twist_cp')
-    # thickness_cp = params.get('thickness_cp')
-    # num_thickness = params.get('num_thickness')
-    # num_twist = params.get('num_twist')
-    # sweep = params.get('sweep')
-    # taper = params.get('taper')
-    # disp = params.get('disp')
-    # dihedral = params.get('dihedral')
-
-    # # Define Jacobians for b-spline controls
-    # tot_n_fem = numpy.sum(fem_ind[:, 0])
-    # num_surf = fem_ind.shape[0]
-    # jac_twist = get_bspline_mtx(num_twist, num_y)
-    # jac_thickness = get_bspline_mtx(num_thickness, tot_n_fem - num_surf)
-
-    b_pts, mid_b, c_pts, widths, normals, S_ref = vlm_geometry(
-        aero_ind, def_mesh)
-    circulations = vlm_circulations(
-        aero_ind, def_mesh, b_pts, c_pts, normals, v, alpha)
-    sec_forces = vlm_forces(def_mesh, aero_ind, b_pts,
-                            mid_b, circulations, alpha, v, rho)
-    loads = transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin)
-    return loads
 
 
 def calc_vorticity(A, B, P):
@@ -1016,32 +1046,6 @@ def transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin=0.35):
 --------------------------------------------------------------------------------
 From spatialbeam.py: Define the structural analysis component using spatial beam theory. """
 
-
-def struct(loads, params):
-    # Unpack variables
-    mesh = params.get('mesh')
-    twist_cp = params.get('twist_cp')
-    thickness_cp = params.get('thickness_cp')
-    r = params.get('r')
-    aero_ind = params.get('aero_ind')
-    fem_ind = params.get('fem_ind')
-    E = params.get('E')
-    G = params.get('G')
-    jac_twist = params.get('jac_twist')
-    jac_thickness = params.get('jac_thickness')
-    fem_origin = params.get('fem_origin', 0.35)
-    cg_x = params.get('cg_x', 5)
-
-    twist = cp2pt(twist_cp, jac_twist)
-    thickness = cp2pt(thickness_cp, jac_thickness)
-    geometry_mesh(mesh, aero_ind, twist)
-    A, Iy, Iz, J = materials_tube(r, thickness, fem_ind)
-    nodes = compute_nodes(mesh, fem_ind, aero_ind, fem_origin)
-    disp_aug = spatial_beam_FEM(A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x)
-    disp = spatial_beam_disp(disp_aug, fem_ind)
-    def_mesh = transfer_displacements(mesh, disp, aero_ind, fem_ind, fem_origin)
-
-    return def_mesh  # Output the def_mesh matrix
 
 
 def norm(vec):
