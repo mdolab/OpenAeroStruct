@@ -7,6 +7,7 @@
 
 # make compatible Python 2.x to 3.x
 from __future__ import print_function, division
+__all__ = ['setup','aerodynamics','structures']
 from future.builtins import range  # make compatible Python 2.x to 3.x
 import warnings
 import sys
@@ -79,12 +80,15 @@ def setup(num_inboard=3, num_outboard=4):
     mesh = gen_crm_mesh(int(num_inboard), int(num_outboard), num_x=2)
     num_x, num_y = mesh.shape[: 2]
     num_twist = numpy.max([int((num_y - 1) / 5), 5])
+    # print('234mesh.shape',mesh.shape)
     r = radii(mesh)
     # Set the number of thickness control points and the initial thicknesses
     num_thickness = num_twist
     t = r / 10
     mesh = mesh.reshape(-1, mesh.shape[-1])
     aero_ind = numpy.atleast_2d(numpy.array([num_x, num_y]))
+    # print('..... aero_ind.shape',aero_ind.shape)
+    # print(aero_ind)
     fem_ind = [num_y]
     aero_ind, fem_ind = get_inds(aero_ind, fem_ind)
     # Set additional mesh parameters
@@ -106,6 +110,7 @@ def setup(num_inboard=3, num_outboard=4):
     twist = cp2pt(twist_cp, jac_twist)
     thickness = cp2pt(thickness_cp, jac_thickness)
     mesh = geometry_mesh(mesh, aero_ind, twist, 0, 0, 1, span=58.7630524)
+    #print('mesh.shape',mesh.shape)
     def_mesh = transfer_displacements(
         mesh, disp, aero_ind, fem_ind, fem_origin=0.35)
     # Output the def_mesh for the aero modules
@@ -173,9 +178,12 @@ def aerodynamics(def_mesh=None, params=None):
         aero_ind, def_mesh)
     circulations = vlm_circulations(
         aero_ind, def_mesh, b_pts, c_pts, normals, v, alpha)
+
     sec_forces = vlm_forces(def_mesh, aero_ind, b_pts,
                             mid_b, circulations, alpha, v, rho)
     loads = transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin)
+    # for i, j in enumerate([circulations, sec_forces, loads]):
+        #print('shape of ',i,' = ',j.shape)
     return loads
 
 
@@ -199,9 +207,11 @@ def structures(loads, params):
     geometry_mesh(mesh, aero_ind, twist)
     A, Iy, Iz, J = materials_tube(r, thickness, fem_ind)
     nodes = compute_nodes(mesh, fem_ind, aero_ind, fem_origin)
-    disp_aug = spatial_beam_FEM(A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x)
+    disp_aug = spatial_beam_FEM(
+        A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x)
     disp = spatial_beam_disp(disp_aug, fem_ind)
-    def_mesh = transfer_displacements(mesh, disp, aero_ind, fem_ind, fem_origin)
+    def_mesh = transfer_displacements(
+        mesh, disp, aero_ind, fem_ind, fem_origin)
 
     return def_mesh  # Output the def_mesh matrix
 
@@ -616,6 +626,7 @@ def transfer_displacements(mesh, disp, aero_ind, fem_ind, fem_origin=0.35):
     tot_n = numpy.sum(aero_ind[:, 2])
     tot_n_fem = numpy.sum(fem_ind[:, 0])
     out_def_mesh = numpy.zeros((tot_n, 3), dtype=DTYPE)
+    # print('aero_ind',aero_ind)
     for i_surf, row in enumerate(fem_ind):
         nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = aero_ind[i_surf, :]
         n_fem, i_fem = row
@@ -655,9 +666,6 @@ def transfer_displacements(mesh, disp, aero_ind, fem_ind, fem_origin=0.35):
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 From vlm.py: """
-
-
-
 
 
 def calc_vorticity(A, B, P):
@@ -735,9 +743,9 @@ def vlm_geometry(aero_ind, def_mesh):
         b_pts = mesh[: -1, :, :] * .75 + mesh[1:, :, :] * .25
         mid_b = (b_pts[:, 1:, :] + b_pts[:, : -1, :]) / 2
         c_pts = 0.5 * 0.25 * mesh[: -1, : -1, : ] + \
-                0.5 * 0.75 * mesh[1: , : -1, : ] + \
-                0.5 * 0.25 * mesh[: -1,  1: , : ] + \
-                0.5 * 0.75 * mesh[1:,  1:, :]
+            0.5 * 0.75 * mesh[1: , : -1, : ] + \
+            0.5 * 0.25 * mesh[: -1,  1: , : ] + \
+            0.5 * 0.75 * mesh[1:,  1:, :]
         widths = get_lengths(b_pts[:, 1:, :], b_pts[:, : -1, :], 2)
         normals = numpy.cross(
             mesh[: -1,  1:, :] - mesh[1:, : -1, :],
@@ -747,10 +755,13 @@ def vlm_geometry(aero_ind, def_mesh):
         for j in range(3):
             normals[:, :, j] /= norms
         B_PTS[i_bpts: i_bpts + n_bpts, :] = b_pts.reshape(-1, b_pts.shape[-1])
-        MID_B[i_panels: i_panels + n_panels, :] = mid_b.reshape(-1, mid_b.shape[-1])
-        C_PTS[i_panels: i_panels + n_panels, :] = c_pts.reshape(-1, c_pts.shape[-1])
+        MID_B[i_panels: i_panels + n_panels,
+              :] = mid_b.reshape(-1, mid_b.shape[-1])
+        C_PTS[i_panels: i_panels + n_panels,
+              :] = c_pts.reshape(-1, c_pts.shape[-1])
         WIDTHS[i_panels: i_panels + n_panels] = widths.flatten()
-        NORMALS[i_panels: i_panels + n_panels, :] = normals.reshape(-1, normals.shape[-1], order='F')
+        NORMALS[i_panels: i_panels + n_panels,
+                :] = normals.reshape(-1, normals.shape[-1], order='F')
         S_REF[i_surf] = 0.5 * numpy.sum(norms)
     return B_PTS, MID_B, C_PTS, WIDTHS, NORMALS, S_REF
 
@@ -1047,7 +1058,6 @@ def transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin=0.35):
 From spatialbeam.py: Define the structural analysis component using spatial beam theory. """
 
 
-
 def norm(vec):
     return numpy.sqrt(numpy.sum(vec**2))
 
@@ -1059,6 +1069,8 @@ def unit(vec):
 def radii(mesh, t_c=0.15):
     """ Obtain the radii of the FEM component based on chord. """
     vectors = mesh[-1, :, :] - mesh[0, :, :]
+    # print('sss mesh.shape',mesh.shape)
+    #print('vectors.shape',vectors.shape)
     chords = numpy.sqrt(numpy.sum(vectors**2, axis=1))
     chords = 0.5 * chords[: -1] + 0.5 * chords[1:]
     return t_c * chords
@@ -1229,7 +1241,6 @@ def assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
             mtx[(i_fem + i_surf) * 6: (i_fem + n_fem + num_cons + i_surf) * 6,
                 (i_fem + i_surf) * 6: (i_fem + n_fem + num_cons + i_surf) * 6] = mtx_
 
-
     rhs[numpy.abs(rhs) < 1e-6] = 0.  # *should this have lower tolerance?
     return mtx, rhs
 
@@ -1325,8 +1336,10 @@ def spatial_beam_FEM(A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x=5
                             K_elem, S_a, S_t, S_y, S_z, T_elem, const2, const_y,
                             const_z, n_fem, size, mtx, rhs)
     if type(mtx) == numpy.ndarray:
+        # print('AAA')
         disp_aug = numpy.linalg.solve(mtx, rhs)
     else:
+        # print('BBB')
         splu = scipy.sparse.linalg.splu(mtx)
         disp_aug = splu.solve(rhs)
     return disp_aug
@@ -1390,7 +1403,8 @@ def compute_nodes(mesh, fem_ind, aero_ind, fem_origin=0.35):
         nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = aero_ind[i_surf, :]
         n_fem, i_fem = row
         mesh2 = mesh[i:i + n, :].reshape(nx, ny, 3)
-        nodes[i_fem:i_fem + n_fem] = (1 - fem_origin) * mesh2[0, :, :] + fem_origin * mesh2[-1, :, :]
+        nodes[i_fem:i_fem + n_fem] = (1 - fem_origin) * \
+            mesh2[0, :, :] + fem_origin * mesh2[-1, :, :]
     return nodes
 
 

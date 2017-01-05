@@ -1,7 +1,3 @@
-
-# cython: profile=True
-# cython: linetrace=True
-
 # Univ. Michigan Aerostructural model.
 # Based on OpenAeroStruct by John Hwang, and John Jasa (github.com/johnjasa/OpenAeroStruct)
 #
@@ -766,7 +762,7 @@ def vlm_geometry(numpy.ndarray[long, ndim=2] aero_ind, numpy.ndarray[DTYPE_t, nd
     return B_PTS, MID_B, C_PTS, WIDTHS, NORMALS, S_REF
 
 
-def assemble_AIC_mtx(numpy.ndarray[DTYPE_t, ndim=3] mtx, flat_mesh, aero_ind, points, b_pts, alpha, skip=False):
+def assemble_AIC_mtx(mtx, flat_mesh, aero_ind, points, b_pts, alpha, skip=False):
     """
     Compute the aerodynamic influence coefficient matrix
     for either solving the linear system or solving for the drag.
@@ -803,15 +799,14 @@ def assemble_AIC_mtx(numpy.ndarray[DTYPE_t, ndim=3] mtx, flat_mesh, aero_ind, po
         Aerodynamic influence coefficient (AIC) matrix, or the
         derivative of v w.r.t. circulations.
     """
-    mtx[:, :, :] = 0
-    cdef double cosa = numpy.cos(alpha * numpy.pi / 180.)
-    cdef double sina = numpy.sin(alpha * numpy.pi / 180.)
-    cdef numpy.ndarray[DTYPE_t, ndim=1] u = numpy.array([cosa, 0, sina])
-    cdef int i_surf, nx_, ny_, n_, n_bpts_, n_panels_, i_, i_bpts_, i_panels_
-    cdef int i_points, n
-    cdef numpy.ndarray[DTYPE_t, ndim=3] small_mat
-    cdef numpy.ndarray[long, ndim=1] row
-    small_mat[:, :, :] = 0
+    cdef numpy.ndarray[DTYPE_t, ndim=3] mtx
+    mtx[:, :, :] = 0.0
+    cdef double cosa, sina
+    cosa = numpy.cos(alpha * numpy.pi / 180.)
+    sina = numpy.sin(alpha * numpy.pi / 180.)
+    cdef numpy.ndarray[DTYPE_t, ndim=1] u
+    u = numpy.array([cosa, 0, sina])
+    cdef int i_surf, nx_, ny_, n_, n_bpts_, n_panels_, i_, i_bpts_, i_panels_, n
     for i_surf, row in enumerate(aero_ind):
         nx_, ny_, n_, n_bpts_, n_panels_, i_, i_bpts_, i_panels_ = row.copy()
         n = nx_ * ny_
@@ -821,8 +816,7 @@ def assemble_AIC_mtx(numpy.ndarray[DTYPE_t, ndim=3] mtx, flat_mesh, aero_ind, po
             nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = row
             pts = points[i_panels: i_panels +
                          n_panels].reshape(nx - 1, ny - 1, 3)
-
-            # small_mat = numpy.zeros((n_panels, n_panels_, 3))
+            small_mat = numpy.zeros((n_panels, n_panels_, 3)).astype(DTYPE)
             if fortran_flag:
                 small_mat[:, :, :] = lib.assembleaeromtx(ny, nx, ny_, nx_,
                                                          alpha, pts, bpts,
@@ -881,6 +875,7 @@ def assemble_AIC_system(AIC_mtx, def_mesh, aero_ind, c_pts, b_pts, alpha, v, tot
     assemble_AIC_mtx(AIC_mtx, def_mesh, aero_ind, c_pts, b_pts, alpha)
     for ind in range(3):
         mtx[:, :] += (AIC_mtx[:, :, ind].T * normals[:, ind]).T
+    cdef double alpha, cosa, sina
     alpha = alpha * numpy.pi / 180.
     cosa = numpy.cos(alpha)
     sina = numpy.sin(alpha)
@@ -962,12 +957,16 @@ def vlm_forces(def_mesh, aero_ind, b_pts, mid_b, circ, alpha=3, v=10, rho=3):
         panel).
 
     """
+    cdef int tot_n, tot_bpts, tot_panels
     tot_n = numpy.sum(aero_ind[:, 2])
     tot_bpts = numpy.sum(aero_ind[:, 3])
     tot_panels = numpy.sum(aero_ind[:, 4])
+    cdef numpy.ndarray[DTYPE, ndim=3] mtx
     mtx = numpy.zeros((tot_panels, tot_panels, 3), dtype=DTYPE)
+    cdef numpy.ndarray[DTYPE, ndim=3] vel
     vel = numpy.zeros((tot_panels, 3), dtype=DTYPE)
     sec_forces = numpy.zeros((tot_panels, 3))
+    cdef double alpha, cosa, sina
     alpha *= numpy.pi / 180.
     cosa = numpy.cos(alpha)
     sina = numpy.sin(alpha)
