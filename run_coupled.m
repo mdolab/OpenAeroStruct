@@ -1,6 +1,9 @@
 % This is a Matlab routine to call the OpenAeroStruct coupled system module
 % written in Python.
 
+% Remember to add the path to the OpenAeroStruct functions to Matlab
+% addpath('C:\Users\Sam\repos\OpenAeroStruct');
+
 % Setup mesh and coupled system parameters
 n_inboard = 4;  % number of inboard points
 n_outboard = 6; % number of outboard points
