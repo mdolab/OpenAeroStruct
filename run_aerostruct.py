@@ -180,7 +180,7 @@ root.add('eq_con',
 # Set the optimization problem settings
 prob = Problem()
 prob.root = root
-prob.print_all_convergence()
+# prob.print_all_convergence()
 
 try:  # Use SNOPT optimizer if installed
     from openmdao.api import pyOptSparseDriver
