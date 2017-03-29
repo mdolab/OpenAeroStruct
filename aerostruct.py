@@ -18,7 +18,7 @@ from scipy.linalg import lu_factor, lu_solve
 from geometry import gen_crm_mesh, get_inds, sweep, rotate, dihedral, taper
 from b_spline import get_bspline_mtx
 from spatialbeam import radii
-from vlm import VLMGeometry
+from vlm import VLMGeometry, VLMCirculations
 
 try:
     import lib
