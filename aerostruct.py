@@ -15,6 +15,9 @@ import os
 import scipy.sparse
 from scipy.linalg import lu_factor, lu_solve
 
+from materials import MaterialsTube
+from spatialbeam import ComputeNodes
+
 try:
     import lib
     fortran_flag = True
@@ -22,8 +25,8 @@ except:
     fortran_flag = False
 sparse_flag = False  # don't use sparse functions
 
-import numpy
-DTYPE = numpy.float64  # double precision float
+import numpy as np
+DTYPE = np.float64  # double precision float
 # import cython
 # cimport cython
 # import numpy
@@ -79,14 +82,14 @@ def setup(num_inboard=3, num_outboard=4):
     # or ...-1 spanwise panels
     mesh = gen_crm_mesh(int(num_inboard), int(num_outboard), num_x=2)
     num_x, num_y = mesh.shape[: 2]
-    num_twist = numpy.max([int((num_y - 1) / 5), 5])
+    num_twist = np.max([int((num_y - 1) / 5), 5])
     # print('234mesh.shape',mesh.shape)
     r = radii(mesh)
     # Set the number of thickness control points and the initial thicknesses
     num_thickness = num_twist
     t = r / 10
     mesh = mesh.reshape(-1, mesh.shape[-1])
-    aero_ind = numpy.atleast_2d(numpy.array([num_x, num_y]))
+    aero_ind = np.atleast_2d(np.array([num_x, num_y]))
     # print('..... aero_ind.shape',aero_ind.shape)
     # print(aero_ind)
     fem_ind = [num_y]
@@ -97,16 +100,16 @@ def setup(num_inboard=3, num_outboard=4):
     taper = 1.  # taper ratio
     fem_origin = 0.35
     # Initial displacements of zero
-    tot_n_fem = numpy.sum(fem_ind[:, 0])
-    disp = numpy.zeros((tot_n_fem, 6))
+    tot_n_fem = np.sum(fem_ind[:, 0])
+    disp = np.zeros((tot_n_fem, 6))
     # # Define Jacobians for b-spline controls
-    tot_n_fem = numpy.sum(fem_ind[:, 0])
+    tot_n_fem = np.sum(fem_ind[:, 0])
     num_surf = fem_ind.shape[0]
     jac_twist = get_bspline_mtx(num_twist, num_y)
     jac_thickness = get_bspline_mtx(num_thickness, tot_n_fem - num_surf)
     # # Define ...
-    twist_cp = numpy.zeros(num_twist)
-    thickness_cp = numpy.ones(num_thickness) * numpy.max(t)
+    twist_cp = np.zeros(num_twist)
+    thickness_cp = np.ones(num_thickness) * np.max(t)
     twist = cp2pt(twist_cp, jac_twist)
     thickness = cp2pt(thickness_cp, jac_thickness)
     mesh = geometry_mesh(mesh, aero_ind, twist, 0, 0, 1, span=58.7630524)
@@ -169,7 +172,7 @@ def aerodynamics(def_mesh=None, params=None):
     # dihedral = params.get('dihedral')
 
     # # Define Jacobians for b-spline controls
-    # tot_n_fem = numpy.sum(fem_ind[:, 0])
+    # tot_n_fem = np.sum(fem_ind[:, 0])
     # num_surf = fem_ind.shape[0]
     # jac_twist = get_bspline_mtx(num_twist, num_y)
     # jac_thickness = get_bspline_mtx(num_thickness, tot_n_fem - num_surf)
@@ -221,7 +224,7 @@ def cp2pt(cp, jac):
     General function to translate from control points to actual points
     using a b-spline representation.
     """
-    pt = numpy.zeros(jac.shape[0])
+    pt = np.zeros(jac.shape[0])
     pt = jac.dot(cp)
     return pt
 
@@ -246,15 +249,15 @@ def get_bspline_mtx(num_cp, num_pt, order=4):
         points vector.
 
     """
-    knots = numpy.zeros(num_cp + order)
-    knots[order - 1:num_cp + 1] = numpy.linspace(0, 1, num_cp - order + 2)
+    knots = np.zeros(num_cp + order)
+    knots[order - 1:num_cp + 1] = np.linspace(0, 1, num_cp - order + 2)
     knots[num_cp + 1:] = 1.0
-    t_vec = numpy.linspace(0, 1, num_pt)
-    basis = numpy.zeros(order)
-    arange = numpy.arange(order)
-    data = numpy.zeros((num_pt, order))
-    rows = numpy.zeros((num_pt, order), int)
-    cols = numpy.zeros((num_pt, order), int)
+    t_vec = np.linspace(0, 1, num_pt)
+    basis = np.zeros(order)
+    arange = np.arange(order)
+    data = np.zeros((num_pt, order))
+    rows = np.zeros((num_pt, order), int)
+    cols = np.zeros((num_pt, order), int)
     for ipt in range(num_pt):
         t = t_vec[ipt]
         i0 = -1
@@ -326,20 +329,20 @@ def get_inds(aero_ind, fem_ind):
     i_fem : current index of fem nodes when considering all fem nodes
 
     """
-    new_aero_ind = numpy.zeros((aero_ind.shape[0], 8), dtype=int)
+    new_aero_ind = np.zeros((aero_ind.shape[0], 8), dtype=int)
     new_aero_ind[:, 0:2] = aero_ind
     for i, row in enumerate(aero_ind):
         nx, ny = aero_ind[i, :]
         new_aero_ind[i, 2] = nx * ny
         new_aero_ind[i, 3] = (nx - 1) * ny
         new_aero_ind[i, 4] = (nx - 1) * (ny - 1)
-        new_aero_ind[i, 5] = numpy.sum(numpy.product(aero_ind[:i], axis=1))
-        new_aero_ind[i, 6] = numpy.sum((aero_ind[:i, 0] - 1) * aero_ind[:i, 1])
-        new_aero_ind[i, 7] = numpy.sum(numpy.product(aero_ind[:i] - 1, axis=1))
-    new_fem_ind = numpy.zeros((len(fem_ind), 2), dtype=int)
+        new_aero_ind[i, 5] = np.sum(np.product(aero_ind[:i], axis=1))
+        new_aero_ind[i, 6] = np.sum((aero_ind[:i, 0] - 1) * aero_ind[:i, 1])
+        new_aero_ind[i, 7] = np.sum(np.product(aero_ind[:i] - 1, axis=1))
+    new_fem_ind = np.zeros((len(fem_ind), 2), dtype=int)
     new_fem_ind[:, 0] = fem_ind
     for i, row in enumerate(fem_ind):
-        new_fem_ind[i, 1] = numpy.sum(fem_ind[:i])
+        new_fem_ind[i, 1] = np.sum(fem_ind[:i])
     return new_aero_ind, new_fem_ind
 
 
@@ -353,16 +356,16 @@ def rotate(mesh, thetas):
     quarter_chord = 0.25 * te + 0.75 * le
     ny = mesh.shape[1]
     nx = mesh.shape[0]
-    rad_thetas = thetas * numpy.pi / 180.
-    mats = numpy.zeros((ny, 3, 3), dtype=DTYPE)
-    mats[:, 0, 0] = numpy.cos(rad_thetas)
-    mats[:, 0, 2] = numpy.sin(rad_thetas)
+    rad_thetas = thetas * np.pi / 180.
+    mats = np.zeros((ny, 3, 3), dtype=DTYPE)
+    mats[:, 0, 0] = np.cos(rad_thetas)
+    mats[:, 0, 2] = np.sin(rad_thetas)
     mats[:, 1, 1] = 1
-    mats[:, 2, 0] = -numpy.sin(rad_thetas)
-    mats[:, 2, 2] = numpy.cos(rad_thetas)
+    mats[:, 2, 0] = -np.sin(rad_thetas)
+    mats[:, 2, 2] = np.cos(rad_thetas)
     for ix in range(nx):
         row = mesh[ix]
-        row[:] = numpy.einsum("ikj, ij -> ik", mats, row - quarter_chord)
+        row[:] = np.einsum("ikj, ij -> ik", mats, row - quarter_chord)
         row += quarter_chord
     return mesh
 
@@ -373,11 +376,11 @@ def sweep(mesh, angle):
     ny2 = (num_y - 1) / 2
     le = mesh[0]
     y0 = le[ny2, 1]
-    p180 = numpy.pi / 180
-    tan_theta = numpy.tan(p180 * angle)
+    p180 = np.pi / 180
+    tan_theta = np.tan(p180 * angle)
     dx_right = (le[ny2:, 1] - y0) * tan_theta
     dx_left = -(le[:ny2, 1] - y0) * tan_theta
-    dx = numpy.hstack((dx_left, dx_right))
+    dx = np.hstack((dx_left, dx_right))
     for i in range(num_x):
         mesh[i, :, 0] += dx
     return mesh
@@ -389,11 +392,11 @@ def dihedral(mesh, angle):
     ny2 = (num_y - 1) / 2
     le = mesh[0]
     y0 = le[ny2, 1]
-    p180 = numpy.pi / 180
-    tan_theta = numpy.tan(p180 * angle)
+    p180 = np.pi / 180
+    tan_theta = np.tan(p180 * angle)
     dx_right = (le[ny2:, 1] - y0) * tan_theta
     dx_left = -(le[:ny2, 1] - y0) * tan_theta
-    dx = numpy.hstack((dx_left, dx_right))
+    dx = np.hstack((dx_left, dx_right))
     for i in range(num_x):
         mesh[i, :, 2] += dx
     return mesh
@@ -404,7 +407,7 @@ def stretch(mesh, length):
     le = mesh[0]
     num_x, num_y, _ = mesh.shape
     span = le[-1, 1] - le[0, 1]
-    dy = (length - span) / (num_y - 1) * numpy.arange(1, num_y)
+    dy = (length - span) / (num_y - 1) * np.arange(1, num_y)
     for i in range(num_x):
         mesh[i, 1:, 1] += dy
     return mesh
@@ -417,10 +420,10 @@ def taper(mesh, taper_ratio):
     num_x, num_y, _ = mesh.shape
     ny2 = int((num_y + 1) / 2)
     center_chord = .5 * te + .5 * le
-    taper = numpy.linspace(1, taper_ratio, ny2)[::-1]
+    taper = np.linspace(1, taper_ratio, ny2)[::-1]
     jac = get_bspline_mtx(ny2, ny2, order=2)
     taper = jac.dot(taper)
-    dx = numpy.hstack((taper, taper[::-1][1:]))
+    dx = np.hstack((taper, taper[::-1][1:]))
     for i in range(num_x):
         for ind in range(3):
             mesh[i, :, ind] = (
@@ -439,8 +442,8 @@ def mirror(mesh, right_side=True):
 
     """
     num_x, num_y, _ = mesh.shape
-    new_mesh = numpy.empty((num_x, 2 * num_y - 1, 3))
-    mirror_y = numpy.ones(mesh.shape)
+    new_mesh = np.empty((num_x, 2 * num_y - 1, 3))
+    mirror_y = np.ones(mesh.shape)
     mirror_y[:, :, 1] *= -1.0
     if right_side:
         new_mesh[:, :num_y, :] = mesh[:, ::-1, :] * mirror_y
@@ -472,7 +475,7 @@ def gen_crm_mesh(n_points_inboard=3, n_points_outboard=4,
     """
     #   crm base mesh from crm_data.py
     # eta, xle, yle, zle, twist, chord
-    raw_crm_points = numpy.array([
+    raw_crm_points = np.array([
         [0., 904.294, 0.0, 174.126, 6.7166, 536.181],  # 0
         [.1, 989.505, 115.675, 175.722, 4.4402, 468.511],
         [.15, 1032.133, 173.513, 176.834, 3.6063, 434.764],
@@ -494,26 +497,26 @@ def gen_crm_mesh(n_points_inboard=3, n_points_outboard=4,
         [.95, 1736.710, 1098.915, 253.691, -3.1248, 121.557],
         [1., 1780.737, 1156.753, 263.827, -3.75, 107.4]  # 19
     ])
-    # le = numpy.vstack((raw_crm_points[:,1],
+    # le = np.vstack((raw_crm_points[:,1],
     #                 raw_crm_points[:,2],
     #                 raw_crm_points[:,3]))
-    # te = numpy.vstack((raw_crm_points[:,1]+raw_crm_points[:,5],
+    # te = np.vstack((raw_crm_points[:,1]+raw_crm_points[:,5],
     #                 raw_crm_points[:,2],
     #                 raw_crm_points[:,3]))
-    # mesh = numpy.empty((2,20,3))
+    # mesh = np.empty((2,20,3))
     # mesh[0,:,:] = le.T
     # mesh[1,:,:] = te.T
     # mesh *= 0.0254 # convert to meters
     # pull out the 3 key y-locations to define the two linear regions of the
     # wing
     crm_base_points = raw_crm_points[(0, 6, 19), :]
-    le_base = numpy.vstack((crm_base_points[:, 1],
+    le_base = np.vstack((crm_base_points[:, 1],
                             crm_base_points[:, 2],
                             crm_base_points[:, 3]))
-    te_base = numpy.vstack((crm_base_points[:, 1] + crm_base_points[:, 5],
+    te_base = np.vstack((crm_base_points[:, 1] + crm_base_points[:, 5],
                             crm_base_points[:, 2],
                             crm_base_points[:, 3]))
-    mesh = numpy.empty((2, 3, 3))
+    mesh = np.empty((2, 3, 3))
     mesh[0, :, :] = le_base.T
     mesh[1, :, :] = te_base.T
     mesh[:, :, 2] = 0  # get rid of the z deflection
@@ -531,7 +534,7 @@ def gen_crm_mesh(n_points_inboard=3, n_points_outboard=4,
     s4 = (mesh[1, 2, 0] - mesh[1, 1, 0]) / (mesh[1, 2, 1] - mesh[1, 1, 1])
     o4 = mesh[1, 2, 0] - s4 * mesh[1, 2, 1]
     n_points_total = n_points_inboard + n_points_outboard - 1
-    half_mesh = numpy.zeros((2, n_points_total, 3))
+    half_mesh = np.zeros((2, n_points_total, 3))
     # generate inboard points
     dy = (mesh[0, 1, 1] - mesh[0, 0, 1]) / (n_points_inboard - 1)
     for i in range(n_points_inboard):
@@ -550,7 +553,7 @@ def gen_crm_mesh(n_points_inboard=3, n_points_outboard=4,
         half_mesh[1, i, 0] = s4 * y + o4  # te point
     full_mesh = mirror(half_mesh)
     full_mesh = add_chordwise_panels(full_mesh, num_x)
-    full_mesh[:, :, 1] -= numpy.mean(full_mesh[:, :, 1])
+    full_mesh[:, :, 1] -= np.mean(full_mesh[:, :, 1])
     return full_mesh
 
 
@@ -558,7 +561,7 @@ def add_chordwise_panels(mesh, num_x):
     """ Divide the wing into multiple chordwise panels. """
     le = mesh[0, :, :]
     te = mesh[-1, :, :]
-    new_mesh = numpy.zeros((num_x, mesh.shape[1], 3))
+    new_mesh = np.zeros((num_x, mesh.shape[1], 3))
     new_mesh[0, :, :] = le
     new_mesh[-1, :, :] = te
     for i in range(1, num_x - 1):
@@ -569,14 +572,14 @@ def add_chordwise_panels(mesh, num_x):
 
 def gen_mesh(num_x, num_y, span, chord, cosine_spacing=0.):
     """ Generate simple rectangular wing mesh. """
-    mesh = numpy.zeros((num_x, num_y, 3))
+    mesh = np.zeros((num_x, num_y, 3))
     ny2 = (num_y + 1) / 2
-    beta = numpy.linspace(0, numpy.pi / 2, ny2)
+    beta = np.linspace(0, np.pi / 2, ny2)
     # mixed spacing with w as a weighting factor
-    cosine = .5 * numpy.cos(beta)  # cosine spacing
-    uniform = numpy.linspace(0, .5, ny2)[::-1]  # uniform spacing
+    cosine = .5 * np.cos(beta)  # cosine spacing
+    uniform = np.linspace(0, .5, ny2)[::-1]  # uniform spacing
     half_wing = cosine * cosine_spacing + (1 - cosine_spacing) * uniform
-    full_wing = numpy.hstack((-half_wing[:-1], half_wing[::-1])) * span
+    full_wing = np.hstack((-half_wing[:-1], half_wing[::-1])) * span
     for ind_x in range(num_x):
         for ind_y in range(num_y):
             mesh[ind_x, ind_y, :] = [ind_x / (num_x - 1) * chord,
@@ -589,7 +592,7 @@ def geometry_mesh(mesh, aero_ind, twist, sweep_angle=0, dihedral_angle=0, taper_
     nx = aero_ind[0, 0]
     n = nx * ny
     wing_mesh = mesh[: n, :].reshape(nx, ny, 3).astype('complex')
-    twist = numpy.zeros(ny)  # default option
+    twist = np.zeros(ny)  # default option
     wing_mesh = mesh[: n, :].reshape(nx, ny, 3).astype('complex')
     # stretch(wing_mesh, params['span'])
     sweep(wing_mesh, sweep_angle)
@@ -623,9 +626,9 @@ def transfer_displacements(mesh, disp, aero_ind, fem_ind, fem_origin=0.35):
         Flattened array defining the lifting surfaces after deformation.
 
     """
-    tot_n = numpy.sum(aero_ind[:, 2])
-    tot_n_fem = numpy.sum(fem_ind[:, 0])
-    out_def_mesh = numpy.zeros((tot_n, 3), dtype=DTYPE)
+    tot_n = np.sum(aero_ind[:, 2])
+    tot_n_fem = np.sum(fem_ind[:, 0])
+    out_def_mesh = np.zeros((tot_n, 3), dtype=DTYPE)
     # print('aero_ind',aero_ind)
     for i_surf, row in enumerate(fem_ind):
         nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = aero_ind[i_surf, :]
@@ -634,16 +637,16 @@ def transfer_displacements(mesh, disp, aero_ind, fem_ind, fem_origin=0.35):
         disp2 = disp[i_fem: i_fem + n_fem]
         w = fem_origin
         ref_curve = (1 - w) * mesh2[0, :, :] + w * mesh2[-1, :, :]
-        Smesh = numpy.zeros(mesh2.shape, dtype=DTYPE)
+        Smesh = np.zeros(mesh2.shape, dtype=DTYPE)
         for ind in range(nx):
             Smesh[ind, :, :] = mesh2[ind, :, :] - ref_curve
-        def_mesh = numpy.zeros(mesh2.shape, dtype=DTYPE)
-        cos, sin = numpy.cos, numpy.sin
+        def_mesh = np.zeros(mesh2.shape, dtype=DTYPE)
+        cos, sin = np.cos, np.sin
         for ind in range(ny):
             dx, dy, dz, rx, ry, rz = disp2[ind, :]
             # 1 eye from the axis rotation matrices
             # -3 eye from subtracting Smesh three times
-            T = -2 * numpy.eye(3, dtype=DTYPE)
+            T = -2 * np.eye(3, dtype=DTYPE)
             T[1:,  1:] += [[cos(rx), -sin(rx)], [sin(rx), cos(rx)]]
             T[:: 2, :: 2] += [[cos(ry),  sin(ry)], [-sin(ry), cos(ry)]]
             T[: 2, : 2] += [[cos(rz), -sin(rz)], [sin(rz), cos(rz)]]
@@ -691,11 +694,11 @@ def calc_vorticity(A, B, P):
     r2 = P - B
     r1_mag = norm(r1)
     r2_mag = norm(r2)
-    return (r1_mag + r2_mag) * numpy.cross(r1, r2) / (r1_mag * r2_mag * (r1_mag * r2_mag + r1.dot(r2)))
+    return (r1_mag + r2_mag) * np.cross(r1, r2) / (r1_mag * r2_mag * (r1_mag * r2_mag + r1.dot(r2)))
 
 
 def get_lengths(A, B, axis):
-    return numpy.sqrt(numpy.sum((B - A)**2, axis=axis))
+    return np.sqrt(np.sum((B - A)**2, axis=axis))
 
 
 def vlm_geometry(aero_ind, def_mesh):
@@ -726,16 +729,16 @@ def vlm_geometry(aero_ind, def_mesh):
 
     """
     num_surf = aero_ind.shape[0]
-    tot_n = numpy.sum(aero_ind[:, 2])
-    tot_bpts = numpy.sum(aero_ind[:, 3])
-    tot_panels = numpy.sum(aero_ind[:, 4])
+    tot_n = np.sum(aero_ind[:, 2])
+    tot_bpts = np.sum(aero_ind[:, 3])
+    tot_panels = np.sum(aero_ind[:, 4])
 
-    B_PTS = numpy.zeros((tot_bpts, 3), dtype=DTYPE)
-    MID_B = numpy.zeros((tot_panels, 3), dtype=DTYPE)
-    C_PTS = numpy.zeros((tot_panels, 3))
-    WIDTHS = numpy.zeros((tot_panels))
-    NORMALS = numpy.zeros((tot_panels, 3))
-    S_REF = numpy.zeros((num_surf))
+    B_PTS = np.zeros((tot_bpts, 3), dtype=DTYPE)
+    MID_B = np.zeros((tot_panels, 3), dtype=DTYPE)
+    C_PTS = np.zeros((tot_panels, 3))
+    WIDTHS = np.zeros((tot_panels))
+    NORMALS = np.zeros((tot_panels, 3))
+    S_REF = np.zeros((num_surf))
 
     for i_surf, row in enumerate(aero_ind):
         nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = row
@@ -747,11 +750,11 @@ def vlm_geometry(aero_ind, def_mesh):
             0.5 * 0.25 * mesh[: -1,  1: , : ] + \
             0.5 * 0.75 * mesh[1:,  1:, :]
         widths = get_lengths(b_pts[:, 1:, :], b_pts[:, : -1, :], 2)
-        normals = numpy.cross(
+        normals = np.cross(
             mesh[: -1,  1:, :] - mesh[1:, : -1, :],
             mesh[: -1, : -1, :] - mesh[1:,  1:, :],
             axis=2)
-        norms = numpy.sqrt(numpy.sum(normals**2, axis=2))
+        norms = np.sqrt(np.sum(normals**2, axis=2))
         for j in range(3):
             normals[:, :, j] /= norms
         B_PTS[i_bpts: i_bpts + n_bpts, :] = b_pts.reshape(-1, b_pts.shape[-1])
@@ -762,7 +765,7 @@ def vlm_geometry(aero_ind, def_mesh):
         WIDTHS[i_panels: i_panels + n_panels] = widths.flatten()
         NORMALS[i_panels: i_panels + n_panels,
                 :] = normals.reshape(-1, normals.shape[-1], order='F')
-        S_REF[i_surf] = 0.5 * numpy.sum(norms)
+        S_REF[i_surf] = 0.5 * np.sum(norms)
     return B_PTS, MID_B, C_PTS, WIDTHS, NORMALS, S_REF
 
 
@@ -804,9 +807,9 @@ def assemble_AIC_mtx(mtx, flat_mesh, aero_ind, points, b_pts, alpha, skip=False)
         derivative of v w.r.t. circulations.
     """
     mtx[:, :, :] = 0.0
-    cosa = numpy.cos(alpha * numpy.pi / 180.)
-    sina = numpy.sin(alpha * numpy.pi / 180.)
-    u = numpy.array([cosa, 0, sina])
+    cosa = np.cos(alpha * np.pi / 180.)
+    sina = np.sin(alpha * np.pi / 180.)
+    u = np.array([cosa, 0, sina])
     for i_surf, row in enumerate(aero_ind):
         nx_, ny_, n_, n_bpts_, n_panels_, i_, i_bpts_, i_panels_ = row.copy()
         n = nx_ * ny_
@@ -816,7 +819,7 @@ def assemble_AIC_mtx(mtx, flat_mesh, aero_ind, points, b_pts, alpha, skip=False)
             nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = row
             pts = points[i_panels: i_panels +
                          n_panels].reshape(nx - 1, ny - 1, 3)
-            small_mat = numpy.zeros((n_panels, n_panels_, 3)).astype("complex")
+            small_mat = np.zeros((n_panels, n_panels_, 3)).astype("complex")
             if fortran_flag:
                 small_mat[:, :, :] = lib.assembleaeromtx(ny, nx, ny_, nx_,
                                                          alpha, pts, bpts,
@@ -838,9 +841,9 @@ def assemble_AIC_mtx(mtx, flat_mesh, aero_ind, points, b_pts, alpha, skip=False)
                             r2 = P - C_te
                             r1_mag = norm(r1)
                             r2_mag = norm(r2)
-                            t1 = numpy.cross(u, r2) / \
+                            t1 = np.cross(u, r2) / \
                                 (r2_mag * (r2_mag - u.dot(r2)))
-                            t3 = numpy.cross(u, r1) / \
+                            t3 = np.cross(u, r1) / \
                                 (r1_mag * (r1_mag - u.dot(r1)))
                             trailing = t1 - t3
                             edges = 0
@@ -866,19 +869,19 @@ def assemble_AIC_mtx(mtx, flat_mesh, aero_ind, points, b_pts, alpha, skip=False)
                                               :] = trailing + edges + bound
             mtx[i_panels: i_panels + n_panels,
                 i_panels_: i_panels_ + n_panels_, :] = small_mat
-    mtx /= 4 * numpy.pi
+    mtx /= 4 * np.pi
 
 
 def assemble_AIC_system(AIC_mtx, def_mesh, aero_ind, c_pts, b_pts, alpha, v, tot_panels, normals):
-    mtx = numpy.zeros((tot_panels, tot_panels), dtype=DTYPE)
-    rhs = numpy.zeros((tot_panels), dtype=DTYPE)
+    mtx = np.zeros((tot_panels, tot_panels), dtype=DTYPE)
+    rhs = np.zeros((tot_panels), dtype=DTYPE)
     assemble_AIC_mtx(AIC_mtx, def_mesh, aero_ind, c_pts, b_pts, alpha)
     for ind in range(3):
         mtx[:, :] += (AIC_mtx[:, :, ind].T * normals[:, ind]).T
-    alpha = alpha * numpy.pi / 180.
-    cosa = numpy.cos(alpha)
-    sina = numpy.sin(alpha)
-    v_inf = v * numpy.array([cosa, 0., sina], dtype=DTYPE)
+    alpha = alpha * np.pi / 180.
+    cosa = np.cos(alpha)
+    sina = np.sin(alpha)
+    v_inf = v * np.array([cosa, 0., sina], dtype=DTYPE)
     rhs[:] = -normals.reshape(-1, normals.shape[-1], order='F').dot(v_inf)
     return mtx, rhs
 
@@ -913,15 +916,15 @@ def vlm_circulations(aero_ind, def_mesh, b_pts, c_pts, normals, v, alpha):
         based on the air velocity at each collocation point.
 
     """
-    tot_n = numpy.sum(aero_ind[:, 2])
-    tot_bpts = numpy.sum(aero_ind[:, 3])
-    tot_panels = numpy.sum(aero_ind[:, 4])
-    AIC_mtx = numpy.zeros((tot_panels, tot_panels, 3), dtype=DTYPE)
-    mtx = numpy.zeros((tot_panels, tot_panels), dtype=DTYPE)
-    rhs = numpy.zeros((tot_panels), dtype=DTYPE)
+    tot_n = np.sum(aero_ind[:, 2])
+    tot_bpts = np.sum(aero_ind[:, 3])
+    tot_panels = np.sum(aero_ind[:, 4])
+    AIC_mtx = np.zeros((tot_panels, tot_panels, 3), dtype=DTYPE)
+    mtx = np.zeros((tot_panels, tot_panels), dtype=DTYPE)
+    rhs = np.zeros((tot_panels), dtype=DTYPE)
     mtx, rhs = assemble_AIC_system(
         AIC_mtx, def_mesh, aero_ind, c_pts, b_pts, alpha, v, tot_panels, normals)
-    circulations = numpy.linalg.solve(mtx, rhs)
+    circulations = np.linalg.solve(mtx, rhs)
     return circulations
 
 
@@ -956,15 +959,15 @@ def vlm_forces(def_mesh, aero_ind, b_pts, mid_b, circ, alpha=3, v=10, rho=3):
         panel).
 
     """
-    tot_n = numpy.sum(aero_ind[:, 2])
-    tot_bpts = numpy.sum(aero_ind[:, 3])
-    tot_panels = numpy.sum(aero_ind[:, 4])
-    mtx = numpy.zeros((tot_panels, tot_panels, 3), dtype=DTYPE)
-    vel = numpy.zeros((tot_panels, 3), dtype=DTYPE)
-    sec_forces = numpy.zeros((tot_panels, 3))
-    alpha *= numpy.pi / 180.
-    cosa = numpy.cos(alpha)
-    sina = numpy.sin(alpha)
+    tot_n = np.sum(aero_ind[:, 2])
+    tot_bpts = np.sum(aero_ind[:, 3])
+    tot_panels = np.sum(aero_ind[:, 4])
+    mtx = np.zeros((tot_panels, tot_panels, 3), dtype=DTYPE)
+    vel = np.zeros((tot_panels, 3), dtype=DTYPE)
+    sec_forces = np.zeros((tot_panels, 3))
+    alpha *= np.pi / 180.
+    cosa = np.cos(alpha)
+    sina = np.sin(alpha)
     assemble_AIC_mtx(mtx, def_mesh, aero_ind, mid_b, b_pts, alpha, skip=True)
     for i_surf, row in enumerate(aero_ind):
         nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = row
@@ -978,7 +981,7 @@ def vlm_forces(def_mesh, aero_ind, b_pts, mid_b, circ, alpha=3, v=10, rho=3):
 
         bound = b_pts[:, 1:, :] - b_pts[:, : -1, :]
 
-        cross = numpy.cross(vel[i_panels: i_panels + n_panels],
+        cross = np.cross(vel[i_panels: i_panels + n_panels],
                             bound.reshape(-1, bound.shape[-1], order='F'))
 
         for ind in range(3):
@@ -1010,17 +1013,17 @@ def transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin=0.35):
         computed from the sectional forces.
 
     """
-    tot_n = numpy.sum(aero_ind[:, 2])
-    tot_panels = numpy.sum(aero_ind[:, 4])
-    tot_n_fem = numpy.sum(fem_ind[:, 0])
-    output_loads = numpy.zeros((tot_n_fem, 6), dtype=DTYPE)
+    tot_n = np.sum(aero_ind[:, 2])
+    tot_panels = np.sum(aero_ind[:, 4])
+    tot_n_fem = np.sum(fem_ind[:, 0])
+    output_loads = np.zeros((tot_n_fem, 6), dtype=DTYPE)
     for i_surf, row in enumerate(fem_ind):
         nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = aero_ind[i_surf, :]
         n_fem, i_fem = row
         mesh = def_mesh[i: i + n, :].reshape(nx, ny, 3)
         sec_forces = sec_forces[i_panels: i_panels + n_panels, : ]. \
             reshape(nx - 1, ny - 1, 3, order='F')
-        sec_forces = numpy.sum(sec_forces, axis=0)
+        sec_forces = np.sum(sec_forces, axis=0)
         w = 0.25
         a_pts = 0.5 * (1 - w) * mesh[: -1, : -1, : ] + \
             0.5 *   w   * mesh[1: , : -1, : ] + \
@@ -1031,12 +1034,12 @@ def transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin=0.35):
             0.5 *   w   * mesh[1: , : -1, : ] + \
             0.5 * (1 - w) * mesh[: -1,  1: , : ] + \
             0.5 * w * mesh[1:,  1:, :]
-        moment = numpy.zeros((ny - 1, 3), dtype=DTYPE)
+        moment = np.zeros((ny - 1, 3), dtype=DTYPE)
         for ind in range(ny - 1):
             r = a_pts[0, ind, :] - s_pts[0, ind, :]
             F = sec_forces[ind, :]
-            moment[ind, :] = numpy.cross(r, F)
-        loads = numpy.zeros((ny, 6), dtype=DTYPE)
+            moment[ind, :] = np.cross(r, F)
+        loads = np.zeros((ny, 6), dtype=DTYPE)
         loads[: -1, : 3] += 0.5 * sec_forces[:, :]
         loads[1:, : 3] += 0.5 * sec_forces[:, :]
         loads[: -1, 3:] += 0.5 * moment
@@ -1059,7 +1062,7 @@ From spatialbeam.py: Define the structural analysis component using spatial beam
 
 
 def norm(vec):
-    return numpy.sqrt(numpy.sum(vec**2))
+    return np.sqrt(np.sum(vec**2))
 
 
 def unit(vec):
@@ -1071,7 +1074,7 @@ def radii(mesh, t_c=0.15):
     vectors = mesh[-1, :, :] - mesh[0, :, :]
     # print('sss mesh.shape',mesh.shape)
     #print('vectors.shape',vectors.shape)
-    chords = numpy.sqrt(numpy.sum(vectors**2, axis=1))
+    chords = np.sqrt(np.sum(vectors**2, axis=1))
     chords = 0.5 * chords[: -1] + 0.5 * chords[1:]
     return t_c * chords
 
@@ -1093,7 +1096,7 @@ def assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
     rows_list = []
     cols_list = []
     num_surf = fem_ind.shape[0]
-    tot_n_fem = numpy.sum(fem_ind[:, 0])
+    tot_n_fem = np.sum(fem_ind[:, 0])
     size = 6 * tot_n_fem + 6 * num_surf
     for i_surf, row in enumerate(fem_ind):
         n_fem, i_fem = row
@@ -1101,8 +1104,8 @@ def assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
         # smaller matrices that we later assemble into a full matrix
         num_cons = 1  # just one constraint per structural component
         size_ = 6 * (n_fem + num_cons)
-        mtx_ = numpy.zeros((size_, size_), dtype=DTYPE)
-        rhs_ = numpy.zeros((size_), dtype=DTYPE)
+        mtx_ = np.zeros((size_, size_), dtype=DTYPE)
+        rhs_ = np.zeros((size_), dtype=DTYPE)
         A_ = A[i_fem - i_surf: i_fem - i_surf + n_fem - 1]
         J_ = J[i_fem - i_surf: i_fem - i_surf + n_fem - 1]
         Iy_ = Iy[i_fem - i_surf: i_fem - i_surf + n_fem - 1]
@@ -1112,8 +1115,8 @@ def assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
         loads_ = loads[i_fem: i_fem + n_fem]
 
         num_elems = elem_IDs_.shape[0]
-        E_vec = E * numpy.ones(num_elems)
-        G_vec = G * numpy.ones(num_elems)
+        E_vec = E * np.ones(num_elems)
+        G_vec = G * np.ones(num_elems)
 
         # dense Fortran
         if fortran_flag and not sparse_flag:
@@ -1141,16 +1144,16 @@ def assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
                                                         nodes, elem_IDs_ + 1, const2, const_y,
                                                         const_z, S_a, S_t, S_y, S_z)
 
-            data2 = numpy.ones(6 * num_cons) * 1.e9
-            rows2 = numpy.arange(6 * num_cons) + 6 * n_fem
-            cols2 = numpy.zeros(6 * num_cons)
+            data2 = np.ones(6 * num_cons) * 1.e9
+            rows2 = np.arange(6 * num_cons) + 6 * n_fem
+            cols2 = np.zeros(6 * num_cons)
             for ind in range(6):
                 cols2[ind:: 6] = 6 * cons[i_surf] + ind
 
-            data = numpy.concatenate([data1, data2, data2])
-            rows = numpy.concatenate(
+            data = np.concatenate([data1, data2, data2])
+            rows = np.concatenate(
                 [rows1, rows2, cols2]) + (i_fem + i_surf) * 6
-            cols = numpy.concatenate(
+            cols = np.concatenate(
                 [cols1, cols2, rows2]) + (i_fem + i_surf) * 6
             data_list.append(data)
             rows_list.append(rows)
@@ -1163,9 +1166,9 @@ def assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
 
         # sparse Python
         elif not fortran_flag and sparse_flag:
-            data = numpy.concatenate(data_list)
-            rows = numpy.concatenate(rows_list)
-            cols = numpy.concatenate(cols_list)
+            data = np.concatenate(data_list)
+            rows = np.concatenate(rows_list)
+            cols = np.concatenate(cols_list)
             mtx = scipy.sparse.csc_matrix((data, (rows, cols)),
                                           shape=(size, size))
 
@@ -1179,8 +1182,8 @@ def assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
                 P1 = nodes[elem_IDs_[ielem, 1], :]
 
                 x_loc = unit(P1 - P0)
-                y_loc = unit(numpy.cross(x_loc, x_gl))
-                z_loc = unit(numpy.cross(x_loc, y_loc))
+                y_loc = unit(np.cross(x_loc, x_gl))
+                z_loc = unit(np.cross(x_loc, y_loc))
 
                 T[0, :] = x_loc
                 T[1, :] = y_loc
@@ -1241,7 +1244,7 @@ def assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
             mtx[(i_fem + i_surf) * 6: (i_fem + n_fem + num_cons + i_surf) * 6,
                 (i_fem + i_surf) * 6: (i_fem + n_fem + num_cons + i_surf) * 6] = mtx_
 
-    rhs[numpy.abs(rhs) < 1e-6] = 0.  # *should this have lower tolerance?
+    rhs[np.abs(rhs) < 1e-6] = 0.  # *should this have lower tolerance?
     return mtx, rhs
 
 
@@ -1275,69 +1278,69 @@ def spatial_beam_FEM(A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x=5
     """
     n_fem, i_fem = fem_ind[0, :]
     num_surf = fem_ind.shape[0]
-    tot_n_fem = numpy.sum(fem_ind[:, 0])
+    tot_n_fem = np.sum(fem_ind[:, 0])
     size = 6 * tot_n_fem + 6 * num_surf
-    elem_IDs = numpy.zeros((tot_n_fem - num_surf, 2), int)
+    elem_IDs = np.zeros((tot_n_fem - num_surf, 2), int)
     for i_surf, row in enumerate(fem_ind):
         nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = aero_ind[i_surf, :]
         n_fem, i_fem = row
-        arange = numpy.arange(n_fem - 1) + i_fem
+        arange = np.arange(n_fem - 1) + i_fem
         elem_IDs[i_fem - i_surf: i_fem - i_surf + n_fem - 1, 0] = arange
         elem_IDs[i_fem - i_surf: i_fem - i_surf + n_fem - 1, 1] = arange + 1
         elem_IDs = elem_IDs
-    const2 = numpy.array([
+    const2 = np.array([
         [1, -1],
         [-1, 1],
     ], dtype=DTYPE)
-    const_y = numpy.array([
+    const_y = np.array([
         [12, -6, -12, -6],
         [-6, 4, 6, 2],
         [-12, 6, 12, 6],
         [-6, 2, 6, 4],
     ], dtype=DTYPE)
-    const_z = numpy.array([
+    const_z = np.array([
         [12, 6, -12, 6],
         [6, 4, -6, 2],
         [-12, -6, 12, -6],
         [6, 2, -6, 4],
     ], dtype=DTYPE)
-    x_gl = numpy.array([1, 0, 0], dtype=DTYPE)
-    K_elem = numpy.zeros((12, 12), dtype=DTYPE)
-    T_elem = numpy.zeros((12, 12), dtype=DTYPE)
-    T = numpy.zeros((3, 3), dtype=DTYPE)
+    x_gl = np.array([1, 0, 0], dtype=DTYPE)
+    K_elem = np.zeros((12, 12), dtype=DTYPE)
+    T_elem = np.zeros((12, 12), dtype=DTYPE)
+    T = np.zeros((3, 3), dtype=DTYPE)
     num_nodes = tot_n_fem
     num_cons = num_surf
     size = 6 * num_nodes + 6 * num_cons
-    mtx = numpy.zeros((size, size), dtype=DTYPE)
-    rhs = numpy.zeros(size, dtype=DTYPE)
-    K_a = numpy.zeros((2, 2), dtype=DTYPE)
-    K_t = numpy.zeros((2, 2), dtype=DTYPE)
-    K_y = numpy.zeros((4, 4), dtype=DTYPE)
-    K_z = numpy.zeros((4, 4), dtype=DTYPE)
-    S_a = numpy.zeros((2, 12), dtype=DTYPE)
+    mtx = np.zeros((size, size), dtype=DTYPE)
+    rhs = np.zeros(size, dtype=DTYPE)
+    K_a = np.zeros((2, 2), dtype=DTYPE)
+    K_t = np.zeros((2, 2), dtype=DTYPE)
+    K_y = np.zeros((4, 4), dtype=DTYPE)
+    K_z = np.zeros((4, 4), dtype=DTYPE)
+    S_a = np.zeros((2, 12), dtype=DTYPE)
     S_a[(0, 1), (0, 6)] = 1.
-    S_t = numpy.zeros((2, 12), dtype=DTYPE)
+    S_t = np.zeros((2, 12), dtype=DTYPE)
     S_t[(0, 1), (3, 9)] = 1.
-    S_y = numpy.zeros((4, 12), dtype=DTYPE)
+    S_y = np.zeros((4, 12), dtype=DTYPE)
     S_y[(0, 1, 2, 3), (2, 4, 8, 10)] = 1.
-    S_z = numpy.zeros((4, 12), dtype=DTYPE)
+    S_z = np.zeros((4, 12), dtype=DTYPE)
     S_z[(0, 1, 2, 3), (1, 5, 7, 11)] = 1.
-    cons = numpy.zeros((num_surf))
+    cons = np.zeros((num_surf))
     # find constrained nodes based on closeness to specified cg point
     for i_surf, row in enumerate(fem_ind):
         n_fem, i_fem = row
         nodes = nodes[i_fem:i_fem + n_fem]
-        dist = nodes - numpy.array([cg_x, 0, 0])
-        idx = (numpy.linalg.norm(dist, axis=1)).argmin()
+        dist = nodes - np.array([cg_x, 0, 0])
+        idx = (np.linalg.norm(dist, axis=1)).argmin()
         cons[i_surf] = idx
     mtx, rhs = \
         assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
                             K_a, K_t, K_y, K_z, elem_IDs, cons, E, G, x_gl, T,
                             K_elem, S_a, S_t, S_y, S_z, T_elem, const2, const_y,
                             const_z, n_fem, size, mtx, rhs)
-    if type(mtx) == numpy.ndarray:
+    if type(mtx) == np.ndarray:
         # print('AAA')
-        disp_aug = numpy.linalg.solve(mtx, rhs)
+        disp_aug = np.linalg.solve(mtx, rhs)
     else:
         # print('BBB')
         splu = scipy.sparse.linalg.splu(mtx)
@@ -1367,10 +1370,10 @@ def spatial_beam_disp(disp_aug, fem_ind):
 
     """
     num_surf = fem_ind.shape[0]
-    tot_n_fem = numpy.sum(fem_ind[:, 0])
+    tot_n_fem = np.sum(fem_ind[:, 0])
     size = 6 * tot_n_fem + 6 * num_surf
-    disp = numpy.zeros((tot_n_fem, 6))
-    arange = numpy.arange(6 * tot_n_fem)
+    disp = np.zeros((tot_n_fem, 6))
+    arange = np.arange(6 * tot_n_fem)
     for i_surf, row in enumerate(fem_ind):
         n_fem, i_fem = row
         disp[i_fem:i_fem + n_fem] = disp_aug[(i_fem + i_surf) * 6:(
@@ -1395,16 +1398,26 @@ def compute_nodes(mesh, fem_ind, aero_ind, fem_origin=0.35):
         Flattened array with coordinates for each FEM node.
 
     """
-    num_surf = fem_ind.shape[0]
-    tot_n_fem = numpy.sum(fem_ind[:, 0])
-    tot_n = numpy.sum(aero_ind[:, 2])
-    nodes = numpy.zeros((tot_n_fem, 3))
-    for i_surf, row in enumerate(fem_ind):
-        nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = aero_ind[i_surf, :]
-        n_fem, i_fem = row
-        mesh2 = mesh[i:i + n, :].reshape(nx, ny, 3)
-        nodes[i_fem:i_fem + n_fem] = (1 - fem_origin) * \
-            mesh2[0, :, :] + fem_origin * mesh2[-1, :, :]
+    ComputeNodes_comp = ComputeNodes(fem_ind, aero_ind, fem_origin)
+    params = {
+        'mesh': mesh
+    }
+    unknowns = {
+        'nodes', np.zeros((ComputeNodes_comp.tot_n_fem,3))
+    }    
+    resids = None
+    ComputeNodes_comp.solve_nonlinear(params, unknowns, resids)
+    nodes = unknowns.get('nodes', None)
+    # num_surf = fem_ind.shape[0]
+    # tot_n_fem = np.sum(fem_ind[:, 0])
+    # tot_n = np.sum(aero_ind[:, 2])
+    # nodes = np.zeros((tot_n_fem, 3))
+    # for i_surf, row in enumerate(fem_ind):
+    #     nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = aero_ind[i_surf, :]
+    #     n_fem, i_fem = row
+    #     mesh2 = mesh[i:i + n, :].reshape(nx, ny, 3)
+    #     nodes[i_fem:i_fem + n_fem] = (1 - fem_origin) * \
+    #         mesh2[0, :, :] + fem_origin * mesh2[-1, :, :]
     return nodes
 
 
@@ -1430,18 +1443,21 @@ def materials_tube(r, thickness, fem_ind):
         Polar moment of inertia for each FEM element.
 
     """
-    n_fem, i_fem = fem_ind[0, :]
-    num_surf = fem_ind.shape[0]
-    tot_n_fem = numpy.sum(fem_ind[:, 0])
-    size = 6 * tot_n_fem + 6 * num_surf
-    A = numpy.zeros((tot_n_fem - num_surf))
-    Iy = numpy.zeros((tot_n_fem - num_surf))
-    Iz = numpy.zeros((tot_n_fem - num_surf))
-    J = numpy.zeros((tot_n_fem - num_surf))
-    r1 = r - 0.5 * thickness
-    r2 = r + 0.5 * thickness
-    A = numpy.pi * (r2**2 - r1**2)
-    Iy = numpy.pi * (r2**4 - r1**4) / 4.
-    Iz = numpy.pi * (r2**4 - r1**4) / 4.
-    J = numpy.pi * (r2**4 - r1**4) / 2.
+    MaterialsTube_comp = MaterialsTube(fem_ind)
+    params = {
+        'r': r,
+        'thickness': thickness
+    }
+    unknowns = {
+        'A': np.zeros((np.sum(fem_ind[:,0]-fem_ind.shape[0]))),
+        'Iy': np.zeros((np.sum(fem_ind[:,0]-fem_ind.shape[0]))),
+        'Iz': np.zeros((np.sum(fem_ind[:,0]-fem_ind.shape[0]))),
+        'J': np.zeros((np.sum(fem_ind[:,0]-fem_ind.shape[0])))
+    }
+    resids = None
+    MaterialsTube_comp.solve_nonlinear(params, unknowns, resids)
+    A = unknowns.get('A', None)
+    Iy = unknowns.get('Iy', None)
+    Iz = unknowns.get('Iz', None)
+    J = unknowns.get('J', None)
     return A, Iy, Iz, J
