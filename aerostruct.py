@@ -8,7 +8,7 @@
 # make compatible Python 2.x to 3.x
 from __future__ import print_function, division
 __all__ = ['setup','aerodynamics','structures']
-from future.builtins import range  # make compatible Python 2.x to 3.x
+# from future.builtins import range  # make compatible Python 2.x to 3.x
 import warnings
 import sys
 import os
@@ -16,7 +16,7 @@ import scipy.sparse
 from scipy.linalg import lu_factor, lu_solve
 
 from materials import MaterialsTube
-from spatialbeam import ComputeNodes
+from spatialbeam import ComputeNodes, SpatialBeamFEM, SpatialBeamDisp
 
 try:
     import lib
@@ -373,7 +373,7 @@ def rotate(mesh, thetas):
 def sweep(mesh, angle):
     """ Apply shearing sweep. Positive sweeps back. """
     num_x, num_y, _ = mesh.shape
-    ny2 = (num_y - 1) / 2
+    ny2 = int((num_y - 1) / 2)
     le = mesh[0]
     y0 = le[ny2, 1]
     p180 = np.pi / 180
@@ -389,7 +389,7 @@ def sweep(mesh, angle):
 def dihedral(mesh, angle):
     """ Apply dihedral angle. Positive bends up. """
     num_x, num_y, _ = mesh.shape
-    ny2 = (num_y - 1) / 2
+    ny2 = int((num_y - 1) / 2)
     le = mesh[0]
     y0 = le[ny2, 1]
     p180 = np.pi / 180
@@ -1232,8 +1232,8 @@ def assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
             for ind in range(num_cons):
                 for k in range(6):
                     mtx_[6 * num_nodes + 6 * ind +
-                         k, 6 * cons[i_surf] + k] = 1.e9
-                    mtx_[6 * cons[i_surf] + k, 6 *
+                         k, 6 * int(cons[i_surf]) + k] = 1.e9
+                    mtx_[6 * int(cons[i_surf]) + k, 6 *
                          num_nodes + 6 * ind + k] = 1.e9
 
             rhs_[:] = 0.0
@@ -1276,6 +1276,19 @@ def spatial_beam_FEM(A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x=5
         mtx * disp_aug = rhs, where rhs is a flattened version of loads.
 
     """
+    SpatialBeamFEM_comp = SpatialBeamFEM(aero_ind, fem_ind, E, G, cg_x)
+    params = {
+        'A': A,
+        'Iy': Iy,
+        'Iz': Iz,
+        'J': J,
+        'nodes': nodes,
+        'loads': loads
+    }
+    unknowns = None
+    resids = {
+        'disp_aug': np.zeros((SpatialBeamFEM_comp.size), dtype="complex")
+    }
     n_fem, i_fem = fem_ind[0, :]
     num_surf = fem_ind.shape[0]
     tot_n_fem = np.sum(fem_ind[:, 0])
@@ -1333,6 +1346,7 @@ def spatial_beam_FEM(A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x=5
         dist = nodes - np.array([cg_x, 0, 0])
         idx = (np.linalg.norm(dist, axis=1)).argmin()
         cons[i_surf] = idx
+
     mtx, rhs = \
         assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
                             K_a, K_t, K_y, K_z, elem_IDs, cons, E, G, x_gl, T,
@@ -1403,21 +1417,11 @@ def compute_nodes(mesh, fem_ind, aero_ind, fem_origin=0.35):
         'mesh': mesh
     }
     unknowns = {
-        'nodes', np.zeros((ComputeNodes_comp.tot_n_fem,3))
+        'nodes': np.zeros((ComputeNodes_comp.tot_n_fem, 3))
     }    
     resids = None
     ComputeNodes_comp.solve_nonlinear(params, unknowns, resids)
-    nodes = unknowns.get('nodes', None)
-    # num_surf = fem_ind.shape[0]
-    # tot_n_fem = np.sum(fem_ind[:, 0])
-    # tot_n = np.sum(aero_ind[:, 2])
-    # nodes = np.zeros((tot_n_fem, 3))
-    # for i_surf, row in enumerate(fem_ind):
-    #     nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = aero_ind[i_surf, :]
-    #     n_fem, i_fem = row
-    #     mesh2 = mesh[i:i + n, :].reshape(nx, ny, 3)
-    #     nodes[i_fem:i_fem + n_fem] = (1 - fem_origin) * \
-    #         mesh2[0, :, :] + fem_origin * mesh2[-1, :, :]
+    nodes = unknowns.get('nodes')
     return nodes
 
 
