@@ -3,11 +3,11 @@
 from __future__ import print_function
 # import coupled
 import numpy
-# import aerostruct
-from cytn import aerostruct_cython
+import aerostruct
+# from cytn import aerostruct_cython
 # import warnings
-# import sys
-# import time
+import sys
+import time
 
 # to disable openmdao warnings which will create an error in Matlab
 numpy.set_printoptions(precision=8)
@@ -183,11 +183,11 @@ def main_aerostruct(num_inboard=2, num_outboard=3):
     # print(loads)
     loads_aerostruct = loads
     #
-    # print('\nRun aerostruct.structures()...')
-    # def_mesh = aerostruct.structures(loads_aerostruct, params)
-    # print('def_mesh...  def_mesh.shape =',def_mesh.shape)
-    # # print(def_mesh)
-    # def_mesh_aerostruct = def_mesh
+    print('\nRun aerostruct.structures()...')
+    def_mesh = aerostruct.structures(loads_aerostruct, params)
+    print('def_mesh...  def_mesh.shape =',def_mesh.shape)
+    # print(def_mesh)
+    def_mesh_aerostruct = def_mesh
 
 
 def main_coupled(num_inboard=2, num_outboard=3, check=False):
@@ -243,8 +243,8 @@ if __name__ == '__main__':
     n_outboard = npts[1]
 
     # main_coupled(n_inboard, n_outboard)
-    # main_aerostruct(n_inboard, n_outboard)
-    main_cython(n_inboard, n_outboard)
+    main_aerostruct(n_inboard, n_outboard)
+    # main_cython(n_inboard, n_outboard)
     # test_accuracy(n_inboard, n_outboard)
     # test_timing(n_inboard, n_outboard, n)
     # timings_aerodynamics(n_inboard, n_outboard, n)
