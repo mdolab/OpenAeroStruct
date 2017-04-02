@@ -8,6 +8,7 @@ import aerostruct
 # import warnings
 import sys
 import time
+import cProfile
 
 # to disable openmdao warnings which will create an error in Matlab
 numpy.set_printoptions(precision=8)
@@ -172,22 +173,24 @@ def timings_aerodynamics(num_inboard=2, num_outboard=3,n=100):
 
 def main_aerostruct(num_inboard=2, num_outboard=3):
 
-    print('\nRun aerostruct.setup()...')
-    def_mesh, params = aerostruct.setup(num_inboard, num_outboard)
-    print('def_mesh...  def_mesh.shape =', def_mesh.shape)
-    # print(def_mesh)
-
-    print('\nRun aerostruct.aerodynamics()...')
-    loads = aerostruct.aerodynamics(def_mesh, params)
-    print('loads matrix... loads.shape =', loads.shape)
-    # print(loads)
-    loads_aerostruct = loads
-    #
-    print('\nRun aerostruct.structures()...')
-    def_mesh = aerostruct.structures(loads_aerostruct, params)
-    print('def_mesh...  def_mesh.shape =',def_mesh.shape)
-    # print(def_mesh)
-    def_mesh_aerostruct = def_mesh
+    for i in range(100):
+        print(i)
+        # print('\nRun aerostruct.setup()...')
+        def_mesh, params = aerostruct.setup(num_inboard, num_outboard)
+        # print('def_mesh...  def_mesh.shape =', def_mesh.shape)
+        # print(def_mesh)
+    
+        # print('\nRun aerostruct.aerodynamics()...')
+        loads = aerostruct.aerodynamics(def_mesh, params)
+        # print('loads matrix... loads.shape =', loads.shape)
+        # print(loads)
+        loads_aerostruct = loads
+        #
+        # print('\nRun aerostruct.structures()...')
+        def_mesh = aerostruct.structures(loads_aerostruct, params)
+        # print('def_mesh...  def_mesh.shape =',def_mesh.shape)
+        # print(def_mesh)
+        def_mesh_aerostruct = def_mesh
 
 
 def main_coupled(num_inboard=2, num_outboard=3, check=False):
@@ -243,7 +246,7 @@ if __name__ == '__main__':
     n_outboard = npts[1]
 
     # main_coupled(n_inboard, n_outboard)
-    main_aerostruct(n_inboard, n_outboard)
+    cProfile.run('main_aerostruct(n_inboard, n_outboard)','aerostruct.prof')
     # main_cython(n_inboard, n_outboard)
     # test_accuracy(n_inboard, n_outboard)
     # test_timing(n_inboard, n_outboard, n)
