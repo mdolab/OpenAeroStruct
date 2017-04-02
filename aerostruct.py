@@ -712,45 +712,27 @@ def vlm_geometry(aero_ind, def_mesh):
         The reference areas of each lifting surface.
 
     """
-    num_surf = aero_ind.shape[0]
-    tot_n = np.sum(aero_ind[:, 2])
-    tot_bpts = np.sum(aero_ind[:, 3])
-    tot_panels = np.sum(aero_ind[:, 4])
-
-    B_PTS = np.zeros((tot_bpts, 3), dtype=DTYPE)
-    MID_B = np.zeros((tot_panels, 3), dtype=DTYPE)
-    C_PTS = np.zeros((tot_panels, 3))
-    WIDTHS = np.zeros((tot_panels))
-    NORMALS = np.zeros((tot_panels, 3))
-    S_REF = np.zeros((num_surf))
-
-    for i_surf, row in enumerate(aero_ind):
-        nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = row
-        mesh = def_mesh[i: i + n, :].reshape(nx, ny, 3)
-        b_pts = mesh[: -1, :, :] * .75 + mesh[1:, :, :] * .25
-        mid_b = (b_pts[:, 1:, :] + b_pts[:, : -1, :]) / 2
-        c_pts = 0.5 * 0.25 * mesh[: -1, : -1, : ] + \
-            0.5 * 0.75 * mesh[1: , : -1, : ] + \
-            0.5 * 0.25 * mesh[: -1,  1: , : ] + \
-            0.5 * 0.75 * mesh[1:,  1:, :]
-        widths = get_lengths(b_pts[:, 1:, :], b_pts[:, : -1, :], 2)
-        normals = np.cross(
-            mesh[: -1,  1:, :] - mesh[1:, : -1, :],
-            mesh[: -1, : -1, :] - mesh[1:,  1:, :],
-            axis=2)
-        norms = np.sqrt(np.sum(normals**2, axis=2))
-        for j in range(3):
-            normals[:, :, j] /= norms
-        B_PTS[i_bpts: i_bpts + n_bpts, :] = b_pts.reshape(-1, b_pts.shape[-1])
-        MID_B[i_panels: i_panels + n_panels,
-              :] = mid_b.reshape(-1, mid_b.shape[-1])
-        C_PTS[i_panels: i_panels + n_panels,
-              :] = c_pts.reshape(-1, c_pts.shape[-1])
-        WIDTHS[i_panels: i_panels + n_panels] = widths.flatten()
-        NORMALS[i_panels: i_panels + n_panels,
-                :] = normals.reshape(-1, normals.shape[-1], order='F')
-        S_REF[i_surf] = 0.5 * np.sum(norms)
-    return B_PTS, MID_B, C_PTS, WIDTHS, NORMALS, S_REF
+    _Component = VLMGeometry(aero_ind)
+    params = {
+        'def_mesh': def_mesh
+    }
+    unknowns = {
+        'b_pts': np.zeros((np.sum(aero_ind[:, 3]), 3), dtype="complex"),
+        'mid_b': np.zeros((np.sum(aero_ind[:, 4]), 3), dtype="complex"),
+        'c_pts': np.zeros((np.sum(aero_ind[:, 4]), 3), dtype="complex"),
+        'widths': np.zeros((np.sum(aero_ind[:, 4]))),
+        'normals': np.zeros((np.sum(aero_ind[:, 4]), 3)),
+        'S_ref': np.zeros((aero_ind.shape[0]))
+    }
+    resids = None
+    _Component.solve_nonlinear(params, unknowns, resids)
+    b_pts = unknowns.get('b_pts')
+    mid_b = unknowns.get('mid_b')
+    c_pts = unknowns.get('c_pts')
+    widths = unknowns.get('widths')
+    normals = unknowns.get('normals')
+    S_ref = unknowns.get('S_ref')
+    return b_pts, mid_b, c_pts, widths, normals, S_ref
 
 
 def assemble_AIC_mtx(mtx, flat_mesh, aero_ind, points, b_pts, alpha, skip=False):
