@@ -882,16 +882,33 @@ def vlm_circulations(aero_ind, def_mesh, b_pts, c_pts, normals, v, alpha):
         based on the air velocity at each collocation point.
 
     """
-    tot_n = np.sum(aero_ind[:, 2])
-    tot_bpts = np.sum(aero_ind[:, 3])
-    tot_panels = np.sum(aero_ind[:, 4])
-    AIC_mtx = np.zeros((tot_panels, tot_panels, 3), dtype=DTYPE)
-    mtx = np.zeros((tot_panels, tot_panels), dtype=DTYPE)
-    rhs = np.zeros((tot_panels), dtype=DTYPE)
-    mtx, rhs = assemble_AIC_system(
-        AIC_mtx, def_mesh, aero_ind, c_pts, b_pts, alpha, v, tot_panels, normals)
-    circulations = np.linalg.solve(mtx, rhs)
+    _Component = VLMCirculations(aero_ind)
+    params = {
+        'def_mesh': def_mesh,
+        'b_pts': b_pts,
+        'c_pts': c_pts,
+        'normals': normals,
+        'v': v,
+        'alpha': alpha
+    }
+    unknowns = {
+        'circulations': np.zeros((np.sum(aero_ind[:, 4])), dtype="complex")
+    }
+    resids = None
+    _Component.solve_nonlinear(params, unknowns, resids)
+    circulations = unknowns.get('circulations')
     return circulations
+    
+    # tot_n = np.sum(aero_ind[:, 2])
+    # tot_bpts = np.sum(aero_ind[:, 3])
+    # tot_panels = np.sum(aero_ind[:, 4])
+    # AIC_mtx = np.zeros((tot_panels, tot_panels, 3), dtype=DTYPE)
+    # mtx = np.zeros((tot_panels, tot_panels), dtype=DTYPE)
+    # rhs = np.zeros((tot_panels), dtype=DTYPE)
+    # mtx, rhs = assemble_AIC_system(
+    #     AIC_mtx, def_mesh, aero_ind, c_pts, b_pts, alpha, v, tot_panels, normals)
+    # circulations = np.linalg.solve(mtx, rhs)
+    # return circulations
 
 
 def vlm_forces(def_mesh, aero_ind, b_pts, mid_b, circ, alpha=3, v=10, rho=3):
