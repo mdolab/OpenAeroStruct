@@ -17,6 +17,8 @@ from scipy.linalg import lu_factor, lu_solve
 
 from materials import MaterialsTube
 from spatialbeam import ComputeNodes, SpatialBeamFEM, SpatialBeamDisp
+from transfer import TransferDisplacements, TransferLoads
+from vlm import VLMGeometry, VLMCirculations, VLMForces
 
 try:
     import lib
@@ -626,36 +628,18 @@ def transfer_displacements(mesh, disp, aero_ind, fem_ind, fem_origin=0.35):
         Flattened array defining the lifting surfaces after deformation.
 
     """
-    tot_n = np.sum(aero_ind[:, 2])
-    tot_n_fem = np.sum(fem_ind[:, 0])
-    out_def_mesh = np.zeros((tot_n, 3), dtype=DTYPE)
-    # print('aero_ind',aero_ind)
-    for i_surf, row in enumerate(fem_ind):
-        nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = aero_ind[i_surf, :]
-        n_fem, i_fem = row
-        mesh2 = mesh[i: i + n, :].reshape(nx, ny, 3)
-        disp2 = disp[i_fem: i_fem + n_fem]
-        w = fem_origin
-        ref_curve = (1 - w) * mesh2[0, :, :] + w * mesh2[-1, :, :]
-        Smesh = np.zeros(mesh2.shape, dtype=DTYPE)
-        for ind in range(nx):
-            Smesh[ind, :, :] = mesh2[ind, :, :] - ref_curve
-        def_mesh = np.zeros(mesh2.shape, dtype=DTYPE)
-        cos, sin = np.cos, np.sin
-        for ind in range(ny):
-            dx, dy, dz, rx, ry, rz = disp2[ind, :]
-            # 1 eye from the axis rotation matrices
-            # -3 eye from subtracting Smesh three times
-            T = -2 * np.eye(3, dtype=DTYPE)
-            T[1:,  1:] += [[cos(rx), -sin(rx)], [sin(rx), cos(rx)]]
-            T[:: 2, :: 2] += [[cos(ry),  sin(ry)], [-sin(ry), cos(ry)]]
-            T[: 2, : 2] += [[cos(rz), -sin(rz)], [sin(rz), cos(rz)]]
-            def_mesh[:, ind, :] += Smesh[:, ind, :].dot(T)
-            def_mesh[:, ind, 0] += dx
-            def_mesh[:, ind, 1] += dy
-            def_mesh[:, ind, 2] += dz
-        out_def_mesh[i: i + n, :] = (def_mesh + mesh2).reshape(n, 3)
-    return out_def_mesh
+    _Component = TransferDisplacements(aero_ind, fem_ind, fem_origin)
+    params = {
+        'mesh': mesh,
+        'disp': disp
+    }
+    unknowns = {
+        'def_mesh': np.zeros((np.sum(aero_ind[:, 2]), 3), dtype="complex")
+    }
+    resids = None
+    _Component.solve_nonlinear(params, unknowns, resids)
+    def_mesh = unknowns.get('def_mesh')
+    return def_mesh
 
 
 """
@@ -1013,39 +997,52 @@ def transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin=0.35):
         computed from the sectional forces.
 
     """
-    tot_n = np.sum(aero_ind[:, 2])
-    tot_panels = np.sum(aero_ind[:, 4])
-    tot_n_fem = np.sum(fem_ind[:, 0])
-    output_loads = np.zeros((tot_n_fem, 6), dtype=DTYPE)
-    for i_surf, row in enumerate(fem_ind):
-        nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = aero_ind[i_surf, :]
-        n_fem, i_fem = row
-        mesh = def_mesh[i: i + n, :].reshape(nx, ny, 3)
-        sec_forces = sec_forces[i_panels: i_panels + n_panels, : ]. \
-            reshape(nx - 1, ny - 1, 3, order='F')
-        sec_forces = np.sum(sec_forces, axis=0)
-        w = 0.25
-        a_pts = 0.5 * (1 - w) * mesh[: -1, : -1, : ] + \
-            0.5 *   w   * mesh[1: , : -1, : ] + \
-            0.5 * (1 - w) * mesh[: -1,  1: , : ] + \
-            0.5 * w * mesh[1:,  1:, :]
-        w = fem_origin
-        s_pts = 0.5 * (1 - w) * mesh[: -1, : -1, : ] + \
-            0.5 *   w   * mesh[1: , : -1, : ] + \
-            0.5 * (1 - w) * mesh[: -1,  1: , : ] + \
-            0.5 * w * mesh[1:,  1:, :]
-        moment = np.zeros((ny - 1, 3), dtype=DTYPE)
-        for ind in range(ny - 1):
-            r = a_pts[0, ind, :] - s_pts[0, ind, :]
-            F = sec_forces[ind, :]
-            moment[ind, :] = np.cross(r, F)
-        loads = np.zeros((ny, 6), dtype=DTYPE)
-        loads[: -1, : 3] += 0.5 * sec_forces[:, :]
-        loads[1:, : 3] += 0.5 * sec_forces[:, :]
-        loads[: -1, 3:] += 0.5 * moment
-        loads[1:, 3:] += 0.5 * moment
-        output_loads[i_fem: i_fem + n_fem, :] = loads
-    return output_loads
+    _Component = TransferLoads(aero_ind, fem_ind, fem_origin)
+    params = {
+        'def_mesh': def_mesh,
+        'sec_forces': sec_forces
+    }
+    unknowns = {
+        'loads': np.zeros((np.sum(fem_ind[:, 0]), 6))
+    }
+    resids = None
+    _Component.solve_nonlinear(params, unknowns, resids)
+    loads = unknowns.get('loads')
+    return loads
+    
+    # tot_n = np.sum(aero_ind[:, 2])
+    # tot_panels = np.sum(aero_ind[:, 4])
+    # tot_n_fem = np.sum(fem_ind[:, 0])
+    # output_loads = np.zeros((tot_n_fem, 6), dtype=DTYPE)
+    # for i_surf, row in enumerate(fem_ind):
+    #     nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = aero_ind[i_surf, :]
+    #     n_fem, i_fem = row
+    #     mesh = def_mesh[i: i + n, :].reshape(nx, ny, 3)
+    #     sec_forces = sec_forces[i_panels: i_panels + n_panels, : ]. \
+    #         reshape(nx - 1, ny - 1, 3, order='F')
+    #     sec_forces = np.sum(sec_forces, axis=0)
+    #     w = 0.25
+    #     a_pts = 0.5 * (1 - w) * mesh[: -1, : -1, : ] + \
+    #         0.5 *   w   * mesh[1: , : -1, : ] + \
+    #         0.5 * (1 - w) * mesh[: -1,  1: , : ] + \
+    #         0.5 * w * mesh[1:,  1:, :]
+    #     w = fem_origin
+    #     s_pts = 0.5 * (1 - w) * mesh[: -1, : -1, : ] + \
+    #         0.5 *   w   * mesh[1: , : -1, : ] + \
+    #         0.5 * (1 - w) * mesh[: -1,  1: , : ] + \
+    #         0.5 * w * mesh[1:,  1:, :]
+    #     moment = np.zeros((ny - 1, 3), dtype=DTYPE)
+    #     for ind in range(ny - 1):
+    #         r = a_pts[0, ind, :] - s_pts[0, ind, :]
+    #         F = sec_forces[ind, :]
+    #         moment[ind, :] = np.cross(r, F)
+    #     loads = np.zeros((ny, 6), dtype=DTYPE)
+    #     loads[: -1, : 3] += 0.5 * sec_forces[:, :]
+    #     loads[1:, : 3] += 0.5 * sec_forces[:, :]
+    #     loads[: -1, 3:] += 0.5 * moment
+    #     loads[1:, 3:] += 0.5 * moment
+    #     output_loads[i_fem: i_fem + n_fem, :] = loads
+    # return output_loads
 
 
 """
