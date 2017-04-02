@@ -1315,15 +1315,16 @@ def spatial_beam_disp(disp_aug, fem_ind):
         Actual displacement array formed by truncating disp_aug.
 
     """
-    num_surf = fem_ind.shape[0]
-    tot_n_fem = np.sum(fem_ind[:, 0])
-    size = 6 * tot_n_fem + 6 * num_surf
-    disp = np.zeros((tot_n_fem, 6))
-    arange = np.arange(6 * tot_n_fem)
-    for i_surf, row in enumerate(fem_ind):
-        n_fem, i_fem = row
-        disp[i_fem:i_fem + n_fem] = disp_aug[(i_fem + i_surf) * 6:(
-            i_fem + n_fem + i_surf) * 6].reshape((n_fem, 6))
+    _Component = SpatialBeamDisp(fem_ind)
+    params = {
+        'disp_aug': disp_aug
+    }
+    unknowns = {
+        'disp': np.zeros((_Component.tot_n_fem, 6))
+    }
+    resids = None
+    _Component.solve_nonlinear(params, unknowns, resids)
+    disp = unknowns.get('disp')
     return disp
 
 
