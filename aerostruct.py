@@ -900,7 +900,7 @@ def vlm_circulations(aero_ind, def_mesh, b_pts, c_pts, normals, v, alpha):
     return circulations
 
 
-def vlm_forces(def_mesh, aero_ind, b_pts, mid_b, circ, alpha=3, v=10, rho=3):
+def vlm_forces(def_mesh, aero_ind, b_pts, mid_b, circulations, alpha=3, v=10, rho=3):
     """ Compute aerodynamic forces acting on each section.
 
     Parameters
@@ -931,34 +931,22 @@ def vlm_forces(def_mesh, aero_ind, b_pts, mid_b, circ, alpha=3, v=10, rho=3):
         panel).
 
     """
-    tot_n = np.sum(aero_ind[:, 2])
-    tot_bpts = np.sum(aero_ind[:, 3])
-    tot_panels = np.sum(aero_ind[:, 4])
-    mtx = np.zeros((tot_panels, tot_panels, 3), dtype=DTYPE)
-    vel = np.zeros((tot_panels, 3), dtype=DTYPE)
-    sec_forces = np.zeros((tot_panels, 3))
-    alpha *= np.pi / 180.
-    cosa = np.cos(alpha)
-    sina = np.sin(alpha)
-    assemble_AIC_mtx(mtx, def_mesh, aero_ind, mid_b, b_pts, alpha, skip=True)
-    for i_surf, row in enumerate(aero_ind):
-        nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = row
-
-        for ind in range(3):
-            vel[:, ind] = mtx[:, :, ind].dot(circ)
-        vel[:, 0] += cosa * v
-        vel[:, 2] += sina * v
-
-        b_pts = b_pts[i_bpts: i_bpts + n_bpts, :].reshape(nx - 1, ny, 3)
-
-        bound = b_pts[:, 1:, :] - b_pts[:, : -1, :]
-
-        cross = np.cross(vel[i_panels: i_panels + n_panels],
-                            bound.reshape(-1, bound.shape[-1], order='F'))
-
-        for ind in range(3):
-            sec_forces[i_panels: i_panels + n_panels,
-                       ind] = (rho * circ[i_panels: i_panels + n_panels] * cross[:, ind])
+    _Component = VLMForces(aero_ind)
+    params = {
+        'def_mesh': def_mesh,
+        'b_pts': b_pts,
+        'mid_b': mid_b,
+        'circulations': circulations,
+        'alpha': alpha,
+        'v': v,
+        'rho': rho
+    }
+    unknowns = {
+        'sec_forces': np.zeros((np.sum(aero_ind[:, 4]), 3))
+    }
+    resids = None
+    _Component.solve_nonlinear(params, unknowns, resids)
+    sec_forces = unknowns.get('sec_forces')
     return sec_forces
 
 
