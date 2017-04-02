@@ -50,6 +50,9 @@ class TransferDisplacements(Component):
         #self.deriv_options['extra_check_partials_form'] = "central"
 
     def solve_nonlinear(self, params, unknowns, resids):
+        #
+        # from time import time
+        # st = time()
 
         for i_surf, row in enumerate(self.fem_ind):
             nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = \
@@ -85,6 +88,7 @@ class TransferDisplacements(Component):
 
             unknowns['def_mesh'][i:i+n, :] = \
                 (def_mesh + mesh).reshape(n, 3).astype("complex")
+            # print time() - st
 
 
 class TransferLoads(Component):

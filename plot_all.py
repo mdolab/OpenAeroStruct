@@ -62,6 +62,8 @@ class Display(object):
         self.options_frame = Tk.Frame(self.root)
         self.options_frame.pack()
 
+        toolbar = NavigationToolbar2TkAgg(self.canvas, self.root)
+        toolbar.update()
         self.canvas._tkcanvas.pack(side=Tk.TOP, fill=Tk.BOTH, expand=1)
         self.ax = plt.subplot2grid((4, 8), (0, 0), rowspan=4,
                                    colspan=4, projection='3d')
@@ -104,6 +106,7 @@ class Display(object):
         rho = []
         v = []
         self.aero_ind = []
+        self.fem_ind = []
         self.CL = []
         self.AR = []
         self.S_ref = []
@@ -129,6 +132,7 @@ class Display(object):
             try:
                 self.r.append(case_data['Unknowns']['r'])
                 self.t.append(case_data['Unknowns']['thickness'])
+                self.fem_ind.append(case_data['Unknowns']['fem_ind'])
                 self.vonmises.append(
                     numpy.max(case_data['Unknowns']['vonmises'], axis=1))
                 self.show_tube = True
@@ -230,8 +234,9 @@ class Display(object):
     def plot_sides(self):
         nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = self.aero_ind[0][0, :]
         m_vals = self.mesh[self.curr_pos][:n, :].reshape(nx, ny, 3).copy()
-        span = m_vals[0, :, 1] / m_vals[0, -1, 1]
-        span_diff = (m_vals[0, :-1, 1] + m_vals[0, 1:, 1])/2 / m_vals[0, -1, 1]
+        span = m_vals[0, -1, 1] - m_vals[0, 0, 1]
+        rel_span = (m_vals[0, :, 1] - m_vals[0, 0, 1]) * 2 / span - 1
+        span_diff = ((m_vals[0, :-1, 1] + m_vals[0, 1:, 1]) / 2 - m_vals[0, 0, 1]) * 2 / span - 1
 
         if self.show_wing:
             self.ax2.cla()
@@ -240,7 +245,7 @@ class Display(object):
             l_vals = self.lift[self.curr_pos]
             le_vals = self.lift_ell[self.curr_pos]
 
-            self.ax2.plot(span, t_vals, lw=2, c='b')
+            self.ax2.plot(rel_span, t_vals, lw=2, c='b')
             self.ax2.locator_params(axis='y',nbins=5)
             self.ax2.locator_params(axis='x',nbins=3)
             self.ax2.set_ylim([self.min_twist, self.max_twist])
@@ -248,7 +253,7 @@ class Display(object):
             self.ax2.set_ylabel('twist', rotation="horizontal", ha="right")
 
             self.ax3.plot(span_diff, l_vals, lw=2, c='b')
-            self.ax3.plot(span, le_vals, '--', lw=2, c='g')
+            self.ax3.plot(rel_span, le_vals, '--', lw=2, c='g')
             self.ax3.text(0.05, 0.8, 'elliptical',
                 transform=self.ax3.transAxes, color='g')
             self.ax3.locator_params(axis='y',nbins=4)
@@ -258,10 +263,11 @@ class Display(object):
             self.ax3.set_ylabel('lift', rotation="horizontal", ha="right")
 
         if self.show_tube:
+            n_fem, i_fem = self.fem_ind[0][0, :]
             self.ax4.cla()
             self.ax5.cla()
-            thick_vals = self.t[self.curr_pos]
-            vm_vals = self.vonmises[self.curr_pos]
+            thick_vals = self.t[self.curr_pos][i_fem:i_fem+n_fem-1]
+            vm_vals = self.vonmises[self.curr_pos][i_fem:i_fem+n_fem-1]
 
             self.ax4.plot(span_diff, thick_vals, lw=2, c='b')
             self.ax4.locator_params(axis='y',nbins=4)
@@ -322,37 +328,44 @@ class Display(object):
                     self.ax.plot_wireframe(x, y, z, rstride=1, cstride=1, color='k')
 
         if self.show_tube:
-            r0 = self.r[self.curr_pos]
-            t0 = self.t[self.curr_pos]
-            colors = t0
-            colors = colors / numpy.max(colors)
-            num_circ = 12
-            fem_origin = 0.35
-            n = mesh0.shape[1]
-            p = numpy.linspace(0, 2*numpy.pi, num_circ)
-            if self.show_wing:
-                if self.show_def_mesh.get():
-                    mesh0[:, :, 2] = def_mesh0[:, :, 2]
-            for i, thick in enumerate(t0):
-                r = numpy.array((r0[i], r0[i]))
-                R, P = numpy.meshgrid(r, p)
-                X, Z = R*numpy.cos(P), R*numpy.sin(P)
-                chords = mesh0[-1, :, 0] - mesh0[0, :, 0]
-                comp = fem_origin * chords + mesh0[0, :, 0]
-                X[:, 0] += comp[i]
-                X[:, 1] += comp[i+1]
-                Z[:, 0] += fem_origin * mesh0[-1, i, 2]
-                Z[:, 1] += fem_origin * mesh0[-1, i+1, 2]
-                Y = numpy.empty(X.shape)
-                Y[:] = numpy.linspace(mesh0[0, i, 1], mesh0[0, i+1, 1], 2)
-                col = numpy.zeros(X.shape)
-                col[:] = colors[i]
-                try:
-                    self.ax.plot_surface(X, Y, Z, rstride=1, cstride=1,
-                        facecolors=cm.viridis(col), linewidth=0)
-                except:
-                    self.ax.plot_surface(X, Y, Z, rstride=1, cstride=1,
-                        facecolors=cm.coolwarm(col), linewidth=0)
+            num_surf = self.fem_ind[0].shape[0]
+            for i_surf, row in enumerate(self.fem_ind[0]):
+                n_fem, i_fem = row
+                nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = self.aero_ind[0][i_surf, :]
+                mesh0 = self.mesh[self.curr_pos][i:i+n, :].reshape(nx, ny, 3).copy()
+
+                r0 = self.r[self.curr_pos][i_fem-i_surf:i_fem-i_surf+n_fem-1]
+                t0 = self.t[self.curr_pos][i_fem-i_surf:i_fem-i_surf+n_fem-1]
+                colors = t0
+                colors = colors / numpy.max(colors)
+                num_circ = 12
+                fem_origin = 0.35
+                n = mesh0.shape[1]
+                p = numpy.linspace(0, 2*numpy.pi, num_circ)
+                if self.show_wing:
+                    if self.show_def_mesh.get():
+                        mesh0[:, :, 2] = def_mesh0[:, :, 2]
+                for i, thick in enumerate(t0):
+                    r = numpy.array((r0[i], r0[i]))
+                    R, P = numpy.meshgrid(r, p)
+                    X, Z = R*numpy.cos(P), R*numpy.sin(P)
+                    chords = mesh0[-1, :, 0] - mesh0[0, :, 0]
+                    comp = fem_origin * chords + mesh0[0, :, 0]
+                    X[:, 0] += comp[i]
+                    X[:, 1] += comp[i+1]
+                    Z[:, 0] += fem_origin * mesh0[-1, i, 2]
+                    Z[:, 1] += fem_origin * mesh0[-1, i+1, 2]
+                    Y = numpy.empty(X.shape)
+                    Y[:] = numpy.linspace(mesh0[0, i, 1], mesh0[0, i+1, 1], 2)
+                    col = numpy.zeros(X.shape)
+                    col[:] = colors[i]
+                    try:
+                        self.ax.plot_surface(X, Y, Z, rstride=1, cstride=1,
+                            facecolors=cm.viridis(col), linewidth=0)
+                    except:
+                        self.ax.plot_surface(X, Y, Z, rstride=1, cstride=1,
+                            facecolors=cm.coolwarm(col), linewidth=0)
+
         lim = numpy.max(numpy.max(mesh0)) / 2.8
         self.ax.auto_scale_xyz([-lim, lim], [-lim, lim], [-lim, lim])
         self.ax.set_title("Major Iteration: {}".format(self.curr_pos))

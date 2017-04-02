@@ -26,7 +26,7 @@ if not sys.argv[1].endswith('m'):
     # Create the mesh with 2 inboard points and 3 outboard points.
     # This will be mirrored to produce a mesh with 7 spanwise points,
     # or 6 spanwise panels
-    mesh = gen_crm_mesh(n_points_inboard=2, n_points_outboard=3, num_x=2)
+    mesh = gen_crm_mesh(n_points_inboard=3, n_points_outboard=5, num_x=3)
     num_x, num_y = mesh.shape[:2]
     num_twist = numpy.max([int((num_y - 1) / 5), 5])
 
@@ -39,12 +39,12 @@ if not sys.argv[1].endswith('m'):
 # Multiple surface aerostructural optimization (currently not working)
 else:
     num_x = 2  # number of chordwise node points
-    num_y = 5  # number of spanwise node points, can only be odd numbers
-    span = 30.  # full wingspan
+    num_y = 11  # number of spanwise node points, can only be odd numbers
+    span = 60.  # full wingspan
     chord = 15.  # root chord
     cosine_spacing = 0.  # spacing distribution; 0 is uniform, 1 is cosine
     mesh_wing = gen_mesh(num_x, num_y, span, chord, cosine_spacing)
-    mesh_wing[:, :, 1] = mesh_wing[:, :, 1] - span/2
+    mesh_wing[:, :, 1] = mesh_wing[:, :, 1]
     num_twist = numpy.max([int((num_y - 1) / 5), 5])
 
     r_wing = radii(mesh_wing)
@@ -54,11 +54,11 @@ else:
 
     nx = 2  # number of chordwise node points
     ny = 5  # number of spanwise node points, can only be odd numbers
-    span = 30.  # full tailspan
-    chord = 15.  # root chord
+    span = 20.  # full tailspan
+    chord = 5.  # root chord
     cosine_spacing = 0.  # spacing distribution; 0 is uniform, 1 is cosine
     mesh_tail = gen_mesh(nx, ny, span, chord, cosine_spacing)
-    mesh_tail[:, :, 1] = mesh_tail[:, :, 1] + span/2
+    mesh_tail[:, :, 0] += 50
 
     r_tail = radii(mesh_tail)
     mesh_tail = mesh_tail.reshape(-1, mesh_tail.shape[-1])
@@ -101,7 +101,10 @@ indep_vars = [
     ('alpha', alpha),
     ('rho', rho),
     ('r', r),
-    ('aero_ind', aero_ind)
+    ('Re', 0.),  # set Re=0 if you don't want skin frcition drag added
+    ('M', M),
+    ('aero_ind', aero_ind),
+    ('fem_ind', fem_ind)
 ]
 
 # Add material components to the top-level system
@@ -152,12 +155,12 @@ coupled.nl_solver.options['rtol'] = 1e-12
 
 coupled.nl_solver = HybridGSNewton()   ### Uncomment this out to use Hybrid GS Newton
 coupled.nl_solver.nlgs.options['iprint'] = 1
-coupled.nl_solver.nlgs.options['maxiter'] = 6
+coupled.nl_solver.nlgs.options['maxiter'] = 10
 coupled.nl_solver.nlgs.options['atol'] = 1e-8
 coupled.nl_solver.nlgs.options['rtol'] = 1e-12
 coupled.nl_solver.newton.options['atol'] = 1e-7
 coupled.nl_solver.newton.options['rtol'] = 1e-7
-coupled.nl_solver.newton.options['maxiter'] = 1
+coupled.nl_solver.newton.options['maxiter'] = 5
 coupled.nl_solver.newton.options['iprint'] = 1
 
 # Add the coupled group and functional groups to compute performance
@@ -206,7 +209,7 @@ prob.driver.add_desvar('thickness_cp',
 # Set the objective (minimize fuelburn)
 prob.driver.add_objective('fuelburn', scaler=1e-4)
 
-# Set the constraints(no structural failure and lift = weight)
+# Set the constraints (no structural failure and lift = weight)
 prob.driver.add_constraint('failure', upper=0.0)
 prob.driver.add_constraint('eq_con', equals=0.0)
 
@@ -222,9 +225,10 @@ profile.start()
 prob.setup()
 view_tree(prob, outfile="aerostruct.html", show_browser=False)
 
-# Run the problem as selected in the command line argument
 st = time()
 prob.run_once()
+
+# Run the problem as selected in the command line argument
 if len(sys.argv) == 1:  # run analysis once
     pass
 elif sys.argv[1].startswith('0'):  # check derivatives

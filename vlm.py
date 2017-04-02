@@ -5,7 +5,7 @@ We input a nodal mesh and properties of the airflow to calculate the
 circulations of the horseshoe vortices. We then compute the forces, lift,
 and drag acting on the lifting surfaces.
 
-
+.. todo:: fix depiction of wing
 Depiction of wing:
 
     y -->
@@ -87,6 +87,16 @@ def _assemble_AIC_mtx(mtx, flat_mesh, aero_ind, points,
     Compute the aerodynamic influence coefficient matrix
     for either solving the linear system or solving for the drag.
 
+    We use a nested for loop structure to loop through the lifting surfaces to
+    obtain the corresponding mesh, then for each mesh we again loop through
+    the lifting surfaces to obtain the collocation points used to compute
+    the horseshoe vortex influence coefficients.
+
+    This creates mtx with blocks corresponding to each lifting surface's
+    effects on other lifting surfaces. The block diagonal portions
+    correspond to each lifting surface's influencen on itself. For a single
+    lifting surface, this is the entire mtx.
+
     Parameters
     ----------
     mtx[num_y-1, num_y-1, 3] : array_like
@@ -125,23 +135,34 @@ def _assemble_AIC_mtx(mtx, flat_mesh, aero_ind, points,
     sina = numpy.sin(alpha * numpy.pi / 180.)
     u = numpy.array([cosa, 0, sina])
 
+    # Loop over the lifting surfaces to compute their influence on the flow
+    # velocity at the collocation points
     for i_surf, row in enumerate(aero_ind):
+        # Variable names with a trailing underscore correspond to the lifting
+        # surface being examined, not the collocation point
         nx_, ny_, n_, n_bpts_, n_panels_, i_, i_bpts_, i_panels_ = row.copy()
         n = nx_ * ny_
+
+        # Obtain the lifting surface mesh in the form expected by the solver,
+        # with shape [nx_, ny_, 3]
         mesh = flat_mesh[i_:i_+n_, :].reshape(nx_, ny_, 3)
         bpts = b_pts[i_bpts_:i_bpts_+n_bpts_].reshape(nx_-1, ny_, 3)
 
         for i_points, row in enumerate(aero_ind):
+            # These variables correspond to the collocation points
             nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = row
 
+            # Obtain the collocation points used to compute the AIC
             pts = points[i_panels:i_panels+n_panels].reshape(nx-1, ny-1, 3)
 
             small_mat = numpy.zeros((n_panels, n_panels_, 3)).astype("complex")
 
+            # Dense fortran assembly for the AIC matrix
             if fortran_flag:
                 small_mat[:, :, :] = lib.assembleaeromtx(ny, nx, ny_, nx_,
                                                          alpha, pts, bpts,
                                                          mesh, skip)
+            # Python matrix assembly
             else:
                 # Spanwise loop through horseshoe elements
                 for el_j in xrange(ny_ - 1):
@@ -170,25 +191,48 @@ def _assemble_AIC_mtx(mtx, flat_mesh, aero_ind, points,
                             t3 = numpy.cross(u, r1) / \
                                 (r1_mag * (r1_mag - u.dot(r1)))
 
+                            # AIC contribution from trailing vortex filaments
+                            # coming off the trailing edge
                             trailing = t1 - t3
                             edges = 0
 
-                            # Chordwise loop through horseshoe elements
+                            # Chordwise loop through horseshoe elements in
+                            # reversed order, starting with the panel closest
+                            # to the leading edge. This is done to sum the
+                            # AIC contributions from the side vortex filaments
+                            # as we loop through the elements
                             for el_i in reversed(xrange(nx_ - 1)):
                                 el_loc = el_i + el_loc_j
 
                                 A = bpts[el_i, el_j + 0, :]
                                 B = bpts[el_i, el_j + 1, :]
 
+                                # Check if this is the last panel; if so, use
+                                # the trailing edge mesh points for C & D, else
+                                # use the directly aft panel's bound points
+                                # for C & D
                                 if el_i == nx_ - 2:
                                     C = mesh[-1, el_j + 1, :]
                                     D = mesh[-1, el_j + 0, :]
                                 else:
                                     C = bpts[el_i + 1, el_j + 1, :]
                                     D = bpts[el_i + 1, el_j + 0, :]
+
+                                # Calculate and store the contributions from
+                                # the vortex filaments on the sides of the
+                                # panels, adding as we progress through the
+                                # panels
                                 edges += _calc_vorticity(B, C, P)
                                 edges += _calc_vorticity(D, A, P)
 
+                                # If skip, do not include the contributions
+                                # from the panel's bound vortex filament, as
+                                # this causes a singularity when we're taking
+                                # the influence of a panel on its own
+                                # collocation point. This true for the drag
+                                # computation and false for circulation
+                                # computation, due to the different collocation
+                                # points.
                                 if skip and el_loc == cp_loc:
                                     small_mat[cp_loc, el_loc, :] = \
                                         trailing + edges
@@ -197,6 +241,7 @@ def _assemble_AIC_mtx(mtx, flat_mesh, aero_ind, points,
                                     small_mat[cp_loc, el_loc, :] = \
                                         trailing + edges + bound
 
+            # Populate the full-size matrix with these surface-surface AICs
             mtx[i_panels:i_panels+n_panels,
                 i_panels_:i_panels_+n_panels_, :] = small_mat
 
@@ -255,22 +300,31 @@ class VLMGeometry(Component):
         return numpy.sqrt(numpy.sum((B - A)**2, axis=axis))
 
     def solve_nonlinear(self, params, unknowns, resids):
+        # Loop through each lifting surface
         for i_surf, row in enumerate(self.aero_ind):
             nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = row
 
+            # Reshape the mesh into the expected shape for each surface
             mesh = params['def_mesh'][i:i+n, :].reshape(nx, ny, 3)
 
+            # Compute the bound points at 1/4 chord
             b_pts = mesh[:-1, :, :] * .75 + mesh[1:, :, :] * .25
 
+            # Find the midpoints of the bound points, used in drag computations
             mid_b = (b_pts[:, 1:, :] + b_pts[:, :-1, :]) / 2
 
+            # Compute the collocation points at the midpoints of each
+            # panel's 3/4 chord line
             c_pts = 0.5 * 0.25 * mesh[:-1, :-1, :] + \
                     0.5 * 0.75 * mesh[1:, :-1, :] + \
                     0.5 * 0.25 * mesh[:-1,  1:, :] + \
                     0.5 * 0.75 * mesh[1:,  1:, :]
 
+            # Compute the widths of each panel
             widths = self._get_lengths(b_pts[:, 1:, :], b_pts[:, :-1, :], 2)
 
+            # Compute the normal of each panel by taking the cross-product of
+            # its diagonals. Note that this could be a nonplanar surface
             normals = numpy.cross(
                 mesh[:-1,  1:, :] - mesh[1:, :-1, :],
                 mesh[:-1, :-1, :] - mesh[1:,  1:, :],
@@ -281,6 +335,7 @@ class VLMGeometry(Component):
             for j in xrange(3):
                 normals[:, :, j] /= norms
 
+            # Flatten and store each array
             unknowns['b_pts'][i_bpts:i_bpts+n_bpts, :] = \
                 b_pts.reshape(-1, b_pts.shape[-1])
             unknowns['mid_b'][i_panels:i_panels+n_panels, :] = \
@@ -305,6 +360,7 @@ class VLMGeometry(Component):
                                             fd_states=[])
         jac.update(fd_jac)
 
+        # Analytic derivatives for some of the parameters
         i_ny = 0.
         for i_surf, row in enumerate(self.aero_ind):
             nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = row
@@ -384,9 +440,6 @@ class VLMCirculations(Component):
         self.add_state('circulations', val=numpy.zeros((tot_panels),
                        dtype="complex"))
 
-        self.deriv_options['type'] = 'cs'
-        self.deriv_options['form'] = 'central'
-
         self.deriv_options['linearize'] = True  # only for circulations
 
         self.AIC_mtx = numpy.zeros((tot_panels, tot_panels, 3),
@@ -398,6 +451,8 @@ class VLMCirculations(Component):
         _assemble_AIC_mtx(self.AIC_mtx, params['def_mesh'], self.aero_ind,
                         params['c_pts'], params['b_pts'], params['alpha'])
 
+        # Construct a matrix that is the AIC_mtx dotted by the normals at each
+        # collocation point. This is used to compute the circulations
         self.mtx[:, :] = 0.
         for ind in xrange(3):
             self.mtx[:, :] += (self.AIC_mtx[:, :, ind].T *
@@ -407,6 +462,9 @@ class VLMCirculations(Component):
         cosa = numpy.cos(alpha)
         sina = numpy.sin(alpha)
         v_inf = params['v'] * numpy.array([cosa, 0., sina], dtype="complex")
+
+        # Populate the right-hand side of the linear system with the
+        # expected velocities at each collocation point
         self.rhs[:] = -params['normals'].\
             reshape(-1, params['normals'].shape[-1], order='F').dot(v_inf)
 
@@ -506,11 +564,13 @@ class VLMForces(Component):
 
     def solve_nonlinear(self, params, unknowns, resids):
         circ = params['circulations']
-
         alpha = params['alpha'] * numpy.pi / 180.
         cosa = numpy.cos(alpha)
         sina = numpy.sin(alpha)
 
+        # Assemble a different matrix here than the AIC_mtx from above; Notes
+        # that the collocation points used here are the midpoints of each
+        # bound vortex filament, not the collocation points from above
         _assemble_AIC_mtx(self.mtx, params['def_mesh'], self.aero_ind,
                           params['mid_b'], params['b_pts'], params['alpha'],
                           skip=True)
@@ -518,6 +578,8 @@ class VLMForces(Component):
         for i_surf, row in enumerate(self.aero_ind):
             nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = row
 
+            # Compute the velocities at the midpoints of the bound vortex
+            # filaments
             for ind in xrange(3):
                 self.v[:, ind] = self.mtx[:, :, ind].dot(circ)
             self.v[:, 0] += cosa * params['v']
@@ -528,9 +590,12 @@ class VLMForces(Component):
 
             bound = b_pts[:, 1:, :] - b_pts[:, :-1, :]
 
+            # Cross the obtained velocities with the bound vortex filament
+            # vectors
             cross = numpy.cross(self.v[i_panels:i_panels+n_panels],
                                 bound.reshape(-1, bound.shape[-1], order='F'))
 
+            # Compute the sectional forces acting on each panel
             for ind in xrange(3):
                 unknowns['sec_forces'][i_panels:i_panels+n_panels, ind] = \
                     (params['rho'] * circ[i_panels:i_panels+n_panels] *
@@ -560,6 +625,11 @@ class VLMLiftDrag(Component):
     """
     Calculate total lift and drag in force units based on section forces.
 
+    If the simulation is given a non-zero Reynolds number, it is used to
+    compute the skin friction drag. If Reynolds number == 0, then there is
+    no skin friction drag dependence. Currently, the Reynolds number
+    must be set by the user in the run script and used as in IndepVarComp.
+
     Parameters
     ----------
     sec_forces : array_like
@@ -568,13 +638,23 @@ class VLMLiftDrag(Component):
         panel).
     alpha : float
         Angle of attack in degrees.
+    Re : float
+        Reynolds number.
+    M : float
+        Mach number.
+    v : float
+        Freestream air velocity in m/s.
+    rho : float
+        Air density in kg/m^3.
+    S_ref : array_like
+        The reference areas of each lifting surface.
 
     Returns
     -------
     L : array_like
-        Total lift for each lifting surface.
+        Total lift force for each lifting surface.
     D : array_like
-        Total drag for each lifting surface.
+        Total drag force for each lifting surface.
 
     """
 
@@ -587,6 +667,11 @@ class VLMLiftDrag(Component):
 
         self.add_param('sec_forces', val=numpy.zeros((tot_panels, 3)))
         self.add_param('alpha', val=3.)
+        self.add_param('Re', val=5.e6)
+        self.add_param('M', val=.84)
+        self.add_param('v', val=10.)
+        self.add_param('rho', val=3.)
+        self.add_param('S_ref', val=numpy.zeros((num_surf)))
         self.add_output('L', val=numpy.zeros((num_surf)))
         self.add_output('D', val=numpy.zeros((num_surf)))
 
@@ -596,21 +681,41 @@ class VLMLiftDrag(Component):
         cosa = numpy.cos(alpha)
         sina = numpy.sin(alpha)
 
+        Re = params['Re']
+        M = params['M']
+        v = params['v']
+        rho = params['rho']
+        S_ref = params['S_ref']
+
+        # Compute the skin friction coefficient
+        # Use eq. 12.27 of Raymer for turbulent Cf
+        Cf = 0.455 / (numpy.log10(Re)**2.58 * (1 + .144 * M**2)**.65)
+
         for i_surf, row in enumerate(self.aero_ind):
             nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = row
 
+            # Compute the induced lift force on each lifting surface
             unknowns['L'][i_surf] = \
                 numpy.sum(-forces[i_panels:i_panels+n_panels, 0] * sina +
                            forces[i_panels:i_panels+n_panels, 2] * cosa)
+
+
+            # Compute the induced drag force on each lifting surface
             unknowns['D'][i_surf] = \
                 numpy.sum( forces[i_panels:i_panels+n_panels, 0] * cosa +
                            forces[i_panels:i_panels+n_panels, 2] * sina)
+
+            # Compute the drag contribution from skin friction
+            D_f = Cf * rho * v**2 / 2. * S_ref[i_surf]
+            unknowns['D'][i_surf] += D_f
+
 
     def linearize(self, params, unknowns, resids):
         """ Jacobian for lift and drag."""
 
         jac = self.alloc_jacobian()
 
+        # Analytic derivatives for sec_forces
         alpha = params['alpha'] * numpy.pi / 180.
         cosa = numpy.cos(alpha)
         sina = numpy.sin(alpha)
@@ -687,8 +792,10 @@ class VLMCoeffs(Component):
         for i_surf, row in enumerate(self.aero_ind):
             nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = row
 
-            unknowns['CL1'][i_surf] = L[i_surf] / (0.5*rho*v**2*S_ref[i_surf])
-            unknowns['CDi'][i_surf] = D[i_surf] / (0.5*rho*v**2*S_ref[i_surf])
+            unknowns['CL1'][i_surf] = L[i_surf] / \
+                (0.5 * rho * v**2 * S_ref[i_surf])
+            unknowns['CDi'][i_surf] = D[i_surf] / \
+                (0.5 * rho * v**2 * S_ref[i_surf])
 
     def linearize(self, params, unknowns, resids):
         """ Jacobian for forces."""
