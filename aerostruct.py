@@ -1276,7 +1276,7 @@ def spatial_beam_FEM(A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x=5
         mtx * disp_aug = rhs, where rhs is a flattened version of loads.
 
     """
-    SpatialBeamFEM_comp = SpatialBeamFEM(aero_ind, fem_ind, E, G, cg_x)
+    _Component = SpatialBeamFEM(aero_ind, fem_ind, E, G, cg_x)
     params = {
         'A': A,
         'Iy': Iy,
@@ -1285,80 +1285,12 @@ def spatial_beam_FEM(A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x=5
         'nodes': nodes,
         'loads': loads
     }
-    unknowns = None
-    resids = {
-        'disp_aug': np.zeros((SpatialBeamFEM_comp.size), dtype="complex")
+    unknowns = {
+        'disp_aug': np.zeros((_Component.size), dtype="complex")
     }
-    n_fem, i_fem = fem_ind[0, :]
-    num_surf = fem_ind.shape[0]
-    tot_n_fem = np.sum(fem_ind[:, 0])
-    size = 6 * tot_n_fem + 6 * num_surf
-    elem_IDs = np.zeros((tot_n_fem - num_surf, 2), int)
-    for i_surf, row in enumerate(fem_ind):
-        nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = aero_ind[i_surf, :]
-        n_fem, i_fem = row
-        arange = np.arange(n_fem - 1) + i_fem
-        elem_IDs[i_fem - i_surf: i_fem - i_surf + n_fem - 1, 0] = arange
-        elem_IDs[i_fem - i_surf: i_fem - i_surf + n_fem - 1, 1] = arange + 1
-        elem_IDs = elem_IDs
-    const2 = np.array([
-        [1, -1],
-        [-1, 1],
-    ], dtype=DTYPE)
-    const_y = np.array([
-        [12, -6, -12, -6],
-        [-6, 4, 6, 2],
-        [-12, 6, 12, 6],
-        [-6, 2, 6, 4],
-    ], dtype=DTYPE)
-    const_z = np.array([
-        [12, 6, -12, 6],
-        [6, 4, -6, 2],
-        [-12, -6, 12, -6],
-        [6, 2, -6, 4],
-    ], dtype=DTYPE)
-    x_gl = np.array([1, 0, 0], dtype=DTYPE)
-    K_elem = np.zeros((12, 12), dtype=DTYPE)
-    T_elem = np.zeros((12, 12), dtype=DTYPE)
-    T = np.zeros((3, 3), dtype=DTYPE)
-    num_nodes = tot_n_fem
-    num_cons = num_surf
-    size = 6 * num_nodes + 6 * num_cons
-    mtx = np.zeros((size, size), dtype=DTYPE)
-    rhs = np.zeros(size, dtype=DTYPE)
-    K_a = np.zeros((2, 2), dtype=DTYPE)
-    K_t = np.zeros((2, 2), dtype=DTYPE)
-    K_y = np.zeros((4, 4), dtype=DTYPE)
-    K_z = np.zeros((4, 4), dtype=DTYPE)
-    S_a = np.zeros((2, 12), dtype=DTYPE)
-    S_a[(0, 1), (0, 6)] = 1.
-    S_t = np.zeros((2, 12), dtype=DTYPE)
-    S_t[(0, 1), (3, 9)] = 1.
-    S_y = np.zeros((4, 12), dtype=DTYPE)
-    S_y[(0, 1, 2, 3), (2, 4, 8, 10)] = 1.
-    S_z = np.zeros((4, 12), dtype=DTYPE)
-    S_z[(0, 1, 2, 3), (1, 5, 7, 11)] = 1.
-    cons = np.zeros((num_surf))
-    # find constrained nodes based on closeness to specified cg point
-    for i_surf, row in enumerate(fem_ind):
-        n_fem, i_fem = row
-        nodes = nodes[i_fem:i_fem + n_fem]
-        dist = nodes - np.array([cg_x, 0, 0])
-        idx = (np.linalg.norm(dist, axis=1)).argmin()
-        cons[i_surf] = idx
-
-    mtx, rhs = \
-        assemble_FEM_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
-                            K_a, K_t, K_y, K_z, elem_IDs, cons, E, G, x_gl, T,
-                            K_elem, S_a, S_t, S_y, S_z, T_elem, const2, const_y,
-                            const_z, n_fem, size, mtx, rhs)
-    if type(mtx) == np.ndarray:
-        # print('AAA')
-        disp_aug = np.linalg.solve(mtx, rhs)
-    else:
-        # print('BBB')
-        splu = scipy.sparse.linalg.splu(mtx)
-        disp_aug = splu.solve(rhs)
+    resids = None
+    _Component.solve_nonlinear(params, unknowns, resids)
+    disp_aug = unknowns.get('disp_aug')
     return disp_aug
 
 
