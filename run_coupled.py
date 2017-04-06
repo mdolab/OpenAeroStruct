@@ -3,11 +3,12 @@
 from __future__ import print_function
 # import coupled
 import numpy
-# import aerostruct
-from cytn import aerostruct_cython
+import aerostruct
+# from cytn import aerostruct_cython
 # import warnings
-# import sys
-# import time
+import sys
+import time
+import cProfile
 
 # to disable openmdao warnings which will create an error in Matlab
 numpy.set_printoptions(precision=8)
@@ -171,25 +172,36 @@ def timings_aerodynamics(num_inboard=2, num_outboard=3,n=100):
 
 
 def main_aerostruct(num_inboard=2, num_outboard=3):
-
     print('\nRun aerostruct.setup()...')
     def_mesh, params = aerostruct.setup(num_inboard, num_outboard)
     print('def_mesh...  def_mesh.shape =', def_mesh.shape)
-    # print(def_mesh)
+    print(def_mesh)
 
     print('\nRun aerostruct.aerodynamics()...')
     loads = aerostruct.aerodynamics(def_mesh, params)
     print('loads matrix... loads.shape =', loads.shape)
-    # print(loads)
+    print(loads)
     loads_aerostruct = loads
     #
-    # print('\nRun aerostruct.structures()...')
-    # def_mesh = aerostruct.structures(loads_aerostruct, params)
-    # print('def_mesh...  def_mesh.shape =',def_mesh.shape)
-    # # print(def_mesh)
-    # def_mesh_aerostruct = def_mesh
+    print('\nRun aerostruct.structures()...')
+    def_mesh = aerostruct.structures(loads_aerostruct, params)
+    print('def_mesh...  def_mesh.shape =',def_mesh.shape)
+    print(def_mesh)
+    def_mesh_aerostruct = def_mesh
 
 
+def profile_aerostruct(num_inboard=2, num_outboard=3):
+    for i in range(100):
+        print(i)
+        def_mesh, params = aerostruct.setup(num_inboard, num_outboard)
+    
+        loads = aerostruct.aerodynamics(def_mesh, params)
+        loads_aerostruct = loads
+
+        def_mesh = aerostruct.structures(loads_aerostruct, params)
+        def_mesh_aerostruct = def_mesh
+        
+        
 def main_coupled(num_inboard=2, num_outboard=3, check=False):
 
     print('\nRun coupled.setup()...')
@@ -237,14 +249,15 @@ if __name__ == '__main__':
         fortran_flag = False
     print('Use Fortran: {0}'.format(fortran_flag))
 
-    npts = [4, 6]
+    npts = [3, 5]
     n = 100
     n_inboard = npts[0]
     n_outboard = npts[1]
 
     # main_coupled(n_inboard, n_outboard)
-    # main_aerostruct(n_inboard, n_outboard)
-    main_cython(n_inboard, n_outboard)
+    # cProfile.run('profile_aerostruct(n_inboard, n_outboard)','aerostruct.prof')
+    main_aerostruct(n_inboard, n_outboard)
+    # main_cython(n_inboard, n_outboard)
     # test_accuracy(n_inboard, n_outboard)
     # test_timing(n_inboard, n_outboard, n)
     # timings_aerodynamics(n_inboard, n_outboard, n)
