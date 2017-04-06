@@ -2,11 +2,11 @@
 
 from __future__ import print_function, division
 import warnings
-import numpy
+import numpy as np
 import sys
 import os
 from openmdao.api import IndepVarComp, Problem, Group
-from geometry import GeometryMesh, Bspline, gen_crm_mesh, gen_mesh, get_inds
+from geometry import GeometryMesh, Bspline, gen_crm_mesh, gen_rect_mesh, get_inds
 from transfer import TransferDisplacements, TransferLoads
 from materials import MaterialsTube
 from b_spline import get_bspline_mtx
@@ -35,7 +35,7 @@ def setup(num_inboard=2, num_outboard=3, check=False, out_stream=sys.stdout):
     # print(type(num_inboard))
     mesh = gen_crm_mesh(int(num_inboard), int(num_outboard), num_x=2)
     num_x, num_y = mesh.shape[:2]
-    num_twist = numpy.max([int((num_y - 1) / 5), 5])
+    num_twist = np.max([int((num_y - 1) / 5), 5])
     r = radii(mesh)
 
     # Set the number of thickness control points and the initial thicknesses
@@ -43,7 +43,7 @@ def setup(num_inboard=2, num_outboard=3, check=False, out_stream=sys.stdout):
     t = r / 10
 
     mesh = mesh.reshape(-1, mesh.shape[-1])
-    aero_ind = numpy.atleast_2d(numpy.array([num_x, num_y]))
+    aero_ind = np.atleast_2d(np.array([num_x, num_y]))
     fem_ind = [num_y]
     aero_ind, fem_ind = get_inds(aero_ind, fem_ind)
 
@@ -53,18 +53,18 @@ def setup(num_inboard=2, num_outboard=3, check=False, out_stream=sys.stdout):
     taper = 1.  # taper ratio
 
     # Initial displacements of zero
-    tot_n_fem = numpy.sum(fem_ind[:, 0])
-    disp = numpy.zeros((tot_n_fem, 6))
+    tot_n_fem = np.sum(fem_ind[:, 0])
+    disp = np.zeros((tot_n_fem, 6))
 
     # Define Jacobians for b-spline controls
-    tot_n_fem = numpy.sum(fem_ind[:, 0])
+    tot_n_fem = np.sum(fem_ind[:, 0])
     num_surf = fem_ind.shape[0]
     jac_twist = get_bspline_mtx(num_twist, num_y)
     jac_thickness = get_bspline_mtx(num_thickness, tot_n_fem-num_surf)
 
     # Define ...
-    twist_cp = numpy.zeros(num_twist)
-    thickness_cp = numpy.ones(num_thickness)*numpy.max(t)
+    twist_cp = np.zeros(num_twist)
+    thickness_cp = np.ones(num_thickness)*np.max(t)
 
     # Define the design variables
     des_vars = [
@@ -166,16 +166,16 @@ def aero(def_mesh=None, params=None):
     out_stream = params.get('out_stream')
 
     # Define Jacobians for b-spline controls
-    tot_n_fem = numpy.sum(fem_ind[:, 0])
+    tot_n_fem = np.sum(fem_ind[:, 0])
     num_surf = fem_ind.shape[0]
     jac_twist = get_bspline_mtx(num_twist, num_y)
     jac_thickness = get_bspline_mtx(num_thickness, tot_n_fem-num_surf)
 
-    disp = numpy.zeros((num_y, 6))  # for display?
+    disp = np.zeros((num_y, 6))  # for display?
 
     # Define the design variables
     des_vars = [
-        ('twist_cp', numpy.zeros(num_twist)),
+        ('twist_cp', np.zeros(num_twist)),
         ('dihedral', dihedral),
         ('sweep', sweep),
         ('span', span),
@@ -183,7 +183,7 @@ def aero(def_mesh=None, params=None):
         ('v', v),
         ('alpha', alpha),
         ('rho', rho),
-        ('disp', numpy.zeros((tot_n_fem, 6))),
+        ('disp', np.zeros((tot_n_fem, 6))),
         ('def_mesh', def_mesh)
     ]
 

@@ -1,0 +1,134 @@
+#    -*- makefile -*-
+#     ******************************************************************
+#     *                                                                *
+#     * File:          Makefile_tapenade                               *
+#     * Author:        John Jasa                                       *
+#     * Starting date: 09-26-16                                        *
+#     * Last modified: 09-26-16                                        *
+#     *                                                                *
+#     * This makefile is used to create automatically differentiated   *
+#     * residual code that can be used to construct the aerodynamic    *
+#     * jacobian. There are three main commands:                       *
+#     *                                                                *
+#     * ad_forward: Run in forward mode. Preprocessed output is in     *
+#     *             'forward' directory                                *
+#     *                                                                *
+#     * ad_reverse: Run in reverse mode. Preprocessed output is in the *
+#     *             'reverse' directory                                *
+#     *                                                                *
+#     * The following are commands that are used to produce tangent/   *
+#     * adjoint debug code.                                            *
+#     *                                                                *
+#     ******************************************************************
+
+# Define the required directories
+SRC = ..
+
+# Integer, double and real precision (bytes)
+TAPENADE_PRECISION = -i4 -dr8 -r8
+
+ALL_FILES =	$(SRC)/OAS/OAS_main.F90\
+
+
+# intermediate residual files.
+I_FILES := $(ALL_FILES:%=%.f90)
+# ---------------------------------------------------------------------
+
+#     ******************************************************************
+#     *                                                                *
+#     * General targets.                                               *
+#     *                                                                *
+#     ******************************************************************
+
+default: ad_forward
+
+ad_forward:
+# First delete the holding directory if it exists
+	rm -fr temp_forward
+
+# Next create the holding directory:
+	mkdir -p temp_forward
+	mkdir -p outputForward
+
+
+# Run preprocessor on all input files
+	make -f Makefile_tapenade preprocess_forward
+
+# The following is the single Tapenade command to run:
+	$(TAPENADE_HOME)/bin/tapenade -d \
+	-head "assemblestructmtx_main(A, Iy, Iz, J, nodes, loads) > (K, x) \
+	assembleaeromtx_main(alpha, points, bpts, mesh) > (mtx) \
+	calc_vonmises_main(nodes, r, disp) > vonmises \
+	transferdisplacements_main(mesh, disp) > def_mesh \
+	forcecalc_main(v, circ, rho, bpts) > sec_forces \
+	manipulate_mesh_main(sweep, twist, chord, dihedral, taper, xshear, zshear, span) > mesh \
+	compute_normals_main(mesh) > normals, S_ref" ../OAS/OAS_main.F90 \
+	-forward $(TAPENADE_PRECISION) \
+	-O temp_forward $(I_RES_FILES)
+
+	python autoEdit/autoEditForward.py temp_forward outputForward
+
+# Remove preprocessor files
+	make -f Makefile_tapenade cleanpreprocess_res
+
+ad_reverse:
+# First delete the holding directory if it exists
+	rm -fr temp_reverse
+
+# Next create the holidng directory:
+	mkdir -p temp_reverse
+	mkdir -p outputReverse
+
+# Run preprocessor on all input files
+	make -f Makefile_tapenade preprocess_reverse
+
+# The following is the single Tapenade command to run:
+	$(TAPENADE_HOME)/bin/tapenade -b \
+	-head "assemblestructmtx_main(A, Iy, Iz, J, nodes, loads) > (K, x) \
+	assembleaeromtx_main(alpha, points, bpts, mesh) > (mtx) \
+	calc_vonmises_main(nodes, r, disp) > vonmises \
+	transferdisplacements_main(mesh, disp) > def_mesh \
+	forcecalc_main(v, circ, rho, bpts) > sec_forces \
+	manipulate_mesh_main(sweep, twist, chord, dihedral, taper, xshear, zshear, span) > mesh \
+	compute_normals_main(mesh) > normals, S_ref" ../OAS/OAS_main.F90 \
+	-reverse $(TAPENADE_PRECISION) \
+	-O temp_reverse $(I_RES_FILES)
+
+# Run the auto-edit file:
+	python autoEdit/autoEditReverse.py temp_reverse outputReverse
+
+# Remove preprocessor files
+	make -f Makefile_tapenade cleanpreprocess_res
+
+
+preprocess_forward:
+	@echo "Preprocessing all input files for forward mode AD..."
+	@for file in $(ALL_FILES); do \
+		echo Preprocessing $$file; \
+		cpp -DUSE_TAPENADE -DTAPENADE_FORWARD -traditional -P  $$file $$file.f90; \
+	done
+
+preprocess_reverse:
+	@echo "Preprocessing all input files for reverse mode AD..."
+	@for file in $(ALL_FILES); do \
+		echo Preprocessing $$file; \
+		cpp -DUSE_TAPENADE -DTAPENADE_REVERSE -traditional -P $(FF90_ALL_FLAGS) $$file $$file.f90; \
+	done
+
+cleanpreprocess_res:
+	@echo "Cleaning up residual preprocessed files..."
+	@for file in $(ALL_FILES); do \
+		rm $$file.f90; \
+	done
+
+all:	 default
+
+clean:
+	@echo " Making clean ... "
+	@for subdir in $(TAPENADE_OUT_DIRS) ; \
+		do \
+			echo; \
+			echo "making $@ in $$subdir"; \
+			echo; \
+			(cd $$subdir && rm -f *_b.f90 *_d.f90  *.msg *~) || exit 1; \
+		done

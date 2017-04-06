@@ -1,0 +1,355 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module OAS_API ! in 
+    interface  ! in :OAS_API
+        module oas_api ! in :OAS_API:OAS_API.F90
+            use oas_main
+            subroutine compute_normals_b(nx,ny,mesh,meshb,normals,normalsb,s_ref,s_refb) ! in :OAS_API:OAS_API.F90:oas_api
+                use oas_main_b, only: compute_normals_main_b
+                integer, optional,intent(in),check(shape(mesh,0)==nx),depend(mesh) :: nx=shape(mesh,0)
+                integer, optional,intent(in),check(shape(mesh,1)==ny),depend(mesh) :: ny=shape(mesh,1)
+                real(kind=8) dimension(nx,ny,3),intent(in) :: mesh
+                real(kind=8) dimension(nx,ny,3),intent(out),depend(nx,ny) :: meshb
+                real(kind=8) dimension(nx - 1,ny - 1,3),intent(out),depend(nx,ny) :: normals
+                real(kind=8) dimension(nx - 1,ny - 1,3),intent(in),depend(nx,ny) :: normalsb
+                real(kind=8) intent(out) :: s_ref
+                real(kind=8) intent(in) :: s_refb
+            end subroutine compute_normals_b
+            subroutine manipulate_mesh(nx,ny,input_mesh,taper,chord,sweep,xshear,dihedral,zshear,twist,span,symmetry,rotate_x,mesh) ! in :OAS_API:OAS_API.F90:oas_api
+                integer, optional,intent(in),check(shape(input_mesh,0)==nx),depend(input_mesh) :: nx=shape(input_mesh,0)
+                integer, optional,intent(in),check(shape(input_mesh,1)==ny),depend(input_mesh) :: ny=shape(input_mesh,1)
+                real(kind=8) dimension(nx,ny,3),intent(in) :: input_mesh
+                real(kind=8) intent(in) :: taper
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: chord
+                real(kind=8) intent(in) :: sweep
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: xshear
+                real(kind=8) intent(in) :: dihedral
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: zshear
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: twist
+                real(kind=8) intent(in) :: span
+                logical intent(in) :: symmetry
+                logical intent(in) :: rotate_x
+                real(kind=8) dimension(nx,ny,3),intent(out),depend(nx,ny) :: mesh
+            end subroutine manipulate_mesh
+            subroutine manipulate_mesh_d(nx,ny,input_mesh,taper,taperd,chord,chordd,sweep,sweepd,xshear,xsheard,dihedral,dihedrald,zshear,zsheard,twist,twistd,span,spand,symmetry,rotate_x,mesh,meshd) ! in :OAS_API:OAS_API.F90:oas_api
+                use oas_main_d, only: manipulate_mesh_main_d
+                integer, optional,intent(in),check(shape(input_mesh,0)==nx),depend(input_mesh) :: nx=shape(input_mesh,0)
+                integer, optional,intent(in),check(shape(input_mesh,1)==ny),depend(input_mesh) :: ny=shape(input_mesh,1)
+                real(kind=8) dimension(nx,ny,3),intent(in) :: input_mesh
+                real(kind=8) intent(in) :: taper
+                real(kind=8) intent(in) :: taperd
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: chord
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: chordd
+                real(kind=8) intent(in) :: sweep
+                real(kind=8) intent(in) :: sweepd
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: xshear
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: xsheard
+                real(kind=8) intent(in) :: dihedral
+                real(kind=8) intent(in) :: dihedrald
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: zshear
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: zsheard
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: twist
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: twistd
+                real(kind=8) intent(in) :: span
+                real(kind=8) intent(in) :: spand
+                logical intent(in) :: symmetry
+                logical intent(in) :: rotate_x
+                real(kind=8) dimension(nx,ny,3),intent(out),depend(nx,ny) :: mesh
+                real(kind=8) dimension(nx,ny,3),intent(out),depend(nx,ny) :: meshd
+            end subroutine manipulate_mesh_d
+            subroutine manipulate_mesh_b(nx,ny,input_mesh,taper,taperb,chord,chordb,sweep,sweepb,xshear,xshearb,dihedral,dihedralb,zshear,zshearb,twist,twistb,span,spanb,symmetry,rotate_x,mesh,meshb) ! in :OAS_API:OAS_API.F90:oas_api
+                use oas_main_b, only: manipulate_mesh_main_b
+                integer, optional,intent(in),check(shape(input_mesh,0)==nx),depend(input_mesh) :: nx=shape(input_mesh,0)
+                integer, optional,intent(in),check(shape(input_mesh,1)==ny),depend(input_mesh) :: ny=shape(input_mesh,1)
+                real(kind=8) dimension(nx,ny,3),intent(in) :: input_mesh
+                real(kind=8) intent(in) :: taper
+                real(kind=8) intent(out) :: taperb
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: chord
+                real(kind=8) dimension(ny),intent(out),depend(ny) :: chordb
+                real(kind=8) intent(in) :: sweep
+                real(kind=8) intent(out) :: sweepb
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: xshear
+                real(kind=8) dimension(ny),intent(out),depend(ny) :: xshearb
+                real(kind=8) intent(in) :: dihedral
+                real(kind=8) intent(out) :: dihedralb
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: zshear
+                real(kind=8) dimension(ny),intent(out),depend(ny) :: zshearb
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: twist
+                real(kind=8) dimension(ny),intent(out),depend(ny) :: twistb
+                real(kind=8) intent(in) :: span
+                real(kind=8) intent(out) :: spanb
+                logical intent(in) :: symmetry
+                logical intent(in) :: rotate_x
+                real(kind=8) dimension(nx,ny,3),intent(out),depend(nx,ny) :: mesh
+                real(kind=8) dimension(nx,ny,3),intent(in),depend(nx,ny) :: meshb
+            end subroutine manipulate_mesh_b
+            subroutine forcecalc(v,circ,rho,bpts,nx,ny,num_panels,sec_forces) ! in :OAS_API:OAS_API.F90:oas_api
+                real(kind=8) dimension(num_panels,3),intent(in) :: v
+                real(kind=8) dimension(num_panels),intent(in),depend(num_panels) :: circ
+                real(kind=8) intent(in) :: rho
+                real(kind=8) dimension(nx - 1,ny,3),intent(in) :: bpts
+                integer, optional,intent(in),check((shape(bpts,0)+1)==nx),depend(bpts) :: nx=(shape(bpts,0)+1)
+                integer, optional,intent(in),check(shape(bpts,1)==ny),depend(bpts) :: ny=shape(bpts,1)
+                integer, optional,intent(in),check(shape(v,0)==num_panels),depend(v) :: num_panels=shape(v,0)
+                real(kind=8) dimension(num_panels,3),intent(out),depend(num_panels) :: sec_forces
+            end subroutine forcecalc
+            subroutine forcecalc_d(v,vd,circ,circd,rho,rhod,bpts,bptsd,nx,ny,num_panels,sec_forces,sec_forcesd) ! in :OAS_API:OAS_API.F90:oas_api
+                use oas_main_d, only: forcecalc_main_d
+                real(kind=8) dimension(num_panels,3),intent(in) :: v
+                real(kind=8) dimension(num_panels,3),intent(in),depend(num_panels) :: vd
+                real(kind=8) dimension(num_panels),intent(in),depend(num_panels) :: circ
+                real(kind=8) dimension(num_panels),intent(in),depend(num_panels) :: circd
+                real(kind=8) intent(in) :: rho
+                real(kind=8) intent(in) :: rhod
+                real(kind=8) dimension(nx - 1,ny,3),intent(in) :: bpts
+                real(kind=8) dimension(nx - 1,ny,3),intent(in),depend(nx,ny) :: bptsd
+                integer, optional,intent(in),check((shape(bpts,0)+1)==nx),depend(bpts) :: nx=(shape(bpts,0)+1)
+                integer, optional,intent(in),check(shape(bpts,1)==ny),depend(bpts) :: ny=shape(bpts,1)
+                integer, optional,intent(in),check(shape(v,0)==num_panels),depend(v) :: num_panels=shape(v,0)
+                real(kind=8) dimension(num_panels,3),intent(out),depend(num_panels) :: sec_forces
+                real(kind=8) dimension(num_panels,3),intent(out),depend(num_panels) :: sec_forcesd
+            end subroutine forcecalc_d
+            subroutine forcecalc_b(v,vb,circ,circb,rho,rhob,bpts,bptsb,nx,ny,num_panels,sec_forces,sec_forcesb) ! in :OAS_API:OAS_API.F90:oas_api
+                use oas_main_b, only: forcecalc_main_b
+                real(kind=8) dimension(num_panels,3),intent(in) :: v
+                real(kind=8) dimension(num_panels,3),intent(out),depend(num_panels) :: vb
+                real(kind=8) dimension(num_panels),intent(in),depend(num_panels) :: circ
+                real(kind=8) dimension(num_panels),intent(out),depend(num_panels) :: circb
+                real(kind=8) intent(in) :: rho
+                real(kind=8) intent(out) :: rhob
+                real(kind=8) dimension(nx - 1,ny,3),intent(in) :: bpts
+                real(kind=8) dimension(nx - 1,ny,3),intent(out),depend(nx,ny) :: bptsb
+                integer, optional,intent(in),check((shape(bpts,0)+1)==nx),depend(bpts) :: nx=(shape(bpts,0)+1)
+                integer, optional,intent(in),check(shape(bpts,1)==ny),depend(bpts) :: ny=shape(bpts,1)
+                integer, optional,intent(in),check(shape(v,0)==num_panels),depend(v) :: num_panels=shape(v,0)
+                real(kind=8) dimension(num_panels,3),intent(out),depend(num_panels) :: sec_forces
+                real(kind=8) dimension(num_panels,3),intent(in),depend(num_panels) :: sec_forcesb
+            end subroutine forcecalc_b
+            subroutine assemblestructmtx(n,tot_n_fem,nodes,a,j,iy,iz,k_a,k_t,k_y,k_z,cons,e,g,x_gl,t,k_elem,pelem_a,pelem_t,pelem_y,pelem_z,t_elem,const2,const_y,const_z,k) ! in :OAS_API:OAS_API.F90:oas_api
+                integer, optional,intent(in),check((len(a)+1)>=n),depend(a) :: n=(len(a)+1)
+                integer, optional,intent(in),check(shape(nodes,0)==tot_n_fem),depend(nodes) :: tot_n_fem=shape(nodes,0)
+                real(kind=8) dimension(tot_n_fem,3),intent(in) :: nodes
+                real(kind=8) dimension(n - 1),intent(in) :: a
+                real(kind=8) dimension(n - 1),intent(in),depend(n) :: j
+                real(kind=8) dimension(n - 1),intent(in),depend(n) :: iy
+                real(kind=8) dimension(n - 1),intent(in),depend(n) :: iz
+                real(kind=8) dimension(2,2),intent(in) :: k_a
+                real(kind=8) dimension(2,2),intent(in) :: k_t
+                real(kind=8) dimension(4,4),intent(in) :: k_y
+                real(kind=8) dimension(4,4),intent(in) :: k_z
+                integer intent(in) :: cons
+                real(kind=8) intent(in) :: e
+                real(kind=8) intent(in) :: g
+                real(kind=8) dimension(3),intent(in) :: x_gl
+                real(kind=8) dimension(3,3),intent(in) :: t
+                real(kind=8) dimension(12,12),intent(in) :: k_elem
+                real(kind=8) dimension(2,12),intent(in) :: pelem_a
+                real(kind=8) dimension(2,12),intent(in) :: pelem_t
+                real(kind=8) dimension(4,12),intent(in) :: pelem_y
+                real(kind=8) dimension(4,12),intent(in) :: pelem_z
+                real(kind=8) dimension(12,12),intent(in) :: t_elem
+                real(kind=8) dimension(2,2),intent(in) :: const2
+                real(kind=8) dimension(4,4),intent(in) :: const_y
+                real(kind=8) dimension(4,4),intent(in) :: const_z
+                real(kind=8) dimension(6 * n + 6,6 * n + 6),intent(out),depend(n,n) :: k
+            end subroutine assemblestructmtx
+            subroutine assemblestructmtx_d(n,tot_n_fem,nodes,nodesd,a,ad,j,jd,iy,iyd,iz,izd,k_a,k_t,k_y,k_z,cons,e,g,x_gl,t,k_elem,pelem_a,pelem_t,pelem_y,pelem_z,t_elem,const2,const_y,const_z,k,kd) ! in :OAS_API:OAS_API.F90:oas_api
+                use oas_main_d, only: assemblestructmtx_main_d
+                integer, optional,intent(in),check((len(a)+1)>=n),depend(a) :: n=(len(a)+1)
+                integer, optional,intent(in),check(shape(nodes,0)==tot_n_fem),depend(nodes) :: tot_n_fem=shape(nodes,0)
+                real(kind=8) dimension(tot_n_fem,3),intent(in) :: nodes
+                real(kind=8) dimension(tot_n_fem,3),intent(in),depend(tot_n_fem) :: nodesd
+                real(kind=8) dimension(n - 1),intent(in) :: a
+                real(kind=8) dimension(n - 1),intent(in),depend(n) :: ad
+                real(kind=8) dimension(n - 1),intent(in),depend(n) :: j
+                real(kind=8) dimension(n - 1),intent(in),depend(n) :: jd
+                real(kind=8) dimension(n - 1),intent(in),depend(n) :: iy
+                real(kind=8) dimension(n - 1),intent(in),depend(n) :: iyd
+                real(kind=8) dimension(n - 1),intent(in),depend(n) :: iz
+                real(kind=8) dimension(n - 1),intent(in),depend(n) :: izd
+                real(kind=8) dimension(2,2),intent(in) :: k_a
+                real(kind=8) dimension(2,2),intent(in) :: k_t
+                real(kind=8) dimension(4,4),intent(in) :: k_y
+                real(kind=8) dimension(4,4),intent(in) :: k_z
+                integer intent(in) :: cons
+                real(kind=8) intent(in) :: e
+                real(kind=8) intent(in) :: g
+                real(kind=8) dimension(3),intent(in) :: x_gl
+                real(kind=8) dimension(3,3),intent(in) :: t
+                real(kind=8) dimension(12,12),intent(in) :: k_elem
+                real(kind=8) dimension(2,12),intent(in) :: pelem_a
+                real(kind=8) dimension(2,12),intent(in) :: pelem_t
+                real(kind=8) dimension(4,12),intent(in) :: pelem_y
+                real(kind=8) dimension(4,12),intent(in) :: pelem_z
+                real(kind=8) dimension(12,12),intent(in) :: t_elem
+                real(kind=8) dimension(2,2),intent(in) :: const2
+                real(kind=8) dimension(4,4),intent(in) :: const_y
+                real(kind=8) dimension(4,4),intent(in) :: const_z
+                real(kind=8) dimension(6 * n + 6,6 * n + 6),intent(out),depend(n,n) :: k
+                real(kind=8) dimension(6 * n + 6,6 * n + 6),intent(out),depend(n,n) :: kd
+            end subroutine assemblestructmtx_d
+            subroutine assemblestructmtx_b(n,tot_n_fem,nodes,nodesb,a,ab,j,jb,iy,iyb,iz,izb,k_a,k_t,k_y,k_z,cons,e,g,x_gl,t,k_elem,pelem_a,pelem_t,pelem_y,pelem_z,t_elem,const2,const_y,const_z,k,kb) ! in :OAS_API:OAS_API.F90:oas_api
+                use oas_main_b, only: assemblestructmtx_main_b
+                integer, optional,intent(in),check((len(a)+1)>=n),depend(a) :: n=(len(a)+1)
+                integer, optional,intent(in),check(shape(nodes,0)==tot_n_fem),depend(nodes) :: tot_n_fem=shape(nodes,0)
+                real(kind=8) dimension(tot_n_fem,3),intent(in) :: nodes
+                real(kind=8) dimension(tot_n_fem,3),intent(out),depend(tot_n_fem) :: nodesb
+                real(kind=8) dimension(n - 1),intent(in) :: a
+                real(kind=8) dimension(n - 1),intent(out),depend(n) :: ab
+                real(kind=8) dimension(n - 1),intent(in),depend(n) :: j
+                real(kind=8) dimension(n - 1),intent(out),depend(n) :: jb
+                real(kind=8) dimension(n - 1),intent(in),depend(n) :: iy
+                real(kind=8) dimension(n - 1),intent(out),depend(n) :: iyb
+                real(kind=8) dimension(n - 1),intent(in),depend(n) :: iz
+                real(kind=8) dimension(n - 1),intent(out),depend(n) :: izb
+                real(kind=8) dimension(2,2),intent(in) :: k_a
+                real(kind=8) dimension(2,2),intent(in) :: k_t
+                real(kind=8) dimension(4,4),intent(in) :: k_y
+                real(kind=8) dimension(4,4),intent(in) :: k_z
+                integer intent(in) :: cons
+                real(kind=8) intent(in) :: e
+                real(kind=8) intent(in) :: g
+                real(kind=8) dimension(3),intent(in) :: x_gl
+                real(kind=8) dimension(3,3),intent(in) :: t
+                real(kind=8) dimension(12,12),intent(in) :: k_elem
+                real(kind=8) dimension(2,12),intent(in) :: pelem_a
+                real(kind=8) dimension(2,12),intent(in) :: pelem_t
+                real(kind=8) dimension(4,12),intent(in) :: pelem_y
+                real(kind=8) dimension(4,12),intent(in) :: pelem_z
+                real(kind=8) dimension(12,12),intent(in) :: t_elem
+                real(kind=8) dimension(2,2),intent(in) :: const2
+                real(kind=8) dimension(4,4),intent(in) :: const_y
+                real(kind=8) dimension(4,4),intent(in) :: const_z
+                real(kind=8) dimension(6 * n + 6,6 * n + 6),intent(in),depend(n,n) :: k
+                real(kind=8) dimension(6 * n + 6,6 * n + 6),intent(in),depend(n,n) :: kb
+            end subroutine assemblestructmtx_b
+            subroutine assembleaeromtx(ny,nx,ny_,nx_,alpha,points,bpts,mesh,skip,symmetry,mtx) ! in :OAS_API:OAS_API.F90:oas_api
+                integer, optional,intent(in),check((shape(points,1)+1)==ny),depend(points) :: ny=(shape(points,1)+1)
+                integer, optional,intent(in),check((shape(points,0)+1)==nx),depend(points) :: nx=(shape(points,0)+1)
+                integer, optional,intent(in),check(shape(bpts,1)==ny_),depend(bpts) :: ny_=shape(bpts,1)
+                integer, optional,intent(in),check((shape(bpts,0)+1)==nx_),depend(bpts) :: nx_=(shape(bpts,0)+1)
+                real(kind=8) intent(in) :: alpha
+                real(kind=8) dimension(nx - 1,ny - 1,3),intent(in) :: points
+                real(kind=8) dimension(nx_ - 1,ny_,3),intent(in) :: bpts
+                real(kind=8) dimension(nx_,ny_,3),intent(in),depend(nx_,ny_) :: mesh
+                logical intent(in) :: skip
+                logical intent(in) :: symmetry
+                real(kind=8) dimension((nx-1)*(ny-1),(nx_-1)*(ny_-1),3),intent(out),depend(ny,nx,ny_,nx_) :: mtx
+            end subroutine assembleaeromtx
+            subroutine assembleaeromtx_d(ny,nx,ny_,nx_,alpha,alphad,points,pointsd,bpts,bptsd,mesh,meshd,skip,symmetry,mtx,mtxd) ! in :OAS_API:OAS_API.F90:oas_api
+                use oas_main_d, only: assembleaeromtx_main_d
+                integer, optional,intent(in),check((shape(points,1)+1)==ny),depend(points) :: ny=(shape(points,1)+1)
+                integer, optional,intent(in),check((shape(points,0)+1)==nx),depend(points) :: nx=(shape(points,0)+1)
+                integer, optional,intent(in),check(shape(bpts,1)==ny_),depend(bpts) :: ny_=shape(bpts,1)
+                integer, optional,intent(in),check((shape(bpts,0)+1)==nx_),depend(bpts) :: nx_=(shape(bpts,0)+1)
+                real(kind=8) intent(in) :: alpha
+                real(kind=8) intent(in) :: alphad
+                real(kind=8) dimension(nx - 1,ny - 1,3),intent(in) :: points
+                real(kind=8) dimension(nx - 1,ny - 1,3),intent(in),depend(nx,ny) :: pointsd
+                real(kind=8) dimension(nx_ - 1,ny_,3),intent(in) :: bpts
+                real(kind=8) dimension(nx_ - 1,ny_,3),intent(in),depend(nx_,ny_) :: bptsd
+                real(kind=8) dimension(nx_,ny_,3),intent(in),depend(nx_,ny_) :: mesh
+                real(kind=8) dimension(nx_,ny_,3),intent(in),depend(nx_,ny_) :: meshd
+                logical intent(in) :: skip
+                logical intent(in) :: symmetry
+                real(kind=8) dimension((nx-1)*(ny-1),(nx_-1)*(ny_-1),3),intent(out),depend(ny,nx,ny_,nx_) :: mtx
+                real(kind=8) dimension((nx-1)*(ny-1),(nx_-1)*(ny_-1),3),intent(out),depend(ny,nx,ny_,nx_) :: mtxd
+            end subroutine assembleaeromtx_d
+            subroutine assembleaeromtx_b(ny,nx,ny_,nx_,alpha,alphab,points,pointsb,bpts,bptsb,mesh,meshb,skip,symmetry,mtx,mtxb) ! in :OAS_API:OAS_API.F90:oas_api
+                use oas_main_b, only: assembleaeromtx_main_b
+                integer, optional,intent(in),check((shape(points,1)+1)==ny),depend(points) :: ny=(shape(points,1)+1)
+                integer, optional,intent(in),check((shape(points,0)+1)==nx),depend(points) :: nx=(shape(points,0)+1)
+                integer, optional,intent(in),check(shape(bpts,1)==ny_),depend(bpts) :: ny_=shape(bpts,1)
+                integer, optional,intent(in),check((shape(bpts,0)+1)==nx_),depend(bpts) :: nx_=(shape(bpts,0)+1)
+                real(kind=8) intent(in) :: alpha
+                real(kind=8) intent(out) :: alphab
+                real(kind=8) dimension(nx - 1,ny - 1,3),intent(in) :: points
+                real(kind=8) dimension(nx - 1,ny - 1,3),intent(out),depend(nx,ny) :: pointsb
+                real(kind=8) dimension(nx_ - 1,ny_,3),intent(in) :: bpts
+                real(kind=8) dimension(nx_ - 1,ny_,3),intent(out),depend(nx_,ny_) :: bptsb
+                real(kind=8) dimension(nx_,ny_,3),intent(in),depend(nx_,ny_) :: mesh
+                real(kind=8) dimension(nx_,ny_,3),intent(out),depend(nx_,ny_) :: meshb
+                logical intent(in) :: skip
+                logical intent(in) :: symmetry
+                real(kind=8) dimension((nx-1)*(ny-1),(nx_-1)*(ny_-1),3),intent(out),depend(ny,nx,ny_,nx_) :: mtx
+                real(kind=8) dimension((nx-1)*(ny-1),(nx_-1)*(ny_-1),3),intent(in),depend(ny,nx,ny_,nx_) :: mtxb
+            end subroutine assembleaeromtx_b
+            subroutine calc_vonmises(nodes,r,disp,e,g,x_gl,n,vonmises) ! in :OAS_API:OAS_API.F90:oas_api
+                real(kind=8) dimension(n,3),intent(in) :: nodes
+                real(kind=8) dimension(n - 1),intent(in),depend(n) :: r
+                real(kind=8) dimension(n,6),intent(in),depend(n) :: disp
+                real(kind=8) intent(in) :: e
+                real(kind=8) intent(in) :: g
+                real(kind=8) dimension(3),intent(in) :: x_gl
+                integer, optional,intent(in),check(shape(nodes,0)==n),depend(nodes) :: n=shape(nodes,0)
+                real(kind=8) dimension(n - 1,2),intent(out),depend(n) :: vonmises
+            end subroutine calc_vonmises
+            subroutine calc_vonmises_b(nodes,nodesb,r,rb,disp,dispb,e,g,x_gl,n,vonmises,vonmisesb) ! in :OAS_API:OAS_API.F90:oas_api
+                use oas_main_b, only: calc_vonmises_main_b
+                real(kind=8) dimension(n,3),intent(in) :: nodes
+                real(kind=8) dimension(n,3),intent(out),depend(n) :: nodesb
+                real(kind=8) dimension(n - 1),intent(in),depend(n) :: r
+                real(kind=8) dimension(n - 1),intent(out),depend(n) :: rb
+                real(kind=8) dimension(n,6),intent(in),depend(n) :: disp
+                real(kind=8) dimension(n,6),intent(out),depend(n) :: dispb
+                real(kind=8) intent(in) :: e
+                real(kind=8) intent(in) :: g
+                real(kind=8) dimension(3),intent(in) :: x_gl
+                integer, optional,intent(in),check(shape(nodes,0)==n),depend(nodes) :: n=shape(nodes,0)
+                real(kind=8) dimension(n - 1,2),intent(in),depend(n) :: vonmises
+                real(kind=8) dimension(n - 1,2),intent(in),depend(n) :: vonmisesb
+            end subroutine calc_vonmises_b
+            subroutine calc_vonmises_d(nodes,nodesd,r,rd,disp,dispd,e,g,x_gl,n,vonmises,vonmisesd) ! in :OAS_API:OAS_API.F90:oas_api
+                use oas_main_d, only: calc_vonmises_main_d
+                real(kind=8) dimension(n,3),intent(in) :: nodes
+                real(kind=8) dimension(n,3),intent(in),depend(n) :: nodesd
+                real(kind=8) dimension(n - 1),intent(in),depend(n) :: r
+                real(kind=8) dimension(n - 1),intent(in),depend(n) :: rd
+                real(kind=8) dimension(n,6),intent(in),depend(n) :: disp
+                real(kind=8) dimension(n,6),intent(in),depend(n) :: dispd
+                real(kind=8) intent(in) :: e
+                real(kind=8) intent(in) :: g
+                real(kind=8) dimension(3),intent(in) :: x_gl
+                integer, optional,intent(in),check(shape(nodes,0)==n),depend(nodes) :: n=shape(nodes,0)
+                real(kind=8) dimension(n - 1,2),intent(out),depend(n) :: vonmises
+                real(kind=8) dimension(n - 1,2),intent(out),depend(n) :: vonmisesd
+            end subroutine calc_vonmises_d
+            subroutine transferdisplacements(nx,ny,mesh,disp,w,def_mesh) ! in :OAS_API:OAS_API.F90:oas_api
+                integer, optional,intent(in),check(shape(mesh,0)==nx),depend(mesh) :: nx=shape(mesh,0)
+                integer, optional,intent(in),check(shape(mesh,1)==ny),depend(mesh) :: ny=shape(mesh,1)
+                real(kind=8) dimension(nx,ny,3),intent(in) :: mesh
+                real(kind=8) dimension(ny,6),intent(in),depend(ny) :: disp
+                real(kind=8) intent(in) :: w
+                real(kind=8) dimension(nx,ny,3),intent(out),depend(nx,ny) :: def_mesh
+            end subroutine transferdisplacements
+            subroutine transferdisplacements_d(nx,ny,mesh,meshd,disp,dispd,w,def_mesh,def_meshd) ! in :OAS_API:OAS_API.F90:oas_api
+                use oas_main_d, only: transferdisplacements_main_d
+                integer, optional,intent(in),check(shape(mesh,0)==nx),depend(mesh) :: nx=shape(mesh,0)
+                integer, optional,intent(in),check(shape(mesh,1)==ny),depend(mesh) :: ny=shape(mesh,1)
+                real(kind=8) dimension(nx,ny,3),intent(in) :: mesh
+                real(kind=8) dimension(nx,ny,3),intent(in),depend(nx,ny) :: meshd
+                real(kind=8) dimension(ny,6),intent(in),depend(ny) :: disp
+                real(kind=8) dimension(ny,6),intent(in),depend(ny) :: dispd
+                real(kind=8) intent(in) :: w
+                real(kind=8) dimension(nx,ny,3),intent(out),depend(nx,ny) :: def_mesh
+                real(kind=8) dimension(nx,ny,3),intent(out),depend(nx,ny) :: def_meshd
+            end subroutine transferdisplacements_d
+            subroutine transferdisplacements_b(nx,ny,mesh,meshb,disp,dispb,w,def_mesh,def_meshb) ! in :OAS_API:OAS_API.F90:oas_api
+                use oas_main_b, only: transferdisplacements_main_b
+                integer, optional,intent(in),check(shape(mesh,0)==nx),depend(mesh) :: nx=shape(mesh,0)
+                integer, optional,intent(in),check(shape(mesh,1)==ny),depend(mesh) :: ny=shape(mesh,1)
+                real(kind=8) dimension(nx,ny,3),intent(in) :: mesh
+                real(kind=8) dimension(nx,ny,3),intent(out),depend(nx,ny) :: meshb
+                real(kind=8) dimension(ny,6),intent(in),depend(ny) :: disp
+                real(kind=8) dimension(ny,6),intent(out),depend(ny) :: dispb
+                real(kind=8) intent(in) :: w
+                real(kind=8) dimension(nx,ny,3),intent(in),depend(nx,ny) :: def_mesh
+                real(kind=8) dimension(nx,ny,3),intent(in),depend(nx,ny) :: def_meshb
+            end subroutine transferdisplacements_b
+        end module oas_api
+    end interface 
+end python module OAS_API
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/

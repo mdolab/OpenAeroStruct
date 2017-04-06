@@ -1,60 +1,53 @@
-from __future__ import division
-import numpy
+from __future__ import division, print_function
+import numpy as np
 
 from openmdao.api import Component
-
-
 
 class MaterialsTube(Component):
     """ Compute geometric properties for a tube element.
 
     Parameters
     ----------
-    r : array_like
+    r : numpy array
         Radii for each FEM element.
-    thickness : array_like
+    thickness : numpy array
         Tube thickness for each FEM element.
 
     Returns
     -------
-    A : array_like
+    A : numpy array
         Areas for each FEM element.
-    Iy : array_like
+    Iy : numpy array
         Mass moment of inertia around the y-axis for each FEM element.
-    Iz : array_like
+    Iz : numpy array
         Mass moment of inertia around the z-axis for each FEM element.
-    J : array_like
+    J : numpy array
         Polar moment of inertia for each FEM element.
-
     """
 
-    def __init__(self, fem_ind):
+    def __init__(self, surface):
         super(MaterialsTube, self).__init__()
 
-        n_fem, i_fem = fem_ind[0, :]
-        num_surf = fem_ind.shape[0]
-        self.fem_ind = fem_ind
+        self.surface = surface
 
-        num_surf = fem_ind.shape[0]
-        tot_n_fem = numpy.sum(fem_ind[:, 0])
-        size = 6 * tot_n_fem + 6 * num_surf
-        self.tot_n_fem = tot_n_fem
+        self.ny = surface['num_y']
+        self.nx = surface['num_x']
+        self.n = self.nx * self.ny
+        self.mesh = surface['mesh']
+        name = surface['name']
 
-        self.add_param('r', val=numpy.zeros((tot_n_fem - num_surf)))
-        self.add_param('thickness', val=numpy.zeros((tot_n_fem - num_surf)))
-        self.add_output('A', val=numpy.zeros((tot_n_fem - num_surf)))
-        self.add_output('Iy', val=numpy.zeros((tot_n_fem - num_surf)))
-        self.add_output('Iz', val=numpy.zeros((tot_n_fem - num_surf)))
-        self.add_output('J', val=numpy.zeros((tot_n_fem - num_surf)))
+        self.add_param('r', val=surface['r'])
+        self.add_param('thickness', val=surface['t'])
+        self.add_output('A', val=np.zeros((self.ny - 1)))
+        self.add_output('Iy', val=np.zeros((self.ny - 1)))
+        self.add_output('Iz', val=np.zeros((self.ny - 1)))
+        self.add_output('J', val=np.zeros((self.ny - 1)))
 
-        # self.deriv_options['type'] = 'cs'
-        self.deriv_options['form'] = 'central'
-        #self.deriv_options['extra_check_partials_form'] = "central"
-
-        self.arange = numpy.arange(tot_n_fem - num_surf)
+        self.arange = np.arange((self.ny - 1))
 
     def solve_nonlinear(self, params, unknowns, resids):
-        pi = numpy.pi
+        name = self.surface['name']
+        pi = np.pi
         r1 = params['r'] - 0.5 * params['thickness']
         r2 = params['r'] + 0.5 * params['thickness']
 
@@ -63,11 +56,11 @@ class MaterialsTube(Component):
         unknowns['Iz'] = pi * (r2**4 - r1**4) / 4.
         unknowns['J'] = pi * (r2**4 - r1**4) / 2.
 
-
     def linearize(self, params, unknowns, resids):
+        name = self.surface['name']
         jac = self.alloc_jacobian()
 
-        pi = numpy.pi
+        pi = np.pi
         r = params['r'].real
         t = params['thickness'].real
         r1 = r - 0.5 * t
