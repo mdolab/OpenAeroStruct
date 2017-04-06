@@ -72,7 +72,7 @@ def setup(num_inboard=3, num_outboard=4):
     # Create the mesh with 3 inboard points and 4 outboard points.
     # This will be mirrored to produce a mesh with ... spanwise points,
     # or ...-1 spanwise panels
-    mesh = gen_crm_mesh(int(num_inboard), int(num_outboard), num_x=2)  #***
+    mesh = gen_crm_mesh(int(num_inboard), int(num_outboard), num_x=2)  # ***
     num_x, num_y = mesh.shape[: 2]
     num_twist = np.max([int((num_y - 1) / 5), 5])
     # print('234mesh.shape',mesh.shape)
@@ -85,7 +85,7 @@ def setup(num_inboard=3, num_outboard=4):
     # print('..... aero_ind.shape',aero_ind.shape)
     # print(aero_ind)
     fem_ind = [num_y]
-    aero_ind, fem_ind = get_inds(aero_ind, fem_ind)  #***
+    aero_ind, fem_ind = get_inds(aero_ind, fem_ind)  # ***
     # Set additional mesh parameters
     dihedral = 0.  # dihedral angle in degrees
     sweep = 0.  # shearing sweep angle in degrees
@@ -105,9 +105,9 @@ def setup(num_inboard=3, num_outboard=4):
     twist = cp2pt(twist_cp, jac_twist)
     thickness = cp2pt(thickness_cp, jac_thickness)
     mesh = geometry_mesh(mesh, aero_ind, twist, 0, 0, 1, span=58.7630524)
-    #print('mesh.shape',mesh.shape)
+    # print('mesh.shape',mesh.shape)
     def_mesh = transfer_displacements(
-        mesh, disp, aero_ind, fem_ind, fem_origin=0.35)  #***
+        mesh, disp, aero_ind, fem_ind, fem_origin=0.35)  # ***
     # Output the def_mesh for the aero modules
     # Other variables needed for aero and struct modules
     params = {
@@ -177,7 +177,7 @@ def aerodynamics(def_mesh=None, params=None):
                             mid_b, circulations, alpha, v, rho)
     loads = transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin)
     # for i, j in enumerate([circulations, sec_forces, loads]):
-        #print('shape of ',i,' = ',j.shape)
+    #print('shape of ',i,' = ',j.shape)
     return loads
 
 
@@ -274,11 +274,11 @@ def gen_crm_mesh(n_points_inboard=3, n_points_outboard=4,
     # wing
     crm_base_points = raw_crm_points[(0, 6, 19), :]
     le_base = np.vstack((crm_base_points[:, 1],
-                            crm_base_points[:, 2],
-                            crm_base_points[:, 3]))
+                         crm_base_points[:, 2],
+                         crm_base_points[:, 3]))
     te_base = np.vstack((crm_base_points[:, 1] + crm_base_points[:, 5],
-                            crm_base_points[:, 2],
-                            crm_base_points[:, 3]))
+                         crm_base_points[:, 2],
+                         crm_base_points[:, 3]))
     mesh = np.empty((2, 3, 3))
     mesh[0, :, :] = le_base.T
     mesh[1, :, :] = te_base.T
@@ -766,7 +766,7 @@ def radii(mesh, t_c=0.15):
     """ Obtain the radii of the FEM component based on chord. """
     vectors = mesh[-1, :, :] - mesh[0, :, :]
     # print('sss mesh.shape',mesh.shape)
-    #print('vectors.shape',vectors.shape)
+    # print('vectors.shape',vectors.shape)
     chords = np.sqrt(np.sum(vectors**2, axis=1))
     chords = 0.5 * chords[: -1] + 0.5 * chords[1:]
     return t_c * chords
@@ -967,7 +967,7 @@ def spatial_beam_vonmises_tube(nodes, r, disp, aero_ind, fem_ind, E, G):
         'disp': disp
     }
     unknowns = {
-        'vonmises': np.zeros((_Component.tot_n_fem-num_surf, 2), dtype="complex")
+        'vonmises': np.zeros((_Component.tot_n_fem - num_surf, 2), dtype="complex")
     }
     resids = None
     _Component.solve_nonlinear(params, unknowns, resids)
@@ -1048,10 +1048,10 @@ def materials_tube(r, thickness, fem_ind):
         'thickness': thickness
     }
     unknowns = {
-        'A': np.zeros((np.sum(fem_ind[:,0]-fem_ind.shape[0]))),
-        'Iy': np.zeros((np.sum(fem_ind[:,0]-fem_ind.shape[0]))),
-        'Iz': np.zeros((np.sum(fem_ind[:,0]-fem_ind.shape[0]))),
-        'J': np.zeros((np.sum(fem_ind[:,0]-fem_ind.shape[0])))
+        'A': np.zeros((np.sum(fem_ind[:, 0] - fem_ind.shape[0]))),
+        'Iy': np.zeros((np.sum(fem_ind[:, 0] - fem_ind.shape[0]))),
+        'Iz': np.zeros((np.sum(fem_ind[:, 0] - fem_ind.shape[0]))),
+        'J': np.zeros((np.sum(fem_ind[:, 0] - fem_ind.shape[0])))
     }
     resids = None
     MaterialsTube_comp.solve_nonlinear(params, unknowns, resids)
@@ -1060,7 +1060,6 @@ def materials_tube(r, thickness, fem_ind):
     Iz = unknowns.get('Iz', None)
     J = unknowns.get('J', None)
     return A, Iy, Iz, J
-
 
     """
     --------------------------------------------------------------------------------
@@ -1088,7 +1087,6 @@ def materials_tube(r, thickness, fem_ind):
         _Component.solve_nonlinear(params, unknowns, resids)
         fuelburn = unknowns.get('fuelburn')
         return fuelburn
-
 
     def functional_equilibrium(L, weight, fuelburn, W0, aero_ind):
         """ L = W constraint """
