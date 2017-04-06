@@ -178,8 +178,8 @@ def _assemble_system(aero_ind, fem_ind, nodes, A, J, Iy, Iz, loads,
 
             for ind in xrange(num_cons):
                 for k in xrange(6):
-                    mtx_[6*num_nodes + 6*ind + k, 6*cons[i_surf]+k] = 1.e9
-                    mtx_[6*cons[i_surf]+k, 6*num_nodes + 6*ind + k] = 1.e9
+                    mtx_[6*num_nodes + 6*ind + k, 6*int(cons[i_surf])+k] = 1.e9
+                    mtx_[6*int(cons[i_surf])+k, 6*num_nodes + 6*ind + k] = 1.e9
 
             rhs_[:] = 0.0
             rhs_[:6*n_fem] = loads_.reshape((6*n_fem))

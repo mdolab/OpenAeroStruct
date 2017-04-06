@@ -90,7 +90,7 @@ def sweep(mesh, angle):
     """ Apply shearing sweep. Positive sweeps back. """
 
     num_x, num_y, _ = mesh.shape
-    ny2 = (num_y-1)/2
+    ny2 = int((num_y-1)/2)
 
     le = mesh[0]
 
@@ -112,7 +112,7 @@ def dihedral(mesh, angle):
     """ Apply dihedral angle. Positive bends up. """
 
     num_x, num_y, _ = mesh.shape
-    ny2 = (num_y-1) / 2
+    ny2 = int((num_y-1) / 2)
 
     le = mesh[0]
 
