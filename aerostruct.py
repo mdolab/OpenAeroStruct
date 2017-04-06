@@ -1,9 +1,7 @@
 # Univ. Michigan Aerostructural model.
 # Based on OpenAeroStruct by John Hwang, and John Jasa (github.com/johnjasa/OpenAeroStruct)
-#
-# Cython implementation by Sam Friedman
-
-# Main file for coupled system components
+# author: Sam Friedman  (samfriedman@tamu.edu)
+# date:   4/6/2017
 
 # make compatible Python 2.x to 3.x
 from __future__ import print_function, division
@@ -43,9 +41,7 @@ warnings.filterwarnings("ignore")
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-
                                 GEOMETRY / SETUP
-
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
