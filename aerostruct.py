@@ -508,23 +508,72 @@ def gen_mesh(num_x, num_y, span, chord, cosine_spacing=0.):
     return mesh
 
 
-def geometry_mesh(mesh, aero_ind, twist, sweep_angle=0, dihedral_angle=0, taper_ratio=1, span=58.7630524):
-    ny = aero_ind[0, 1]
-    nx = aero_ind[0, 0]
-    n = nx * ny
-    wing_mesh = mesh[: n, :].reshape(nx, ny, 3).astype('complex')
-    twist = np.zeros(ny)  # default option
-    wing_mesh = mesh[: n, :].reshape(nx, ny, 3).astype('complex')
-    # stretch(wing_mesh, params['span'])
-    sweep(wing_mesh, sweep_angle)
-    rotate(wing_mesh, twist)
-    dihedral(wing_mesh, dihedral_angle)
-    taper(wing_mesh, taper_ratio)
-    mesh[: n, :] = wing_mesh.reshape(n, 3).astype('complex')
+def geometry_mesh(surface):
+    """
+    OpenMDAO component that performs mesh manipulation functions. It reads in
+    the initial mesh from the surface dictionary and outputs the altered
+    mesh based on the geometric design variables.
+
+    Parameters
+    ----------
+    sweep : float
+        Shearing sweep angle in degrees.
+    dihedral : float
+        Dihedral angle in degrees.
+    twist[ny] : numpy array
+        1-D array of rotation angles for each wing slice in degrees.
+    chord_dist[ny] : numpy array
+        Chord length for each panel edge.
+    taper : float
+        Taper ratio for the wing; 1 is untapered, 0 goes to a point at the tip.
+
+    Returns
+    -------
+    mesh[nx, ny, 3] : numpy array
+        Modified mesh based on the initial mesh in the surface dictionary and
+        the geometric design variables.
+    """
+    _Comp = GeometryMesh(surface)
+    params = None
+    unknowns = {
+        'mesh': _Comp.mesh
+    }
+    resids = None
+    _Comp.solve_nonlinear(params, unknowns, resids)
+    mesh = unknowns.get('mesh')
     return mesh
 
 
-def transfer_displacements(mesh, disp, aero_ind, fem_ind, fem_origin=0.35):
+def b_spline_surface(surface):
+    """
+    General function to translate from control points to actual points
+    using a b-spline representation.
+
+    Parameters
+    ----------
+    cpname : string
+        Name of the OpenMDAO component containing the control point values.
+    ptname : string
+        Name of the OpenMDAO component that will contain the interpolated
+        b-spline values.
+    n_input : int
+        Number of input control points.
+    n_output : int
+        Number of outputted interpolated b-spline points.
+    """
+    _Comp = Bspline(cpname, ptname, n_input, n_output)
+    params = {
+        cpname: cpname
+    }
+    unknowns = {
+        ptname: np.zeros(n_output)
+    }
+    resids = None
+    _Comp.solve_nonlinear(params, unknowns, resids)
+    ptname_out = unknowns.get(ptname)
+    return ptname_out
+
+def transfer_displacements(surface, mesh, disp):
     """
     Perform displacement transfer.
 
@@ -533,9 +582,9 @@ def transfer_displacements(mesh, disp, aero_ind, fem_ind, fem_origin=0.35):
 
     Parameters
     ----------
-    mesh : array_like
+    mesh[nx, ny, 3] : numpy array
         Flattened array defining the lifting surfaces.
-    disp : array_like
+    disp[ny, 6] : numpy array
         Flattened array containing displacements on the FEM component.
         Contains displacements for all six degrees of freedom, including
         displacements in the x, y, and z directions, and rotations about the
@@ -543,20 +592,19 @@ def transfer_displacements(mesh, disp, aero_ind, fem_ind, fem_origin=0.35):
 
     Returns
     -------
-    def_mesh : array_like
+    def_mesh[nx, ny, 3] : numpy array
         Flattened array defining the lifting surfaces after deformation.
-
     """
-    _Component = TransferDisplacements(aero_ind, fem_ind, fem_origin)
+    _Comp = TransferDisplacements(surface)
     params = {
         'mesh': mesh,
         'disp': disp
     }
     unknowns = {
-        'def_mesh': np.zeros((np.sum(aero_ind[:, 2]), 3), dtype="complex")
+        'def_mesh': np.zeros((_Comp.nx, _Comp.ny, 3), dtype=data_type)
     }
     resids = None
-    _Component.solve_nonlinear(params, unknowns, resids)
+    _Comp.solve_nonlinear(params, unknowns, resids)
     def_mesh = unknowns.get('def_mesh')
     return def_mesh
 
@@ -572,7 +620,7 @@ def transfer_displacements(mesh, disp, aero_ind, fem_ind, fem_origin=0.35):
 From vlm.py: """
 
 
-def vlm_geometry(def_mesh, surface):
+def vlm_geometry(surface, def_mesh):
     """ Compute various geometric properties for VLM analysis.
 
     Parameters
@@ -597,82 +645,80 @@ def vlm_geometry(def_mesh, surface):
     S_ref : float
         The reference area of the lifting surface.
     """
-    _Component = VLMGeometry(surface)
+    _Comp = VLMGeometry(surface)
     params = {
         'def_mesh': def_mesh
     }
     unknowns = {
-        'b_pts': np.zeros((_Component.nx, _Component.ny, 3), dtype=data_type),
-        'mid_b': np.zeros((_Component.nx - 1, _Component.ny, 3), dtype=data_type)),
-        'c_pts': np.zeros((_Component.nx - 1, _Component.ny - 1, 3)),
-        'widths': np.zeros((_Component.ny - 1))),
-        'cos_sweep': np.zeros((_Component.ny - 1)),
-        'lengths': np.zeros((_Component.ny)),
-        'normals': np.zeros((_Component.nx - 1, _Component.ny - 1, 3)),
+        'b_pts': np.zeros((_Comp.nx-1, _Comp.ny, 3), dtype=data_type),
+        'c_pts': np.zeros((_Comp.nx-1, _Comp.ny-1, 3)),
+        'widths': np.zeros((_Comp.ny-1)),
+        'cos_sweep': np.zeros((_Comp.ny-1)),
+        'lengths': np.zeros((_Comp.ny)),
+        'normals': np.zeros((_Comp.nx-1, _Comp.ny-1, 3)),
         'S_ref': val=0.
     }
     resids=None
-    _Component.solve_nonlinear(params, unknowns, resids)
+    _Comp.solve_nonlinear(params, unknowns, resids)
     b_pts=unknowns.get('b_pts')
-    mid_b=unknowns.get('mid_b')
     c_pts=unknowns.get('c_pts')
     widths=unknowns.get('widths')
     cos_sweep=unknowns.get('cos_sweep')
     lengths=unknowns.get('lengths')
     normals=unknowns.get('normals')
     S_ref=unknowns.get('S_ref')
-    return b_pts, mid_b, c_pts, widths, cos_sweep, lengths, normals, S_ref
+    return b_pts, c_pts, widths, cos_sweep, lengths, normals, S_ref
 
 
-def vlm_circulations(aero_ind, def_mesh, b_pts, c_pts, normals, v, alpha):
-    """
-    Compute the circulations based on the AIC matrix and the panel velocities.
-    Note that the flow tangency condition is enforced at the 3/4 chord point.
+# def vlm_circulations(aero_ind, def_mesh, b_pts, c_pts, normals, v, alpha):
+#     """
+#     Compute the circulations based on the AIC matrix and the panel velocities.
+#     Note that the flow tangency condition is enforced at the 3/4 chord point.
+#
+#     Parameters
+#     ----------
+#     def_mesh : array_like
+#         Flattened array defining the lifting surfaces.
+#     b_pts : array_like
+#         Bound points for the horseshoe vortices, found along the 1/4 chord.
+#     c_pts : array_like
+#         Collocation points on the 3/4 chord line where the flow tangency
+#         condition is satisfed. Used to set up the linear system.
+#     normals : array_like
+#         The normal vector for each panel, computed as the cross of the two
+#         diagonals from the mesh points.
+#     v : float
+#         Freestream air velocity in m/s.
+#     alpha : float
+#         Angle of attack in degrees.
+#
+#     Returns
+#     -------
+#     circulations : array_like
+#         Flattened vector of horseshoe vortex strengths calculated by solving
+#         the linear system of AIC_mtx * circulations = rhs, where rhs is
+#         based on the air velocity at each collocation point.
+#
+#     """
+#     _Comp=VLMCirculations(aero_ind)
+#     params={
+#         'def_mesh': def_mesh,
+#         'b_pts': b_pts,
+#         'c_pts': c_pts,
+#         'normals': normals,
+#         'v': v,
+#         'alpha': alpha
+#     }
+#     unknowns={
+#         'circulations': np.zeros((np.sum(aero_ind[:, 4])), dtype = "complex")
+#     }
+#     resids=None
+#     _Comp.solve_nonlinear(params, unknowns, resids)
+#     circulations=unknowns.get('circulations')
+#     return circulations
 
-    Parameters
-    ----------
-    def_mesh : array_like
-        Flattened array defining the lifting surfaces.
-    b_pts : array_like
-        Bound points for the horseshoe vortices, found along the 1/4 chord.
-    c_pts : array_like
-        Collocation points on the 3/4 chord line where the flow tangency
-        condition is satisfed. Used to set up the linear system.
-    normals : array_like
-        The normal vector for each panel, computed as the cross of the two
-        diagonals from the mesh points.
-    v : float
-        Freestream air velocity in m/s.
-    alpha : float
-        Angle of attack in degrees.
 
-    Returns
-    -------
-    circulations : array_like
-        Flattened vector of horseshoe vortex strengths calculated by solving
-        the linear system of AIC_mtx * circulations = rhs, where rhs is
-        based on the air velocity at each collocation point.
-
-    """
-    _Component=VLMCirculations(aero_ind)
-    params={
-        'def_mesh': def_mesh,
-        'b_pts': b_pts,
-        'c_pts': c_pts,
-        'normals': normals,
-        'v': v,
-        'alpha': alpha
-    }
-    unknowns={
-        'circulations': np.zeros((np.sum(aero_ind[:, 4])), dtype = "complex")
-    }
-    resids=None
-    _Component.solve_nonlinear(params, unknowns, resids)
-    circulations=unknowns.get('circulations')
-    return circulations
-
-
-def assemble_aic(aero_ind, def_mesh, b_pts, c_pts, normals, v, alpha, surfaces):
+def assemble_aic(surface, def_mesh, b_pts, c_pts, normals, v, alpha):
     """
     Compute the circulations based on the AIC matrix and the panel velocities.
     Note that the flow tangency condition is enforced at the 3/4 chord point.
@@ -708,43 +754,84 @@ def assemble_aic(aero_ind, def_mesh, b_pts, c_pts, normals, v, alpha, surfaces):
     rhs[(nx-1)*(ny-1)] : numpy array
         The right-hand-side of the linear system that yields the circulations.
     """
-    _Component=AssembleAIC(def_mesh, b_pts, c_pts, normals, surfaces)
-    params={}
-    for surface in surfaces:
-        _Component.surface=surface
-        ny=surface['num_y']
-        nx=surface['num_x']
-        name=surface['name']
-        params.update({
-            name + 'def_mesh': def_mesh,  # this can't be right
-            name + 'b_pts': b_pts,
-            name + 'c_pts': c_pts,
-            name + 'normals': normals
-        })
+    surfaces = [surface]
+    _Comp=AssembleAIC(surfaces)
+    params = {}
+    ny=surface['num_y']
+    nx=surface['num_x']
+    name=surface['name']
+    params.update({
+        name + 'def_mesh': def_mesh,
+        name + 'b_pts': b_pts,
+        name + 'c_pts': c_pts,
+        name + 'normals': normals
+    })
+    params.update({
+        'v': v,
+        'alpha': alpha
+    })
     unknowns={
-        'AIC': np.zeros((_Component.tot_panels, _Component.tot_panels), dtype = data_type),
-        'rhs': np.zeros((_Component.tot_panels), dtype = data_type)
+        'AIC': np.zeros((_Comp.tot_panels, _Comp.tot_panels), dtype = data_type),
+        'rhs': np.zeros((_Comp.tot_panels), dtype = data_type)
     }
     resids=None
-    _Component.solve_nonlinear(params, unknowns, resids)
+    _Comp.solve_nonlinear(params, unknowns, resids)
     AIC=unknowns.get('AIC')
     rhs=unknowns.get('rhs')
     return AIC, rhs
 
 
-def vlm_forces(def_mesh, aero_ind, b_pts, mid_b, circulations, alpha = 3, v = 10, rho = 3):
-    """ Compute aerodynamic forces acting on each section.
+def aero_circulations(AIC, rhs, size):
+    """
+    Compute the circulation strengths of the horseshoe vortices by solving the
+    linear system AIC * circulations = n * v.
+    This component is copied from OpenMDAO's LinearSystem component with the
+    names of the parameters and outputs changed to match our problem formulation.
 
     Parameters
     ----------
-    def_mesh : array_like
-        Flattened array defining the lifting surfaces.
-    b_pts : array_like
+    AIC[(nx-1)*(ny-1), (nx-1)*(ny-1)] : numpy array
+        The aerodynamic influence coefficient matrix. Solving the linear system
+        of AIC * circulations = n * v gives us the circulations for each of the
+        horseshoe vortices.
+    rhs[(nx-1)*(ny-1)] : numpy array
+        The right-hand-side of the linear system that yields the circulations.
+
+    Returns
+    -------
+    circulations[(nx-1)*(ny-1)] : numpy array
+        Augmented displacement array. Obtained by solving the system
+        AIC * circulations = n * v.
+    """
+    _Comp = AeroCirculations(size)
+    params = {
+        'AIC': AIC,
+        'rhs': rhs
+    }
+    unknowns = {
+        'circulations': np.zeros((size), dtype=data_type)
+    }
+    resids = None
+    _Comp.solve_nonlinear(params, unknowns, resids)
+    circulations = unknowns.get('circulations')
+    return circulations
+
+
+def vlm_forces(surface, def_mesh, b_pts, circulations, alpha, v, rho):
+    """ Compute aerodynamic forces acting on each section.
+
+    Note that the first two parameters and the unknown have the surface name
+    prepended on it. E.g., 'def_mesh' on a surface called 'wing' would be
+    'wing.def_mesh', etc.
+
+    Parameters
+    ----------
+    def_mesh[nx, ny, 3] : numpy array
+        Array defining the nodal coordinates of the lifting surface.
+    b_pts[nx-1, ny, 3] : numpy array
         Bound points for the horseshoe vortices, found along the 1/4 chord.
-    mid_b : array_like
-        Midpoints of the bound vortex segments, used as the collocation
-        points to compute drag.
-    circ : array_like   (circulations)
+
+    circulations : numpy array
         Flattened vector of horseshoe vortex strengths calculated by solving
         the linear system of AIC_mtx * circulations = rhs, where rhs is
         based on the air velocity at each collocation point.
@@ -757,32 +844,41 @@ def vlm_forces(def_mesh, aero_ind, b_pts, mid_b, circulations, alpha = 3, v = 10
 
     Returns
     -------
-    sec_forces : array_like
+    sec_forces[nx-1, ny-1, 3] : numpy array
         Flattened array containing the sectional forces acting on each panel.
-        Stored in Fortran order (only relevant when more than one chordwise
+        Stored in Fortran order (only relevant with more than one chordwise
         panel).
 
     """
-    _Component=VLMForces(aero_ind)
-    params={
-        'def_mesh': def_mesh,
-        'b_pts': b_pts,
-        'mid_b': mid_b,
+    surfaces = [surface]
+    _Comp=VLMForces(surfaces)
+    params = {}
+    unknowns = {}
+    tot_panels = 0
+    name = surface['name']
+    ny = surface['num_y']
+    nx = surface['num_x']
+    tot_panels += (nx - 1) * (ny - 1)
+    params.update({
+        name+'def_mesh': def_mesh,
+        name+'b_pts': b_pts
+    })
+    unknowns.update({
+        name+'sec_forces': np.zeros((np.sum(aero_ind[:, 4]), 3))
+    })
+    params.update({
         'circulations': circulations,
         'alpha': alpha,
         'v': v,
         'rho': rho
-    }
-    unknowns={
-        'sec_forces': np.zeros((np.sum(aero_ind[:, 4]), 3))
-    }
+    })
     resids=None
-    _Component.solve_nonlinear(params, unknowns, resids)
-    sec_forces=unknowns.get('sec_forces')
+    _Comp.solve_nonlinear(params, unknowns, resids)
+    sec_forces=unknowns.get(name+'sec_forces')
     return sec_forces
 
 
-def transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin = 0.35):
+def transfer_loads(surface, def_mesh, sec_forces):
     """
     Perform aerodynamic load transfer.
 
@@ -791,176 +887,175 @@ def transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin = 0.35):
 
     Parameters
     ----------
-    def_mesh : array_like
+    def_mesh[nx, ny, 3] : numpy array
         Flattened array defining the lifting surfaces after deformation.
-    sec_forces : array_like
+    sec_forces[nx-1, ny-1, 3] : numpy array
         Flattened array containing the sectional forces acting on each panel.
         Stored in Fortran order (only relevant when more than one chordwise
         panel).
 
     Returns
     -------
-    loads : array_like
+    loads[ny, 6] : numpy array
         Flattened array containing the loads applied on the FEM component,
         computed from the sectional forces.
-
     """
-    _Component=TransferLoads(aero_ind, fem_ind, fem_origin)
+    _Comp=TransferLoads(surface)
     params={
         'def_mesh': def_mesh,
         'sec_forces': sec_forces
     }
     unknowns={
-        'loads': np.zeros((np.sum(fem_ind[:, 0]), 6))
+        'loads': np.zeros((_Comp.ny, 6), dtype=complex)
     }
     resids=None
-    _Component.solve_nonlinear(params, unknowns, resids)
+    _Comp.solve_nonlinear(params, unknowns, resids)
     loads=unknowns.get('loads')
     return loads
 
 
-def vlm_lift_drag(sec_forces, alpha, aero_ind):
-    """
-    Calculate total lift and drag in force units based on section forces.
-
-    Parameters
-    ----------
-    sec_forces : array_like
-        Flattened array containing the sectional forces acting on each panel.
-        Stored in Fortran order (only relevant when more than one chordwise
-        panel).
-    alpha : float
-        Angle of attack in degrees.
-
-    Returns
-    -------
-    L : array_like
-        Total lift for each lifting surface.
-    D : array_like
-        Total drag for each lifting surface.
-
-    """
-    _Component=VLMLiftDrag(aero_ind)
-    num_surf=aero_ind.shape[0]
-    params={
-        'sec_forces': sec_forces,
-        'alpha': alpha
-    }
-    unknowns={
-        'L': np.zeros((num_surf)),
-        'D': np.zeros((num_surf))
-    }
-    resids=None
-    _Component.solve_nonlinear(params, unknowns, resids)
-    L=unknowns.get('L')
-    D=unknowns.get('D')
-    return L, D
-
-
-def vlm_coeffs(S_ref, L, D, v, rho, aero_ind):
-    """ Compute lift and drag coefficients.
-
-    Parameters
-    ----------
-    S_ref : array_like
-        The reference areas of each lifting surface.
-    L : array_like
-        Total lift for each lifting surface.
-    D : array_like
-        Total drag for each lifting surface.
-    v : float
-        Freestream air velocity in m/s.
-    rho : float
-        Air density in kg/m^3.
-
-    Returns
-    -------
-    CL1 : array_like
-        Induced coefficient of lift (CL) for each lifting surface.
-    CDi : array_like
-        Induced coefficient of drag (CD) for each lifting surface.
-
-    """
-    _Component=VLMCoeffs(aero_ind)
-    num_surf=aero_ind.shape[0]
-    params={
-        'S_ref': S_ref,
-        'L': L,
-        'D': D,
-        'v': v,
-        'rho': rho
-    }
-    unknowns={
-        'CL1': np.zeros((num_surf)),
-        'CDi': np.zeros((num_surf))
-    }
-    resids=None
-    _Component.solve_nonlinear(params, unknowns, resids)
-    CL1=unknowns.get('CL1')
-    CDi=unknowns.get('CDi')
-    return CL1, CDi
-
-
-def total_lift(CL1, CL0, aero_ind):
-    """ Calculate total lift in force units.
-
-    Parameters
-    ----------
-    CL1 : array_like
-        Induced coefficient of lift (CL) for each lifting surface.
-
-    Returns
-    -------
-    CL : array_like
-        Total coefficient of lift (CL) for each lifting surface.
-    CL_wing : float
-        CL of the main wing, used for CL constrained optimization.
-
-    """
-    _Component=TotalLift(CL0, aero_ind)
-    params={
-        'CL1': CL1
-    }
-    unknowns={
-        'CL': np.zeros((_Component.num_surf)),
-        'CL_wing': 0.
-    }
-    resids=None
-    _Component.solve_nonlinear(params, unknowns, resids)
-    CL=unknowns.get('CL')
-    CL_wing=unknowns.get('CL_wing')
-    return CL, CL_wing
-
-
-def total_drag(CL0, aero_ind):
-    """ Calculate total drag in force units.
-
-    Parameters
-    ----------
-    CDi : array_like
-        Induced coefficient of drag (CD) for each lifting surface.
-
-    Returns
-    -------
-    CD : array_like
-        Total coefficient of drag (CD) for each lifting surface.
-    CD_wing : float
-        CD of the main wing, used for CD minimization.
-
-    """
-    _Component=TotalDrag(CDi, CL0, aero_ind)
-    params={
-        'CDi': CDi
-    }
-    unknowns={
-        'CD': np.zeros((_Component.num_surf)),
-        'CD_wing': 0.
-    }
-    resids=None
-    _Component.solve_nonlinear(params, unknowns, resids)
-    CD=unknowns.get('CD')
-    CD_wing=unknowns.get('CD_wing')
-    return CD, CD_wing
+# def vlm_lift_drag(sec_forces, alpha, aero_ind):
+#     """
+#     Calculate total lift and drag in force units based on section forces.
+#
+#     Parameters
+#     ----------
+#     sec_forces : array_like
+#         Flattened array containing the sectional forces acting on each panel.
+#         Stored in Fortran order (only relevant when more than one chordwise
+#         panel).
+#     alpha : float
+#         Angle of attack in degrees.
+#
+#     Returns
+#     -------
+#     L : array_like
+#         Total lift for each lifting surface.
+#     D : array_like
+#         Total drag for each lifting surface.
+#
+#     """
+#     _Comp=VLMLiftDrag(aero_ind)
+#     num_surf=aero_ind.shape[0]
+#     params={
+#         'sec_forces': sec_forces,
+#         'alpha': alpha
+#     }
+#     unknowns={
+#         'L': np.zeros((num_surf)),
+#         'D': np.zeros((num_surf))
+#     }
+#     resids=None
+#     _Comp.solve_nonlinear(params, unknowns, resids)
+#     L=unknowns.get('L')
+#     D=unknowns.get('D')
+#     return L, D
+#
+#
+# def vlm_coeffs(S_ref, L, D, v, rho, aero_ind):
+#     """ Compute lift and drag coefficients.
+#
+#     Parameters
+#     ----------
+#     S_ref : array_like
+#         The reference areas of each lifting surface.
+#     L : array_like
+#         Total lift for each lifting surface.
+#     D : array_like
+#         Total drag for each lifting surface.
+#     v : float
+#         Freestream air velocity in m/s.
+#     rho : float
+#         Air density in kg/m^3.
+#
+#     Returns
+#     -------
+#     CL1 : array_like
+#         Induced coefficient of lift (CL) for each lifting surface.
+#     CDi : array_like
+#         Induced coefficient of drag (CD) for each lifting surface.
+#
+#     """
+#     _Comp=VLMCoeffs(aero_ind)
+#     num_surf=aero_ind.shape[0]
+#     params={
+#         'S_ref': S_ref,
+#         'L': L,
+#         'D': D,
+#         'v': v,
+#         'rho': rho
+#     }
+#     unknowns={
+#         'CL1': np.zeros((num_surf)),
+#         'CDi': np.zeros((num_surf))
+#     }
+#     resids=None
+#     _Comp.solve_nonlinear(params, unknowns, resids)
+#     CL1=unknowns.get('CL1')
+#     CDi=unknowns.get('CDi')
+#     return CL1, CDi
+#
+#
+# def total_lift(CL1, CL0, aero_ind):
+#     """ Calculate total lift in force units.
+#
+#     Parameters
+#     ----------
+#     CL1 : array_like
+#         Induced coefficient of lift (CL) for each lifting surface.
+#
+#     Returns
+#     -------
+#     CL : array_like
+#         Total coefficient of lift (CL) for each lifting surface.
+#     CL_wing : float
+#         CL of the main wing, used for CL constrained optimization.
+#
+#     """
+#     _Comp=TotalLift(CL0, aero_ind)
+#     params={
+#         'CL1': CL1
+#     }
+#     unknowns={
+#         'CL': np.zeros((_Comp.num_surf)),
+#         'CL_wing': 0.
+#     }
+#     resids=None
+#     _Comp.solve_nonlinear(params, unknowns, resids)
+#     CL=unknowns.get('CL')
+#     CL_wing=unknowns.get('CL_wing')
+#     return CL, CL_wing
+#
+#
+# def total_drag(CL0, aero_ind):
+#     """ Calculate total drag in force units.
+#
+#     Parameters
+#     ----------
+#     CDi : array_like
+#         Induced coefficient of drag (CD) for each lifting surface.
+#
+#     Returns
+#     -------
+#     CD : array_like
+#         Total coefficient of drag (CD) for each lifting surface.
+#     CD_wing : float
+#         CD of the main wing, used for CD minimization.
+#
+#     """
+#     _Comp=TotalDrag(CDi, CL0, aero_ind)
+#     params={
+#         'CDi': CDi
+#     }
+#     unknowns={
+#         'CD': np.zeros((_Comp.num_surf)),
+#         'CD_wing': 0.
+#     }
+#     resids=None
+#     _Comp.solve_nonlinear(params, unknowns, resids)
+#     CD=unknowns.get('CD')
+#     CD_wing=unknowns.get('CD_wing')
+#     return CD, CD_wing
 
 
 """
@@ -973,55 +1068,141 @@ def total_drag(CL0, aero_ind):
 --------------------------------------------------------------------------------
 From spatialbeam.py: Define the structural analysis component using spatial beam theory. """
 
+def spatial_beam_FEM(K, forces, size):
+    """
+    Compute the displacements and rotations by solving the linear system
+    using the structural stiffness matrix.
+    This component is copied from OpenMDAO's LinearSystem component with the
+    names of the parameters and outputs changed to match our problem formulation.
 
-def norm(vec):
-    return np.sqrt(np.sum(vec**2))
+    Parameters
+    ----------
+    K[6*(ny+1), 6*(ny+1)] : numpy array
+        Stiffness matrix for the entire FEM system. Used to solve the linear
+        system K * u = f to obtain the displacements, u.
+    forces[6*(ny+1)] : numpy array
+        Right-hand-side of the linear system. The loads from the aerodynamic
+        analysis or the user-defined loads.
+
+    Returns
+    -------
+    disp_aug[6*(ny+1)] : numpy array
+        Augmented displacement array. Obtained by solving the system
+        K * u = f, where f is a flattened version of loads.
+
+    """
+    _Comp=SpatialBeamFEM(size)
+    params={
+        'K': K,
+        'forces': forces
+    }
+    unknowns={
+        'disp_aug': np.zeros((size), dtype=data_type)
+    }
+    resids=None
+    _Comp.solve_nonlinear(params, unknowns, resids)
+    disp_aug=unknowns.get('disp_aug')
+    return disp_aug
 
 
-def unit(vec):
-    return vec / norm(vec)
+def spatial_beam_disp(surface, disp_aug):
+    """
+    Reshape the flattened displacements from the linear system solution into
+    a 2D array so we can more easily use the results.
+
+    The solution to the linear system has additional results due to the
+    constraints on the FEM model. The displacements from this portion of
+    the linear system are not needed, so we select only the relevant
+    portion of the displacements for further calculations.
+
+    Parameters
+    ----------
+    disp_aug[6*(ny+1)] : numpy array
+        Augmented displacement array. Obtained by solving the system
+        K * disp_aug = forces, where forces is a flattened version of loads.
+
+    Returns
+    -------
+    disp[6*ny] : numpy array
+        Actual displacement array formed by truncating disp_aug.
+
+    """
+    _Comp=SpatialBeamDisp(surface)
+    params={
+        'disp_aug': disp_aug
+    }
+    unknowns={
+        'disp': np.zeros((_Comp.ny, 6), dtype=data_type)
+    }
+    resids=None
+    _Comp.solve_nonlinear(params, unknowns, resids)
+    disp=unknowns.get('disp')
+    return disp
 
 
-def radii(mesh, t_c = 0.15):
-    """ Obtain the radii of the FEM component based on chord. """
-    vectors=mesh[-1, :, :] - mesh[0, :, :]
-    # print('sss mesh.shape',mesh.shape)
-    # print('vectors.shape',vectors.shape)
-    chords=np.sqrt(np.sum(vectors**2, axis=1))
-    chords=0.5 * chords[: -1] + 0.5 * chords[1:]
-    return t_c * chords
+def compute_nodes(surface, mesh):
+    """
+    Compute FEM nodes based on aerodynamic mesh.
+
+    The FEM nodes are placed at fem_origin * chord,
+    with the default fem_origin = 0.35.
+
+    Parameters
+    ----------
+    mesh[nx, ny, 3] : numpy array
+        Array defining the nodal points of the lifting surface.
+
+    Returns
+    -------
+    nodes[ny, 3] : numpy array
+        Flattened array with coordinates for each FEM node.
+
+    """
+    _Comp=ComputeNodes(surface)
+    params={
+        'mesh': mesh
+    }
+    unknowns={
+        'nodes': np.zeros((_Comp.ny, 3), dtype=data_type)
+    }
+    resids=None
+    _Comp.solve_nonlinear(params, unknowns, resids)
+    nodes=unknowns.get('nodes')
+    return nodes
 
 
-def spatial_beam_FEM(A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x = 5):
+def assemble_k(surface, A, Iy, Iz, J, nodes, loads):
     """
     Compute the displacements and rotations by solving the linear system
     using the structural stiffness matrix.
 
     Parameters
     ----------
-    A : array_like
+    A[ny-1] : numpy array
         Areas for each FEM element.
-    Iy : array_like
+    Iy[ny-1] : numpy array
         Mass moment of inertia around the y-axis for each FEM element.
-    Iz : array_like
+    Iz[ny-1] : numpy array
         Mass moment of inertia around the z-axis for each FEM element.
-    J : array_like
+    J[ny-1] : numpy array
         Polar moment of inertia for each FEM element.
-    nodes : array_like
+    nodes[ny, 3] : numpy array
         Flattened array with coordinates for each FEM node.
-    loads : array_like
+    loads[ny, 6] : numpy array
         Flattened array containing the loads applied on the FEM component,
         computed from the sectional forces.
 
     Returns
     -------
-    disp_aug : array_like
-        Augmented displacement array. Obtained by solving the system
-        mtx * disp_aug = rhs, where rhs is a flattened version of loads.
-
+    K[(nx-1)*(ny-1), (nx-1)*(ny-1)] : numpy array
+        Stiffness matrix for the entire FEM system. Used to solve the linear
+        system K * u = f to obtain the displacements, u.
+    forces[(nx-1)*(ny-1)] : numpy array
+        Right-hand-side of the linear system. The loads from the aerodynamic
+        analysis or the user-defined loads.
     """
-    _Component=SpatialBeamFEM(aero_ind, fem_ind, E, G, cg_x)
-    params={
+    _Comp = AssembleK(surface)
+    params = {
         'A': A,
         'Iy': Iy,
         'Iz': Iz,
@@ -1029,204 +1210,142 @@ def spatial_beam_FEM(A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x =
         'nodes': nodes,
         'loads': loads
     }
-    unknowns={
-        'disp_aug': np.zeros((_Component.size), dtype = "complex")
+    unknowns = {
+        'K': np.zeros((_Comp.size, _Comp.size), dtype=data_type),
+        'forces': np.zeros((_Comp.size), dtype=data_type)
     }
-    resids=None
-    _Component.solve_nonlinear(params, unknowns, resids)
-    disp_aug=unknowns.get('disp_aug')
-    return disp_aug
+    resids = None
+    _Comp.solve_nonlinear(params, unknowns, resids)
+    K = unknowns.get('K')
+    forces = unknowns.get('forces')
+    return K, forces
 
 
-def spatial_beam_disp(disp_aug, fem_ind):
-    """
-    Select displacements from augmented vector.
-
-    The solution to the linear system has additional results due to the
-    constraints on the FEM model. The displacements from this portion of
-    the linear system is not needed, so we select only the relevant
-    portion of the displacements for further calculations.
-
-    Parameters
-    ----------
-    disp_aug : array_like
-        Augmented displacement array. Obtained by solving the system
-        mtx * disp_aug = rhs, where rhs is a flattened version of loads.
-
-    Returns
-    -------
-    disp : array_like
-        Actual displacement array formed by truncating disp_aug.
-
-    """
-    _Component=SpatialBeamDisp(fem_ind)
-    params={
-        'disp_aug': disp_aug
-    }
-    unknowns={
-        'disp': np.zeros((_Component.tot_n_fem, 6))
-    }
-    resids=None
-    _Component.solve_nonlinear(params, unknowns, resids)
-    disp=unknowns.get('disp')
-    return disp
-
-
-def compute_nodes(mesh, fem_ind, aero_ind, fem_origin = 0.35):
-    """
-    Compute FEM nodes based on aerodynamic mesh.
-
-    The FEM nodes are placed at 0.35*chord, or based on the fem_origin value.
-
-    Parameters
-    ----------
-    mesh : array_like
-        Flattened array defining the lifting surfaces.
-
-    Returns
-    -------
-    nodes : array_like
-        Flattened array with coordinates for each FEM node.
-
-    """
-    ComputeNodes_comp=ComputeNodes(fem_ind, aero_ind, fem_origin)
-    params={
-        'mesh': mesh
-    }
-    unknowns={
-        'nodes': np.zeros((ComputeNodes_comp.tot_n_fem, 3))
-    }
-    resids=None
-    ComputeNodes_comp.solve_nonlinear(params, unknowns, resids)
-    nodes=unknowns.get('nodes')
-    return nodes
-
-
-def spatial_beam_energy(disp, loads, aero_ind, fem_ind):
-    """ Compute strain energy.
-
-    Parameters
-    ----------
-    disp : array_like
-        Actual displacement array formed by truncating disp_aug.
-    loads : array_like
-        Flattened array containing the loads applied on the FEM component,
-        computed from the sectional forces.
-
-    Returns
-    -------
-    energy : float
-        Total strain energy of the structural component.
-
-    """
-    _Component.SpatialBeamEnergy(aero_ind, fem_ind)
-    params={
-        'disp': disp,
-        'loads': loads
-    }
-    unknowns={
-        'energy': np.zeros((_Component.n, 6))
-    }
-    resids=None
-    _Component.solve_nonlinear(params, unknowns, resids)
-    energy=unknowns.get('energy')
-    return energy
-
-
-def spatial_beam_weight(A, nodes, aero_ind, fem_ind, mrho):
-    """ Compute total weight.
-
-    Parameters
-    ----------
-    A : array_like
-        Areas for each FEM element.
-    nodes : array_like
-        Flattened array with coordinates for each FEM node.
-
-    Returns
-    -------
-    weight : float
-        Total weight of the structural component."""
-    _Component=SpatialBeamWeight(aero_ind, fem_ind, mrho)
-    params={
-        'A': A,
-        'nodes': nodes
-    }
-    unknowns={
-        'weight': 0.
-    }
-    resids=None
-    _Component.solve_nonlinear(params, unknowns, resids)
-    weight=unknowns.get('weight')
-    return weight
-
-
-def spatial_beam_vonmises_tube(nodes, r, disp, aero_ind, fem_ind, E, G):
-    """ Compute the max von Mises stress in each element.
-
-    Parameters
-    ----------
-    r : array_like
-        Radii for each FEM element.
-    nodes : array_like
-        Flattened array with coordinates for each FEM node.
-    disp : array_like
-        Displacements of each FEM node.
-
-    Returns
-    -------
-    vonmises : array_like
-        von Mises stress magnitudes for each FEM element.
-
-    """
-    _Component=SpatialBeamVonMisesTube(aero_ind, fem_ind, E, G)
-    num_surf=fem_ind.shape[0]
-    params={
-        'nodes': nodes,
-        'r': r,
-        'disp': disp
-    }
-    unknowns={
-        'vonmises': np.zeros((_Component.tot_n_fem - num_surf, 2), dtype = "complex")
-    }
-    resids=None
-    _Component.solve_nonlinear(params, unknowns, resids)
-    vonmises=unknowns.get('vonmises')
-    return vonmises
-
-
-def spatial_beam_failure_ks(vonmises, fem_ind, sigma, rho = 10):
-    """
-    Aggregate failure constraints from the structure.
-
-    To simplify the optimization problem, we aggregate the individual
-    elemental failure constraints using a Kreisselmeier-Steinhauser (KS)
-    function.
-
-    Parameters
-    ----------
-    vonmises : array_like
-        von Mises stress magnitudes for each FEM element.
-
-    Returns
-    -------
-    failure : float
-        KS aggregation quantity obtained by combining the failure criteria
-        for each FEM node. Used to simplify the optimization problem by
-        reducing the number of constraints.
-
-    """
-    _Component=SpatialBeamFailureKS(fem_ind, sigma, rho)
-    params={
-        'vonmises': vonmises
-    }
-    unknowns={
-        'failure'=0.
-    }
-    resids=None
-    _Component.solve_nonlinear(params, unknowns, resids)
-    failure=unknowns.get('failure')
-    return failure
+# def spatial_beam_energy(disp, loads, aero_ind, fem_ind):
+#     """ Compute strain energy.
+#
+#     Parameters
+#     ----------
+#     disp : array_like
+#         Actual displacement array formed by truncating disp_aug.
+#     loads : array_like
+#         Flattened array containing the loads applied on the FEM component,
+#         computed from the sectional forces.
+#
+#     Returns
+#     -------
+#     energy : float
+#         Total strain energy of the structural component.
+#
+#     """
+#     _Comp.SpatialBeamEnergy(aero_ind, fem_ind)
+#     params={
+#         'disp': disp,
+#         'loads': loads
+#     }
+#     unknowns={
+#         'energy': np.zeros((_Comp.n, 6))
+#     }
+#     resids=None
+#     _Comp.solve_nonlinear(params, unknowns, resids)
+#     energy=unknowns.get('energy')
+#     return energy
+#
+#
+# def spatial_beam_weight(A, nodes, aero_ind, fem_ind, mrho):
+#     """ Compute total weight.
+#
+#     Parameters
+#     ----------
+#     A : array_like
+#         Areas for each FEM element.
+#     nodes : array_like
+#         Flattened array with coordinates for each FEM node.
+#
+#     Returns
+#     -------
+#     weight : float
+#         Total weight of the structural component."""
+#     _Comp=SpatialBeamWeight(aero_ind, fem_ind, mrho)
+#     params={
+#         'A': A,
+#         'nodes': nodes
+#     }
+#     unknowns={
+#         'weight': 0.
+#     }
+#     resids=None
+#     _Comp.solve_nonlinear(params, unknowns, resids)
+#     weight=unknowns.get('weight')
+#     return weight
+#
+#
+# def spatial_beam_vonmises_tube(nodes, r, disp, aero_ind, fem_ind, E, G):
+#     """ Compute the max von Mises stress in each element.
+#
+#     Parameters
+#     ----------
+#     r : array_like
+#         Radii for each FEM element.
+#     nodes : array_like
+#         Flattened array with coordinates for each FEM node.
+#     disp : array_like
+#         Displacements of each FEM node.
+#
+#     Returns
+#     -------
+#     vonmises : array_like
+#         von Mises stress magnitudes for each FEM element.
+#
+#     """
+#     _Comp=SpatialBeamVonMisesTube(aero_ind, fem_ind, E, G)
+#     num_surf=fem_ind.shape[0]
+#     params={
+#         'nodes': nodes,
+#         'r': r,
+#         'disp': disp
+#     }
+#     unknowns={
+#         'vonmises': np.zeros((_Comp.tot_n_fem - num_surf, 2), dtype = "complex")
+#     }
+#     resids=None
+#     _Comp.solve_nonlinear(params, unknowns, resids)
+#     vonmises=unknowns.get('vonmises')
+#     return vonmises
+#
+#
+# def spatial_beam_failure_ks(vonmises, fem_ind, sigma, rho = 10):
+#     """
+#     Aggregate failure constraints from the structure.
+#
+#     To simplify the optimization problem, we aggregate the individual
+#     elemental failure constraints using a Kreisselmeier-Steinhauser (KS)
+#     function.
+#
+#     Parameters
+#     ----------
+#     vonmises : array_like
+#         von Mises stress magnitudes for each FEM element.
+#
+#     Returns
+#     -------
+#     failure : float
+#         KS aggregation quantity obtained by combining the failure criteria
+#         for each FEM node. Used to simplify the optimization problem by
+#         reducing the number of constraints.
+#
+#     """
+#     _Comp=SpatialBeamFailureKS(fem_ind, sigma, rho)
+#     params={
+#         'vonmises': vonmises
+#     }
+#     unknowns={
+#         'failure'=0.
+#     }
+#     resids=None
+#     _Comp.solve_nonlinear(params, unknowns, resids)
+#     failure=unknowns.get('failure')
+#     return failure
 
 
 """
@@ -1240,7 +1359,7 @@ def spatial_beam_failure_ks(vonmises, fem_ind, sigma, rho = 10):
 From materials.py: """
 
 
-def materials_tube(r, thickness, fem_ind):
+def materials_tube(surface, r=None, thickness=None):
     """ Compute geometric properties for a tube element.
 
     Parameters
@@ -1262,19 +1381,23 @@ def materials_tube(r, thickness, fem_ind):
         Polar moment of inertia for each FEM element.
 
     """
-    MaterialsTube_comp=MaterialsTube(fem_ind)
+    _Comp=MaterialsTube(surface)
+    if not r:
+        r = surface['r']  # this is already contained in surface dict
+    if not thickness:
+        thickness = surface['t']  # this is already contained in surface dict
     params={
         'r': r,
         'thickness': thickness
     }
     unknowns={
-        'A': np.zeros((np.sum(fem_ind[:, 0] - fem_ind.shape[0]))),
-        'Iy': np.zeros((np.sum(fem_ind[:, 0] - fem_ind.shape[0]))),
-        'Iz': np.zeros((np.sum(fem_ind[:, 0] - fem_ind.shape[0]))),
-        'J': np.zeros((np.sum(fem_ind[:, 0] - fem_ind.shape[0])))
+        'A': np.zeros((_Comp.ny - 1)),
+        'Iy': np.zeros((_Comp.ny - 1)),
+        'Iz': np.zeros((_Comp.ny - 1)),
+        'J': np.zeros((_Comp.ny - 1))
     }
-    resids=None
-    MaterialsTube_comp.solve_nonlinear(params, unknowns, resids)
+    resids = None
+    _Comp.solve_nonlinear(params, unknowns, resids)
     A=unknowns.get('A', None)
     Iy=unknowns.get('Iy', None)
     Iz=unknowns.get('Iz', None)
@@ -1291,35 +1414,35 @@ def materials_tube(r, thickness, fem_ind):
     --------------------------------------------------------------------------------
     From functionals.py: """
 
-    def functional_breguet_range(CL, CD, weight, W0, CT, a, R, M, aero_ind):
-        """ Computes the fuel burn using the Breguet range equation """
-        _Component=FunctionalBreguetRange(W0, CT, a, R, M, aero_ind)
-        n_surf=aero_ind.shape[0]
-        params={
-            'CL': CL,
-            'CD': CD,
-            'weight': weight
-        }
-        unknowns={
-            'fuelburn': 0.
-        }
-        resids=None
-        _Component.solve_nonlinear(params, unknowns, resids)
-        fuelburn=unknowns.get('fuelburn')
-        return fuelburn
-
-    def functional_equilibrium(L, weight, fuelburn, W0, aero_ind):
-        """ L = W constraint """
-        _Component=FunctionalEquilibrium(W0, aero_ind)
-        params={
-            'L': L,
-            'weight': weight,
-            'fuelburn': fuelburn
-        }
-        unknowns={
-            'eq_con': 0.
-        }
-        resids=None
-        _Component.solve_nonlinear(params, unknowns, resids)
-        eq_con=unknowns.get('eq_con')
-        return eq_con
+    # def functional_breguet_range(CL, CD, weight, W0, CT, a, R, M, aero_ind):
+    #     """ Computes the fuel burn using the Breguet range equation """
+    #     _Comp=FunctionalBreguetRange(W0, CT, a, R, M, aero_ind)
+    #     n_surf=aero_ind.shape[0]
+    #     params={
+    #         'CL': CL,
+    #         'CD': CD,
+    #         'weight': weight
+    #     }
+    #     unknowns={
+    #         'fuelburn': 0.
+    #     }
+    #     resids=None
+    #     _Comp.solve_nonlinear(params, unknowns, resids)
+    #     fuelburn=unknowns.get('fuelburn')
+    #     return fuelburn
+    #
+    # def functional_equilibrium(L, weight, fuelburn, W0, aero_ind):
+    #     """ L = W constraint """
+    #     _Comp=FunctionalEquilibrium(W0, aero_ind)
+    #     params={
+    #         'L': L,
+    #         'weight': weight,
+    #         'fuelburn': fuelburn
+    #     }
+    #     unknowns={
+    #         'eq_con': 0.
+    #     }
+    #     resids=None
+    #     _Comp.solve_nonlinear(params, unknowns, resids)
+    #     eq_con=unknowns.get('eq_con')
+    #     return eq_con
