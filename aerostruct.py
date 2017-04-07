@@ -19,8 +19,10 @@ from spatialbeam import ComputeNodes, SpatialBeamFEM, SpatialBeamDisp, SpatialBe
 from transfer import TransferDisplacements, TransferLoads
 from vlm import VLMGeometry, AssembleAIC, AeroCirculations, VLMForces, VLMLiftDrag, VLMCoeffs, TotalLift, TotalDrag
 from b_spline import get_bspline_mtx
-from geometry import get_inds, rotate, sweep, dihedral, stretch, taper, mirror
+# from geometry import get_inds, rotate, sweep, dihedral, stretch, taper, mirror
+from geometry import GeometryMesh, Bspline, gen_crm_mesh, gen_rect_mesh, MonotonicConstraint
 from functionals import FunctionalBreguetRange, FunctionalEquilibrium
+from OpenAeroStruct import OASProblem
 
 try:
     import OAS_API
@@ -46,101 +48,236 @@ warnings.filterwarnings("ignore")
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-From geometry.py: Manipulate geometry mesh based on high-level design parameters """
+From run_classes.py: Manipulate geometry mesh based on high-level design parameters """
 
 
-def setup(num_inboard=3, num_outboard=4):
-    ''' Setup the aerostruct mesh '''
+def setup(num_x=2, num_y=7):
+    ''' Setup the aerostruct mesh
 
-    # Define the aircraft properties, from CRM.py
-    # CT = 9.81 * 17.e-6 # [1/s] (9.81 N/kg * 17e-6 kg/N/s)
-    # R = 14.3e6 # [m] maximum range
-    # CL0 = 0.2
-    # CD0 = 0.015
-    span = 58.7630524  # [m] baseline CRM
-    M = 0.84  # at cruise
-    alpha = 3.  # [deg.]
-    rho = 0.38  # [kg/m^3] at 35,000 ft
-    a = 295.4  # [m/s] at 35,000 ft
-    v = a * M    # W0 = 0.5 * 2.5e6 # [N] (MTOW of B777 is 3e5 kg with fuel)
+    Default wing mesh (single lifting surface):
+    -------------------------------------------
+    name = 'wing'            # name of the surface
+    num_x = 3                # number of chordwise points
+    num_y = 5                # number of spanwise points
+    root_chord = 1.          # root chord
+    span_cos_spacing = 1     # 0 for uniform spanwise panels
+                             # 1 for cosine-spaced panels
+                             # any value between 0 and 1 for a mixed spacing
+    chord_cos_spacing = 0.   # 0 for uniform chordwise panels
+                             # 1 for cosine-spaced panels
+                             # any value between 0 and 1 for a mixed spacing
+    wing_type = 'rect'       # initial shape of the wing either 'CRM' or 'rect'
+                             # 'CRM' can have different options after it, such as 'CRM:alpha_2.75' for the CRM shape at alpha=2.75
+    offset = np.array([0., 0., 0.]) # coordinates to offset the surface from its default location
+    symmetry = True          # if true, model one half of wing reflected across the plane y = 0
+    S_ref_type = 'wetted'    # 'wetted' or 'projected'
 
-    # Define spatialbeam properties, from aluminum.py
-    E = 200.e9  # [Pa]
-    G = 30.e9  # [Pa]
-    stress = 20.e6  # [Pa]
-    mrho = 3.e3  # [kg/m^3]
+    # Simple Geometric Variables
+    span = 10.               # full wingspan
+    dihedral = 0.            # wing dihedral angle in degrees positive is upward
+    sweep = 0.               # wing sweep angle in degrees positive sweeps back
+    taper = 1.               # taper ratio; 1. is uniform chord
 
-    # Create the mesh with 3 inboard points and 4 outboard points.
-    # This will be mirrored to produce a mesh with ... spanwise points,
-    # or ...-1 spanwise panels
-    mesh = gen_crm_mesh(int(num_inboard), int(num_outboard), num_x=2)  # ***
-    num_x, num_y = mesh.shape[: 2]
-    num_twist = np.max([int((num_y - 1) / 5), 5])
-    # print('234mesh.shape',mesh.shape)
-    r = radii(mesh)
-    # Set the number of thickness control points and the initial thicknesses
-    num_thickness = num_twist
-    t = r / 10
-    mesh = mesh.reshape(-1, mesh.shape[-1])
-    aero_ind = np.atleast_2d(np.array([num_x, num_y]))
-    # print('..... aero_ind.shape',aero_ind.shape)
-    # print(aero_ind)
-    fem_ind = [num_y]
-    aero_ind, fem_ind = get_inds(aero_ind, fem_ind)  # ***
-    # Set additional mesh parameters
-    dihedral = 0.  # dihedral angle in degrees
-    sweep = 0.  # shearing sweep angle in degrees
-    taper = 1.  # taper ratio
-    fem_origin = 0.35
-    # Initial displacements of zero
-    tot_n_fem = np.sum(fem_ind[:, 0])
-    disp = np.zeros((tot_n_fem, 6))
-    # # Define Jacobians for b-spline controls
-    tot_n_fem = np.sum(fem_ind[:, 0])
-    num_surf = fem_ind.shape[0]
-    jac_twist = get_bspline_mtx(num_twist, num_y)
-    jac_thickness = get_bspline_mtx(num_thickness, tot_n_fem - num_surf)
-    # # Define ...
-    twist_cp = np.zeros(num_twist)
-    thickness_cp = np.ones(num_thickness) * np.max(t)
-    twist = cp2pt(twist_cp, jac_twist)
-    thickness = cp2pt(thickness_cp, jac_thickness)
-    mesh = geometry_mesh(mesh, aero_ind, twist, 0, 0, 1, span=58.7630524)
-    # print('mesh.shape',mesh.shape)
-    def_mesh = transfer_displacements(
-        mesh, disp, aero_ind, fem_ind, fem_origin=0.35)  # ***
-    # Output the def_mesh for the aero modules
-    # Other variables needed for aero and struct modules
-    params = {
-        'mesh': mesh,
-        'num_x': num_x,
-        'num_y': num_y,
-        'span': span,
-        'twist_cp': twist_cp,
-        'thickness_cp': thickness_cp,
-        'v': v,
-        'alpha': alpha,
-        'rho': rho,
-        'r': r,
-        't': t,
-        'aero_ind': aero_ind,
-        'fem_ind': fem_ind,
-        'num_thickness': num_thickness,
-        'num_twist': num_twist,
-        'sweep': sweep,
-        'taper': taper,
-        'dihedral': dihedral,
-        'E': E,
-        'G': G,
-        'stress': stress,
-        'mrho': mrho,
-        'tot_n_fem': tot_n_fem,
-        'num_surf': num_surf,
-        'jac_twist': jac_twist,
-        'jac_thickness': jac_thickness,
-        'fem_origin': fem_origin
-    }
-    return (def_mesh, params)
+    # B-spline Geometric Variables. The number of control points for each of these variables can be specified in surf_dict
+    # by adding the prefix "num" to the variable (e.g. num_twist)
+    twist_cp = None
+    chord_cp = None
+    xshear_cp = None
+    zshear_cp = None
+    thickness_cp = None
+
+    Default wing parameters:
+    ------------------------
+    Zero-lift aerodynamic performance
+        CL0 = 0.0            # CL value at AoA (alpha) = 0
+        CD0 = 0.0            # CD value at AoA (alpha) = 0
+    Airfoil properties for viscous drag calculation
+        k_lam = 0.05         # percentage of chord with laminar flow, used for viscous drag
+        t_over_c = 0.12      # thickness over chord ratio (NACA0012)
+        c_max_t = .303       # chordwise location of maximum (NACA0012) thickness
+    Structural values are based on aluminum
+        E = 70.e9            # [Pa] Young's modulus of the spar
+        G = 30.e9            # [Pa] shear modulus of the spar
+        stress = 20.e6       # [Pa] yield stress
+        mrho = 3.e3          # [kg/m^3] material density
+        fem_origin = 0.35    # chordwise location of the spar
+    Other
+        W0 = 0.4 * 3e5       # [kg] MTOW of B777 is 3e5 kg with fuel
+
+    Default problem parameters:
+    ---------------------------
+    Re = 1e6                 # Reynolds number
+    reynolds_length = 1.0    # characteristic Reynolds length
+    alpha = 5.               # angle of attack
+    CT = 9.80665 * 17.e-6    # [1/s] (9.81 N/kg * 17e-6 kg/N/s)
+    R = 14.3e6               # [m] maximum range
+    M = 0.84                 # Mach number at cruise
+    rho = 0.38               # [kg/m^3] air density at 35,000 ft
+    a = 295.4                # [m/s] speed of sound at 35,000 ft
+    with_viscous = False     # if true, compute viscous drag
+
+    '''
+    # Use steps in run_aerostruct.py to add wing surface to problem
+
+    # Set problem type
+    prob_dict = {'type' : 'aerostruct'}
+
+    # To update problem parameters, update the prob_dict dictionary.
+    # The dictionary key is a string, e.g.
+    #   prob_dict.update({'rho' : 0.35,
+    #                     'R': 14.0e6
+    #   })
+
+    # Instantiate problem
+    OAS_prob = OASProblem(prob_dict)
+
+    # Create a dictionary to store options about the wing surface
+    surf_dict = {'name' : 'wing',
+                 'symmetry' : True,
+                 'num_y' : num_y,       # from input parameters
+                 'num_x' : num_x,       # from input parameters
+                 'wing_type' : 'CRM',
+                 'CL0' : 0.2,
+                 'CD0' : 0.015,
+                #  'span_cos_spacing' : 1.,
+                #  'chord_cos_spacing' : .8
+                 }
+    # Add the specified wing surface to the problem.
+    OAS_prob.add_surface(surf_dict)
+
+    '''
+    Extract parameters and variables from OAS_prob to pass through to
+    other discipline functions. For now, assume we are only using one lifting
+    surface and hardcode the variable names for the wing. Later, I will create
+    a class object to hold all of the surface variables.
+
+    Output after calling OAS_prob.add_surface(surf_dict):
+    In [8]: OAS_prob.surfaces
+    Out[8]:
+    [{'CD0': 0.015,
+    'CL0': 0.2,
+    'E': 70000000000.0,
+    'G': 30000000000.0,
+    'S_ref_type': 'wetted',
+    'W0': 120000.0,
+    'active_bsp_vars': ['thickness_cp',
+     'twist_cp',
+     'xshear_cp',
+     'chord_cp',
+     'zshear_cp'],
+    'active_geo_vars': ['sweep',
+     'dihedral',
+     'twist_cp',
+     'xshear_cp',
+     'zshear_cp',
+     'span',
+     'chord_cp',
+     'taper',
+     'thickness_cp'],
+    'c_max_t': 0.303,
+    'chord_cos_spacing': 0.0,
+    'chord_cp': array([ 1.+0.j,  1.+0.j,  1.+0.j,  1.+0.j,  1.+0.j]),
+    'crm_twist': array([-3.75  , -3.1248, -2.5773, -2.2772, -2.0301, -1.8158, -1.635 ,
+         -1.4526, -1.2067, -0.9436, -0.6782, -0.2621,  0.4285,  0.9379,
+          1.5252,  2.2419,  2.2419,  3.6063,  4.4402,  6.7166]),
+    'dihedral': 0.0,
+    'exact_failure_constraint': False,
+    'fem_origin': 0.35,
+    'k_lam': 0.05,
+    'loads': array([[    0.+0.j,     0.+0.j,  1000.+0.j,     0.+0.j,     0.+0.j,
+              0.+0.j],
+         [    0.+0.j,     0.+0.j,     0.+0.j,     0.+0.j,     0.+0.j,
+              0.+0.j],
+         [    0.+0.j,     0.+0.j,     0.+0.j,     0.+0.j,     0.+0.j,
+              0.+0.j],
+         [    0.+0.j,     0.+0.j,     0.+0.j,     0.+0.j,     0.+0.j,
+              0.+0.j]]),
+    'mesh': array([[[  4.52307198e+01+0.j,  -2.93815262e+01+0.j,   6.70120580e+00+0.j],
+          [  4.22333963e+01+0.j,  -2.54451497e+01+0.j,   6.02337146e+00+0.j],
+          [  3.40443566e+01+0.j,  -1.46907758e+01+0.j,   4.78508060e+00+0.j],
+          [  2.29690676e+01+0.j,  -1.79909493e-15+0.j,   4.42280040e+00+0.j]],
+
+         [[  4.79586798e+01+0.j,  -2.93815262e+01+0.j,   6.70120580e+00+0.j],
+          [  4.59248861e+01+0.j,  -2.54451497e+01+0.j,   6.02337146e+00+0.j],
+          [  4.03682708e+01+0.j,  -1.46907758e+01+0.j,   4.78508060e+00+0.j],
+          [  3.65880650e+01+0.j,  -1.79909493e-15+0.j,   4.42280040e+00+0.j]]]),
+    'monotonic_con': None,
+    'mrho': 3000.0,
+    'name': 'wing_',
+    'num_chord_cp': 5,
+    'num_thickness_cp': 5,
+    'num_twist_cp': 5,
+    'num_x': 2L,
+    'num_xshear_cp': 5,
+    'num_y': 4,
+    'num_zshear_cp': 5,
+    'offset': array([ 0.,  0.,  0.]),
+    'r': array([ 0.48145874+0.j,  0.75115530+0.j,  1.49571837+0.j]),
+    'root_chord': 1.0,
+    'span': 58.763052399999985,
+    'span_cos_spacing': 1,
+    'stress': 20000000.0,
+    'sweep': 0.0,
+    'symmetry': True,
+    't': array([ 0.04814587+0.j,  0.07511553+0.j,  0.14957184+0.j]),
+    't_over_c': 0.12,
+    'taper': 1.0,
+    'thickness_cp': array([ 0.14957184+0.j,  0.14957184+0.j,  0.14957184+0.j,  0.14957184+0.j,
+          0.14957184+0.j]),
+    'twist_cp': array([-3.75  , -2.0301, -0.9436,  1.5252,  6.7166]),
+    'wing_type': 'CRM',
+    'xshear_cp': array([ 0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j]),
+    'zshear_cp': array([ 0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j])}]
+    '''
+    wing = surfaces[0]
+
+    # wing_CD0 = wing.get('CD0')
+    # wing_CL0 = wing.get('CL0')
+    # wing_E = wing.get('E')
+    # wing_G = wing.get('G')
+    # wing_S_ref_type = wing.get('S_ref_type')
+    # wing_W0 = wing.get('W0')
+    # wing_active_bsp_vars = wing.get('active_bsp_vars')
+    # wing_active_geo_vars = wing.get('active_geo_vars')
+    # wing_c_max_t = wing.get('c_max_t')
+    # wing_chord_cos_spacing = wing.get('chord_cos_spacing')
+    # wing_chord_cp = wing.get('chord_cp')
+    # wing_crm_twist = wing.get('crm_twist')
+    # wing_dihedral = wing.get('dihedral')
+    # wing_exact_failure_constraint = wing.get('exact_failure_constraint')
+    # wing_fem_origin = wing.get('fem_origin')
+    # wing_k_lam = wing.get('k_lam')
+    # wing_loads = wing.get('loads')
+    # wing_mesh = wing.get('mesh')
+    # wing_monotonic_con = wing.get('monotonic_con')
+    # wing_mrho = wing.get('mrho')
+    # wing_name = wing.get('name')
+    # wing_num_chord_cp = wing.get('num_chord_cp')
+    # wing_num_thickness_cp = wing.get('num_thickness_cp')
+    # wing_num_twist_cp = wing.get('num_twist_cp')
+    # wing_num_x=wing.get('num_x')
+    # wing_num_xshear_cp = wing.get('num_xshear_cp')
+    # wing_num_y = wing.get('num_y')
+    # wing_num_zshear_cp = wing.get('num_zshear_cp')
+    # wing_offset = wing.get('offset')
+    # wing_r = wing.get('r')
+    # wing_root_chord = wing.get('root_chord')
+    # wing_span = wing.get('span')
+    # wing_span_cos_spacing = wing.get('span_cos_spacing')
+    # wing_stress = wing.get('stress')
+    # wing_sweep = wing.get('sweep')
+    # wing_symmetry = wing.get('symmetry')
+    # wing_t = wing.get('t')
+    # wing_t_over_c = wing.get('t_over_c')
+    # wing_taper = wing.get('taper')
+    # wing_thickness_cp = wing.get('thickness_cp')
+    # wing_twist_cp = wing.get('twist_cp')
+    # wing_wing_type = wing.get('wing_type')
+    # wing_xshear_cp = wing.get('xshear_cp')
+    # wing_zshear_cp = wing.get('zshear_cp')
+
+    # or just return the surface dict
+    return wing
 
 
 def aerodynamics(def_mesh=None, params=None):
