@@ -130,6 +130,26 @@ def setup(num_x=2, num_y=7):
 
     # Instantiate problem
     OAS_prob = OASProblem(prob_dict)
+    '''
+    Output after calling OAS_prob.prob_dict:
+    In [12]: OAS_prob.prob_dict
+    Out[12]:
+    {'CT': 0.00016671305,
+     'M': 0.84,
+     'R': 14300000.0,
+     'Re': 1000000.0,
+     'a': 295.4,
+     'alpha': 5.0,
+     'force_fd': False,
+     'optimize': False,
+     'optimizer': 'SNOPT',
+     'print_level': 0,
+     'reynolds_length': 1.0,
+     'rho': 0.38,
+     'type': 'aerostruct',
+     'v': 248.13599999999997,
+     'with_viscous': False}
+    '''
 
     # Create a dictionary to store options about the wing surface
     surf_dict = {'name' : 'wing',
@@ -276,8 +296,8 @@ def setup(num_x=2, num_y=7):
     # wing_xshear_cp = wing.get('xshear_cp')
     # wing_zshear_cp = wing.get('zshear_cp')
 
-    # or just return the surface dict
-    return wing
+    # or just return the surface dict and the problem dict
+    return wing, OAS_prob.prob_dict
 
 
 def aerodynamics(def_mesh=None, params=None):
