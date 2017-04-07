@@ -17,17 +17,18 @@ from scipy.linalg import lu_factor, lu_solve
 from materials import MaterialsTube
 from spatialbeam import ComputeNodes, SpatialBeamFEM, SpatialBeamDisp, SpatialBeamEnergy, SpatialBeamWeight, SpatialBeamVonMisesTube, SpatialBeamFailureKS
 from transfer import TransferDisplacements, TransferLoads
-from vlm import VLMGeometry, VLMCirculations, VLMForces, VLMLiftDrag, VLMCoeffs, TotalLift, TotalDrag
+from vlm import VLMGeometry, AssembleAIC, AeroCirculations, VLMForces, VLMLiftDrag, VLMCoeffs, TotalLift, TotalDrag
 from b_spline import get_bspline_mtx
 from geometry import get_inds, rotate, sweep, dihedral, stretch, taper, mirror
 from functionals import FunctionalBreguetRange, FunctionalEquilibrium
 
 try:
-    import lib
+    import OAS_API
     fortran_flag = True
+    data_type = float
 except:
     fortran_flag = False
-sparse_flag = False  # don't use sparse functions
+    data_type = complex
 
 # to disable OpenMDAO warnings which will create an error in Matlab
 warnings.filterwarnings("ignore")
@@ -177,7 +178,7 @@ def aerodynamics(def_mesh=None, params=None):
                             mid_b, circulations, alpha, v, rho)
     loads = transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin)
     # for i, j in enumerate([circulations, sec_forces, loads]):
-    #print('shape of ',i,' = ',j.shape)
+    # print('shape of ',i,' = ',j.shape)
     return loads
 
 
@@ -414,54 +415,56 @@ def transfer_displacements(mesh, disp, aero_ind, fem_ind, fem_origin=0.35):
 From vlm.py: """
 
 
-def vlm_geometry(aero_ind, def_mesh):
+def vlm_geometry(def_mesh, surface):
     """ Compute various geometric properties for VLM analysis.
 
     Parameters
     ----------
-    def_mesh : array_like
-        Flattened array defining the lifting surfaces.
+    def_mesh[nx, ny, 3] : numpy array
+        Array defining the nodal coordinates of the lifting surface.
 
     Returns
     -------
-    b_pts : array_like
+    b_pts[nx-1, ny, 3] : numpy array
         Bound points for the horseshoe vortices, found along the 1/4 chord.
-    mid_b : array_like
-        Midpoints of the bound vortex segments, used as the collocation
-        points to compute drag.
-    c_pts : array_like
+    c_pts[nx-1, ny-1, 3] : numpy array
         Collocation points on the 3/4 chord line where the flow tangency
         condition is satisfed. Used to set up the linear system.
-    widths : array_like
+    widths[nx-1, ny-1] : numpy array
         The spanwise widths of each individual panel.
-    normals : array_like
+    lengths[ny] : numpy array
+        The chordwise length of the entire airfoil following the camber line.
+    normals[nx-1, ny-1, 3] : numpy array
         The normal vector for each panel, computed as the cross of the two
         diagonals from the mesh points.
-    S_ref : array_like
-        The reference areas of each lifting surface.
-
+    S_ref : float
+        The reference area of the lifting surface.
     """
-    _Component = VLMGeometry(aero_ind)
+    _Component = VLMGeometry(surface)
     params = {
         'def_mesh': def_mesh
     }
     unknowns = {
-        'b_pts': np.zeros((np.sum(aero_ind[:, 3]), 3), dtype="complex"),
-        'mid_b': np.zeros((np.sum(aero_ind[:, 4]), 3), dtype="complex"),
-        'c_pts': np.zeros((np.sum(aero_ind[:, 4]), 3), dtype="complex"),
-        'widths': np.zeros((np.sum(aero_ind[:, 4]))),
-        'normals': np.zeros((np.sum(aero_ind[:, 4]), 3)),
-        'S_ref': np.zeros((aero_ind.shape[0]))
+        'b_pts': np.zeros((_Component.nx, _Component.ny, 3), dtype=data_type),
+        'mid_b': np.zeros((_Component.nx - 1, _Component.ny, 3), dtype=data_type)),
+        'c_pts': np.zeros((_Component.nx - 1, _Component.ny - 1, 3)),
+        'widths': np.zeros((_Component.ny - 1))),
+        'cos_sweep': np.zeros((_Component.ny - 1)),
+        'lengths': np.zeros((_Component.ny)),
+        'normals': np.zeros((_Component.nx - 1, _Component.ny - 1, 3)),
+        'S_ref': val=0.
     }
-    resids = None
+    resids=None
     _Component.solve_nonlinear(params, unknowns, resids)
-    b_pts = unknowns.get('b_pts')
-    mid_b = unknowns.get('mid_b')
-    c_pts = unknowns.get('c_pts')
-    widths = unknowns.get('widths')
-    normals = unknowns.get('normals')
-    S_ref = unknowns.get('S_ref')
-    return b_pts, mid_b, c_pts, widths, normals, S_ref
+    b_pts=unknowns.get('b_pts')
+    mid_b=unknowns.get('mid_b')
+    c_pts=unknowns.get('c_pts')
+    widths=unknowns.get('widths')
+    cos_sweep=unknowns.get('cos_sweep')
+    lengths=unknowns.get('lengths')
+    normals=unknowns.get('normals')
+    S_ref=unknowns.get('S_ref')
+    return b_pts, mid_b, c_pts, widths, cos_sweep, lengths, normals, S_ref
 
 
 def vlm_circulations(aero_ind, def_mesh, b_pts, c_pts, normals, v, alpha):
@@ -494,8 +497,8 @@ def vlm_circulations(aero_ind, def_mesh, b_pts, c_pts, normals, v, alpha):
         based on the air velocity at each collocation point.
 
     """
-    _Component = VLMCirculations(aero_ind)
-    params = {
+    _Component=VLMCirculations(aero_ind)
+    params={
         'def_mesh': def_mesh,
         'b_pts': b_pts,
         'c_pts': c_pts,
@@ -503,16 +506,76 @@ def vlm_circulations(aero_ind, def_mesh, b_pts, c_pts, normals, v, alpha):
         'v': v,
         'alpha': alpha
     }
-    unknowns = {
-        'circulations': np.zeros((np.sum(aero_ind[:, 4])), dtype="complex")
+    unknowns={
+        'circulations': np.zeros((np.sum(aero_ind[:, 4])), dtype = "complex")
     }
-    resids = None
+    resids=None
     _Component.solve_nonlinear(params, unknowns, resids)
-    circulations = unknowns.get('circulations')
+    circulations=unknowns.get('circulations')
     return circulations
 
 
-def vlm_forces(def_mesh, aero_ind, b_pts, mid_b, circulations, alpha=3, v=10, rho=3):
+def assemble_aic(aero_ind, def_mesh, b_pts, c_pts, normals, v, alpha, surfaces):
+    """
+    Compute the circulations based on the AIC matrix and the panel velocities.
+    Note that the flow tangency condition is enforced at the 3/4 chord point.
+    There are multiple versions of the first four parameters with one
+    for each surface defined.
+    Each of these parameters has the name of the surface prepended on the
+    actual parameter name.
+
+    Parameters
+    ----------
+    def_mesh[nx, ny, 3] : numpy array
+        Array defining the nodal coordinates of the lifting surface.
+    b_pts[nx-1, ny, 3] : numpy array
+        Bound points for the horseshoe vortices, found along the 1/4 chord.
+    c_pts[nx-1, ny-1, 3] : numpy array
+        Collocation points on the 3/4 chord line where the flow tangency
+        condition is satisfed. Used to set up the linear system.
+    normals[nx-1, ny-1, 3] : numpy array
+        The normal vector for each panel, computed as the cross of the two
+        diagonals from the mesh points.
+
+    v : float
+        Freestream air velocity in m/s.
+    alpha : float
+        Angle of attack in degrees.
+
+    Returns
+    -------
+    AIC[(nx-1)*(ny-1), (nx-1)*(ny-1)] : numpy array
+        The aerodynamic influence coefficient matrix. Solving the linear system
+        of AIC * circulations = n * v gives us the circulations for each of the
+        horseshoe vortices.
+    rhs[(nx-1)*(ny-1)] : numpy array
+        The right-hand-side of the linear system that yields the circulations.
+    """
+    _Component=AssembleAIC(def_mesh, b_pts, c_pts, normals, surfaces)
+    params={}
+    for surface in surfaces:
+        _Component.surface=surface
+        ny=surface['num_y']
+        nx=surface['num_x']
+        name=surface['name']
+        params.update({
+            name + 'def_mesh': def_mesh,  # this can't be right
+            name + 'b_pts': b_pts,
+            name + 'c_pts': c_pts,
+            name + 'normals': normals
+        })
+    unknowns={
+        'AIC': np.zeros((_Component.tot_panels, _Component.tot_panels), dtype = data_type),
+        'rhs': np.zeros((_Component.tot_panels), dtype = data_type)
+    }
+    resids=None
+    _Component.solve_nonlinear(params, unknowns, resids)
+    AIC=unknowns.get('AIC')
+    rhs=unknowns.get('rhs')
+    return AIC, rhs
+
+
+def vlm_forces(def_mesh, aero_ind, b_pts, mid_b, circulations, alpha = 3, v = 10, rho = 3):
     """ Compute aerodynamic forces acting on each section.
 
     Parameters
@@ -543,8 +606,8 @@ def vlm_forces(def_mesh, aero_ind, b_pts, mid_b, circulations, alpha=3, v=10, rh
         panel).
 
     """
-    _Component = VLMForces(aero_ind)
-    params = {
+    _Component=VLMForces(aero_ind)
+    params={
         'def_mesh': def_mesh,
         'b_pts': b_pts,
         'mid_b': mid_b,
@@ -553,16 +616,16 @@ def vlm_forces(def_mesh, aero_ind, b_pts, mid_b, circulations, alpha=3, v=10, rh
         'v': v,
         'rho': rho
     }
-    unknowns = {
+    unknowns={
         'sec_forces': np.zeros((np.sum(aero_ind[:, 4]), 3))
     }
-    resids = None
+    resids=None
     _Component.solve_nonlinear(params, unknowns, resids)
-    sec_forces = unknowns.get('sec_forces')
+    sec_forces=unknowns.get('sec_forces')
     return sec_forces
 
 
-def transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin=0.35):
+def transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin = 0.35):
     """
     Perform aerodynamic load transfer.
 
@@ -585,17 +648,17 @@ def transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin=0.35):
         computed from the sectional forces.
 
     """
-    _Component = TransferLoads(aero_ind, fem_ind, fem_origin)
-    params = {
+    _Component=TransferLoads(aero_ind, fem_ind, fem_origin)
+    params={
         'def_mesh': def_mesh,
         'sec_forces': sec_forces
     }
-    unknowns = {
+    unknowns={
         'loads': np.zeros((np.sum(fem_ind[:, 0]), 6))
     }
-    resids = None
+    resids=None
     _Component.solve_nonlinear(params, unknowns, resids)
-    loads = unknowns.get('loads')
+    loads=unknowns.get('loads')
     return loads
 
 
@@ -620,20 +683,20 @@ def vlm_lift_drag(sec_forces, alpha, aero_ind):
         Total drag for each lifting surface.
 
     """
-    _Component = VLMLiftDrag(aero_ind)
-    num_surf = aero_ind.shape[0]
-    params = {
+    _Component=VLMLiftDrag(aero_ind)
+    num_surf=aero_ind.shape[0]
+    params={
         'sec_forces': sec_forces,
         'alpha': alpha
     }
-    unknowns = {
+    unknowns={
         'L': np.zeros((num_surf)),
         'D': np.zeros((num_surf))
     }
-    resids = None
+    resids=None
     _Component.solve_nonlinear(params, unknowns, resids)
-    L = unknowns.get('L')
-    D = unknowns.get('D')
+    L=unknowns.get('L')
+    D=unknowns.get('D')
     return L, D
 
 
@@ -661,23 +724,23 @@ def vlm_coeffs(S_ref, L, D, v, rho, aero_ind):
         Induced coefficient of drag (CD) for each lifting surface.
 
     """
-    _Component = VLMCoeffs(aero_ind)
-    num_surf = aero_ind.shape[0]
-    params = {
+    _Component=VLMCoeffs(aero_ind)
+    num_surf=aero_ind.shape[0]
+    params={
         'S_ref': S_ref,
         'L': L,
         'D': D,
         'v': v,
         'rho': rho
     }
-    unknowns = {
+    unknowns={
         'CL1': np.zeros((num_surf)),
         'CDi': np.zeros((num_surf))
     }
-    resids = None
+    resids=None
     _Component.solve_nonlinear(params, unknowns, resids)
-    CL1 = unknowns.get('CL1')
-    CDi = unknowns.get('CDi')
+    CL1=unknowns.get('CL1')
+    CDi=unknowns.get('CDi')
     return CL1, CDi
 
 
@@ -697,18 +760,18 @@ def total_lift(CL1, CL0, aero_ind):
         CL of the main wing, used for CL constrained optimization.
 
     """
-    _Component = TotalLift(CL0, aero_ind)
-    params = {
+    _Component=TotalLift(CL0, aero_ind)
+    params={
         'CL1': CL1
     }
-    unknowns = {
+    unknowns={
         'CL': np.zeros((_Component.num_surf)),
         'CL_wing': 0.
     }
-    resids = None
+    resids=None
     _Component.solve_nonlinear(params, unknowns, resids)
-    CL = unknowns.get('CL')
-    CL_wing = unknowns.get('CL_wing')
+    CL=unknowns.get('CL')
+    CL_wing=unknowns.get('CL_wing')
     return CL, CL_wing
 
 
@@ -728,18 +791,18 @@ def total_drag(CL0, aero_ind):
         CD of the main wing, used for CD minimization.
 
     """
-    _Component = TotalDrag(CDi, CL0, aero_ind)
-    params = {
+    _Component=TotalDrag(CDi, CL0, aero_ind)
+    params={
         'CDi': CDi
     }
-    unknowns = {
+    unknowns={
         'CD': np.zeros((_Component.num_surf)),
         'CD_wing': 0.
     }
-    resids = None
+    resids=None
     _Component.solve_nonlinear(params, unknowns, resids)
-    CD = unknowns.get('CD')
-    CD_wing = unknowns.get('CD_wing')
+    CD=unknowns.get('CD')
+    CD_wing=unknowns.get('CD_wing')
     return CD, CD_wing
 
 
@@ -762,17 +825,17 @@ def unit(vec):
     return vec / norm(vec)
 
 
-def radii(mesh, t_c=0.15):
+def radii(mesh, t_c = 0.15):
     """ Obtain the radii of the FEM component based on chord. """
-    vectors = mesh[-1, :, :] - mesh[0, :, :]
+    vectors=mesh[-1, :, :] - mesh[0, :, :]
     # print('sss mesh.shape',mesh.shape)
     # print('vectors.shape',vectors.shape)
-    chords = np.sqrt(np.sum(vectors**2, axis=1))
-    chords = 0.5 * chords[: -1] + 0.5 * chords[1:]
+    chords=np.sqrt(np.sum(vectors**2, axis=1))
+    chords=0.5 * chords[: -1] + 0.5 * chords[1:]
     return t_c * chords
 
 
-def spatial_beam_FEM(A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x=5):
+def spatial_beam_FEM(A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x = 5):
     """
     Compute the displacements and rotations by solving the linear system
     using the structural stiffness matrix.
@@ -800,8 +863,8 @@ def spatial_beam_FEM(A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x=5
         mtx * disp_aug = rhs, where rhs is a flattened version of loads.
 
     """
-    _Component = SpatialBeamFEM(aero_ind, fem_ind, E, G, cg_x)
-    params = {
+    _Component=SpatialBeamFEM(aero_ind, fem_ind, E, G, cg_x)
+    params={
         'A': A,
         'Iy': Iy,
         'Iz': Iz,
@@ -809,12 +872,12 @@ def spatial_beam_FEM(A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x=5
         'nodes': nodes,
         'loads': loads
     }
-    unknowns = {
-        'disp_aug': np.zeros((_Component.size), dtype="complex")
+    unknowns={
+        'disp_aug': np.zeros((_Component.size), dtype = "complex")
     }
-    resids = None
+    resids=None
     _Component.solve_nonlinear(params, unknowns, resids)
-    disp_aug = unknowns.get('disp_aug')
+    disp_aug=unknowns.get('disp_aug')
     return disp_aug
 
 
@@ -839,20 +902,20 @@ def spatial_beam_disp(disp_aug, fem_ind):
         Actual displacement array formed by truncating disp_aug.
 
     """
-    _Component = SpatialBeamDisp(fem_ind)
-    params = {
+    _Component=SpatialBeamDisp(fem_ind)
+    params={
         'disp_aug': disp_aug
     }
-    unknowns = {
+    unknowns={
         'disp': np.zeros((_Component.tot_n_fem, 6))
     }
-    resids = None
+    resids=None
     _Component.solve_nonlinear(params, unknowns, resids)
-    disp = unknowns.get('disp')
+    disp=unknowns.get('disp')
     return disp
 
 
-def compute_nodes(mesh, fem_ind, aero_ind, fem_origin=0.35):
+def compute_nodes(mesh, fem_ind, aero_ind, fem_origin = 0.35):
     """
     Compute FEM nodes based on aerodynamic mesh.
 
@@ -869,16 +932,16 @@ def compute_nodes(mesh, fem_ind, aero_ind, fem_origin=0.35):
         Flattened array with coordinates for each FEM node.
 
     """
-    ComputeNodes_comp = ComputeNodes(fem_ind, aero_ind, fem_origin)
-    params = {
+    ComputeNodes_comp=ComputeNodes(fem_ind, aero_ind, fem_origin)
+    params={
         'mesh': mesh
     }
-    unknowns = {
+    unknowns={
         'nodes': np.zeros((ComputeNodes_comp.tot_n_fem, 3))
     }
-    resids = None
+    resids=None
     ComputeNodes_comp.solve_nonlinear(params, unknowns, resids)
-    nodes = unknowns.get('nodes')
+    nodes=unknowns.get('nodes')
     return nodes
 
 
@@ -900,16 +963,16 @@ def spatial_beam_energy(disp, loads, aero_ind, fem_ind):
 
     """
     _Component.SpatialBeamEnergy(aero_ind, fem_ind)
-    params = {
+    params={
         'disp': disp,
         'loads': loads
     }
-    unknowns = {
+    unknowns={
         'energy': np.zeros((_Component.n, 6))
     }
-    resids = None
+    resids=None
     _Component.solve_nonlinear(params, unknowns, resids)
-    energy = unknowns.get('energy')
+    energy=unknowns.get('energy')
     return energy
 
 
@@ -927,17 +990,17 @@ def spatial_beam_weight(A, nodes, aero_ind, fem_ind, mrho):
     -------
     weight : float
         Total weight of the structural component."""
-    _Component = SpatialBeamWeight(aero_ind, fem_ind, mrho)
-    params = {
+    _Component=SpatialBeamWeight(aero_ind, fem_ind, mrho)
+    params={
         'A': A,
         'nodes': nodes
     }
-    unknowns = {
+    unknowns={
         'weight': 0.
     }
-    resids = None
+    resids=None
     _Component.solve_nonlinear(params, unknowns, resids)
-    weight = unknowns.get('weight')
+    weight=unknowns.get('weight')
     return weight
 
 
@@ -959,23 +1022,23 @@ def spatial_beam_vonmises_tube(nodes, r, disp, aero_ind, fem_ind, E, G):
         von Mises stress magnitudes for each FEM element.
 
     """
-    _Component = SpatialBeamVonMisesTube(aero_ind, fem_ind, E, G)
-    num_surf = fem_ind.shape[0]
-    params = {
+    _Component=SpatialBeamVonMisesTube(aero_ind, fem_ind, E, G)
+    num_surf=fem_ind.shape[0]
+    params={
         'nodes': nodes,
         'r': r,
         'disp': disp
     }
-    unknowns = {
-        'vonmises': np.zeros((_Component.tot_n_fem - num_surf, 2), dtype="complex")
+    unknowns={
+        'vonmises': np.zeros((_Component.tot_n_fem - num_surf, 2), dtype = "complex")
     }
-    resids = None
+    resids=None
     _Component.solve_nonlinear(params, unknowns, resids)
-    vonmises = unknowns.get('vonmises')
+    vonmises=unknowns.get('vonmises')
     return vonmises
 
 
-def spatial_beam_failure_ks(vonmises, fem_ind, sigma, rho=10):
+def spatial_beam_failure_ks(vonmises, fem_ind, sigma, rho = 10):
     """
     Aggregate failure constraints from the structure.
 
@@ -996,16 +1059,16 @@ def spatial_beam_failure_ks(vonmises, fem_ind, sigma, rho=10):
         reducing the number of constraints.
 
     """
-    _Component = SpatialBeamFailureKS(fem_ind, sigma, rho)
-    params = {
+    _Component=SpatialBeamFailureKS(fem_ind, sigma, rho)
+    params={
         'vonmises': vonmises
     }
-    unknowns = {
-        'failure' = 0.
+    unknowns={
+        'failure'=0.
     }
-    resids = None
+    resids=None
     _Component.solve_nonlinear(params, unknowns, resids)
-    failure = unknowns.get('failure')
+    failure=unknowns.get('failure')
     return failure
 
 
@@ -1042,23 +1105,23 @@ def materials_tube(r, thickness, fem_ind):
         Polar moment of inertia for each FEM element.
 
     """
-    MaterialsTube_comp = MaterialsTube(fem_ind)
-    params = {
+    MaterialsTube_comp=MaterialsTube(fem_ind)
+    params={
         'r': r,
         'thickness': thickness
     }
-    unknowns = {
+    unknowns={
         'A': np.zeros((np.sum(fem_ind[:, 0] - fem_ind.shape[0]))),
         'Iy': np.zeros((np.sum(fem_ind[:, 0] - fem_ind.shape[0]))),
         'Iz': np.zeros((np.sum(fem_ind[:, 0] - fem_ind.shape[0]))),
         'J': np.zeros((np.sum(fem_ind[:, 0] - fem_ind.shape[0])))
     }
-    resids = None
+    resids=None
     MaterialsTube_comp.solve_nonlinear(params, unknowns, resids)
-    A = unknowns.get('A', None)
-    Iy = unknowns.get('Iy', None)
-    Iz = unknowns.get('Iz', None)
-    J = unknowns.get('J', None)
+    A=unknowns.get('A', None)
+    Iy=unknowns.get('Iy', None)
+    Iz=unknowns.get('Iz', None)
+    J=unknowns.get('J', None)
     return A, Iy, Iz, J
 
     """
@@ -1073,33 +1136,33 @@ def materials_tube(r, thickness, fem_ind):
 
     def functional_breguet_range(CL, CD, weight, W0, CT, a, R, M, aero_ind):
         """ Computes the fuel burn using the Breguet range equation """
-        _Component = FunctionalBreguetRange(W0, CT, a, R, M, aero_ind)
-        n_surf = aero_ind.shape[0]
-        params = {
+        _Component=FunctionalBreguetRange(W0, CT, a, R, M, aero_ind)
+        n_surf=aero_ind.shape[0]
+        params={
             'CL': CL,
             'CD': CD,
             'weight': weight
         }
-        unknowns = {
+        unknowns={
             'fuelburn': 0.
         }
-        resids = None
+        resids=None
         _Component.solve_nonlinear(params, unknowns, resids)
-        fuelburn = unknowns.get('fuelburn')
+        fuelburn=unknowns.get('fuelburn')
         return fuelburn
 
     def functional_equilibrium(L, weight, fuelburn, W0, aero_ind):
         """ L = W constraint """
-        _Component = FunctionalEquilibrium(W0, aero_ind)
-        params = {
+        _Component=FunctionalEquilibrium(W0, aero_ind)
+        params={
             'L': L,
             'weight': weight,
             'fuelburn': fuelburn
         }
-        unknowns = {
+        unknowns={
             'eq_con': 0.
         }
-        resids = None
+        resids=None
         _Component.solve_nonlinear(params, unknowns, resids)
-        eq_con = unknowns.get('eq_con')
+        eq_con=unknowns.get('eq_con')
         return eq_con
