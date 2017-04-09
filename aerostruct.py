@@ -8,20 +8,20 @@ from __future__ import print_function, division
 # from future.builtins import range  # make compatible Python 2.x to 3.x
 # __all__ = ['setup','aerodynamics','structures']
 import warnings
-import sys
-import os
+# import sys
+# import os
 import numpy as np
-import scipy.sparse
-from scipy.linalg import lu_factor, lu_solve
+# import scipy.sparse
+# from scipy.linalg import lu_factor, lu_solve
 
 from materials import MaterialsTube
-from spatialbeam import ComputeNodes, SpatialBeamFEM, SpatialBeamDisp, SpatialBeamEnergy, SpatialBeamWeight, SpatialBeamVonMisesTube, SpatialBeamFailureKS
+from spatialbeam import ComputeNodes, SpatialBeamFEM, SpatialBeamDisp#, SpatialBeamEnergy, SpatialBeamWeight, SpatialBeamVonMisesTube, SpatialBeamFailureKS
 from transfer import TransferDisplacements, TransferLoads
-from vlm import VLMGeometry, AssembleAIC, AeroCirculations, VLMForces, VLMLiftDrag, VLMCoeffs, TotalLift, TotalDrag
-from b_spline import get_bspline_mtx
+from vlm import VLMGeometry, AssembleAIC, AeroCirculations, VLMForces#, VLMLiftDrag, VLMCoeffs, TotalLift, TotalDrag
+# from b_spline import get_bspline_mtx
 # from geometry import get_inds, rotate, sweep, dihedral, stretch, taper, mirror
-from geometry import GeometryMesh, Bspline, gen_crm_mesh, gen_rect_mesh, MonotonicConstraint
-from functionals import FunctionalBreguetRange, FunctionalEquilibrium
+from geometry import GeometryMesh, Bspline#, gen_crm_mesh, gen_rect_mesh, MonotonicConstraint
+# from functionals import FunctionalBreguetRange, FunctionalEquilibrium
 from OpenAeroStruct import OASProblem
 
 try:
@@ -165,6 +165,14 @@ def setup(num_x=2, num_y=7):
     # Add the specified wing surface to the problem.
     OAS_prob.add_surface(surf_dict)
 
+    # Get total panels and save in prob_dict
+    tot_panels = 0
+    for surface in OAS_prob.surfaces:
+        ny = surface['num_y']
+        nx = surface['num_x']
+        tot_panels += (nx - 1) * (ny - 1)
+    OAS_prob.prob_dict.update({'tot_panels': tot_panels})
+
     '''
     Extract parameters and variables from OAS_prob to pass through to
     other discipline functions. For now, assume we are only using one lifting
@@ -251,6 +259,15 @@ def setup(num_x=2, num_y=7):
     '''
     wing = surfaces[0]
 
+    # Add materials properties for the wing surface to the surface dict
+    A, Iy, Iz, J = materials_tube(wing)
+    wing.update({
+        'A': A,
+        'Iy': Iy,
+        'Iz': Iz,
+        'J': J
+    })
+
     # wing_CD0 = wing.get('CD0')
     # wing_CL0 = wing.get('CL0')
     # wing_E = wing.get('E')
@@ -301,69 +318,52 @@ def setup(num_x=2, num_y=7):
 
 
 def aerodynamics(def_mesh=None, params=None):
+
     # Unpack variables
-    aero_ind = params.get('aero_ind')
-    alpha = params.get('alpha')
-    v = params.get('v')
-    rho = params.get('rho')
-    fem_ind = params.get('fem_ind')
-    fem_origin = params.get('fem_origin', 0.35)
+    surface = params.get('surfaces')[0]
+    v = params.get('prob_dict').get('v')
+    alpha = params.get('prob_dict').get('alpha')
+    size =  params.get('prob_dict').get('tot_panels')
 
-    # num_y = params.get('num_y')
-    # span = params.get('span')
-    # twist_cp = params.get('twist_cp')
-    # thickness_cp = params.get('thickness_cp')
-    # num_thickness = params.get('num_thickness')
-    # num_twist = params.get('num_twist')
-    # sweep = params.get('sweep')
-    # taper = params.get('taper')
-    # disp = params.get('disp')
-    # dihedral = params.get('dihedral')
+    b_pts, c_pts, widths, cos_sweep, lengths, normals, S_ref = vlm_geometry(surface, def_mesh)
+    AIC, rhs= assemble_aic(surface, def_mesh, b_pts, c_pts, normals, v, alpha)
+    circulations = aero_circulations(AIC, rhs, size)
+    sec_forces = vlm_forces(surface, def_mesh, b_pts, circulations, alpha, v, rho)
+    loads = transfer_loads(surface, def_mesh, sec_forces)
 
-    # # Define Jacobians for b-spline controls
-    # tot_n_fem = np.sum(fem_ind[:, 0])
-    # num_surf = fem_ind.shape[0]
-    # jac_twist = get_bspline_mtx(num_twist, num_y)
-    # jac_thickness = get_bspline_mtx(num_thickness, tot_n_fem - num_surf)
-
-    b_pts, mid_b, c_pts, widths, normals, S_ref = vlm_geometry(
-        aero_ind, def_mesh)
-    circulations = vlm_circulations(
-        aero_ind, def_mesh, b_pts, c_pts, normals, v, alpha)
-
-    sec_forces = vlm_forces(def_mesh, aero_ind, b_pts,
-                            mid_b, circulations, alpha, v, rho)
-    loads = transfer_loads(def_mesh, sec_forces, aero_ind, fem_ind, fem_origin)
-    # for i, j in enumerate([circulations, sec_forces, loads]):
-    # print('shape of ',i,' = ',j.shape)
     return loads
 
 
 def structures(loads, params):
-    # Unpack variables
-    mesh = params.get('mesh')
-    twist_cp = params.get('twist_cp')
-    thickness_cp = params.get('thickness_cp')
-    r = params.get('r')
-    aero_ind = params.get('aero_ind')
-    fem_ind = params.get('fem_ind')
-    E = params.get('E')
-    G = params.get('G')
-    jac_twist = params.get('jac_twist')
-    jac_thickness = params.get('jac_thickness')
-    fem_origin = params.get('fem_origin', 0.35)
-    cg_x = params.get('cg_x', 5)
 
-    twist = cp2pt(twist_cp, jac_twist)
-    thickness = cp2pt(thickness_cp, jac_thickness)
-    geometry_mesh(mesh, aero_ind, twist)
-    A, Iy, Iz, J = materials_tube(r, thickness, fem_ind)
-    nodes = compute_nodes(mesh, fem_ind, aero_ind, fem_origin)
-    disp_aug = spatial_beam_FEM(
-        A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x)
-    disp = spatial_beam_disp(disp_aug, fem_ind)
-    def_mesh = transfer_displacements(
-        mesh, disp, aero_ind, fem_ind, fem_origin)
+    # Unpack variables
+    surface = params.get('surfaces')[0]
+    prob_dict = params.get('prob_dict')
+    A = surface.get('A')
+    Iy = surface.get('Iy')
+    Iz = surface.get('Iz')
+    J = surface.get('J')
+    v = prob_dict.get('v')
+    alpha = prob_dict.get('alpha')
+    size =  prob_dict.get('tot_panels')
+
+    nodes = compute_nodes(surface, mesh)
+    K, forces = assemble_k(surface, A, Iy, Iz, J, nodes, loads)
+    disp_aug = spatial_beam_FEM(K, forces, size)
+    disp = spatial_beam_disp(surface, disp_aug)
+    def_mesh = transfer_displacements(surface, mesh, disp)
+
+    # mesh = geometry_mesh(surface)
+    # twist = cp2pt(twist_cp, jac_twist)
+    # thickness = cp2pt(thickness_cp, jac_thickness)
+    # geometry_mesh(mesh, aero_ind, twist)
+    # A, Iy, Iz, J = materials_tube(r, thickness, fem_ind)
+    # nodes = compute_nodes(mesh, fem_ind, aero_ind, fem_origin)
+    # disp_aug = spatial_beam_FEM(
+    #     A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x)
+    # disp = spatial_beam_disp(disp_aug, fem_ind)
+    # def_mesh = transfer_displacements(
+    #     mesh, disp, aero_ind, fem_ind, fem_origin)
 
     return def_mesh  # Output the def_mesh matrix
 
@@ -378,134 +378,134 @@ def cp2pt(cp, jac):
     return pt
 
 
-def gen_crm_mesh(n_points_inboard=3, n_points_outboard=4,
-                 num_x=2):
-    """
-    Build the right hand side of the CRM wing with specified number
-    of inboard and outboard panels.
-
-    n_points_inboard : int
-        Number of spanwise points between the wing root and yehudi break per
-        wing side.
-    n_points_outboard : int
-        Number of spanwise points between the yehudi break and wingtip per
-        wing side.
-    num_x : int
-        Number of chordwise points.
-
-    """
-    #   crm base mesh from crm_data.py
-    # eta, xle, yle, zle, twist, chord
-    raw_crm_points = np.array([
-        [0., 904.294, 0.0, 174.126, 6.7166, 536.181],  # 0
-        [.1, 989.505, 115.675, 175.722, 4.4402, 468.511],
-        [.15, 1032.133, 173.513, 176.834, 3.6063, 434.764],
-        [.2, 1076.030, 231.351, 177.912, 2.2419, 400.835],
-        [.25, 1120.128, 289.188, 177.912, 2.2419, 366.996],
-        [.3, 1164.153, 347.026, 178.886, 1.5252, 333.157],
-        [.35, 1208.203, 404.864, 180.359, .9379, 299.317],  # 6 yehudi break
-        [.4, 1252.246, 462.701, 182.289, .4285, 277.288],
-        [.45, 1296.289, 520.539, 184.904, -.2621, 263],
-        [.5, 1340.329, 578.377, 188.389, -.6782, 248.973],
-        [.55, 1384.375, 636.214, 192.736, -.9436, 234.816],
-        [.60, 1428.416, 694.052, 197.689, -1.2067, 220.658],
-        [.65, 1472.458, 751.890, 203.294, -1.4526, 206.501],
-        [.7, 1516.504, 809.727, 209.794, -1.6350, 192.344],
-        [.75, 1560.544, 867.565, 217.084, -1.8158, 178.186],
-        [.8, 1604.576, 925.402, 225.188, -2.0301, 164.029],
-        [.85, 1648.616, 983.240, 234.082, -2.2772, 149.872],
-        [.9, 1692.659, 1041.078, 243.625, -2.5773, 135.714],
-        [.95, 1736.710, 1098.915, 253.691, -3.1248, 121.557],
-        [1., 1780.737, 1156.753, 263.827, -3.75, 107.4]  # 19
-    ])
-    # le = np.vstack((raw_crm_points[:,1],
-    #                 raw_crm_points[:,2],
-    #                 raw_crm_points[:,3]))
-    # te = np.vstack((raw_crm_points[:,1]+raw_crm_points[:,5],
-    #                 raw_crm_points[:,2],
-    #                 raw_crm_points[:,3]))
-    # mesh = np.empty((2,20,3))
-    # mesh[0,:,:] = le.T
-    # mesh[1,:,:] = te.T
-    # mesh *= 0.0254 # convert to meters
-    # pull out the 3 key y-locations to define the two linear regions of the
-    # wing
-    crm_base_points = raw_crm_points[(0, 6, 19), :]
-    le_base = np.vstack((crm_base_points[:, 1],
-                         crm_base_points[:, 2],
-                         crm_base_points[:, 3]))
-    te_base = np.vstack((crm_base_points[:, 1] + crm_base_points[:, 5],
-                         crm_base_points[:, 2],
-                         crm_base_points[:, 3]))
-    mesh = np.empty((2, 3, 3))
-    mesh[0, :, :] = le_base.T
-    mesh[1, :, :] = te_base.T
-    mesh[:, :, 2] = 0  # get rid of the z deflection
-    mesh *= 0.0254  # convert to meters
-    # LE pre-yehudi
-    s1 = (mesh[0, 1, 0] - mesh[0, 0, 0]) / (mesh[0, 1, 1] - mesh[0, 0, 1])
-    o1 = mesh[0, 0, 0]
-    # TE pre-yehudi
-    s2 = (mesh[1, 1, 0] - mesh[1, 0, 0]) / (mesh[1, 1, 1] - mesh[1, 0, 1])
-    o2 = mesh[1, 0, 0]
-    # LE post-yehudi
-    s3 = (mesh[0, 2, 0] - mesh[0, 1, 0]) / (mesh[0, 2, 1] - mesh[0, 1, 1])
-    o3 = mesh[0, 2, 0] - s3 * mesh[0, 2, 1]
-    # TE post-yehudi
-    s4 = (mesh[1, 2, 0] - mesh[1, 1, 0]) / (mesh[1, 2, 1] - mesh[1, 1, 1])
-    o4 = mesh[1, 2, 0] - s4 * mesh[1, 2, 1]
-    n_points_total = n_points_inboard + n_points_outboard - 1
-    half_mesh = np.zeros((2, n_points_total, 3))
-    # generate inboard points
-    dy = (mesh[0, 1, 1] - mesh[0, 0, 1]) / (n_points_inboard - 1)
-    for i in range(n_points_inboard):
-        y = half_mesh[0, i, 1] = i * dy
-        half_mesh[0, i, 0] = s1 * y + o1  # le point
-        half_mesh[1, i, 1] = y
-        half_mesh[1, i, 0] = s2 * y + o2  # te point
-    yehudi_break = mesh[0, 1, 1]
-    # generate outboard points
-    dy = (mesh[0, 2, 1] - mesh[0, 1, 1]) / (n_points_outboard - 1)
-    for j in range(n_points_outboard):
-        i = j + n_points_inboard - 1
-        y = half_mesh[0, i, 1] = j * dy + yehudi_break
-        half_mesh[0, i, 0] = s3 * y + o3  # le point
-        half_mesh[1, i, 1] = y
-        half_mesh[1, i, 0] = s4 * y + o4  # te point
-    full_mesh = mirror(half_mesh)
-    full_mesh = add_chordwise_panels(full_mesh, num_x)
-    full_mesh[:, :, 1] -= np.mean(full_mesh[:, :, 1])
-    return full_mesh
-
-
-def add_chordwise_panels(mesh, num_x):
-    """ Divide the wing into multiple chordwise panels. """
-    le = mesh[0, :, :]
-    te = mesh[-1, :, :]
-    new_mesh = np.zeros((num_x, mesh.shape[1], 3))
-    new_mesh[0, :, :] = le
-    new_mesh[-1, :, :] = te
-    for i in range(1, num_x - 1):
-        w = float(i) / (num_x - 1)
-        new_mesh[i, :, :] = (1 - w) * le + w * te
-    return new_mesh
-
-
-def gen_mesh(num_x, num_y, span, chord, cosine_spacing=0.):
-    """ Generate simple rectangular wing mesh. """
-    mesh = np.zeros((num_x, num_y, 3))
-    ny2 = (num_y + 1) / 2
-    beta = np.linspace(0, np.pi / 2, ny2)
-    # mixed spacing with w as a weighting factor
-    cosine = .5 * np.cos(beta)  # cosine spacing
-    uniform = np.linspace(0, .5, ny2)[::-1]  # uniform spacing
-    half_wing = cosine * cosine_spacing + (1 - cosine_spacing) * uniform
-    full_wing = np.hstack((-half_wing[:-1], half_wing[::-1])) * span
-    for ind_x in range(num_x):
-        for ind_y in range(num_y):
-            mesh[ind_x, ind_y, :] = [ind_x / (num_x - 1) * chord,
-                                     full_wing[ind_y], 0]
-    return mesh
+# def gen_crm_mesh(n_points_inboard=3, n_points_outboard=4,
+#                  num_x=2):
+#     """
+#     Build the right hand side of the CRM wing with specified number
+#     of inboard and outboard panels.
+#
+#     n_points_inboard : int
+#         Number of spanwise points between the wing root and yehudi break per
+#         wing side.
+#     n_points_outboard : int
+#         Number of spanwise points between the yehudi break and wingtip per
+#         wing side.
+#     num_x : int
+#         Number of chordwise points.
+#
+#     """
+#     #   crm base mesh from crm_data.py
+#     # eta, xle, yle, zle, twist, chord
+#     raw_crm_points = np.array([
+#         [0., 904.294, 0.0, 174.126, 6.7166, 536.181],  # 0
+#         [.1, 989.505, 115.675, 175.722, 4.4402, 468.511],
+#         [.15, 1032.133, 173.513, 176.834, 3.6063, 434.764],
+#         [.2, 1076.030, 231.351, 177.912, 2.2419, 400.835],
+#         [.25, 1120.128, 289.188, 177.912, 2.2419, 366.996],
+#         [.3, 1164.153, 347.026, 178.886, 1.5252, 333.157],
+#         [.35, 1208.203, 404.864, 180.359, .9379, 299.317],  # 6 yehudi break
+#         [.4, 1252.246, 462.701, 182.289, .4285, 277.288],
+#         [.45, 1296.289, 520.539, 184.904, -.2621, 263],
+#         [.5, 1340.329, 578.377, 188.389, -.6782, 248.973],
+#         [.55, 1384.375, 636.214, 192.736, -.9436, 234.816],
+#         [.60, 1428.416, 694.052, 197.689, -1.2067, 220.658],
+#         [.65, 1472.458, 751.890, 203.294, -1.4526, 206.501],
+#         [.7, 1516.504, 809.727, 209.794, -1.6350, 192.344],
+#         [.75, 1560.544, 867.565, 217.084, -1.8158, 178.186],
+#         [.8, 1604.576, 925.402, 225.188, -2.0301, 164.029],
+#         [.85, 1648.616, 983.240, 234.082, -2.2772, 149.872],
+#         [.9, 1692.659, 1041.078, 243.625, -2.5773, 135.714],
+#         [.95, 1736.710, 1098.915, 253.691, -3.1248, 121.557],
+#         [1., 1780.737, 1156.753, 263.827, -3.75, 107.4]  # 19
+#     ])
+#     # le = np.vstack((raw_crm_points[:,1],
+#     #                 raw_crm_points[:,2],
+#     #                 raw_crm_points[:,3]))
+#     # te = np.vstack((raw_crm_points[:,1]+raw_crm_points[:,5],
+#     #                 raw_crm_points[:,2],
+#     #                 raw_crm_points[:,3]))
+#     # mesh = np.empty((2,20,3))
+#     # mesh[0,:,:] = le.T
+#     # mesh[1,:,:] = te.T
+#     # mesh *= 0.0254 # convert to meters
+#     # pull out the 3 key y-locations to define the two linear regions of the
+#     # wing
+#     crm_base_points = raw_crm_points[(0, 6, 19), :]
+#     le_base = np.vstack((crm_base_points[:, 1],
+#                          crm_base_points[:, 2],
+#                          crm_base_points[:, 3]))
+#     te_base = np.vstack((crm_base_points[:, 1] + crm_base_points[:, 5],
+#                          crm_base_points[:, 2],
+#                          crm_base_points[:, 3]))
+#     mesh = np.empty((2, 3, 3))
+#     mesh[0, :, :] = le_base.T
+#     mesh[1, :, :] = te_base.T
+#     mesh[:, :, 2] = 0  # get rid of the z deflection
+#     mesh *= 0.0254  # convert to meters
+#     # LE pre-yehudi
+#     s1 = (mesh[0, 1, 0] - mesh[0, 0, 0]) / (mesh[0, 1, 1] - mesh[0, 0, 1])
+#     o1 = mesh[0, 0, 0]
+#     # TE pre-yehudi
+#     s2 = (mesh[1, 1, 0] - mesh[1, 0, 0]) / (mesh[1, 1, 1] - mesh[1, 0, 1])
+#     o2 = mesh[1, 0, 0]
+#     # LE post-yehudi
+#     s3 = (mesh[0, 2, 0] - mesh[0, 1, 0]) / (mesh[0, 2, 1] - mesh[0, 1, 1])
+#     o3 = mesh[0, 2, 0] - s3 * mesh[0, 2, 1]
+#     # TE post-yehudi
+#     s4 = (mesh[1, 2, 0] - mesh[1, 1, 0]) / (mesh[1, 2, 1] - mesh[1, 1, 1])
+#     o4 = mesh[1, 2, 0] - s4 * mesh[1, 2, 1]
+#     n_points_total = n_points_inboard + n_points_outboard - 1
+#     half_mesh = np.zeros((2, n_points_total, 3))
+#     # generate inboard points
+#     dy = (mesh[0, 1, 1] - mesh[0, 0, 1]) / (n_points_inboard - 1)
+#     for i in range(n_points_inboard):
+#         y = half_mesh[0, i, 1] = i * dy
+#         half_mesh[0, i, 0] = s1 * y + o1  # le point
+#         half_mesh[1, i, 1] = y
+#         half_mesh[1, i, 0] = s2 * y + o2  # te point
+#     yehudi_break = mesh[0, 1, 1]
+#     # generate outboard points
+#     dy = (mesh[0, 2, 1] - mesh[0, 1, 1]) / (n_points_outboard - 1)
+#     for j in range(n_points_outboard):
+#         i = j + n_points_inboard - 1
+#         y = half_mesh[0, i, 1] = j * dy + yehudi_break
+#         half_mesh[0, i, 0] = s3 * y + o3  # le point
+#         half_mesh[1, i, 1] = y
+#         half_mesh[1, i, 0] = s4 * y + o4  # te point
+#     full_mesh = mirror(half_mesh)
+#     full_mesh = add_chordwise_panels(full_mesh, num_x)
+#     full_mesh[:, :, 1] -= np.mean(full_mesh[:, :, 1])
+#     return full_mesh
+#
+#
+# def add_chordwise_panels(mesh, num_x):
+#     """ Divide the wing into multiple chordwise panels. """
+#     le = mesh[0, :, :]
+#     te = mesh[-1, :, :]
+#     new_mesh = np.zeros((num_x, mesh.shape[1], 3))
+#     new_mesh[0, :, :] = le
+#     new_mesh[-1, :, :] = te
+#     for i in range(1, num_x - 1):
+#         w = float(i) / (num_x - 1)
+#         new_mesh[i, :, :] = (1 - w) * le + w * te
+#     return new_mesh
+#
+#
+# def gen_mesh(num_x, num_y, span, chord, cosine_spacing=0.):
+#     """ Generate simple rectangular wing mesh. """
+#     mesh = np.zeros((num_x, num_y, 3))
+#     ny2 = (num_y + 1) / 2
+#     beta = np.linspace(0, np.pi / 2, ny2)
+#     # mixed spacing with w as a weighting factor
+#     cosine = .5 * np.cos(beta)  # cosine spacing
+#     uniform = np.linspace(0, .5, ny2)[::-1]  # uniform spacing
+#     half_wing = cosine * cosine_spacing + (1 - cosine_spacing) * uniform
+#     full_wing = np.hstack((-half_wing[:-1], half_wing[::-1])) * span
+#     for ind_x in range(num_x):
+#         for ind_y in range(num_y):
+#             mesh[ind_x, ind_y, :] = [ind_x / (num_x - 1) * chord,
+#                                      full_wing[ind_y], 0]
+#     return mesh
 
 
 def geometry_mesh(surface):
