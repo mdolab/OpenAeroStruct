@@ -15,7 +15,7 @@ import numpy as np
 # from scipy.linalg import lu_factor, lu_solve
 
 from materials import MaterialsTube
-from spatialbeam import ComputeNodes, SpatialBeamFEM, SpatialBeamDisp#, SpatialBeamEnergy, SpatialBeamWeight, SpatialBeamVonMisesTube, SpatialBeamFailureKS
+from spatialbeam import ComputeNodes, AssembleK, SpatialBeamFEM, SpatialBeamDisp#, SpatialBeamEnergy, SpatialBeamWeight, SpatialBeamVonMisesTube, SpatialBeamFailureKS
 from transfer import TransferDisplacements, TransferLoads
 from vlm import VLMGeometry, AssembleAIC, AeroCirculations, VLMForces#, VLMLiftDrag, VLMCoeffs, TotalLift, TotalDrag
 # from b_spline import get_bspline_mtx
@@ -257,7 +257,7 @@ def setup(num_x=2, num_y=7):
     'xshear_cp': array([ 0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j]),
     'zshear_cp': array([ 0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j])}]
     '''
-    wing = surfaces[0]
+    wing = OAS_prob.surfaces[0]
 
     # Add materials properties for the wing surface to the surface dict
     A, Iy, Iz, J = materials_tube(wing)
@@ -314,16 +314,26 @@ def setup(num_x=2, num_y=7):
     # wing_zshear_cp = wing.get('zshear_cp')
 
     # or just return the surface dict and the problem dict
-    return wing, OAS_prob.prob_dict
+    params = {'surfaces': [wing], 'prob_dict': OAS_prob.prob_dict}
+
+    # Generate initial mesh
+    mesh = geometry_mesh(surface)
+    disp = np.zeros((wing['num_y'], 6), dtype=data_type)  # zero displacement
+    def_mesh = transfer_displacements(surface, mesh, disp)
+
+    return def_mesh, params
 
 
-def aerodynamics(def_mesh=None, params=None):
+def aerodynamics(def_mesh, params):
 
     # Unpack variables
     surface = params.get('surfaces')[0]
-    v = params.get('prob_dict').get('v')
-    alpha = params.get('prob_dict').get('alpha')
-    size =  params.get('prob_dict').get('tot_panels')
+    prob_dict = params.get('prob_dict')
+    v = prob_dict.get('v')
+    alpha = prob_dict.get('alpha')
+    size = prob_dict.get('tot_panels')
+    rho = prob_dict.get('rho')
+
 
     b_pts, c_pts, widths, cos_sweep, lengths, normals, S_ref = vlm_geometry(surface, def_mesh)
     AIC, rhs= assemble_aic(surface, def_mesh, b_pts, c_pts, normals, v, alpha)
@@ -343,6 +353,7 @@ def structures(loads, params):
     Iy = surface.get('Iy')
     Iz = surface.get('Iz')
     J = surface.get('J')
+    mesh = surface.get('mesh')
     v = prob_dict.get('v')
     alpha = prob_dict.get('alpha')
     size =  prob_dict.get('tot_panels')
@@ -534,7 +545,39 @@ def geometry_mesh(surface):
         the geometric design variables.
     """
     _Comp = GeometryMesh(surface)
-    params = None
+    params = {}
+    #
+    # The following is copied from the __init__() method of GeometryMesh()
+    #
+    ny = surface['num_y']
+    # Variables that should be initialized to one
+    ones_list = ['taper', 'chord_cp']
+    # Variables that should be initialized to zero
+    zeros_list = ['sweep', 'dihedral', 'twist_cp', 'xshear_cp', 'zshear_cp']
+    # Variables that should be initialized to given value
+    set_list = ['span']
+    all_geo_vars = ones_list + zeros_list + set_list
+    geo_params = {}
+    for var in all_geo_vars:
+        if len(var.split('_')) > 1:
+            param = var.split('_')[0]
+            if var in ones_list:
+                val = np.ones(ny)
+            elif var in zeros_list:
+                val = np.zeros(ny)
+            else:
+                val = surface[var]
+        else:
+            param = var
+            if var in ones_list:
+                val = 1.0
+            elif var in zeros_list:
+                val = 0.0
+            else:
+                val = surface[var]
+        geo_params[param] = val
+        if var in surface['active_geo_vars']:
+            params.update({param: val})
     unknowns = {
         'mesh': _Comp.mesh
     }
@@ -656,7 +699,7 @@ def vlm_geometry(surface, def_mesh):
         'cos_sweep': np.zeros((_Comp.ny-1)),
         'lengths': np.zeros((_Comp.ny)),
         'normals': np.zeros((_Comp.nx-1, _Comp.ny-1, 3)),
-        'S_ref': val=0.
+        'S_ref': 0.
     }
     resids=None
     _Comp.solve_nonlinear(params, unknowns, resids)
@@ -811,7 +854,9 @@ def aero_circulations(AIC, rhs, size):
     unknowns = {
         'circulations': np.zeros((size), dtype=data_type)
     }
-    resids = None
+    resids = {
+        'circulations': np.zeros((size), dtype=data_type)
+    }
     _Comp.solve_nonlinear(params, unknowns, resids)
     circulations = unknowns.get('circulations')
     return circulations
@@ -864,7 +909,7 @@ def vlm_forces(surface, def_mesh, b_pts, circulations, alpha, v, rho):
         name+'b_pts': b_pts
     })
     unknowns.update({
-        name+'sec_forces': np.zeros((np.sum(aero_ind[:, 4]), 3))
+        name+'sec_forces': np.zeros((nx-1, ny-1, 3), dtype=data_type)
     })
     params.update({
         'circulations': circulations,
@@ -1099,7 +1144,9 @@ def spatial_beam_FEM(K, forces, size):
     unknowns={
         'disp_aug': np.zeros((size), dtype=data_type)
     }
-    resids=None
+    resids={
+        'disp_aug': np.zeros((size), dtype=data_type)
+    }
     _Comp.solve_nonlinear(params, unknowns, resids)
     disp_aug=unknowns.get('disp_aug')
     return disp_aug
