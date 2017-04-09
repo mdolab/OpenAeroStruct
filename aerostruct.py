@@ -22,7 +22,7 @@ from vlm import VLMGeometry, AssembleAIC, AeroCirculations, VLMForces#, VLMLiftD
 # from geometry import get_inds, rotate, sweep, dihedral, stretch, taper, mirror
 from geometry import GeometryMesh, Bspline#, gen_crm_mesh, gen_rect_mesh, MonotonicConstraint
 # from functionals import FunctionalBreguetRange, FunctionalEquilibrium
-from OpenAeroStruct import OASProblem
+from run_classes import OASProblem
 
 try:
     import OAS_API

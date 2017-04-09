@@ -190,10 +190,11 @@ def main_aerostruct(num_x=2, num_y=7):
     def_mesh_aerostruct = def_mesh
 
 
-def profile_aerostruct(num_inboard=2, num_outboard=3):
-    def_mesh, params = aerostruct.setup(num_inboard, num_outboard)
-    for i in range(100):
-        print(i)
+def profile_aerostruct(num_x=2, num_y=7, n=100):
+    def_mesh, params = aerostruct.setup()
+    for i in range(n):
+        # if i % 10 == 0:
+        #     print(i)
         loads = aerostruct.aerodynamics(def_mesh, params)
         loads_aerostruct = loads
         def_mesh = aerostruct.structures(loads_aerostruct, params)
@@ -248,13 +249,13 @@ if __name__ == '__main__':
     print('Use Fortran: {0}'.format(fortran_flag))
 
     npts = [3, 5]
-    n = 100
+    n = 1000
     n_inboard = npts[0]
     n_outboard = npts[1]
 
     # main_coupled(n_inboard, n_outboard)
-    # cProfile.run('profile_aerostruct(n_inboard, n_outboard)','aerostruct.prof')
-    main_aerostruct()
+    cProfile.run('profile_aerostruct(n=n)','aerostruct.prof')
+    # main_aerostruct()
     # main_cython(n_inboard, n_outboard)
     # test_accuracy(n_inboard, n_outboard)
     # test_timing(n_inboard, n_outboard, n)
