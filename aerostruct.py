@@ -1493,3 +1493,23 @@ def materials_tube(surface, r=None, thickness=None):
     #     _Comp.solve_nonlinear(params, unknowns, resids)
     #     eq_con=unknowns.get('eq_con')
     #     return eq_con
+
+
+if __name__ == "__main__":
+    ''' Test the coupled system with default parameters '''
+    num_x=2
+    num_y=7
+    print('\nRun aerostruct.setup()...')
+    def_mesh, params = setup(num_x, num_y)
+    print('def_mesh = ')
+    print(def_mesh)
+
+    print('\nRun aerostruct.aerodynamics()...')
+    loads = aerodynamics(def_mesh, params)
+    print('loads = ')
+    print(loads)
+    #
+    print('\nRun aerostruct.structures()...')
+    def_mesh = structures(loads, params)
+    print('def_mesh = ')
+    print(def_mesh)
