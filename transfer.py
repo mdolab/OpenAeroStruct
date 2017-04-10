@@ -12,7 +12,7 @@ except:
     fortran_flag = False
     data_type = complex
 
-print('Fortran =', fortran_flag)
+#print('Fortran =', fortran_flag)
 
 from openmdao.api import Component
 
