@@ -260,7 +260,7 @@ def setup(num_x=2, num_y=7):
     wing = OAS_prob.surfaces[0]
 
     # Add materials properties for the wing surface to the surface dict
-    A, Iy, Iz, J = materials_tube(wing)
+    A, Iy, Iz, J = materials_tube(wing['r'], wing['t'], wing)
     wing.update({
         'A': A,
         'Iy': Iy,
@@ -312,16 +312,38 @@ def setup(num_x=2, num_y=7):
     # wing_wing_type = wing.get('wing_type')
     # wing_xshear_cp = wing.get('xshear_cp')
     # wing_zshear_cp = wing.get('zshear_cp')
+    
+    # Initialize the OpenAeroStruct components and save them in a component dictionary
+    surface = wing
+    comp_dict = {}
+    comp_dict['MaterialsTube'] = MaterialsTube(surface)
+    comp_dict['GeometryMesh'] = GeometryMesh(surface)
+    comp_dict['TransferDisplacements'] = TransferDisplacements(surface)
+    comp_dict['VLMGeometry'] = VLMGeometry(surface)
+    comp_dict['AssembleAIC'] = AssembleAIC([surface])
+    comp_dict['AeroCirculations'] = AeroCirculations(OAS_prob.prob_dict['tot_panels'])
+    comp_dict['VLMForces'] = VLMForces([surface]) 
+    comp_dict['TransferLoads'] = TransferLoads(surface)
+    comp_dict['ComputeNodes'] = ComputeNodes(surface)
+    comp_dict['AssembleK'] = AssembleK(surface)
+    comp_dict['SpatialBeamFEM'] = SpatialBeamFEM(OAS_prob.prob_dict['tot_panels'])
+    comp_dict['SpatialBeamDisp'] = SpatialBeamDisp(surface)
 
-    # or just return the surface dict and the problem dict
-    params = {'surfaces': [wing], 'prob_dict': OAS_prob.prob_dict}
+    # return the surface dict, problem dict, and component dict
+    return {'surfaces': [wing], 'prob_dict': OAS_prob.prob_dict, 'comp_dict': comp_dict}
 
-    # Generate initial mesh
-    mesh = geometry_mesh(surface)
-    disp = np.zeros((wing['num_y'], 6), dtype=data_type)  # zero displacement
-    def_mesh = transfer_displacements(surface, mesh, disp)
 
-    return def_mesh, params
+def gen_init_mesh(surface, comp_dict=None):
+    ''' Generate initial mesh '''
+    if comp_dict:
+        mesh = geometry_mesh(surface, comp=comp_dict['GeometryMesh'])
+        disp = np.zeros((surface['num_y'], 6), dtype=data_type)  # zero displacement
+        def_mesh = transfer_displacements(mesh, disp, comp=comp_dict['TransferDisplacements'])
+    else:
+        mesh = geometry_mesh(surface)
+        disp = np.zeros((surface['num_y'], 6), dtype=data_type)  # zero displacement
+        def_mesh = transfer_displacements(mesh, disp, surface)
+    return def_mesh
 
 
 def aerodynamics(def_mesh, params):
@@ -329,17 +351,18 @@ def aerodynamics(def_mesh, params):
     # Unpack variables
     surface = params.get('surfaces')[0]
     prob_dict = params.get('prob_dict')
+    comp_dict = params.get('comp_dict')
     v = prob_dict.get('v')
     alpha = prob_dict.get('alpha')
     size = prob_dict.get('tot_panels')
     rho = prob_dict.get('rho')
 
 
-    b_pts, c_pts, widths, cos_sweep, lengths, normals, S_ref = vlm_geometry(surface, def_mesh)
-    AIC, rhs= assemble_aic(surface, def_mesh, b_pts, c_pts, normals, v, alpha)
-    circulations = aero_circulations(AIC, rhs, size)
-    sec_forces = vlm_forces(surface, def_mesh, b_pts, circulations, alpha, v, rho)
-    loads = transfer_loads(surface, def_mesh, sec_forces)
+    b_pts, c_pts, widths, cos_sweep, lengths, normals, S_ref = vlm_geometry(def_mesh, comp=comp_dict['VLMGeometry'])
+    AIC, rhs= assemble_aic(surface, def_mesh, b_pts, c_pts, normals, v, alpha, comp=comp_dict['AssembleAIC'])
+    circulations = aero_circulations(AIC, rhs, comp=comp_dict['AeroCirculations'])
+    sec_forces = vlm_forces(surface, def_mesh, b_pts, circulations, alpha, v, rho, comp=comp_dict['VLMForces'])
+    loads = transfer_loads(def_mesh, sec_forces, comp=comp_dict['TransferLoads'])
 
     return loads
 
@@ -349,6 +372,7 @@ def structures(loads, params):
     # Unpack variables
     surface = params.get('surfaces')[0]
     prob_dict = params.get('prob_dict')
+    comp_dict = params.get('comp_dict')
     A = surface.get('A')
     Iy = surface.get('Iy')
     Iz = surface.get('Iz')
@@ -358,11 +382,11 @@ def structures(loads, params):
     alpha = prob_dict.get('alpha')
     size =  prob_dict.get('tot_panels')
 
-    nodes = compute_nodes(surface, mesh)
-    K, forces = assemble_k(surface, A, Iy, Iz, J, nodes, loads)
-    disp_aug = spatial_beam_FEM(K, forces, size)
-    disp = spatial_beam_disp(surface, disp_aug)
-    def_mesh = transfer_displacements(surface, mesh, disp)
+    nodes = compute_nodes(mesh, comp=comp_dict['ComputeNodes'])
+    K, forces = assemble_k(A, Iy, Iz, J, nodes, loads, comp=comp_dict['AssembleK'])
+    disp_aug = spatial_beam_FEM(K, forces, comp=comp_dict['SpatialBeamFEM'])
+    disp = spatial_beam_disp(disp_aug, comp=comp_dict['SpatialBeamDisp'])
+    def_mesh = transfer_displacements(mesh, disp, comp=comp_dict['TransferDisplacements'])
 
     # mesh = geometry_mesh(surface)
     # twist = cp2pt(twist_cp, jac_twist)
@@ -519,7 +543,7 @@ def cp2pt(cp, jac):
 #     return mesh
 
 
-def geometry_mesh(surface):
+def geometry_mesh(surface, comp=None):
     """
     OpenMDAO component that performs mesh manipulation functions. It reads in
     the initial mesh from the surface dictionary and outputs the altered
@@ -544,7 +568,8 @@ def geometry_mesh(surface):
         Modified mesh based on the initial mesh in the surface dictionary and
         the geometric design variables.
     """
-    _Comp = GeometryMesh(surface)
+    if not comp:
+        comp = GeometryMesh(surface)
     params = {}
     #
     # The following is copied from the __init__() method of GeometryMesh()
@@ -579,10 +604,10 @@ def geometry_mesh(surface):
         if var in surface['active_geo_vars']:
             params.update({param: val})
     unknowns = {
-        'mesh': _Comp.mesh
+        'mesh': comp.mesh
     }
     resids = None
-    _Comp.solve_nonlinear(params, unknowns, resids)
+    comp.solve_nonlinear(params, unknowns, resids)
     mesh = unknowns.get('mesh')
     return mesh
 
@@ -604,7 +629,7 @@ def b_spline_surface(surface):
     n_output : int
         Number of outputted interpolated b-spline points.
     """
-    _Comp = Bspline(cpname, ptname, n_input, n_output)
+    comp = Bspline(cpname, ptname, n_input, n_output)
     params = {
         cpname: cpname
     }
@@ -612,11 +637,11 @@ def b_spline_surface(surface):
         ptname: np.zeros(n_output)
     }
     resids = None
-    _Comp.solve_nonlinear(params, unknowns, resids)
+    comp.solve_nonlinear(params, unknowns, resids)
     ptname_out = unknowns.get(ptname)
     return ptname_out
 
-def transfer_displacements(surface, mesh, disp):
+def transfer_displacements(mesh, disp, surface=None, comp=None):
     """
     Perform displacement transfer.
 
@@ -638,16 +663,17 @@ def transfer_displacements(surface, mesh, disp):
     def_mesh[nx, ny, 3] : numpy array
         Flattened array defining the lifting surfaces after deformation.
     """
-    _Comp = TransferDisplacements(surface)
+    if not comp:
+        comp = TransferDisplacements(surface)
     params = {
         'mesh': mesh,
         'disp': disp
     }
     unknowns = {
-        'def_mesh': np.zeros((_Comp.nx, _Comp.ny, 3), dtype=data_type)
+        'def_mesh': np.zeros((comp.nx, comp.ny, 3), dtype=data_type)
     }
     resids = None
-    _Comp.solve_nonlinear(params, unknowns, resids)
+    comp.solve_nonlinear(params, unknowns, resids)
     def_mesh = unknowns.get('def_mesh')
     return def_mesh
 
@@ -663,7 +689,7 @@ def transfer_displacements(surface, mesh, disp):
 From vlm.py: """
 
 
-def vlm_geometry(surface, def_mesh):
+def vlm_geometry(def_mesh, surface=None, comp=None):
     """ Compute various geometric properties for VLM analysis.
 
     Parameters
@@ -688,21 +714,22 @@ def vlm_geometry(surface, def_mesh):
     S_ref : float
         The reference area of the lifting surface.
     """
-    _Comp = VLMGeometry(surface)
+    if not comp:
+        comp = VLMGeometry(surface)
     params = {
         'def_mesh': def_mesh
     }
     unknowns = {
-        'b_pts': np.zeros((_Comp.nx-1, _Comp.ny, 3), dtype=data_type),
-        'c_pts': np.zeros((_Comp.nx-1, _Comp.ny-1, 3)),
-        'widths': np.zeros((_Comp.ny-1)),
-        'cos_sweep': np.zeros((_Comp.ny-1)),
-        'lengths': np.zeros((_Comp.ny)),
-        'normals': np.zeros((_Comp.nx-1, _Comp.ny-1, 3)),
+        'b_pts': np.zeros((comp.nx-1, comp.ny, 3), dtype=data_type),
+        'c_pts': np.zeros((comp.nx-1, comp.ny-1, 3)),
+        'widths': np.zeros((comp.ny-1)),
+        'cos_sweep': np.zeros((comp.ny-1)),
+        'lengths': np.zeros((comp.ny)),
+        'normals': np.zeros((comp.nx-1, comp.ny-1, 3)),
         'S_ref': 0.
     }
     resids=None
-    _Comp.solve_nonlinear(params, unknowns, resids)
+    comp.solve_nonlinear(params, unknowns, resids)
     b_pts=unknowns.get('b_pts')
     c_pts=unknowns.get('c_pts')
     widths=unknowns.get('widths')
@@ -761,7 +788,7 @@ def vlm_geometry(surface, def_mesh):
 #     return circulations
 
 
-def assemble_aic(surface, def_mesh, b_pts, c_pts, normals, v, alpha):
+def assemble_aic(surface, def_mesh, b_pts, c_pts, normals, v, alpha, comp=None):
     """
     Compute the circulations based on the AIC matrix and the panel velocities.
     Note that the flow tangency condition is enforced at the 3/4 chord point.
@@ -798,7 +825,9 @@ def assemble_aic(surface, def_mesh, b_pts, c_pts, normals, v, alpha):
         The right-hand-side of the linear system that yields the circulations.
     """
     surfaces = [surface]
-    _Comp=AssembleAIC(surfaces)
+    if not comp:
+        comp=AssembleAIC(surfaces)
+
     params = {}
     ny=surface['num_y']
     nx=surface['num_x']
@@ -814,17 +843,17 @@ def assemble_aic(surface, def_mesh, b_pts, c_pts, normals, v, alpha):
         'alpha': alpha
     })
     unknowns={
-        'AIC': np.zeros((_Comp.tot_panels, _Comp.tot_panels), dtype = data_type),
-        'rhs': np.zeros((_Comp.tot_panels), dtype = data_type)
+        'AIC': np.zeros((comp.tot_panels, comp.tot_panels), dtype = data_type),
+        'rhs': np.zeros((comp.tot_panels), dtype = data_type)
     }
     resids=None
-    _Comp.solve_nonlinear(params, unknowns, resids)
+    comp.solve_nonlinear(params, unknowns, resids)
     AIC=unknowns.get('AIC')
     rhs=unknowns.get('rhs')
     return AIC, rhs
 
 
-def aero_circulations(AIC, rhs, size):
+def aero_circulations(AIC, rhs, size=None, comp=None):
     """
     Compute the circulation strengths of the horseshoe vortices by solving the
     linear system AIC * circulations = n * v.
@@ -846,7 +875,10 @@ def aero_circulations(AIC, rhs, size):
         Augmented displacement array. Obtained by solving the system
         AIC * circulations = n * v.
     """
-    _Comp = AeroCirculations(size)
+    if not comp:
+        comp = AeroCirculations(size)
+    if not size:
+        size = comp.size
     params = {
         'AIC': AIC,
         'rhs': rhs
@@ -857,12 +889,12 @@ def aero_circulations(AIC, rhs, size):
     resids = {
         'circulations': np.zeros((size), dtype=data_type)
     }
-    _Comp.solve_nonlinear(params, unknowns, resids)
+    comp.solve_nonlinear(params, unknowns, resids)
     circulations = unknowns.get('circulations')
     return circulations
 
 
-def vlm_forces(surface, def_mesh, b_pts, circulations, alpha, v, rho):
+def vlm_forces(surface, def_mesh, b_pts, circulations, alpha, v, rho, comp=None):
     """ Compute aerodynamic forces acting on each section.
 
     Note that the first two parameters and the unknown have the surface name
@@ -896,7 +928,8 @@ def vlm_forces(surface, def_mesh, b_pts, circulations, alpha, v, rho):
 
     """
     surfaces = [surface]
-    _Comp=VLMForces(surfaces)
+    if not comp:
+        comp=VLMForces(surfaces)
     params = {}
     unknowns = {}
     tot_panels = 0
@@ -918,12 +951,12 @@ def vlm_forces(surface, def_mesh, b_pts, circulations, alpha, v, rho):
         'rho': rho
     })
     resids=None
-    _Comp.solve_nonlinear(params, unknowns, resids)
+    comp.solve_nonlinear(params, unknowns, resids)
     sec_forces=unknowns.get(name+'sec_forces')
     return sec_forces
 
 
-def transfer_loads(surface, def_mesh, sec_forces):
+def transfer_loads(def_mesh, sec_forces, surface=None, comp=None):
     """
     Perform aerodynamic load transfer.
 
@@ -945,16 +978,17 @@ def transfer_loads(surface, def_mesh, sec_forces):
         Flattened array containing the loads applied on the FEM component,
         computed from the sectional forces.
     """
-    _Comp=TransferLoads(surface)
+    if not comp:
+        comp=TransferLoads(surface)
     params={
         'def_mesh': def_mesh,
         'sec_forces': sec_forces
     }
     unknowns={
-        'loads': np.zeros((_Comp.ny, 6), dtype=complex)
+        'loads': np.zeros((comp.ny, 6), dtype=complex)
     }
     resids=None
-    _Comp.solve_nonlinear(params, unknowns, resids)
+    comp.solve_nonlinear(params, unknowns, resids)
     loads=unknowns.get('loads')
     return loads
 
@@ -1113,7 +1147,7 @@ def transfer_loads(surface, def_mesh, sec_forces):
 --------------------------------------------------------------------------------
 From spatialbeam.py: Define the structural analysis component using spatial beam theory. """
 
-def spatial_beam_FEM(K, forces, size):
+def spatial_beam_FEM(K, forces, size=None, comp=None):
     """
     Compute the displacements and rotations by solving the linear system
     using the structural stiffness matrix.
@@ -1136,7 +1170,10 @@ def spatial_beam_FEM(K, forces, size):
         K * u = f, where f is a flattened version of loads.
 
     """
-    _Comp=SpatialBeamFEM(size)
+    if not comp:
+        comp=SpatialBeamFEM(size)
+    if not size:
+        size = comp.size
     params={
         'K': K,
         'forces': forces
@@ -1147,12 +1184,12 @@ def spatial_beam_FEM(K, forces, size):
     resids={
         'disp_aug': np.zeros((size), dtype=data_type)
     }
-    _Comp.solve_nonlinear(params, unknowns, resids)
+    comp.solve_nonlinear(params, unknowns, resids)
     disp_aug=unknowns.get('disp_aug')
     return disp_aug
 
 
-def spatial_beam_disp(surface, disp_aug):
+def spatial_beam_disp(disp_aug, surface=None, comp=None):
     """
     Reshape the flattened displacements from the linear system solution into
     a 2D array so we can more easily use the results.
@@ -1174,20 +1211,21 @@ def spatial_beam_disp(surface, disp_aug):
         Actual displacement array formed by truncating disp_aug.
 
     """
-    _Comp=SpatialBeamDisp(surface)
+    if not comp:
+        comp=SpatialBeamDisp(surface)
     params={
         'disp_aug': disp_aug
     }
     unknowns={
-        'disp': np.zeros((_Comp.ny, 6), dtype=data_type)
+        'disp': np.zeros((comp.ny, 6), dtype=data_type)
     }
     resids=None
-    _Comp.solve_nonlinear(params, unknowns, resids)
+    comp.solve_nonlinear(params, unknowns, resids)
     disp=unknowns.get('disp')
     return disp
 
 
-def compute_nodes(surface, mesh):
+def compute_nodes(mesh, surface=None, comp=None):
     """
     Compute FEM nodes based on aerodynamic mesh.
 
@@ -1205,20 +1243,21 @@ def compute_nodes(surface, mesh):
         Flattened array with coordinates for each FEM node.
 
     """
-    _Comp=ComputeNodes(surface)
+    if not comp:
+        comp=ComputeNodes(surface)
     params={
         'mesh': mesh
     }
     unknowns={
-        'nodes': np.zeros((_Comp.ny, 3), dtype=data_type)
+        'nodes': np.zeros((comp.ny, 3), dtype=data_type)
     }
     resids=None
-    _Comp.solve_nonlinear(params, unknowns, resids)
+    comp.solve_nonlinear(params, unknowns, resids)
     nodes=unknowns.get('nodes')
     return nodes
 
 
-def assemble_k(surface, A, Iy, Iz, J, nodes, loads):
+def assemble_k(A, Iy, Iz, J, nodes, loads, surface=None, comp=None):
     """
     Compute the displacements and rotations by solving the linear system
     using the structural stiffness matrix.
@@ -1248,7 +1287,8 @@ def assemble_k(surface, A, Iy, Iz, J, nodes, loads):
         Right-hand-side of the linear system. The loads from the aerodynamic
         analysis or the user-defined loads.
     """
-    _Comp = AssembleK(surface)
+    if not comp:
+        comp = AssembleK(surface)  # if component is not passed in, surface must be
     params = {
         'A': A,
         'Iy': Iy,
@@ -1258,11 +1298,11 @@ def assemble_k(surface, A, Iy, Iz, J, nodes, loads):
         'loads': loads
     }
     unknowns = {
-        'K': np.zeros((_Comp.size, _Comp.size), dtype=data_type),
-        'forces': np.zeros((_Comp.size), dtype=data_type)
+        'K': np.zeros((comp.size, comp.size), dtype=data_type),
+        'forces': np.zeros((comp.size), dtype=data_type)
     }
     resids = None
-    _Comp.solve_nonlinear(params, unknowns, resids)
+    comp.solve_nonlinear(params, unknowns, resids)
     K = unknowns.get('K')
     forces = unknowns.get('forces')
     return K, forces
@@ -1406,7 +1446,7 @@ def assemble_k(surface, A, Iy, Iz, J, nodes, loads):
 From materials.py: """
 
 
-def materials_tube(surface, r=None, thickness=None):
+def materials_tube(r, thickness, surface=None, comp=None):
     """ Compute geometric properties for a tube element.
 
     Parameters
@@ -1428,27 +1468,28 @@ def materials_tube(surface, r=None, thickness=None):
         Polar moment of inertia for each FEM element.
 
     """
-    _Comp=MaterialsTube(surface)
-    if not r:
-        r = surface['r']  # this is already contained in surface dict
-    if not thickness:
-        thickness = surface['t']  # this is already contained in surface dict
+    if not comp:
+        comp=MaterialsTube(surface)
+    # if not r:
+    #     r = surface['r']  # this is already contained in surface dict
+    # if not thickness:
+    #     thickness = surface['t']  # this is already contained in surface dict
     params={
         'r': r,
         'thickness': thickness
     }
     unknowns={
-        'A': np.zeros((_Comp.ny - 1)),
-        'Iy': np.zeros((_Comp.ny - 1)),
-        'Iz': np.zeros((_Comp.ny - 1)),
-        'J': np.zeros((_Comp.ny - 1))
+        'A': np.zeros((comp.ny - 1)),
+        'Iy': np.zeros((comp.ny - 1)),
+        'Iz': np.zeros((comp.ny - 1)),
+        'J': np.zeros((comp.ny - 1))
     }
     resids = None
-    _Comp.solve_nonlinear(params, unknowns, resids)
-    A=unknowns.get('A', None)
-    Iy=unknowns.get('Iy', None)
-    Iz=unknowns.get('Iz', None)
-    J=unknowns.get('J', None)
+    comp.solve_nonlinear(params, unknowns, resids)
+    A=unknowns.get('A')
+    Iy=unknowns.get('Iy')
+    Iz=unknowns.get('Iz')
+    J=unknowns.get('J')
     return A, Iy, Iz, J
 
     """
@@ -1500,7 +1541,10 @@ if __name__ == "__main__":
     num_x=2
     num_y=7
     print('\nRun aerostruct.setup()...')
-    def_mesh, params = setup(num_x, num_y)
+    params = setup(num_x, num_y)
+    print('params = ')
+    print(params)
+    def_mesh = gen_init_mesh(params['surfaces'][0], params['comp_dict'])
     print('def_mesh = ')
     print(def_mesh)
 

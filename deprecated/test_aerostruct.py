@@ -173,10 +173,14 @@ def timings_aerodynamics(num_inboard=2, num_outboard=3,n=100):
 
 def main_aerostruct(num_x=2, num_y=7):
     print('\nRun aerostruct.setup()...')
-    def_mesh, params = aerostruct.setup(num_x, num_y)
-    # print('def_mesh...  def_mesh.shape =', def_mesh.shape)
+    params = aerostruct.setup(num_x, num_y)
+    print('params = ')
+    print(params)
+    def_mesh = aerostruct.gen_init_mesh(params['surfaces'][0], params['comp_dict'])
+    print('def_mesh = ')
     print(def_mesh)
-
+    # print('def_mesh...  def_mesh.shape =', def_mesh.shape)
+    
     print('\nRun aerostruct.aerodynamics()...')
     loads = aerostruct.aerodynamics(def_mesh, params)
     print('loads matrix... loads.shape =', loads.shape)
@@ -191,7 +195,8 @@ def main_aerostruct(num_x=2, num_y=7):
 
 
 def profile_aerostruct(num_x=2, num_y=7, n=100):
-    def_mesh, params = aerostruct.setup()
+    params = aerostruct.setup(num_x, num_y)
+    def_mesh = aerostruct.gen_init_mesh(params['surfaces'][0], params['comp_dict'])
     for i in range(n):
         # if i % 10 == 0:
         #     print(i)
