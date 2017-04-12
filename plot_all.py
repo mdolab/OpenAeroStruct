@@ -16,9 +16,15 @@ Ex: `python plot_all.py aero.db 1` a wider view than `python plot_all.py aero.db
 
 
 from __future__ import division, print_function
-import tkFont
-import Tkinter as Tk
 import sys
+major_python_version = sys.version_info[0]
+
+if major_python_version == 2:
+    import tkFont
+    import Tkinter as Tk
+else:
+    import tkinter as Tk
+    from tkinter import font as tkFont
 
 from six import iteritems
 import numpy as np
@@ -120,7 +126,11 @@ class Display(object):
         for item in meta_db['Unknowns']:
             if 'is_objective' in meta_db['Unknowns'][item].keys():
                 self.obj_key = item
-                if len(self.db.keys()) > 2:
+                if major_python_version == 3:
+                    keys_length = sum(1 for _ in self.db.keys())
+                else:
+                    keys_length = len(self.db.keys())
+                if keys_length > 2:
                     self.opt = True
 
         deriv_keys = sqlitedict.SqliteDict(self.db_name, 'derivs').keys()

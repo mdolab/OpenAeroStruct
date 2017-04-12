@@ -14,11 +14,21 @@ John Jasa 2015-2017
 # ======================================================================
 # Standard Python modules
 # ======================================================================
+from __future__ import division, print_function
 import os
 import argparse
 import shelve
-import tkFont
-import Tkinter as Tk
+
+import sys
+major_python_version = sys.version_info[0]
+
+if major_python_version == 2:
+    import tkFont
+    import Tkinter as Tk
+else:
+    import tkinter as Tk
+    from tkinter import font as tkFont
+
 import re
 import warnings
 
@@ -141,7 +151,13 @@ class Display(object):
 
                 # Get the number of iterations by looking at the largest number
                 # in the split string names for each entry in the db
-                string = db.keys()[-1].split('|')
+                if major_python_version == 3:
+                    for string in db.keys():
+                        string
+                    string = string.split('|')
+                else:
+                    string = db.keys()[-1].split('|')
+
                 nkey = int(string[-1])
                 self.solver_name = string[0]
 
