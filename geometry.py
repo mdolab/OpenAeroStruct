@@ -408,7 +408,7 @@ class GeometryMesh(Component):
             rotate(mesh, self.geo_params['twist'], self.symmetry, self.rotate_x)
 
         unknowns['mesh'] = mesh
-        
+
     def apply_linear(self, params, unknowns, dparams, dunknowns, dresids, mode):
         mesh = self.mesh.copy()
         self.geo_params.update(params)
