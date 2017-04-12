@@ -357,12 +357,30 @@ def aerodynamics(def_mesh, params):
     size = prob_dict.get('tot_panels')
     rho = prob_dict.get('rho')
 
-
     b_pts, c_pts, widths, cos_sweep, lengths, normals, S_ref = vlm_geometry(def_mesh, comp=comp_dict['VLMGeometry'])
     AIC, rhs= assemble_aic(surface, def_mesh, b_pts, c_pts, normals, v, alpha, comp=comp_dict['AssembleAIC'])
     circulations = aero_circulations(AIC, rhs, comp=comp_dict['AeroCirculations'])
     sec_forces = vlm_forces(surface, def_mesh, b_pts, circulations, alpha, v, rho, comp=comp_dict['VLMForces'])
     loads = transfer_loads(def_mesh, sec_forces, comp=comp_dict['TransferLoads'])
+
+    return loads
+
+
+def aerodynamics2(def_mesh, params):
+    ''' Don't use pre-initialized components '''
+    # Unpack variables
+    surface = params.get('surfaces')[0]
+    prob_dict = params.get('prob_dict')
+    v = prob_dict.get('v')
+    alpha = prob_dict.get('alpha')
+    size = prob_dict.get('tot_panels')
+    rho = prob_dict.get('rho')
+
+    b_pts, c_pts, widths, cos_sweep, lengths, normals, S_ref = vlm_geometry(def_mesh, surface)
+    AIC, rhs= assemble_aic(surface, def_mesh, b_pts, c_pts, normals, v, alpha)
+    circulations = aero_circulations(AIC, rhs, size)
+    sec_forces = vlm_forces(surface, def_mesh, b_pts, circulations, alpha, v, rho)
+    loads = transfer_loads(def_mesh, sec_forces, surface)
 
     return loads
 
@@ -399,6 +417,29 @@ def structures(loads, params):
     # disp = spatial_beam_disp(disp_aug, fem_ind)
     # def_mesh = transfer_displacements(
     #     mesh, disp, aero_ind, fem_ind, fem_origin)
+
+    return def_mesh  # Output the def_mesh matrix
+    
+    
+def structures2(loads, params):
+
+    # Unpack variables
+    surface = params.get('surfaces')[0]
+    prob_dict = params.get('prob_dict')
+    A = surface.get('A')
+    Iy = surface.get('Iy')
+    Iz = surface.get('Iz')
+    J = surface.get('J')
+    mesh = surface.get('mesh')
+    v = prob_dict.get('v')
+    alpha = prob_dict.get('alpha')
+    size =  prob_dict.get('tot_panels')
+
+    nodes = compute_nodes(mesh, surface)
+    K, forces = assemble_k(A, Iy, Iz, J, nodes, loads, surface)
+    disp_aug = spatial_beam_FEM(K, forces, size)
+    disp = spatial_beam_disp(disp_aug, surface)
+    def_mesh = transfer_displacements(mesh, disp, surface)
 
     return def_mesh  # Output the def_mesh matrix
 
@@ -1540,6 +1581,7 @@ if __name__ == "__main__":
     ''' Test the coupled system with default parameters '''
     num_x=2
     num_y=7
+    print('Fortran Flag = {0}'.format(fortran_flag))
     print('\nRun aerostruct.setup()...')
     params = setup(num_x, num_y)
     print('params = ')
