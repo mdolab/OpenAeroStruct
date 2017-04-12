@@ -1,5 +1,5 @@
 # Univ. Michigan Aerostructural model.
-# Based on OpenAeroStruct by John Hwang, and John Jasa (github.com/johnjasa/OpenAeroStruct)
+# Based on OpenAeroStruct by John Hwang, and John Jasa (github.com/mdolab/OpenAeroStruct)
 # author: Sam Friedman  (samfriedman@tamu.edu)
 # date:   4/6/2017
 
@@ -7,22 +7,20 @@
 from __future__ import print_function, division
 # from future.builtins import range  # make compatible Python 2.x to 3.x
 # __all__ = ['setup','aerodynamics','structures']
-import warnings
-# import sys
-# import os
+
 import numpy as np
-# import scipy.sparse
-# from scipy.linalg import lu_factor, lu_solve
 
 from materials import MaterialsTube
 from spatialbeam import ComputeNodes, AssembleK, SpatialBeamFEM, SpatialBeamDisp#, SpatialBeamEnergy, SpatialBeamWeight, SpatialBeamVonMisesTube, SpatialBeamFailureKS
 from transfer import TransferDisplacements, TransferLoads
 from vlm import VLMGeometry, AssembleAIC, AeroCirculations, VLMForces#, VLMLiftDrag, VLMCoeffs, TotalLift, TotalDrag
-# from b_spline import get_bspline_mtx
-# from geometry import get_inds, rotate, sweep, dihedral, stretch, taper, mirror
 from geometry import GeometryMesh, Bspline#, gen_crm_mesh, gen_rect_mesh, MonotonicConstraint
-# from functionals import FunctionalBreguetRange, FunctionalEquilibrium
 from run_classes import OASProblem
+# from functionals import FunctionalBreguetRange, FunctionalEquilibrium
+
+# to disable OpenMDAO warnings which will create an error in Matlab
+import warnings
+warnings.filterwarnings("ignore")
 
 try:
     import OAS_API
@@ -32,26 +30,16 @@ except:
     fortran_flag = False
     data_type = complex
 
-# to disable OpenMDAO warnings which will create an error in Matlab
-warnings.filterwarnings("ignore")
-
-# In Matlab code, add this before calling Python functions:
-#   if count(py.sys.path,'') == 0
-#       insert(py.sys.path,int32(0),'');
-#   end
-
 """
 --------------------------------------------------------------------------------
---------------------------------------------------------------------------------
 
-                                GEOMETRY / SETUP
+                            GEOMETRY / SETUP
 
---------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 From run_classes.py: Manipulate geometry mesh based on high-level design parameters """
 
 
-def setup(num_x=2, num_y=7):
+def setup(prob_dict={}, surfaces=[{}]):
     ''' Setup the aerostruct mesh
 
     Default wing mesh (single lifting surface):
@@ -120,7 +108,7 @@ def setup(num_x=2, num_y=7):
     # Use steps in run_aerostruct.py to add wing surface to problem
 
     # Set problem type
-    prob_dict = {'type' : 'aerostruct'}
+    prob_dict.update({'type' : 'aerostruct'})  # this doesn't really matter since we aren't calling OASProblem.setup()
 
     # To update problem parameters, update the prob_dict dictionary.
     # The dictionary key is a string, e.g.
@@ -129,6 +117,7 @@ def setup(num_x=2, num_y=7):
     #   })
 
     # Instantiate problem
+
     OAS_prob = OASProblem(prob_dict)
     '''
     Output after calling OAS_prob.prob_dict:
@@ -151,19 +140,18 @@ def setup(num_x=2, num_y=7):
      'with_viscous': False}
     '''
 
-    # Create a dictionary to store options about the wing surface
-    surf_dict = {'name' : 'wing',
-                 'symmetry' : True,
-                 'num_y' : num_y,       # from input parameters
-                 'num_x' : num_x,       # from input parameters
-                 'wing_type' : 'CRM',
-                 'CL0' : 0.2,
-                 'CD0' : 0.015,
-                #  'span_cos_spacing' : 1.,
-                #  'chord_cos_spacing' : .8
-                 }
-    # Add the specified wing surface to the problem.
-    OAS_prob.add_surface(surf_dict)
+    for surface in surfaces:
+        OAS_prob.add_surface(surface)    # Add the specified wing surface to the problem.
+    
+    # Add materials properties for the wing surface to the surface dict in OAS_prob
+    for idx, surface in enumerate(OAS_prob.surfaces):
+        A, Iy, Iz, J = materials_tube(surface['r'], surface['t'], surface)
+        OAS_prob.surfaces[idx].update({
+            'A': A,
+            'Iy': Iy,
+            'Iz': Iz,
+            'J': J
+        })
 
     # Get total panels and save in prob_dict
     tot_panels = 0
@@ -257,64 +245,9 @@ def setup(num_x=2, num_y=7):
     'xshear_cp': array([ 0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j]),
     'zshear_cp': array([ 0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j])}]
     '''
-    wing = OAS_prob.surfaces[0]
+    surface = OAS_prob.surfaces[0]
 
-    # Add materials properties for the wing surface to the surface dict
-    A, Iy, Iz, J = materials_tube(wing['r'], wing['t'], wing)
-    wing.update({
-        'A': A,
-        'Iy': Iy,
-        'Iz': Iz,
-        'J': J
-    })
-
-    # wing_CD0 = wing.get('CD0')
-    # wing_CL0 = wing.get('CL0')
-    # wing_E = wing.get('E')
-    # wing_G = wing.get('G')
-    # wing_S_ref_type = wing.get('S_ref_type')
-    # wing_W0 = wing.get('W0')
-    # wing_active_bsp_vars = wing.get('active_bsp_vars')
-    # wing_active_geo_vars = wing.get('active_geo_vars')
-    # wing_c_max_t = wing.get('c_max_t')
-    # wing_chord_cos_spacing = wing.get('chord_cos_spacing')
-    # wing_chord_cp = wing.get('chord_cp')
-    # wing_crm_twist = wing.get('crm_twist')
-    # wing_dihedral = wing.get('dihedral')
-    # wing_exact_failure_constraint = wing.get('exact_failure_constraint')
-    # wing_fem_origin = wing.get('fem_origin')
-    # wing_k_lam = wing.get('k_lam')
-    # wing_loads = wing.get('loads')
-    # wing_mesh = wing.get('mesh')
-    # wing_monotonic_con = wing.get('monotonic_con')
-    # wing_mrho = wing.get('mrho')
-    # wing_name = wing.get('name')
-    # wing_num_chord_cp = wing.get('num_chord_cp')
-    # wing_num_thickness_cp = wing.get('num_thickness_cp')
-    # wing_num_twist_cp = wing.get('num_twist_cp')
-    # wing_num_x=wing.get('num_x')
-    # wing_num_xshear_cp = wing.get('num_xshear_cp')
-    # wing_num_y = wing.get('num_y')
-    # wing_num_zshear_cp = wing.get('num_zshear_cp')
-    # wing_offset = wing.get('offset')
-    # wing_r = wing.get('r')
-    # wing_root_chord = wing.get('root_chord')
-    # wing_span = wing.get('span')
-    # wing_span_cos_spacing = wing.get('span_cos_spacing')
-    # wing_stress = wing.get('stress')
-    # wing_sweep = wing.get('sweep')
-    # wing_symmetry = wing.get('symmetry')
-    # wing_t = wing.get('t')
-    # wing_t_over_c = wing.get('t_over_c')
-    # wing_taper = wing.get('taper')
-    # wing_thickness_cp = wing.get('thickness_cp')
-    # wing_twist_cp = wing.get('twist_cp')
-    # wing_wing_type = wing.get('wing_type')
-    # wing_xshear_cp = wing.get('xshear_cp')
-    # wing_zshear_cp = wing.get('zshear_cp')
-    
     # Initialize the OpenAeroStruct components and save them in a component dictionary
-    surface = wing
     comp_dict = {}
     comp_dict['MaterialsTube'] = MaterialsTube(surface)
     comp_dict['GeometryMesh'] = GeometryMesh(surface)
@@ -328,9 +261,14 @@ def setup(num_x=2, num_y=7):
     comp_dict['AssembleK'] = AssembleK(surface)
     comp_dict['SpatialBeamFEM'] = SpatialBeamFEM(OAS_prob.prob_dict['tot_panels'])
     comp_dict['SpatialBeamDisp'] = SpatialBeamDisp(surface)
+    OAS_prob.comp_dict = comp_dict
 
-    # return the surface dict, problem dict, and component dict
-    return {'surfaces': [wing], 'prob_dict': OAS_prob.prob_dict, 'comp_dict': comp_dict}
+    # return the surfaces list, problem dict, and component dict
+    surfaces = [surface]
+    prob_dict = OAS_prob.prob_dict
+    # return surfaces, prob_dict, comp_dict
+    return OAS_prob
+
 
 
 def gen_init_mesh(surface, comp_dict=None):
@@ -346,12 +284,10 @@ def gen_init_mesh(surface, comp_dict=None):
     return def_mesh
 
 
-def aerodynamics(def_mesh, params):
+def aerodynamics(def_mesh, surface, prob_dict, comp_dict=None):
+    ''' Use pre-initialized components '''
 
     # Unpack variables
-    surface = params.get('surfaces')[0]
-    prob_dict = params.get('prob_dict')
-    comp_dict = params.get('comp_dict')
     v = prob_dict.get('v')
     alpha = prob_dict.get('alpha')
     size = prob_dict.get('tot_panels')
@@ -366,11 +302,10 @@ def aerodynamics(def_mesh, params):
     return loads
 
 
-def aerodynamics2(def_mesh, params):
+def aerodynamics2(def_mesh, surface, prob_dict):
     ''' Don't use pre-initialized components '''
+
     # Unpack variables
-    surface = params.get('surfaces')[0]
-    prob_dict = params.get('prob_dict')
     v = prob_dict.get('v')
     alpha = prob_dict.get('alpha')
     size = prob_dict.get('tot_panels')
@@ -385,12 +320,10 @@ def aerodynamics2(def_mesh, params):
     return loads
 
 
-def structures(loads, params):
+def structures(loads, surface, prob_dict, comp_dict=None):
+    ''' Use pre-initialized components '''
 
     # Unpack variables
-    surface = params.get('surfaces')[0]
-    prob_dict = params.get('prob_dict')
-    comp_dict = params.get('comp_dict')
     A = surface.get('A')
     Iy = surface.get('Iy')
     Iz = surface.get('Iz')
@@ -406,26 +339,13 @@ def structures(loads, params):
     disp = spatial_beam_disp(disp_aug, comp=comp_dict['SpatialBeamDisp'])
     def_mesh = transfer_displacements(mesh, disp, comp=comp_dict['TransferDisplacements'])
 
-    # mesh = geometry_mesh(surface)
-    # twist = cp2pt(twist_cp, jac_twist)
-    # thickness = cp2pt(thickness_cp, jac_thickness)
-    # geometry_mesh(mesh, aero_ind, twist)
-    # A, Iy, Iz, J = materials_tube(r, thickness, fem_ind)
-    # nodes = compute_nodes(mesh, fem_ind, aero_ind, fem_origin)
-    # disp_aug = spatial_beam_FEM(
-    #     A, Iy, Iz, J, nodes, loads, aero_ind, fem_ind, E, G, cg_x)
-    # disp = spatial_beam_disp(disp_aug, fem_ind)
-    # def_mesh = transfer_displacements(
-    #     mesh, disp, aero_ind, fem_ind, fem_origin)
-
     return def_mesh  # Output the def_mesh matrix
     
     
-def structures2(loads, params):
+def structures2(loads, surface, prob_dict):
+    ''' Don't use pre-initialized components '''
 
     # Unpack variables
-    surface = params.get('surfaces')[0]
-    prob_dict = params.get('prob_dict')
     A = surface.get('A')
     Iy = surface.get('Iy')
     Iz = surface.get('Iz')
@@ -444,144 +364,14 @@ def structures2(loads, params):
     return def_mesh  # Output the def_mesh matrix
 
 
-def cp2pt(cp, jac):
-    """
-    General function to translate from control points to actual points
-    using a b-spline representation.
-    """
-    pt = np.zeros(jac.shape[0])
-    pt = jac.dot(cp)
-    return pt
-
-
-# def gen_crm_mesh(n_points_inboard=3, n_points_outboard=4,
-#                  num_x=2):
+# def cp2pt(cp, jac):
 #     """
-#     Build the right hand side of the CRM wing with specified number
-#     of inboard and outboard panels.
-#
-#     n_points_inboard : int
-#         Number of spanwise points between the wing root and yehudi break per
-#         wing side.
-#     n_points_outboard : int
-#         Number of spanwise points between the yehudi break and wingtip per
-#         wing side.
-#     num_x : int
-#         Number of chordwise points.
-#
+#     General function to translate from control points to actual points
+#     using a b-spline representation.
 #     """
-#     #   crm base mesh from crm_data.py
-#     # eta, xle, yle, zle, twist, chord
-#     raw_crm_points = np.array([
-#         [0., 904.294, 0.0, 174.126, 6.7166, 536.181],  # 0
-#         [.1, 989.505, 115.675, 175.722, 4.4402, 468.511],
-#         [.15, 1032.133, 173.513, 176.834, 3.6063, 434.764],
-#         [.2, 1076.030, 231.351, 177.912, 2.2419, 400.835],
-#         [.25, 1120.128, 289.188, 177.912, 2.2419, 366.996],
-#         [.3, 1164.153, 347.026, 178.886, 1.5252, 333.157],
-#         [.35, 1208.203, 404.864, 180.359, .9379, 299.317],  # 6 yehudi break
-#         [.4, 1252.246, 462.701, 182.289, .4285, 277.288],
-#         [.45, 1296.289, 520.539, 184.904, -.2621, 263],
-#         [.5, 1340.329, 578.377, 188.389, -.6782, 248.973],
-#         [.55, 1384.375, 636.214, 192.736, -.9436, 234.816],
-#         [.60, 1428.416, 694.052, 197.689, -1.2067, 220.658],
-#         [.65, 1472.458, 751.890, 203.294, -1.4526, 206.501],
-#         [.7, 1516.504, 809.727, 209.794, -1.6350, 192.344],
-#         [.75, 1560.544, 867.565, 217.084, -1.8158, 178.186],
-#         [.8, 1604.576, 925.402, 225.188, -2.0301, 164.029],
-#         [.85, 1648.616, 983.240, 234.082, -2.2772, 149.872],
-#         [.9, 1692.659, 1041.078, 243.625, -2.5773, 135.714],
-#         [.95, 1736.710, 1098.915, 253.691, -3.1248, 121.557],
-#         [1., 1780.737, 1156.753, 263.827, -3.75, 107.4]  # 19
-#     ])
-#     # le = np.vstack((raw_crm_points[:,1],
-#     #                 raw_crm_points[:,2],
-#     #                 raw_crm_points[:,3]))
-#     # te = np.vstack((raw_crm_points[:,1]+raw_crm_points[:,5],
-#     #                 raw_crm_points[:,2],
-#     #                 raw_crm_points[:,3]))
-#     # mesh = np.empty((2,20,3))
-#     # mesh[0,:,:] = le.T
-#     # mesh[1,:,:] = te.T
-#     # mesh *= 0.0254 # convert to meters
-#     # pull out the 3 key y-locations to define the two linear regions of the
-#     # wing
-#     crm_base_points = raw_crm_points[(0, 6, 19), :]
-#     le_base = np.vstack((crm_base_points[:, 1],
-#                          crm_base_points[:, 2],
-#                          crm_base_points[:, 3]))
-#     te_base = np.vstack((crm_base_points[:, 1] + crm_base_points[:, 5],
-#                          crm_base_points[:, 2],
-#                          crm_base_points[:, 3]))
-#     mesh = np.empty((2, 3, 3))
-#     mesh[0, :, :] = le_base.T
-#     mesh[1, :, :] = te_base.T
-#     mesh[:, :, 2] = 0  # get rid of the z deflection
-#     mesh *= 0.0254  # convert to meters
-#     # LE pre-yehudi
-#     s1 = (mesh[0, 1, 0] - mesh[0, 0, 0]) / (mesh[0, 1, 1] - mesh[0, 0, 1])
-#     o1 = mesh[0, 0, 0]
-#     # TE pre-yehudi
-#     s2 = (mesh[1, 1, 0] - mesh[1, 0, 0]) / (mesh[1, 1, 1] - mesh[1, 0, 1])
-#     o2 = mesh[1, 0, 0]
-#     # LE post-yehudi
-#     s3 = (mesh[0, 2, 0] - mesh[0, 1, 0]) / (mesh[0, 2, 1] - mesh[0, 1, 1])
-#     o3 = mesh[0, 2, 0] - s3 * mesh[0, 2, 1]
-#     # TE post-yehudi
-#     s4 = (mesh[1, 2, 0] - mesh[1, 1, 0]) / (mesh[1, 2, 1] - mesh[1, 1, 1])
-#     o4 = mesh[1, 2, 0] - s4 * mesh[1, 2, 1]
-#     n_points_total = n_points_inboard + n_points_outboard - 1
-#     half_mesh = np.zeros((2, n_points_total, 3))
-#     # generate inboard points
-#     dy = (mesh[0, 1, 1] - mesh[0, 0, 1]) / (n_points_inboard - 1)
-#     for i in range(n_points_inboard):
-#         y = half_mesh[0, i, 1] = i * dy
-#         half_mesh[0, i, 0] = s1 * y + o1  # le point
-#         half_mesh[1, i, 1] = y
-#         half_mesh[1, i, 0] = s2 * y + o2  # te point
-#     yehudi_break = mesh[0, 1, 1]
-#     # generate outboard points
-#     dy = (mesh[0, 2, 1] - mesh[0, 1, 1]) / (n_points_outboard - 1)
-#     for j in range(n_points_outboard):
-#         i = j + n_points_inboard - 1
-#         y = half_mesh[0, i, 1] = j * dy + yehudi_break
-#         half_mesh[0, i, 0] = s3 * y + o3  # le point
-#         half_mesh[1, i, 1] = y
-#         half_mesh[1, i, 0] = s4 * y + o4  # te point
-#     full_mesh = mirror(half_mesh)
-#     full_mesh = add_chordwise_panels(full_mesh, num_x)
-#     full_mesh[:, :, 1] -= np.mean(full_mesh[:, :, 1])
-#     return full_mesh
-#
-#
-# def add_chordwise_panels(mesh, num_x):
-#     """ Divide the wing into multiple chordwise panels. """
-#     le = mesh[0, :, :]
-#     te = mesh[-1, :, :]
-#     new_mesh = np.zeros((num_x, mesh.shape[1], 3))
-#     new_mesh[0, :, :] = le
-#     new_mesh[-1, :, :] = te
-#     for i in range(1, num_x - 1):
-#         w = float(i) / (num_x - 1)
-#         new_mesh[i, :, :] = (1 - w) * le + w * te
-#     return new_mesh
-#
-#
-# def gen_mesh(num_x, num_y, span, chord, cosine_spacing=0.):
-#     """ Generate simple rectangular wing mesh. """
-#     mesh = np.zeros((num_x, num_y, 3))
-#     ny2 = (num_y + 1) / 2
-#     beta = np.linspace(0, np.pi / 2, ny2)
-#     # mixed spacing with w as a weighting factor
-#     cosine = .5 * np.cos(beta)  # cosine spacing
-#     uniform = np.linspace(0, .5, ny2)[::-1]  # uniform spacing
-#     half_wing = cosine * cosine_spacing + (1 - cosine_spacing) * uniform
-#     full_wing = np.hstack((-half_wing[:-1], half_wing[::-1])) * span
-#     for ind_x in range(num_x):
-#         for ind_y in range(num_y):
-#             mesh[ind_x, ind_y, :] = [ind_x / (num_x - 1) * chord,
-#                                      full_wing[ind_y], 0]
-#     return mesh
+#     pt = np.zeros(jac.shape[0])
+#     pt = jac.dot(cp)
+#     return pt
 
 
 def geometry_mesh(surface, comp=None):
@@ -616,12 +406,9 @@ def geometry_mesh(surface, comp=None):
     # The following is copied from the __init__() method of GeometryMesh()
     #
     ny = surface['num_y']
-    # Variables that should be initialized to one
-    ones_list = ['taper', 'chord_cp']
-    # Variables that should be initialized to zero
-    zeros_list = ['sweep', 'dihedral', 'twist_cp', 'xshear_cp', 'zshear_cp']
-    # Variables that should be initialized to given value
-    set_list = ['span']
+    ones_list = ['taper', 'chord_cp']     # Variables that should be initialized to one
+    zeros_list = ['sweep', 'dihedral', 'twist_cp', 'xshear_cp', 'zshear_cp']     # Variables that should be initialized to zero
+    set_list = ['span']     # Variables that should be initialized to given value
     all_geo_vars = ones_list + zeros_list + set_list
     geo_params = {}
     for var in all_geo_vars:
@@ -653,34 +440,35 @@ def geometry_mesh(surface, comp=None):
     return mesh
 
 
-def b_spline_surface(surface):
-    """
-    General function to translate from control points to actual points
-    using a b-spline representation.
+# def b_spline_surface(surface):
+#     """
+#     General function to translate from control points to actual points
+#     using a b-spline representation.
 
-    Parameters
-    ----------
-    cpname : string
-        Name of the OpenMDAO component containing the control point values.
-    ptname : string
-        Name of the OpenMDAO component that will contain the interpolated
-        b-spline values.
-    n_input : int
-        Number of input control points.
-    n_output : int
-        Number of outputted interpolated b-spline points.
-    """
-    comp = Bspline(cpname, ptname, n_input, n_output)
-    params = {
-        cpname: cpname
-    }
-    unknowns = {
-        ptname: np.zeros(n_output)
-    }
-    resids = None
-    comp.solve_nonlinear(params, unknowns, resids)
-    ptname_out = unknowns.get(ptname)
-    return ptname_out
+#     Parameters
+#     ----------
+#     cpname : string
+#         Name of the OpenMDAO component containing the control point values.
+#     ptname : string
+#         Name of the OpenMDAO component that will contain the interpolated
+#         b-spline values.
+#     n_input : int
+#         Number of input control points.
+#     n_output : int
+#         Number of outputted interpolated b-spline points.
+#     """
+#     comp = Bspline(cpname, ptname, n_input, n_output)
+#     params = {
+#         cpname: cpname
+#     }
+#     unknowns = {
+#         ptname: np.zeros(n_output)
+#     }
+#     resids = None
+#     comp.solve_nonlinear(params, unknowns, resids)
+#     ptname_out = unknowns.get(ptname)
+#     return ptname_out
+
 
 def transfer_displacements(mesh, disp, surface=None, comp=None):
     """
@@ -721,11 +509,9 @@ def transfer_displacements(mesh, disp, surface=None, comp=None):
 
 """
 --------------------------------------------------------------------------------
---------------------------------------------------------------------------------
 
-                                    AERODYNAMICS
+                                AERODYNAMICS
 
---------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 From vlm.py: """
 
@@ -779,54 +565,6 @@ def vlm_geometry(def_mesh, surface=None, comp=None):
     normals=unknowns.get('normals')
     S_ref=unknowns.get('S_ref')
     return b_pts, c_pts, widths, cos_sweep, lengths, normals, S_ref
-
-
-# def vlm_circulations(aero_ind, def_mesh, b_pts, c_pts, normals, v, alpha):
-#     """
-#     Compute the circulations based on the AIC matrix and the panel velocities.
-#     Note that the flow tangency condition is enforced at the 3/4 chord point.
-#
-#     Parameters
-#     ----------
-#     def_mesh : array_like
-#         Flattened array defining the lifting surfaces.
-#     b_pts : array_like
-#         Bound points for the horseshoe vortices, found along the 1/4 chord.
-#     c_pts : array_like
-#         Collocation points on the 3/4 chord line where the flow tangency
-#         condition is satisfed. Used to set up the linear system.
-#     normals : array_like
-#         The normal vector for each panel, computed as the cross of the two
-#         diagonals from the mesh points.
-#     v : float
-#         Freestream air velocity in m/s.
-#     alpha : float
-#         Angle of attack in degrees.
-#
-#     Returns
-#     -------
-#     circulations : array_like
-#         Flattened vector of horseshoe vortex strengths calculated by solving
-#         the linear system of AIC_mtx * circulations = rhs, where rhs is
-#         based on the air velocity at each collocation point.
-#
-#     """
-#     _Comp=VLMCirculations(aero_ind)
-#     params={
-#         'def_mesh': def_mesh,
-#         'b_pts': b_pts,
-#         'c_pts': c_pts,
-#         'normals': normals,
-#         'v': v,
-#         'alpha': alpha
-#     }
-#     unknowns={
-#         'circulations': np.zeros((np.sum(aero_ind[:, 4])), dtype = "complex")
-#     }
-#     resids=None
-#     _Comp.solve_nonlinear(params, unknowns, resids)
-#     circulations=unknowns.get('circulations')
-#     return circulations
 
 
 def assemble_aic(surface, def_mesh, b_pts, c_pts, normals, v, alpha, comp=None):
@@ -1034,157 +772,11 @@ def transfer_loads(def_mesh, sec_forces, surface=None, comp=None):
     return loads
 
 
-# def vlm_lift_drag(sec_forces, alpha, aero_ind):
-#     """
-#     Calculate total lift and drag in force units based on section forces.
-#
-#     Parameters
-#     ----------
-#     sec_forces : array_like
-#         Flattened array containing the sectional forces acting on each panel.
-#         Stored in Fortran order (only relevant when more than one chordwise
-#         panel).
-#     alpha : float
-#         Angle of attack in degrees.
-#
-#     Returns
-#     -------
-#     L : array_like
-#         Total lift for each lifting surface.
-#     D : array_like
-#         Total drag for each lifting surface.
-#
-#     """
-#     _Comp=VLMLiftDrag(aero_ind)
-#     num_surf=aero_ind.shape[0]
-#     params={
-#         'sec_forces': sec_forces,
-#         'alpha': alpha
-#     }
-#     unknowns={
-#         'L': np.zeros((num_surf)),
-#         'D': np.zeros((num_surf))
-#     }
-#     resids=None
-#     _Comp.solve_nonlinear(params, unknowns, resids)
-#     L=unknowns.get('L')
-#     D=unknowns.get('D')
-#     return L, D
-#
-#
-# def vlm_coeffs(S_ref, L, D, v, rho, aero_ind):
-#     """ Compute lift and drag coefficients.
-#
-#     Parameters
-#     ----------
-#     S_ref : array_like
-#         The reference areas of each lifting surface.
-#     L : array_like
-#         Total lift for each lifting surface.
-#     D : array_like
-#         Total drag for each lifting surface.
-#     v : float
-#         Freestream air velocity in m/s.
-#     rho : float
-#         Air density in kg/m^3.
-#
-#     Returns
-#     -------
-#     CL1 : array_like
-#         Induced coefficient of lift (CL) for each lifting surface.
-#     CDi : array_like
-#         Induced coefficient of drag (CD) for each lifting surface.
-#
-#     """
-#     _Comp=VLMCoeffs(aero_ind)
-#     num_surf=aero_ind.shape[0]
-#     params={
-#         'S_ref': S_ref,
-#         'L': L,
-#         'D': D,
-#         'v': v,
-#         'rho': rho
-#     }
-#     unknowns={
-#         'CL1': np.zeros((num_surf)),
-#         'CDi': np.zeros((num_surf))
-#     }
-#     resids=None
-#     _Comp.solve_nonlinear(params, unknowns, resids)
-#     CL1=unknowns.get('CL1')
-#     CDi=unknowns.get('CDi')
-#     return CL1, CDi
-#
-#
-# def total_lift(CL1, CL0, aero_ind):
-#     """ Calculate total lift in force units.
-#
-#     Parameters
-#     ----------
-#     CL1 : array_like
-#         Induced coefficient of lift (CL) for each lifting surface.
-#
-#     Returns
-#     -------
-#     CL : array_like
-#         Total coefficient of lift (CL) for each lifting surface.
-#     CL_wing : float
-#         CL of the main wing, used for CL constrained optimization.
-#
-#     """
-#     _Comp=TotalLift(CL0, aero_ind)
-#     params={
-#         'CL1': CL1
-#     }
-#     unknowns={
-#         'CL': np.zeros((_Comp.num_surf)),
-#         'CL_wing': 0.
-#     }
-#     resids=None
-#     _Comp.solve_nonlinear(params, unknowns, resids)
-#     CL=unknowns.get('CL')
-#     CL_wing=unknowns.get('CL_wing')
-#     return CL, CL_wing
-#
-#
-# def total_drag(CL0, aero_ind):
-#     """ Calculate total drag in force units.
-#
-#     Parameters
-#     ----------
-#     CDi : array_like
-#         Induced coefficient of drag (CD) for each lifting surface.
-#
-#     Returns
-#     -------
-#     CD : array_like
-#         Total coefficient of drag (CD) for each lifting surface.
-#     CD_wing : float
-#         CD of the main wing, used for CD minimization.
-#
-#     """
-#     _Comp=TotalDrag(CDi, CL0, aero_ind)
-#     params={
-#         'CDi': CDi
-#     }
-#     unknowns={
-#         'CD': np.zeros((_Comp.num_surf)),
-#         'CD_wing': 0.
-#     }
-#     resids=None
-#     _Comp.solve_nonlinear(params, unknowns, resids)
-#     CD=unknowns.get('CD')
-#     CD_wing=unknowns.get('CD_wing')
-#     return CD, CD_wing
-
-
 """
 --------------------------------------------------------------------------------
---------------------------------------------------------------------------------
 
-                                    STRUCTURES
+                                   STRUCTURES
 
---------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 From spatialbeam.py: Define the structural analysis component using spatial beam theory. """
 
@@ -1349,140 +941,11 @@ def assemble_k(A, Iy, Iz, J, nodes, loads, surface=None, comp=None):
     return K, forces
 
 
-# def spatial_beam_energy(disp, loads, aero_ind, fem_ind):
-#     """ Compute strain energy.
-#
-#     Parameters
-#     ----------
-#     disp : array_like
-#         Actual displacement array formed by truncating disp_aug.
-#     loads : array_like
-#         Flattened array containing the loads applied on the FEM component,
-#         computed from the sectional forces.
-#
-#     Returns
-#     -------
-#     energy : float
-#         Total strain energy of the structural component.
-#
-#     """
-#     _Comp.SpatialBeamEnergy(aero_ind, fem_ind)
-#     params={
-#         'disp': disp,
-#         'loads': loads
-#     }
-#     unknowns={
-#         'energy': np.zeros((_Comp.n, 6))
-#     }
-#     resids=None
-#     _Comp.solve_nonlinear(params, unknowns, resids)
-#     energy=unknowns.get('energy')
-#     return energy
-#
-#
-# def spatial_beam_weight(A, nodes, aero_ind, fem_ind, mrho):
-#     """ Compute total weight.
-#
-#     Parameters
-#     ----------
-#     A : array_like
-#         Areas for each FEM element.
-#     nodes : array_like
-#         Flattened array with coordinates for each FEM node.
-#
-#     Returns
-#     -------
-#     weight : float
-#         Total weight of the structural component."""
-#     _Comp=SpatialBeamWeight(aero_ind, fem_ind, mrho)
-#     params={
-#         'A': A,
-#         'nodes': nodes
-#     }
-#     unknowns={
-#         'weight': 0.
-#     }
-#     resids=None
-#     _Comp.solve_nonlinear(params, unknowns, resids)
-#     weight=unknowns.get('weight')
-#     return weight
-#
-#
-# def spatial_beam_vonmises_tube(nodes, r, disp, aero_ind, fem_ind, E, G):
-#     """ Compute the max von Mises stress in each element.
-#
-#     Parameters
-#     ----------
-#     r : array_like
-#         Radii for each FEM element.
-#     nodes : array_like
-#         Flattened array with coordinates for each FEM node.
-#     disp : array_like
-#         Displacements of each FEM node.
-#
-#     Returns
-#     -------
-#     vonmises : array_like
-#         von Mises stress magnitudes for each FEM element.
-#
-#     """
-#     _Comp=SpatialBeamVonMisesTube(aero_ind, fem_ind, E, G)
-#     num_surf=fem_ind.shape[0]
-#     params={
-#         'nodes': nodes,
-#         'r': r,
-#         'disp': disp
-#     }
-#     unknowns={
-#         'vonmises': np.zeros((_Comp.tot_n_fem - num_surf, 2), dtype = "complex")
-#     }
-#     resids=None
-#     _Comp.solve_nonlinear(params, unknowns, resids)
-#     vonmises=unknowns.get('vonmises')
-#     return vonmises
-#
-#
-# def spatial_beam_failure_ks(vonmises, fem_ind, sigma, rho = 10):
-#     """
-#     Aggregate failure constraints from the structure.
-#
-#     To simplify the optimization problem, we aggregate the individual
-#     elemental failure constraints using a Kreisselmeier-Steinhauser (KS)
-#     function.
-#
-#     Parameters
-#     ----------
-#     vonmises : array_like
-#         von Mises stress magnitudes for each FEM element.
-#
-#     Returns
-#     -------
-#     failure : float
-#         KS aggregation quantity obtained by combining the failure criteria
-#         for each FEM node. Used to simplify the optimization problem by
-#         reducing the number of constraints.
-#
-#     """
-#     _Comp=SpatialBeamFailureKS(fem_ind, sigma, rho)
-#     params={
-#         'vonmises': vonmises
-#     }
-#     unknowns={
-#         'failure'=0.
-#     }
-#     resids=None
-#     _Comp.solve_nonlinear(params, unknowns, resids)
-#     failure=unknowns.get('failure')
-#     return failure
-
-
 """
 --------------------------------------------------------------------------------
---------------------------------------------------------------------------------
 
-                                    MATERIALS
+                                MATERIALS
 
---------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 From materials.py: """
 
@@ -1535,67 +998,40 @@ def materials_tube(r, thickness, surface=None, comp=None):
 
     """
     --------------------------------------------------------------------------------
-    --------------------------------------------------------------------------------
 
-                                        FUNCTIONALS
+                                    FUNCTIONALS
 
     --------------------------------------------------------------------------------
-    --------------------------------------------------------------------------------
-    From functionals.py: """
-
-    # def functional_breguet_range(CL, CD, weight, W0, CT, a, R, M, aero_ind):
-    #     """ Computes the fuel burn using the Breguet range equation """
-    #     _Comp=FunctionalBreguetRange(W0, CT, a, R, M, aero_ind)
-    #     n_surf=aero_ind.shape[0]
-    #     params={
-    #         'CL': CL,
-    #         'CD': CD,
-    #         'weight': weight
-    #     }
-    #     unknowns={
-    #         'fuelburn': 0.
-    #     }
-    #     resids=None
-    #     _Comp.solve_nonlinear(params, unknowns, resids)
-    #     fuelburn=unknowns.get('fuelburn')
-    #     return fuelburn
-    #
-    # def functional_equilibrium(L, weight, fuelburn, W0, aero_ind):
-    #     """ L = W constraint """
-    #     _Comp=FunctionalEquilibrium(W0, aero_ind)
-    #     params={
-    #         'L': L,
-    #         'weight': weight,
-    #         'fuelburn': fuelburn
-    #     }
-    #     unknowns={
-    #         'eq_con': 0.
-    #     }
-    #     resids=None
-    #     _Comp.solve_nonlinear(params, unknowns, resids)
-    #     eq_con=unknowns.get('eq_con')
-    #     return eq_con
+    From functionals.py: 
+        
+        to be added here...
+        
+        """
 
 
 if __name__ == "__main__":
     ''' Test the coupled system with default parameters '''
-    num_x=2
-    num_y=7
+
     print('Fortran Flag = {0}'.format(fortran_flag))
     print('\nRun aerostruct.setup()...')
-    params = setup(num_x, num_y)
-    print('params = ')
-    print(params)
-    def_mesh = gen_init_mesh(params['surfaces'][0], params['comp_dict'])
+    OAS_prob = setup()
+    # print('OAS_prob.surfaces = ')
+    # print(OAS_prob.surfaces)
+    # print('OAS_prob.prob_dict = ')
+    # print(OAS_prob.prob_dict)
+    # print('OAS_prob.comp_dict = ')
+    # print(OAS_prob.comp_dict)
+    
+    def_mesh = gen_init_mesh(OAS_prob.surfaces[0], OAS_prob.comp_dict)
     print('def_mesh = ')
     print(def_mesh)
 
     print('\nRun aerostruct.aerodynamics()...')
-    loads = aerodynamics(def_mesh, params)
+    loads = aerodynamics(def_mesh, OAS_prob.surfaces[0], OAS_prob.prob_dict, OAS_prob.comp_dict)
     print('loads = ')
     print(loads)
     #
     print('\nRun aerostruct.structures()...')
-    def_mesh = structures(loads, params)
+    def_mesh = structures(loads, OAS_prob.surfaces[0], OAS_prob.prob_dict, OAS_prob.comp_dict)
     print('def_mesh = ')
     print(def_mesh)
