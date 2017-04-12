@@ -6,6 +6,7 @@ from numpy import cos, sin, tan
 
 from openmdao.api import Component
 from b_spline import get_bspline_mtx
+from spatialbeam import radii
 
 try:
     import OAS_API
@@ -330,6 +331,7 @@ class GeometryMesh(Component):
         super(GeometryMesh, self).__init__()
 
         name = surface['name']
+        self.surface = surface
 
         # Strip the surface names from the desvars list and save this
         # modified list as self.desvars
@@ -341,6 +343,8 @@ class GeometryMesh(Component):
             # to this surface.
             if name[:-1] in desvar:
                 desvar_names.append(''.join(desvar.split('.')[1:]))
+
+        self.desvar_names = desvar_names
 
         ny = surface['num_y']
         self.mesh = surface['mesh']
@@ -376,6 +380,11 @@ class GeometryMesh(Component):
 
         self.add_output('mesh', val=self.mesh)
 
+        if 'radius_cp' not in desvar_names and 'radius_cp' not in surface['initial_geo']:
+            self.compute_radius = True
+            self.add_output('radius', val=np.zeros((ny - 1)))
+        else:
+            self.compute_radius = False
 
         self.symmetry = surface['symmetry']
 
@@ -406,6 +415,13 @@ class GeometryMesh(Component):
             dihedral(mesh, self.geo_params['dihedral'], self.symmetry)
             shear_z(mesh, self.geo_params['zshear'])
             rotate(mesh, self.geo_params['twist'], self.symmetry, self.rotate_x)
+
+        # Only compute the radius on the first iteration.
+        if self.compute_radius and 'radius_cp' not in self.desvar_names:
+            # Get spar radii and interpolate to radius control points.
+            # Need to refactor this at some point.
+            unknowns['radius'] = radii(mesh, self.surface['t_over_c'])
+            self.compute_radius = False
 
         unknowns['mesh'] = mesh
 

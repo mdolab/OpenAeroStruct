@@ -36,8 +36,8 @@ class MaterialsTube(Component):
         self.mesh = surface['mesh']
         name = surface['name']
 
-        self.add_param('radius', val=surface['radius'])
-        self.add_param('thickness', val=surface['thickness'])
+        self.add_param('radius', val=np.zeros((self.ny - 1)))
+        self.add_param('thickness', val=np.zeros((self.ny - 1)))
         self.add_output('A', val=np.zeros((self.ny - 1)))
         self.add_output('Iy', val=np.zeros((self.ny - 1)))
         self.add_output('Iz', val=np.zeros((self.ny - 1)))
@@ -50,7 +50,7 @@ class MaterialsTube(Component):
         pi = np.pi
         r1 = params['radius'] - params['thickness']
         r2 = params['radius']
-        
+
         unknowns['A'] = pi * (r2**2 - r1**2)
         unknowns['Iy'] = pi * (r2**4 - r1**4) / 4.
         unknowns['Iz'] = pi * (r2**4 - r1**4) / 4.

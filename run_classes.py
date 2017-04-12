@@ -329,17 +329,6 @@ class OASProblem(object):
         # Apply the user-provided coordinate offset to position the mesh
         mesh = mesh + surf_dict['offset']
 
-        # Get spar radii and interpolate to radius control points.
-        # Need to refactor this at some point.
-        surf_dict['radius'] = radii(mesh, surf_dict['t_over_c'])
-        if surf_dict['radius_cp'] is None:
-            if 'num_radius_cp' not in surf_dict:
-                surf_dict['num_radius_cp'] = np.max([int((num_y - 1) / 5), min(5, num_y-1)])
-            panel_centers = (mesh[0, :-1, 1].real + mesh[0, 1:, 1].real) / 2.
-            s = panel_centers / (panel_centers[-1] - panel_centers[0])
-            surf_dict['radius_cp'] = np.interp(np.linspace(s[0], s[-1], surf_dict['num_radius_cp']),
-                s, surf_dict['radius'].real)
-
         # We need to initialize some variables to ones and some others to zeros.
         # Here we define the lists for each case.
         ones_list = ['chord_cp', 'thickness_cp', 'radius_cp']
@@ -390,8 +379,10 @@ class OASProblem(object):
         surf_dict['num_y'] = num_y
         surf_dict['mesh'] = mesh
 
+        radius = radii(mesh, surf_dict['t_over_c'])
+
         # Set initial thicknesses
-        surf_dict['thickness'] = surf_dict['radius'] / 10
+        surf_dict['thickness'] = radius / 10
 
         # We now loop through the possible bspline variables and populate
         # the 'initial_geo' list with the variables that the geometry
@@ -425,7 +416,7 @@ class OASProblem(object):
 
         if surf_dict['loads'] is None:
             # Set default loads at the tips
-            loads = np.zeros((surf_dict['radius'].shape[0] + 1, 6), dtype=data_type)
+            loads = np.zeros((surf_dict['thickness'].shape[0] + 1, 6), dtype=data_type)
             loads[0, 2] = 1e3
             if not surf_dict['symmetry']:
                 loads[-1, 2] = 1e3
@@ -627,7 +618,7 @@ class OASProblem(object):
             # special var, radius, which is necessary to compute weight.
             indep_vars = [('loads', surface['loads'])]
             for var in surface['geo_vars']:
-                if var in desvar_names or 'radius' in var or 'thickness' in var or var in surface['initial_geo']:
+                if var in desvar_names or 'thickness' in var or var in surface['initial_geo']:
                     indep_vars.append((var, surface[var]))
 
             # Add structural components to the surface-specific group
@@ -651,7 +642,7 @@ class OASProblem(object):
             # We only add the component if the corresponding variable is a desvar
             # or special (radius).
             for var in surface['bsp_vars']:
-                if var in desvar_names or 'radius' in var or var in surface['initial_geo'] or 'thickness' in var:
+                if var in desvar_names or var in surface['initial_geo'] or 'thickness' in var:
                     n_pts = surface['num_y']
                     if var in ['thickness_cp', 'radius_cp']:
                         n_pts -= 1
@@ -846,7 +837,7 @@ class OASProblem(object):
             # Add independent variables that do not belong to a specific component
             indep_vars = []
             for var in surface['geo_vars']:
-                if var in desvar_names or 'radius' in var or var in surface['initial_geo'] or 'thickness' in var:
+                if var in desvar_names or var in surface['initial_geo'] or 'thickness' in var:
                     indep_vars.append((var, surface[var]))
 
             # Add components to include in the surface's group
@@ -865,7 +856,7 @@ class OASProblem(object):
             # a special parameter (radius), or if the user or geometry provided
             # an initial distribution.
             for var in surface['bsp_vars']:
-                if var in desvar_names or 'radius' in var or var in surface['initial_geo'] or 'thickness' in var:
+                if var in desvar_names or var in surface['initial_geo'] or 'thickness' in var:
                     n_pts = surface['num_y']
                     if var in ['thickness_cp', 'radius_cp']:
                         n_pts -= 1
