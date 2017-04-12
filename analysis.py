@@ -1,7 +1,7 @@
 # Univ. Michigan Aerostructural model.
 # Based on OpenAeroStruct by John Hwang, and John Jasa (github.com/mdolab/OpenAeroStruct)
 # author: Sam Friedman  (samfriedman@tamu.edu)
-# date:   4/6/2017
+# date:   4/12/2017
 
 # make compatible Python 2.x to 3.x
 from __future__ import print_function, division
@@ -110,14 +110,7 @@ def setup(prob_dict={}, surfaces=[{}]):
     # Set problem type
     prob_dict.update({'type' : 'aerostruct'})  # this doesn't really matter since we aren't calling OASProblem.setup()
 
-    # To update problem parameters, update the prob_dict dictionary.
-    # The dictionary key is a string, e.g.
-    #   prob_dict.update({'rho' : 0.35,
-    #                     'R': 14.0e6
-    #   })
-
     # Instantiate problem
-
     OAS_prob = OASProblem(prob_dict)
     '''
     Output after calling OAS_prob.prob_dict:
@@ -164,8 +157,7 @@ def setup(prob_dict={}, surfaces=[{}]):
     '''
     Extract parameters and variables from OAS_prob to pass through to
     other discipline functions. For now, assume we are only using one lifting
-    surface and hardcode the variable names for the wing. Later, I will create
-    a class object to hold all of the surface variables.
+    surface.
 
     Output after calling OAS_prob.add_surface(surf_dict):
     In [8]: OAS_prob.surfaces
@@ -272,7 +264,7 @@ def setup(prob_dict={}, surfaces=[{}]):
 
 
 def gen_init_mesh(surface, comp_dict=None):
-    ''' Generate initial mesh '''
+    ''' Generate initial def_mesh '''
     if comp_dict:
         mesh = geometry_mesh(surface, comp=comp_dict['GeometryMesh'])
         disp = np.zeros((surface['num_y'], 6), dtype=data_type)  # zero displacement
@@ -335,7 +327,7 @@ def structures(loads, surface, prob_dict, comp_dict=None):
 
     nodes = compute_nodes(mesh, comp=comp_dict['ComputeNodes'])
     K, forces = assemble_k(A, Iy, Iz, J, nodes, loads, comp=comp_dict['AssembleK'])
-    disp_aug = spatial_beam_FEM(K, forces, comp=comp_dict['SpatialBeamFEM'])
+    disp_aug = spatial_beam_fem(K, forces, comp=comp_dict['SpatialBeamFEM'])
     disp = spatial_beam_disp(disp_aug, comp=comp_dict['SpatialBeamDisp'])
     def_mesh = transfer_displacements(mesh, disp, comp=comp_dict['TransferDisplacements'])
 
@@ -357,7 +349,7 @@ def structures2(loads, surface, prob_dict):
 
     nodes = compute_nodes(mesh, surface)
     K, forces = assemble_k(A, Iy, Iz, J, nodes, loads, surface)
-    disp_aug = spatial_beam_FEM(K, forces, size)
+    disp_aug = spatial_beam_fem(K, forces, size)
     disp = spatial_beam_disp(disp_aug, surface)
     def_mesh = transfer_displacements(mesh, disp, surface)
 
@@ -780,7 +772,7 @@ def transfer_loads(def_mesh, sec_forces, surface=None, comp=None):
 --------------------------------------------------------------------------------
 From spatialbeam.py: Define the structural analysis component using spatial beam theory. """
 
-def spatial_beam_FEM(K, forces, size=None, comp=None):
+def spatial_beam_fem(K, forces, size=None, comp=None):
     """
     Compute the displacements and rotations by solving the linear system
     using the structural stiffness matrix.
@@ -1010,11 +1002,23 @@ def materials_tube(r, thickness, surface=None, comp=None):
 
 
 if __name__ == "__main__":
-    ''' Test the coupled system with default parameters '''
-
+    ''' Test the coupled system with default parameters 
+    
+     To change problem parameters, input the prob_dict dictionary, e.g.
+     prob_dict = {
+        'rho' : 0.35,
+        'R': 14.0e6
+     }
+    '''
     print('Fortran Flag = {0}'.format(fortran_flag))
-    print('\nRun aerostruct.setup()...')
-    OAS_prob = setup()
+    
+    print('Run analysis.setup()...')
+    surface = {
+        'wing_type' : 'CRM',
+        'num_x': 2,   # number of chordwise points
+        'num_y': 7    # number of spanwise points
+    }
+    OAS_prob = setup(prob_dict={}, surfaces=[surface])
     # print('OAS_prob.surfaces = ')
     # print(OAS_prob.surfaces)
     # print('OAS_prob.prob_dict = ')
@@ -1026,12 +1030,12 @@ if __name__ == "__main__":
     print('def_mesh = ')
     print(def_mesh)
 
-    print('\nRun aerostruct.aerodynamics()...')
+    print('\nRun analysis.aerodynamics()...')
     loads = aerodynamics(def_mesh, OAS_prob.surfaces[0], OAS_prob.prob_dict, OAS_prob.comp_dict)
     print('loads = ')
     print(loads)
     #
-    print('\nRun aerostruct.structures()...')
+    print('\nRun analysis.structures()...')
     def_mesh = structures(loads, OAS_prob.surfaces[0], OAS_prob.prob_dict, OAS_prob.comp_dict)
     print('def_mesh = ')
     print(def_mesh)
