@@ -376,6 +376,7 @@ class GeometryMesh(Component):
 
         self.add_output('mesh', val=self.mesh)
 
+
         self.symmetry = surface['symmetry']
 
         # This flag determines whether or not changes in z (dihedral) add an
@@ -407,7 +408,7 @@ class GeometryMesh(Component):
             rotate(mesh, self.geo_params['twist'], self.symmetry, self.rotate_x)
 
         unknowns['mesh'] = mesh
-        
+
     def apply_linear(self, params, unknowns, dparams, dunknowns, dresids, mode):
         mesh = self.mesh.copy()
         self.geo_params.update(params)

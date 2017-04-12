@@ -200,6 +200,7 @@ class OASProblem(object):
                     'mrho' : 3.e3,          # [kg/m^3] material density
                     'fem_origin' : 0.35,    # normalized chordwise location of the spar
                     'W0' : 0.4 * 3e5,       # [kg] MTOW of B777-300 is 3e5 kg with fuel
+                    'loads' : None,         # [N] allow the user to input loads
 
                     # Constraints
                     'exact_failure_constraint' : False, # if false, use KS function
@@ -422,12 +423,13 @@ class OASProblem(object):
         if 'thickness_cp' in surf_dict['geo_vars']:
             surf_dict['thickness_cp'] *= np.max(surf_dict['thickness'])
 
-        # Set default loads at the tips
-        loads = np.zeros((surf_dict['radius'].shape[0] + 1, 6), dtype=data_type)
-        loads[0, 2] = 1e3
-        if not surf_dict['symmetry']:
-            loads[-1, 2] = 1e3
-        surf_dict['loads'] = loads
+        if surf_dict['loads'] is None:
+            # Set default loads at the tips
+            loads = np.zeros((surf_dict['radius'].shape[0] + 1, 6), dtype=data_type)
+            loads[0, 2] = 1e3
+            if not surf_dict['symmetry']:
+                loads[-1, 2] = 1e3
+            surf_dict['loads'] = loads
 
         # Throw a warning if the user provides two surfaces with the same name
         name = surf_dict['name']
@@ -450,7 +452,6 @@ class OASProblem(object):
         or Scipy's SLSQP otherwise.
         """
 
-        self.prob_dict['optimizer'] = 'SNOPT'
         try:  # Use pyOptSparse optimizer if installed
             from openmdao.api import pyOptSparseDriver
             self.prob.driver = pyOptSparseDriver()
@@ -570,8 +571,9 @@ class OASProblem(object):
         # If `optimize` == True in prob_dict, perform optimization. Otherwise,
         # simply pass the problem since analysis has already been run.
         if not self.prob_dict['optimize']:
-            # Run a single analysis loop
-            pass
+            # Run a single analysis loop. This shouldn't actually be
+            # necessary, but sometimes the .db file is not complete unless we do this.
+            self.prob.run_once()
         else:
             # Perform optimization
             self.prob.run()
