@@ -156,6 +156,8 @@ class Display(object):
             self.names = names
             n_names = len(names)
 
+            self.twist_included = False
+
             # Loop through each of the surfaces
             for name in names:
 
@@ -189,7 +191,7 @@ class Display(object):
                             self.twist.append(case_data['Unknowns'][name+'.twist'])
                             self.twist_included = True
                         except:
-                            self.twist_included = False
+                            pass
                     except:
                         self.show_wing = False
                 else:
@@ -214,11 +216,11 @@ class Display(object):
                         self.twist.append(case_data['Unknowns'][short_name+'.twist'])
                         self.twist_included = True
                     except:
-                        self.twist_included = False
+                        pass
 
                 if not self.twist_included:
-                    ny = len(widths[0])
-                    self.twist.append(np.zeros(ny+1))
+                    ny = self.mesh[0].shape[1]
+                    self.twist.append(np.zeros(ny))
 
             if self.show_wing:
                 alpha.append(case_data['Unknowns']['alpha'] * np.pi / 180.)

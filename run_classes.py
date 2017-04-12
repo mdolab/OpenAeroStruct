@@ -625,7 +625,7 @@ class OASProblem(object):
             # special var, radius, which is necessary to compute weight.
             indep_vars = [('loads', surface['loads'])]
             for var in surface['geo_vars']:
-                if var in desvar_names or 'radius' in var or 'thickness' in var:
+                if var in desvar_names or 'radius' in var or 'thickness' in var or var in surface['initial_geo']:
                     indep_vars.append((var, surface[var]))
 
             # Add structural components to the surface-specific group
