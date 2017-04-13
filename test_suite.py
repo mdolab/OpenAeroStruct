@@ -161,7 +161,7 @@ class TestAero(unittest.TestCase):
             OAS_prob.add_desvar('wing.chord_cp', lower=0.1, upper=5.)
             OAS_prob.add_desvar('alpha', lower=-10., upper=10.)
             OAS_prob.add_constraint('wing_perf.CL', equals=0.1)
-            OAS_prob.add_constraint('wing.S_ref', equals=10)
+            OAS_prob.add_constraint('wing.S_ref', equals=20)
             OAS_prob.add_constraint('wing.monotonic_chord', upper=0.)
             OAS_prob.add_objective('wing_perf.CD', scaler=1e4)
 
@@ -189,7 +189,7 @@ class TestAero(unittest.TestCase):
             OAS_prob.add_desvar('wing.chord_cp', lower=0.1, upper=5.)
             OAS_prob.add_desvar('alpha', lower=-10., upper=10.)
             OAS_prob.add_constraint('wing_perf.CL', equals=0.1)
-            OAS_prob.add_constraint('wing.S_ref', equals=10)
+            OAS_prob.add_constraint('wing.S_ref', equals=20)
             OAS_prob.add_constraint('wing.monotonic_chord', upper=0.)
             OAS_prob.add_objective('wing_perf.CD', scaler=1e4)
 
@@ -234,7 +234,7 @@ class TestAero(unittest.TestCase):
             OAS_prob.add_desvar('wing.chord_cp', lower=0.1, upper=3.)
             OAS_prob.add_desvar('alpha', lower=-10., upper=10.)
             OAS_prob.add_constraint('wing_perf.CL', equals=0.5)
-            OAS_prob.add_constraint('wing.S_ref', equals=10)
+            OAS_prob.add_constraint('wing.S_ref', equals=20)
             OAS_prob.add_objective('wing_perf.CD', scaler=1e4)
 
             OAS_prob.setup()

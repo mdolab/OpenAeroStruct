@@ -244,8 +244,6 @@ class OASProblem(object):
                     'rho' : 0.38,            # [kg/m^3] air density at 35,000 ft
                     'a' : 295.4,             # [m/s] speed of sound at 35,000 ft
                     'g' : 9.80665,           # [m/s^2] acceleration due to gravity
-                                             # also change the 'CT' value below
-                                             # accordingly if you alter this value
 
                     # Aircraft properties
                     'CT' : 9.80665 * 17.e-6, # [1/s] (9.80665 N/kg * 17e-6 kg/N/s)
