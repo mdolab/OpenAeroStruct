@@ -277,7 +277,11 @@ def taper(mesh, taper_ratio, symmetry):
     quarter_chord = 0.25 * te + 0.75 * le
 
     if symmetry:
-        taper = np.linspace(1, taper_ratio, num_y)[::-1]
+        x = quarter_chord[:, 1]
+        span = x[-1] - x[0]
+        xp = np.array([-span, 0.])
+        fp = np.array([taper_ratio, 1.])
+        taper = np.interp(x.real, xp.real, fp.real)
 
         for i in range(num_x):
             for ind in range(3):
@@ -285,15 +289,16 @@ def taper(mesh, taper_ratio, symmetry):
                     taper + quarter_chord[:, ind]
 
     else:
-        ny2 = (num_y + 1) // 2
-        taper = np.linspace(1, taper_ratio, ny2)[::-1]
-
-        dx = np.hstack((taper, taper[::-1][1:]))
+        x = quarter_chord[:, 1]
+        span = x[-1] - x[0]
+        xp = np.array([-span/2, 0., span/2])
+        fp = np.array([taper_ratio, 1., taper_ratio])
+        taper = np.interp(x.real, xp.real, fp.real)
 
         for i in range(num_x):
             for ind in range(3):
                 mesh[i, :, ind] = (mesh[i, :, ind] - quarter_chord[:, ind]) * \
-                    dx + quarter_chord[:, ind]
+                    taper + quarter_chord[:, ind]
 
 
 class GeometryMesh(Component):

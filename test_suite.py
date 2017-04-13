@@ -120,7 +120,7 @@ class TestAero(unittest.TestCase):
 
             OAS_prob.run()
             prob = OAS_prob.prob
-            self.assertAlmostEqual(prob['wing_perf.CD'], 0.0040822930892876266, places=5)
+            self.assertAlmostEqual(prob['wing_perf.CD'], 0.0038513637269917342, places=5)
 
     if fortran_flag:
         def test_aero_optimization_fd(self):
@@ -143,7 +143,7 @@ class TestAero(unittest.TestCase):
 
             OAS_prob.run()
             prob = OAS_prob.prob
-            self.assertAlmostEqual(prob['wing_perf.CD'], 0.0040822930899118148, places=5)
+            self.assertAlmostEqual(prob['wing_perf.CD'], 0.0038513637269919619, places=5)
 
     if fortran_flag:
         def test_aero_optimization_chord_monotonic(self):
@@ -219,7 +219,7 @@ class TestAero(unittest.TestCase):
 
             OAS_prob.run()
             prob = OAS_prob.prob
-            self.assertAlmostEqual(prob['wing_perf.CD'], 0.0187543037969152, places=5)
+            self.assertAlmostEqual(prob['wing_perf.CD'], 0.018663759453335121, places=5)
 
     if fortran_flag:
         def test_aero_viscous_chord_optimization(self):
