@@ -547,7 +547,7 @@ class SpatialBeamWeight(Component):
 
         self.add_param('A', val=np.zeros((self.ny - 1), dtype=data_type))
         self.add_param('nodes', val=np.zeros((self.ny, 3), dtype=data_type))
-        self.add_output('weight', val=0.)
+        self.add_output('structural_weight', val=0.)
 
     def solve_nonlinear(self, params, unknowns, resids):
         A = params['A']
@@ -561,7 +561,7 @@ class SpatialBeamWeight(Component):
         if self.surface['symmetry']:
             weight *= 2.
 
-        unknowns['weight'] = weight
+        unknowns['structural_weight'] = weight
 
     def linearize(self, params, unknowns, resids):
         jac = self.alloc_jacobian()
@@ -580,7 +580,7 @@ class SpatialBeamWeight(Component):
             dweight_dA *= 2.
 
         # Save the result to the jacobian dictionary
-        jac['weight', 'A'] = dweight_dA
+        jac['structural_weight', 'A'] = dweight_dA
 
         # Next, we will compute the derivative of weight wrt nodes.
         # Here we're using results from AD to compute the derivative
@@ -597,7 +597,7 @@ class SpatialBeamWeight(Component):
             nodesb *= 2.
 
         # Store the flattened array in the jacobian dictionary
-        jac['weight', 'nodes'] = nodesb.reshape(1, -1)
+        jac['structural_weight', 'nodes'] = nodesb.reshape(1, -1)
 
         return jac
 
@@ -949,7 +949,7 @@ class SpatialBeamFunctionals(Group):
         self.add('energy',
                  SpatialBeamEnergy(surface),
                  promotes=['*'])
-        self.add('weight',
+        self.add('structural_weight',
                  SpatialBeamWeight(surface),
                  promotes=['*'])
         self.add('vonmises',

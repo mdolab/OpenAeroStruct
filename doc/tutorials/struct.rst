@@ -24,18 +24,18 @@ The following Python script performs structural optimization to minimize weight 
   OAS_prob.add_desvar('wing.thickness_cp', lower=0.001, upper=0.25, scaler=1e2)
   OAS_prob.add_constraint('wing.thickness_intersects', upper=0.)
   OAS_prob.add_constraint('wing.failure', upper=0.)
-  OAS_prob.add_objective('wing.weight', scaler=1e-3)
+  OAS_prob.add_objective('wing.structural_weight', scaler=1e-3)
   OAS_prob.setup()
 
   # Actually run the problem
   OAS_prob.run()
-  print("\nWing weight:", OAS_prob.prob['wing.weight'])
+  print("\nWing structural weight:", OAS_prob.prob['wing.structural_weight'])
 
 Which should output the optimization results and then these lines:
 
 .. code-block:: console
 
-  Wing weight: 666.582239683
+  Wing structural weight: 666.582239683
 
 We will now go through each block of code to explain what is going on within OpenAeroStruct.
 
@@ -83,7 +83,7 @@ These numbers correspond to the entire surface even though we are using symmetri
   OAS_prob.add_desvar('wing.thickness_cp', lower=0.001, upper=0.25, scaler=1e2)
   OAS_prob.add_constraint('wing.thickness_intersects', upper=0.)
   OAS_prob.add_constraint('wing.failure', upper=0.)
-  OAS_prob.add_objective('wing.weight', scaler=1e-3)
+  OAS_prob.add_objective('wing.structural_weight', scaler=1e-3)
   OAS_prob.setup()
 
 First we set up the problem using OASProblem's built-in method and add optimization parameters.
@@ -100,7 +100,7 @@ The correct scaling parameters are difficult to know before examining the possib
 
   # Actually run the problem
   OAS_prob.run()
-  print("\nWing weight:", OAS_prob.prob['wing.weight'])
+  print("\nWing structural weight:", OAS_prob.prob['wing.structural_weight'])
 
 Lastly, we actually run the optimization and print the resulting minimized weight.
 

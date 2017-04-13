@@ -35,7 +35,7 @@ class FunctionalBreguetRange(Component):
 
             self.add_param(name+'CL', val=0.)
             self.add_param(name+'CD', val=0.)
-            self.add_param(name+'weight', val=0.)
+            self.add_param(name+'structural_weight', val=0.)
 
         self.add_output('fuelburn', val=0.)
 
@@ -57,7 +57,7 @@ class FunctionalBreguetRange(Component):
 
             CL = params[name+'CL']
             CD = params[name+'CD']
-            Ws = params[name+'weight']
+            Ws = params[name+'structural_weight']
 
             fuelburn += np.sum((W0 + Ws) * (np.exp(R * CT / a / M * CD / CL) - 1))
 
@@ -94,7 +94,7 @@ class FunctionalEquilibrium(Component):
             name = surface['name']
 
             self.add_param(name+'L', val=0.)
-            self.add_param(name+'weight', val=0.)
+            self.add_param(name+'structural_weight', val=0.)
 
         self.add_param('fuelburn', val=0.)
         self.add_output('eq_con', val=0.)
@@ -103,13 +103,13 @@ class FunctionalEquilibrium(Component):
         self.deriv_options['form'] = 'central'
 
     def solve_nonlinear(self, params, unknowns, resids):
-        weight = 0.
+        structural_weight = 0.
         L = 0.
         W0 = 0.
         for surface in self.surfaces:
             name = surface['name']
-            weight += params[name+'weight']
+            structural_weight += params[name+'structural_weight']
             L += params[name+'L']
             W0 += (surface['W0'] * self.prob_dict['g'])
 
-        unknowns['eq_con'] = (weight + params['fuelburn'] * self.prob_dict['g'] + W0 - L) / W0
+        unknowns['eq_con'] = (structural_weight + params['fuelburn'] * self.prob_dict['g'] + W0 - L) / W0

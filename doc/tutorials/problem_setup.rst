@@ -52,6 +52,8 @@ Keywords are case-specific.
 
 If you install `pyOptSparse <https://bitbucket.org/mdolab/pyoptsparse>`_, you can use `pyOptSparseDriver` within OpenMDAO.
 This allows you to use a wider variety of optimizers.
+However, this is only recommended for Linux and Mac users, as the relevant
+portions of pyOptSparse may be difficult to compile correctly on some Windows machines.
 
 
 2. Add your lifting surface(s)

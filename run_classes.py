@@ -182,9 +182,13 @@ class OASProblem(object):
                     'geo_vars' : ['sweep', 'dihedral', 'twist_cp', 'xshear_cp',
                         'zshear_cp', 'span', 'chord_cp', 'taper', 'thickness_cp', 'radius_cp'],
 
-                    # Zero-lift aerodynamic performance
-                    'CL0' : 0.0,            # CL value at AoA (alpha) = 0
-                    'CD0' : 0.0,            # CD value at AoA (alpha) = 0
+                    # Aerodynamic performance of the aircraft without the wing.
+                    # These CL0 and CD0 values are added to the CL and CD
+                    # obtained from aerodynamic analysis of the wing to get
+                    # the total CL and CD.
+                    # These CL0 and CD0 values do not vary wrt alpha.
+                    'CL0' : 0.0,            # CL of the aircraft without the wing
+                    'CD0' : 0.0,            # CD of the aircraft without the wing
 
                     # Airfoil properties for viscous drag calculation
                     'k_lam' : 0.05,         # percentage of chord with laminar
@@ -199,7 +203,10 @@ class OASProblem(object):
                     'stress' : 20.e6,       # [Pa] yield stress
                     'mrho' : 3.e3,          # [kg/m^3] material density
                     'fem_origin' : 0.35,    # normalized chordwise location of the spar
-                    'W0' : 0.4 * 3e5,       # [kg] MTOW of B777-300 is 3e5 kg with fuel
+                    'W0' : 0.4 * 3e5,       # [kg] weight of the airplane without
+                                            # the wing structure and fuel.
+                                            # The default is 40% of the MTOW of
+                                            # B777-300 is 3e5 kg.
                     'loads' : None,         # [N] allow the user to input loads
 
                     # Constraints
@@ -956,8 +963,8 @@ class OASProblem(object):
             root.connect(name[:-1] + '.thickness', name + 'perf.thickness')
 
             # Connection performance functional variables
-            root.connect(name + 'perf.weight', 'fuelburn.' + name + 'weight')
-            root.connect(name + 'perf.weight', 'eq_con.' + name + 'weight')
+            root.connect(name + 'perf.structural_weight', 'fuelburn.' + name + 'structural_weight')
+            root.connect(name + 'perf.structural_weight', 'eq_con.' + name + 'structural_weight')
             root.connect(name + 'perf.L', 'eq_con.' + name + 'L')
             root.connect(name + 'perf.CL', 'fuelburn.' + name + 'CL')
             root.connect(name + 'perf.CD', 'fuelburn.' + name + 'CD')

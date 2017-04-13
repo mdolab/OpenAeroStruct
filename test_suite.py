@@ -290,7 +290,7 @@ class TestStruct(unittest.TestCase):
         OAS_prob.setup()
         OAS_prob.run()
         prob = OAS_prob.prob
-        self.assertAlmostEqual(prob['wing.weight'], 3952.539819242561, places=3)
+        self.assertAlmostEqual(prob['wing.structural_weight'], 3952.539819242561, places=3)
 
     def test_struct_analysis_symmetry(self):
         OAS_prob = OASProblem({'type' : 'struct',
@@ -302,7 +302,7 @@ class TestStruct(unittest.TestCase):
         OAS_prob.setup()
         OAS_prob.run()
         prob = OAS_prob.prob
-        self.assertAlmostEqual(prob['wing.weight'], 3952.539819242561, places=3)
+        self.assertAlmostEqual(prob['wing.structural_weight'], 3952.539819242561, places=3)
 
     if fortran_flag:
         def test_struct_optimization(self):
@@ -315,14 +315,14 @@ class TestStruct(unittest.TestCase):
             OAS_prob.add_desvar('wing.thickness_cp', lower=0.001, upper=0.25, scaler=1e2)
             OAS_prob.add_constraint('wing.failure', upper=0.)
             OAS_prob.add_constraint('wing.thickness_intersects', upper=0.)
-            OAS_prob.add_objective('wing.weight', scaler=1e-3)
+            OAS_prob.add_objective('wing.structural_weight', scaler=1e-3)
 
             OAS_prob.setup()
 
             OAS_prob.run()
             prob = OAS_prob.prob
 
-            self.assertAlmostEqual(prob['wing.weight'], 542.94945887080837, places=2)
+            self.assertAlmostEqual(prob['wing.structural_weight'], 542.94945887080837, places=2)
 
     if fortran_flag:
         def test_struct_optimization_symmetry(self):
@@ -334,13 +334,13 @@ class TestStruct(unittest.TestCase):
             OAS_prob.add_desvar('wing.thickness_cp', lower=0.001, upper=0.25, scaler=1e2)
             OAS_prob.add_constraint('wing.failure', upper=0.)
             OAS_prob.add_constraint('wing.thickness_intersects', upper=0.)
-            OAS_prob.add_objective('wing.weight', scaler=1e-3)
+            OAS_prob.add_objective('wing.structural_weight', scaler=1e-3)
 
             OAS_prob.setup()
 
             OAS_prob.run()
             prob = OAS_prob.prob
-            self.assertAlmostEqual(prob['wing.weight'], 539.67300476678736, places=2)
+            self.assertAlmostEqual(prob['wing.structural_weight'], 539.67300476678736, places=2)
 
     if fortran_flag:
         def test_struct_optimization_symmetry_exact(self):
@@ -353,13 +353,13 @@ class TestStruct(unittest.TestCase):
             OAS_prob.add_desvar('wing.thickness_cp', lower=0.001, upper=0.25, scaler=1e2)
             OAS_prob.add_constraint('wing.failure', upper=0.)
             OAS_prob.add_constraint('wing.thickness_intersects', upper=0.)
-            OAS_prob.add_objective('wing.weight', scaler=1e-3)
+            OAS_prob.add_objective('wing.structural_weight', scaler=1e-3)
 
             OAS_prob.setup()
 
             OAS_prob.run()
             prob = OAS_prob.prob
-            self.assertAlmostEqual(prob['wing.weight'], 536.44271005219036, places=2)
+            self.assertAlmostEqual(prob['wing.structural_weight'], 536.44271005219036, places=2)
 
 
 class TestAeroStruct(unittest.TestCase):

@@ -92,8 +92,10 @@ Using OpenAeroStruct's geometry modifiers to create an initial geometry
 
 Instead of using a user-defined mesh, you could start with the default rectangular mesh and transform it into a certain shape using OpenAeroStruct's geometry tools.
 In the code below, we start with a rectangular wing and apply a chord and x shear distribution to create a wing shape close to the CRM.
-Note that we can use any number of control points for each design variable
-to achieve our desired shape.
+
+.. note::
+  We can use any number of control points for each design variable to achieve our desired shape.
+  The number of control points does not need to match the number of nodal points.
 
 .. code-block:: python
 
