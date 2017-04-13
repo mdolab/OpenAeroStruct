@@ -113,29 +113,13 @@ def setup(prob_dict={}, surfaces=[{}]):
 
     # Instantiate problem
     OAS_prob = OASProblem(prob_dict)
-    '''
-    Output after calling OAS_prob.prob_dict:
-    In [12]: OAS_prob.prob_dict
-    Out[12]:
-    {'CT': 0.00016671305,
-     'M': 0.84,
-     'R': 14300000.0,
-     'Re': 1000000.0,
-     'a': 295.4,
-     'alpha': 5.0,
-     'force_fd': False,
-     'optimize': False,
-     'optimizer': 'SNOPT',
-     'print_level': 0,
-     'reynolds_length': 1.0,
-     'rho': 0.38,
-     'type': 'aerostruct',
-     'v': 248.13599999999997,
-     'with_viscous': False}
-    '''
 
     for surface in surfaces:
-        OAS_prob.add_surface(surface)    # Add the specified wing surface to the problem.
+        # Add SpatialBeamFEM size
+        FEMsize = 6 * surface['num_y'] + 6
+        surface.update({'FEMsize': FEMsize})
+        # Add the specified wing surface to the problem.
+        OAS_prob.add_surface(surface)
 
     # Add materials properties for the wing surface to the surface dict in OAS_prob
     for idx, surface in enumerate(OAS_prob.surfaces):
@@ -155,89 +139,7 @@ def setup(prob_dict={}, surfaces=[{}]):
         tot_panels += (nx - 1) * (ny - 1)
     OAS_prob.prob_dict.update({'tot_panels': tot_panels})
 
-    '''
-    Extract parameters and variables from OAS_prob to pass through to
-    other discipline functions. For now, assume we are only using one lifting
-    surface.
-
-    Output after calling OAS_prob.add_surface(surf_dict):
-    In [8]: OAS_prob.surfaces
-    Out[8]:
-    [{'CD0': 0.015,
-    'CL0': 0.2,
-    'E': 70000000000.0,
-    'G': 30000000000.0,
-    'S_ref_type': 'wetted',
-    'W0': 120000.0,
-    'active_bsp_vars': ['thickness_cp',
-     'twist_cp',
-     'xshear_cp',
-     'chord_cp',
-     'zshear_cp'],
-    'active_geo_vars': ['sweep',
-     'dihedral',
-     'twist_cp',
-     'xshear_cp',
-     'zshear_cp',
-     'span',
-     'chord_cp',
-     'taper',
-     'thickness_cp'],
-    'c_max_t': 0.303,
-    'chord_cos_spacing': 0.0,
-    'chord_cp': array([ 1.+0.j,  1.+0.j,  1.+0.j,  1.+0.j,  1.+0.j]),
-    'crm_twist': array([-3.75  , -3.1248, -2.5773, -2.2772, -2.0301, -1.8158, -1.635 ,
-         -1.4526, -1.2067, -0.9436, -0.6782, -0.2621,  0.4285,  0.9379,
-          1.5252,  2.2419,  2.2419,  3.6063,  4.4402,  6.7166]),
-    'dihedral': 0.0,
-    'exact_failure_constraint': False,
-    'fem_origin': 0.35,
-    'k_lam': 0.05,
-    'loads': array([[    0.+0.j,     0.+0.j,  1000.+0.j,     0.+0.j,     0.+0.j,
-              0.+0.j],
-         [    0.+0.j,     0.+0.j,     0.+0.j,     0.+0.j,     0.+0.j,
-              0.+0.j],
-         [    0.+0.j,     0.+0.j,     0.+0.j,     0.+0.j,     0.+0.j,
-              0.+0.j],
-         [    0.+0.j,     0.+0.j,     0.+0.j,     0.+0.j,     0.+0.j,
-              0.+0.j]]),
-    'mesh': array([[[  4.52307198e+01+0.j,  -2.93815262e+01+0.j,   6.70120580e+00+0.j],
-          [  4.22333963e+01+0.j,  -2.54451497e+01+0.j,   6.02337146e+00+0.j],
-          [  3.40443566e+01+0.j,  -1.46907758e+01+0.j,   4.78508060e+00+0.j],
-          [  2.29690676e+01+0.j,  -1.79909493e-15+0.j,   4.42280040e+00+0.j]],
-
-         [[  4.79586798e+01+0.j,  -2.93815262e+01+0.j,   6.70120580e+00+0.j],
-          [  4.59248861e+01+0.j,  -2.54451497e+01+0.j,   6.02337146e+00+0.j],
-          [  4.03682708e+01+0.j,  -1.46907758e+01+0.j,   4.78508060e+00+0.j],
-          [  3.65880650e+01+0.j,  -1.79909493e-15+0.j,   4.42280040e+00+0.j]]]),
-    'monotonic_con': None,
-    'mrho': 3000.0,
-    'name': 'wing_',
-    'num_chord_cp': 5,
-    'num_thickness_cp': 5,
-    'num_twist_cp': 5,
-    'num_x': 2L,
-    'num_xshear_cp': 5,
-    'num_y': 4,
-    'num_zshear_cp': 5,
-    'offset': array([ 0.,  0.,  0.]),
-    'r': array([ 0.48145874+0.j,  0.75115530+0.j,  1.49571837+0.j]),
-    'root_chord': 1.0,
-    'span': 58.763052399999985,
-    'span_cos_spacing': 1,
-    'stress': 20000000.0,
-    'sweep': 0.0,
-    'symmetry': True,
-    't': array([ 0.04814587+0.j,  0.07511553+0.j,  0.14957184+0.j]),
-    't_over_c': 0.12,
-    'taper': 1.0,
-    'thickness_cp': array([ 0.14957184+0.j,  0.14957184+0.j,  0.14957184+0.j,  0.14957184+0.j,
-          0.14957184+0.j]),
-    'twist_cp': array([-3.75  , -2.0301, -0.9436,  1.5252,  6.7166]),
-    'wing_type': 'CRM',
-    'xshear_cp': array([ 0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j]),
-    'zshear_cp': array([ 0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j,  0.+0.j])}]
-    '''
+    # Assume we are only using a single lifting surface for now
     surface = OAS_prob.surfaces[0]
 
     # Initialize the OpenAeroStruct components and save them in a component dictionary
@@ -252,7 +154,7 @@ def setup(prob_dict={}, surfaces=[{}]):
     comp_dict['TransferLoads'] = TransferLoads(surface)
     comp_dict['ComputeNodes'] = ComputeNodes(surface)
     comp_dict['AssembleK'] = AssembleK(surface)
-    comp_dict['SpatialBeamFEM'] = SpatialBeamFEM(OAS_prob.prob_dict['tot_panels'])
+    comp_dict['SpatialBeamFEM'] = SpatialBeamFEM(surface['FEMsize'])
     comp_dict['SpatialBeamDisp'] = SpatialBeamDisp(surface)
     OAS_prob.comp_dict = comp_dict
 
@@ -344,13 +246,14 @@ def structures2(loads, surface, prob_dict):
     Iz = surface.get('Iz')
     J = surface.get('J')
     mesh = surface.get('mesh')
+    FEMsize =  surface.get('FEMsize')
     v = prob_dict.get('v')
     alpha = prob_dict.get('alpha')
-    size =  prob_dict.get('tot_panels')
+     # Add the specified wing surface to the problem.
 
     nodes = compute_nodes(mesh, surface)
     K, forces = assemble_k(A, Iy, Iz, J, nodes, loads, surface)
-    disp_aug = spatial_beam_fem(K, forces, size)
+    disp_aug = spatial_beam_fem(K, forces, FEMsize)
     disp = spatial_beam_disp(disp_aug, surface)
     def_mesh = transfer_displacements(mesh, disp, surface)
 
@@ -789,6 +692,10 @@ def spatial_beam_fem(K, forces, size=None, comp=None):
         Right-hand-side of the linear system. The loads from the aerodynamic
         analysis or the user-defined loads.
 
+    Optional Parameters
+    -------------------
+    size : int
+        The total number of panels on the surface mesh. Equivalent to pro
     Returns
     -------
     disp_aug[6*(ny+1)] : numpy array
