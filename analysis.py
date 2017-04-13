@@ -9,6 +9,7 @@ from __future__ import print_function, division
 # __all__ = ['setup','aerodynamics','structures']
 
 import numpy as np
+import math
 
 from materials import MaterialsTube
 from spatialbeam import ComputeNodes, AssembleK, SpatialBeamFEM, SpatialBeamDisp#, SpatialBeamEnergy, SpatialBeamWeight, SpatialBeamVonMisesTube, SpatialBeamFailureKS
@@ -19,8 +20,8 @@ from run_classes import OASProblem
 # from functionals import FunctionalBreguetRange, FunctionalEquilibrium
 
 # to disable OpenMDAO warnings which will create an error in Matlab
-import warnings
-warnings.filterwarnings("ignore")
+# import warnings
+# warnings.filterwarnings("ignore")
 
 try:
     import OAS_API
@@ -135,7 +136,7 @@ def setup(prob_dict={}, surfaces=[{}]):
 
     for surface in surfaces:
         OAS_prob.add_surface(surface)    # Add the specified wing surface to the problem.
-    
+
     # Add materials properties for the wing surface to the surface dict in OAS_prob
     for idx, surface in enumerate(OAS_prob.surfaces):
         A, Iy, Iz, J = materials_tube(surface['r'], surface['t'], surface)
@@ -247,7 +248,7 @@ def setup(prob_dict={}, surfaces=[{}]):
     comp_dict['VLMGeometry'] = VLMGeometry(surface)
     comp_dict['AssembleAIC'] = AssembleAIC([surface])
     comp_dict['AeroCirculations'] = AeroCirculations(OAS_prob.prob_dict['tot_panels'])
-    comp_dict['VLMForces'] = VLMForces([surface]) 
+    comp_dict['VLMForces'] = VLMForces([surface])
     comp_dict['TransferLoads'] = TransferLoads(surface)
     comp_dict['ComputeNodes'] = ComputeNodes(surface)
     comp_dict['AssembleK'] = AssembleK(surface)
@@ -332,8 +333,8 @@ def structures(loads, surface, prob_dict, comp_dict=None):
     def_mesh = transfer_displacements(mesh, disp, comp=comp_dict['TransferDisplacements'])
 
     return def_mesh  # Output the def_mesh matrix
-    
-    
+
+
 def structures2(loads, surface, prob_dict):
     ''' Don't use pre-initialized components '''
 
@@ -994,16 +995,16 @@ def materials_tube(r, thickness, surface=None, comp=None):
                                     FUNCTIONALS
 
     --------------------------------------------------------------------------------
-    From functionals.py: 
-        
+    From functionals.py:
+
         to be added here...
-        
+
         """
 
 
 if __name__ == "__main__":
-    ''' Test the coupled system with default parameters 
-    
+    ''' Test the coupled system with default parameters
+
      To change problem parameters, input the prob_dict dictionary, e.g.
      prob_dict = {
         'rho' : 0.35,
@@ -1011,31 +1012,69 @@ if __name__ == "__main__":
      }
     '''
     print('Fortran Flag = {0}'.format(fortran_flag))
-    
-    print('Run analysis.setup()...')
+    # Define parameters
+    prob_dict = {} # use default
+
+    # Define surface
     surface = {
         'wing_type' : 'CRM',
         'num_x': 2,   # number of chordwise points
-        'num_y': 7    # number of spanwise points
+        'num_y': 9    # number of spanwise points
     }
-    OAS_prob = setup(prob_dict={}, surfaces=[surface])
+
+    # Define fixed point iteration options
+    # default options from OpenMDAO nonlinear solver NLGaussSeidel
+    fpi_opt = {
+        # 'atol': float(1e-06),   # Absolute convergence tolerance (unused)
+        # 'err_on_maxiter': bool(False),  # raise AnalysisError if not converged at maxiter (unused)
+        # 'print': int(0),        # Print option (unused)
+        'maxiter': int(100),    # Maximum number of iterations
+        # 'rtol': float(1e-06),   # Relative convergence tolerance (unused)
+        'utol': float(1e-12)    # Convergence tolerance on the change in the unknowns
+    }
+
+    print('Run analysis.setup()')
+    OAS_prob = setup(prob_dict=prob_dict, surfaces=[surface])
     # print('OAS_prob.surfaces = ')
     # print(OAS_prob.surfaces)
     # print('OAS_prob.prob_dict = ')
     # print(OAS_prob.prob_dict)
     # print('OAS_prob.comp_dict = ')
     # print(OAS_prob.comp_dict)
-    
-    def_mesh = gen_init_mesh(OAS_prob.surfaces[0], OAS_prob.comp_dict)
-    print('def_mesh = ')
-    print(def_mesh)
 
-    print('\nRun analysis.aerodynamics()...')
-    loads = aerodynamics(def_mesh, OAS_prob.surfaces[0], OAS_prob.prob_dict, OAS_prob.comp_dict)
-    print('loads = ')
-    print(loads)
-    #
-    print('\nRun analysis.structures()...')
-    def_mesh = structures(loads, OAS_prob.surfaces[0], OAS_prob.prob_dict, OAS_prob.comp_dict)
-    print('def_mesh = ')
-    print(def_mesh)
+    print('Run coupled system analysis with fixed point iteration')
+
+    # Make local functions for coupled system analysis
+    def f_aero(def_mesh):
+        loads = aerodynamics(def_mesh, OAS_prob.surfaces[0], OAS_prob.prob_dict, OAS_prob.comp_dict)
+        return loads
+    def f_struct(loads):
+        def_mesh = structures(loads, OAS_prob.surfaces[0], OAS_prob.prob_dict, OAS_prob.comp_dict)
+        return def_mesh
+
+    # Define FPI parameters
+    utol = fpi_opt['utol']
+    maxiter = fpi_opt['maxiter']
+    # Generate initial mesh with zero deformation
+    def_mesh = gen_init_mesh(OAS_prob.surfaces[0], OAS_prob.comp_dict)
+    x0 = def_mesh
+    u_norm = 1.0e99
+    iter_count = 0
+    # Run fixed point iteration on coupled aerodynamics-structures system
+    while (iter_count < maxiter) and (u_norm > utol):
+          # Update iteration counter
+          iter_count += 1
+          # Run iteration and evaluate norm of residual
+          loads = f_aero(x0)
+          def_mesh = x = f_struct(loads)
+          u_norm = np.linalg.norm(x - x0)
+          x0 = x
+
+    if iter_count >= maxiter or math.isnan(u_norm):
+        msg = 'FAILED to converge after {0:d} iterations'.format(iter_count)
+    else:
+        msg = 'Converged in {0:d} iterations'.format(iter_count)
+
+    print(msg)
+    print('def_mesh=\n',def_mesh)
+    print('loads=\n',loads)
