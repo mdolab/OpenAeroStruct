@@ -112,7 +112,6 @@ class TestAero(unittest.TestCase):
             OAS_prob.add_desvar('wing.twist_cp', lower=-10., upper=15.)
             OAS_prob.add_desvar('wing.sweep', lower=10., upper=30.)
             OAS_prob.add_desvar('wing.dihedral', lower=-10., upper=20.)
-            OAS_prob.add_desvar('wing.taper', lower=.5, upper=2.)
             OAS_prob.add_constraint('wing_perf.CL', equals=0.5)
             OAS_prob.add_objective('wing_perf.CD', scaler=1e4)
 
@@ -120,7 +119,7 @@ class TestAero(unittest.TestCase):
 
             OAS_prob.run()
             prob = OAS_prob.prob
-            self.assertAlmostEqual(prob['wing_perf.CD'], 0.0038513637269917342, places=5)
+            self.assertAlmostEqual(prob['wing_perf.CD'], 0.0049392534859265614, places=5)
 
     if fortran_flag:
         def test_aero_optimization_fd(self):
@@ -211,7 +210,6 @@ class TestAero(unittest.TestCase):
             OAS_prob.add_desvar('wing.twist_cp', lower=-10., upper=15.)
             OAS_prob.add_desvar('wing.sweep', lower=10., upper=30.)
             OAS_prob.add_desvar('wing.dihedral', lower=-10., upper=20.)
-            OAS_prob.add_desvar('wing.taper', lower=.5, upper=2.)
             OAS_prob.add_constraint('wing_perf.CL', equals=0.5)
             OAS_prob.add_objective('wing_perf.CD', scaler=1e4)
 
@@ -219,7 +217,7 @@ class TestAero(unittest.TestCase):
 
             OAS_prob.run()
             prob = OAS_prob.prob
-            self.assertAlmostEqual(prob['wing_perf.CD'], 0.018663759453335121, places=5)
+            self.assertAlmostEqual(prob['wing_perf.CD'], 0.019234984422361764, places=5)
 
     if fortran_flag:
         def test_aero_viscous_chord_optimization(self):
