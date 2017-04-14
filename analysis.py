@@ -3,6 +3,58 @@
 # author: Sam Friedman  (samfriedman@tamu.edu)
 # date:   4/12/2017
 
+"""
+analysis.py
+
+This module contains wrapper functions for each part of the multidisciplinary analysis of the OpenAeroStruct model. 
+Specifically, this is the solve_nonlinear() method to each OpenMDAO component in OpenAeroStruct. To use them, first 
+call the setup() function, which returns an OASProblem object. This object contains the following attributes:
+
+    OASProblem.prob_dict :   Dictionary of problem parameters
+    OASProblem.surfaces  :   List of surface dictionaries defining properties of each lifting surface
+    OASProblem.comp_dict :   Dictionary of OpenAeroStruct component objects which contain the analysis 
+                               of each with a dictionary of problem parameters
+
+For each wrapper function, optionally pass in the necessary component object from the comp_dict dictionary as a keyword argument.
+Using pre-initialized components drastically reduces the computation time for a full multidisciplinary analysis. Without
+pre-initialization of the component, another argument must be given to initialize the component in the function. This extra argument
+is usually the surface dictionary, but can be other problem or surface parameters. An example with pre-initiazation is shown in
+aerodynamics() and structures(). An example without pre-initialization is shown in aerodynamics2() and structures2().
+
+An example of the multidisciplinary analysis of the coupled system is in the if __name__=="__main__" function. It uses fixed point
+iteration to converge the coupled system of loads and displacements.
+
+Current list of function wrappers available:
+    vlm_geometry
+    assemble_aic
+    aero_circulations
+    vlm_forces
+    compute_nodes
+    assemble_k
+    spatial_beam_fem
+    spatial_beam_disp
+    materials_tube
+    geometry_mesh
+    transfer_displacements
+    transfer_loads
+
+For now, these functions only support a single lifting surface. B-spline customization of lifting surfaces is also not supported.
+
+Future work required:
+    - Extend functions to be used with multiple lifting surfaces
+    - Write wrappers for remaining components in functionals.py, VLMFunctionals, SpatialBeamFunctionals
+    - Fix BSpline surface customization
+    - Complete example of full multidisciplinary analysis in if __name__=="__main__" function
+
+"""
+
+
+
+
+
+
+
+
 # make compatible Python 2.x to 3.x
 from __future__ import print_function, division
 # from future.builtins import range  # make compatible Python 2.x to 3.x
@@ -15,7 +67,7 @@ from materials import MaterialsTube
 from spatialbeam import ComputeNodes, AssembleK, SpatialBeamFEM, SpatialBeamDisp#, SpatialBeamEnergy, SpatialBeamWeight, SpatialBeamVonMisesTube, SpatialBeamFailureKS
 from transfer import TransferDisplacements, TransferLoads
 from vlm import VLMGeometry, AssembleAIC, AeroCirculations, VLMForces#, VLMLiftDrag, VLMCoeffs, TotalLift, TotalDrag
-from geometry import GeometryMesh, Bspline#, gen_crm_mesh, gen_rect_mesh, MonotonicConstraint
+from geometry import GeometryMesh#, Bspline#, gen_crm_mesh, gen_rect_mesh, MonotonicConstraint
 from run_classes import OASProblem
 # from functionals import FunctionalBreguetRange, FunctionalEquilibrium
 
