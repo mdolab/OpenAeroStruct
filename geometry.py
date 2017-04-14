@@ -163,7 +163,6 @@ def sweep(mesh, sweep_angle, symmetry):
 
     """
 
-
     num_x, num_y, _ = mesh.shape
     le = mesh[0]
     p180 = np.pi / 180
@@ -202,6 +201,7 @@ def dihedral(mesh, dihedral_angle, symmetry):
         Nodal mesh defining the aerodynamic surface with dihedral angle.
 
     """
+    
     num_x, num_y, _ = mesh.shape
     le = mesh[0]
     p180 = np.pi / 180

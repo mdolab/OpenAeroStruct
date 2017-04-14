@@ -484,20 +484,20 @@ class VLMGeometry(Component):
 
         self.surface = surface
 
-        self.ny = surface['num_y']
-        self.nx = surface['num_x']
+        ny = surface['num_y']
+        nx = surface['num_x']
 
         self.fem_origin = surface['fem_origin']
 
-        self.add_param('def_mesh', val=np.zeros((self.nx, self.ny, 3),
+        self.add_param('def_mesh', val=np.zeros((nx, ny, 3),
                        dtype=data_type))
-        self.add_output('b_pts', val=np.zeros((self.nx-1, self.ny, 3),
+        self.add_output('b_pts', val=np.zeros((nx-1, ny, 3),
                         dtype=data_type))
-        self.add_output('c_pts', val=np.zeros((self.nx-1, self.ny-1, 3)))
-        self.add_output('widths', val=np.zeros((self.ny-1)))
-        self.add_output('cos_sweep', val=np.zeros((self.ny-1)))
-        self.add_output('lengths', val=np.zeros((self.ny)))
-        self.add_output('normals', val=np.zeros((self.nx-1, self.ny-1, 3)))
+        self.add_output('c_pts', val=np.zeros((nx-1, ny-1, 3)))
+        self.add_output('widths', val=np.zeros((ny-1)))
+        self.add_output('cos_sweep', val=np.zeros((ny-1)))
+        self.add_output('lengths', val=np.zeros((ny)))
+        self.add_output('normals', val=np.zeros((nx-1, ny-1, 3)))
         self.add_output('S_ref', val=0.)
 
     def solve_nonlinear(self, params, unknowns, resids):
