@@ -63,7 +63,6 @@ if __name__ == "__main__":
                  'num_y' : 7,
                  'num_x' : 2,
                  'wing_type' : 'CRM',
-                 'CL0' : 0.2,
                  'CD0' : 0.015,
                  }
 

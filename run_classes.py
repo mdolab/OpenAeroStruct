@@ -197,10 +197,10 @@ class OASProblem(object):
                     'c_max_t' : .303,       # chordwise location of maximum (NACA0012)
                                             # thickness
 
-                    # Structural values are based on aluminum
+                    # Structural values are based on aluminum 7075
                     'E' : 70.e9,            # [Pa] Young's modulus of the spar
                     'G' : 30.e9,            # [Pa] shear modulus of the spar
-                    'stress' : 20.e6,       # [Pa] yield stress
+                    'stress' : 500.e6 / 2.5,# [Pa] yield stress divided by 2.5 for limiting case
                     'mrho' : 3.e3,          # [kg/m^3] material density
                     'fem_origin' : 0.35,    # normalized chordwise location of the spar
                     'W0' : 0.4 * 3e5,       # [kg] weight of the airplane without
@@ -208,6 +208,7 @@ class OASProblem(object):
                                             # The default is 40% of the MTOW of
                                             # B777-300 is 3e5 kg.
                     'loads' : None,         # [N] allow the user to input loads
+                    'disp' : None,          # [m] nodal displacements of the FEM model
 
                     # Constraints
                     'exact_failure_constraint' : False, # if false, use KS function
@@ -422,10 +423,14 @@ class OASProblem(object):
         if surf_dict['loads'] is None:
             # Set default loads at the tips
             loads = np.zeros((surf_dict['thickness'].shape[0] + 1, 6), dtype=data_type)
-            loads[0, 2] = 1e3
+            loads[0, 2] = 1e4
             if not surf_dict['symmetry']:
-                loads[-1, 2] = 1e3
+                loads[-1, 2] = 1e4
             surf_dict['loads'] = loads
+
+        if surf_dict['disp'] is None:
+            # Set default disp if not provided
+            surf_dict['disp'] = np.zeros((surf_dict['num_y'], 6), dtype=data_type)
 
         # Throw a warning if the user provides two surfaces with the same name
         name = surf_dict['name']
@@ -700,7 +705,7 @@ class OASProblem(object):
                     desvar_names.append(''.join(desvar.split('.')[1:]))
 
             # Add independent variables that do not belong to a specific component
-            indep_vars = [('disp', np.zeros((surface['num_y'], 6), dtype=data_type))]
+            indep_vars = [('disp', surface['disp'])]
             for var in surface['geo_vars']:
                 if var in desvar_names or var in surface['initial_geo']:
                     indep_vars.append((var, surface[var]))

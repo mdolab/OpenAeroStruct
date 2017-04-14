@@ -409,12 +409,12 @@ class Display(object):
             self.ax5.locator_params(axis='y',nbins=4)
             self.ax5.locator_params(axis='x',nbins=3)
             self.ax5.set_ylim([self.min_vm, self.max_vm])
-            self.ax5.set_ylim([0, 25e6])
+            self.ax5.set_ylim([0, 220e6])
             self.ax5.set_xlim([-1, 1])
             self.ax5.set_ylabel('von mises', rotation="horizontal", ha="right")
-            # 20.e6 Pa stress limit hardcoded for aluminum
-            self.ax5.axhline(20.e6, c='r', lw=2, ls='--')
-            self.ax5.text(0.05, 0.85, 'failure limit',
+            # 500.e6 / 2.5 Pa stress limit hardcoded for aluminum
+            self.ax5.axhline(500.e6 / 2.5, c='r', lw=2, ls='--')
+            self.ax5.text(0.075, 1.1, 'failure limit',
                 transform=self.ax5.transAxes, color='r')
 
         n_names = len(self.names)

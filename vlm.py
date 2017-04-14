@@ -1488,9 +1488,6 @@ class VLMCoeffs(Component):
         L = params['L']
         D = params['D']
 
-        # if self.surface['symmetry']:
-        #     S_ref *= 2
-
         jac = self.alloc_jacobian()
 
         jac['CL1', 'L'] = 1. / (0.5 * rho * v**2 * S_ref)
@@ -1502,10 +1499,6 @@ class VLMCoeffs(Component):
         jac['CL1', 'rho'] = -L / (0.5 * rho**2 * v**2 * S_ref)
         jac['CDi', 'rho'] = -D / (0.5 * rho**2 * v**2 * S_ref)
 
-        # if self.surface['symmetry']:
-        #     jac['CL1', 'S_ref'] = -L / (.25 * rho * v**2 * S_ref**2)
-        #     jac['CDi', 'S_ref'] = -D / (.25 * rho * v**2 * S_ref**2)
-        # else:
         jac['CL1', 'S_ref'] = -L / (0.5 * rho * v**2 * S_ref**2)
         jac['CDi', 'S_ref'] = -D / (0.5 * rho * v**2 * S_ref**2)
 

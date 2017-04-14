@@ -377,17 +377,15 @@ class TestAeroStruct(unittest.TestCase):
         surf_dict = {'num_y' : 13,
                   'num_x' : 2,
                   'wing_type' : 'CRM',
-                  'CL0' : 0.2,
                   'CD0' : 0.015,
-                  'symmetry' : False,
-                  't_over_c': 0.15}
+                  'symmetry' : False}
         OAS_prob.add_surface(surf_dict)
         OAS_prob.setup()
         OAS_prob.run()
         prob = OAS_prob.prob
-        self.assertAlmostEqual(prob['wing_perf.CL'], 0.73119687574101855)
-        self.assertAlmostEqual(prob['wing_perf.failure'], -0.505636294295703, places=5)
-        self.assertAlmostEqual(prob['fuelburn'], 90009.645953264175, places=2)
+        self.assertAlmostEqual(prob['wing_perf.CL'], 0.53470610411546438)
+        self.assertAlmostEqual(prob['wing_perf.failure'], -0.88555523062055341, places=5)
+        self.assertAlmostEqual(prob['fuelburn'], 99367.43763782426, places=2)
 
     def test_aerostruct_analysis_symmetry(self):
         OAS_prob = OASProblem({'type' : 'aerostruct',
@@ -397,16 +395,14 @@ class TestAeroStruct(unittest.TestCase):
                   'num_y' : 13,
                   'num_x' : 2,
                   'wing_type' : 'CRM',
-                  'CL0' : 0.2,
-                  'CD0' : 0.015,
-                  't_over_c': 0.15}
+                  'CD0' : 0.015}
         OAS_prob.add_surface(surf_dict)
         OAS_prob.setup()
         OAS_prob.run()
         prob = OAS_prob.prob
-        self.assertAlmostEqual(prob['wing_perf.CL'], 0.76765117593403898)
-        self.assertAlmostEqual(prob['wing_perf.failure'], -0.53698058362973922, places=5)
-        self.assertAlmostEqual(prob['fuelburn'], 96959.792213998997, places=2)
+        self.assertAlmostEqual(prob['wing_perf.CL'], 0.57096081806728627)
+        self.assertAlmostEqual(prob['wing_perf.failure'], -0.8969902215221538, places=5)
+        self.assertAlmostEqual(prob['fuelburn'], 105120.8601409321, places=2)
 
     def test_aerostruct_analysis_symmetry_deriv(self):
         OAS_prob = OASProblem({'type' : 'aerostruct',
@@ -416,9 +412,7 @@ class TestAeroStruct(unittest.TestCase):
                   'num_y' : 7,
                   'num_x' : 2,
                   'wing_type' : 'CRM',
-                  'CL0' : 0.2,
-                  'CD0' : 0.015,
-                  't_over_c': 0.15}
+                  'CD0' : 0.015}
         OAS_prob.add_surface(surf_dict)
         OAS_prob.setup()
         OAS_prob.run()
@@ -454,14 +448,15 @@ class TestAeroStruct(unittest.TestCase):
         def test_aerostruct_optimization(self):
             OAS_prob = OASProblem({'type' : 'aerostruct',
                                    'optimize' : True,
+                                   'with_viscous' : True,
                                    'record_db' : False})
             surf_dict = {'num_y' : 7,
                       'num_x' : 2,
                       'wing_type' : 'CRM',
-                      'CL0' : 0.2,
                       'CD0' : 0.015,
                       'symmetry' : False,
-                      't_over_c': 0.15}
+                      'num_twist_cp' : 2,
+                      'num_thickness_cp' : 2}
             OAS_prob.add_surface(surf_dict)
 
             OAS_prob.add_desvar('wing.twist_cp', lower=-15., upper=15.)
@@ -476,21 +471,22 @@ class TestAeroStruct(unittest.TestCase):
 
             OAS_prob.run()
             prob = OAS_prob.prob
-            self.assertAlmostEqual(prob['fuelburn'], 56550.336474655443, places=0)
+            self.assertAlmostEqual(prob['fuelburn'], 90621.476887491794, places=0)
             self.assertAlmostEqual(prob['wing_perf.failure'], 0., places=4)
 
     if fortran_flag:
         def test_aerostruct_optimization_symmetry(self):
             OAS_prob = OASProblem({'type' : 'aerostruct',
                                    'optimize' : True,
+                                   'with_viscous' : True,
                                    'record_db' : False})
             surf_dict = {'symmetry' : True,
                       'num_y' : 7,
                       'num_x' : 3,
                       'wing_type' : 'CRM',
-                      'CL0' : 0.2,
                       'CD0' : 0.015,
-                      't_over_c': 0.15}
+                      'num_twist_cp' : 2,
+                      'num_thickness_cp' : 2}
             OAS_prob.add_surface(surf_dict)
 
             OAS_prob.add_desvar('wing.twist_cp', lower=-15., upper=15.)
@@ -505,28 +501,26 @@ class TestAeroStruct(unittest.TestCase):
 
             OAS_prob.run()
             prob = OAS_prob.prob
-            self.assertAlmostEqual(prob['fuelburn'], 59016.072889552641, places=0)
+            self.assertAlmostEqual(prob['fuelburn'], 91972.867902621932, places=0)
             self.assertAlmostEqual(prob['wing_perf.failure'], 0, places=5)
 
     if fortran_flag:
         def test_aerostruct_optimization_symmetry_multiple(self):
             OAS_prob = OASProblem({'type' : 'aerostruct',
                                    'optimize' : True,
+                                   'with_viscous' : True,
                                    'record_db' : False})
             surf_dict = {'name' : 'wing',
                          'symmetry' : True,
                          'num_y' : 5,
                          'num_x' : 2,
                          'wing_type' : 'CRM',
-                         'CL0' : 0.2,
                          'CD0' : 0.015,
                          'num_twist_cp' : 2,
-                         'num_thickness_cp' : 2,
-                         't_over_c': 0.15}
+                         'num_thickness_cp' : 2}
             OAS_prob.add_surface(surf_dict)
             surf_dict.update({'name' : 'tail',
-                              'offset':np.array([0., 0., 1.e7]),
-                              't_over_c': 0.15})
+                              'offset':np.array([0., 0., 10.])})
             OAS_prob.add_surface(surf_dict)
 
             # Add design variables and constraints for both the wing and tail
@@ -547,9 +541,8 @@ class TestAeroStruct(unittest.TestCase):
 
             OAS_prob.run()
             prob = OAS_prob.prob
-            self.assertAlmostEqual(prob['fuelburn'], 137066.78014882002, places=1)
+            self.assertAlmostEqual(prob['fuelburn'], 213046.09109747928, places=1)
             self.assertAlmostEqual(prob['wing_perf.failure'], 0, places=5)
-            self.assertAlmostEqual(np.linalg.norm(prob['wing.twist_cp']), np.linalg.norm(prob['tail.twist_cp']), places=1)
 
 
 if __name__ == "__main__":
