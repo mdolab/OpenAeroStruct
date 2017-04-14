@@ -8,7 +8,7 @@ class MaterialsTube(Component):
 
     Parameters
     ----------
-    r : numpy array
+    radius : numpy array
         Radii for each FEM element.
     thickness : numpy array
         Tube thickness for each FEM element.
@@ -36,8 +36,8 @@ class MaterialsTube(Component):
         self.mesh = surface['mesh']
         name = surface['name']
 
-        self.add_param('r', val=surface['r'])
-        self.add_param('thickness', val=surface['t'])
+        self.add_param('radius', val=np.zeros((self.ny - 1)))
+        self.add_param('thickness', val=np.zeros((self.ny - 1)))
         self.add_output('A', val=np.zeros((self.ny - 1)))
         self.add_output('Iy', val=np.zeros((self.ny - 1)))
         self.add_output('Iz', val=np.zeros((self.ny - 1)))
@@ -48,8 +48,8 @@ class MaterialsTube(Component):
     def solve_nonlinear(self, params, unknowns, resids):
         name = self.surface['name']
         pi = np.pi
-        r1 = params['r'] - 0.5 * params['thickness']
-        r2 = params['r'] + 0.5 * params['thickness']
+        r1 = params['radius'] - params['thickness']
+        r2 = params['radius']
 
         unknowns['A'] = pi * (r2**2 - r1**2)
         unknowns['Iy'] = pi * (r2**4 - r1**4) / 4.
@@ -61,27 +61,27 @@ class MaterialsTube(Component):
         jac = self.alloc_jacobian()
 
         pi = np.pi
-        r = params['r'].real
+        radius = params['radius'].real
         t = params['thickness'].real
-        r1 = r - 0.5 * t
-        r2 = r + 0.5 * t
+        r1 = radius - t
+        r2 = radius
 
         dr1_dr = 1.
         dr2_dr = 1.
-        dr1_dt = -0.5
-        dr2_dt =  0.5
+        dr1_dt = -1.
+        dr2_dt =  0.
 
         r1_3 = r1**3
         r2_3 = r2**3
 
         a = self.arange
-        jac['A', 'r'][a, a] = 2 * pi * (r2 * dr2_dr - r1 * dr1_dr)
+        jac['A', 'radius'][a, a] = 2 * pi * (r2 * dr2_dr - r1 * dr1_dr)
         jac['A', 'thickness'][a, a] = 2 * pi * (r2 * dr2_dt - r1 * dr1_dt)
-        jac['Iy', 'r'][a, a] = pi * (r2_3 * dr2_dr - r1_3 * dr1_dr)
+        jac['Iy', 'radius'][a, a] = pi * (r2_3 * dr2_dr - r1_3 * dr1_dr)
         jac['Iy', 'thickness'][a, a] = pi * (r2_3 * dr2_dt - r1_3 * dr1_dt)
-        jac['Iz', 'r'][a, a] = pi * (r2_3 * dr2_dr - r1_3 * dr1_dr)
+        jac['Iz', 'radius'][a, a] = pi * (r2_3 * dr2_dr - r1_3 * dr1_dr)
         jac['Iz', 'thickness'][a, a] = pi * (r2_3 * dr2_dt - r1_3 * dr1_dt)
-        jac['J', 'r'][a, a] = 2 * pi * (r2_3 * dr2_dr - r1_3 * dr1_dr)
+        jac['J', 'radius'][a, a] = 2 * pi * (r2_3 * dr2_dr - r1_3 * dr1_dr)
         jac['J', 'thickness'][a, a] = 2 * pi * (r2_3 * dr2_dt - r1_3 * dr1_dt)
 
         return jac

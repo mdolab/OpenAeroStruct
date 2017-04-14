@@ -65,21 +65,25 @@ if __name__ == "__main__":
                  'wing_type' : 'CRM',
                  'CL0' : 0.2,
                  'CD0' : 0.015,
-                #  'span_cos_spacing' : 1.,
-                #  'chord_cos_spacing' : .8
                  }
 
     # Add the specified wing surface to the problem
     OAS_prob.add_surface(surf_dict)
 
+    # Add design variables, constraint, and objective on the problem
+    OAS_prob.add_desvar('alpha', lower=-10., upper=10.)
+    OAS_prob.add_constraint('eq_con', equals=0.)
+    OAS_prob.add_objective('fuelburn', scaler=1e-4)
+
     # Single lifting surface
     if not sys.argv[1].endswith('m'):
 
         # Setup problem and add design variables, constraint, and objective
-        OAS_prob.setup()
         OAS_prob.add_desvar('wing.twist_cp', lower=-15., upper=15.)
         OAS_prob.add_desvar('wing.thickness_cp', lower=0.001, upper=0.25, scaler=1e2)
         OAS_prob.add_constraint('wing_perf.failure', upper=0.)
+        OAS_prob.add_constraint('wing_perf.thickness_intersects', upper=0.)
+        OAS_prob.setup()
 
     # Multiple lifting surfaces
     else:
@@ -89,21 +93,18 @@ if __name__ == "__main__":
                           'offset' : np.array([0., 0., 10.])})
         OAS_prob.add_surface(surf_dict)
 
-        # Setup problem and add design variables, constraints, and objective
-        OAS_prob.setup()
-
         # Add design variables and constraints for both the wing and tail
         OAS_prob.add_desvar('wing.twist_cp', lower=-15., upper=15.)
         OAS_prob.add_desvar('wing.thickness_cp', lower=0.001, upper=0.25, scaler=1e2)
         OAS_prob.add_constraint('wing_perf.failure', upper=0.)
+        OAS_prob.add_constraint('wing_perf.thickness_intersects', upper=0.)
         OAS_prob.add_desvar('tail.twist_cp', lower=-15., upper=15.)
         OAS_prob.add_desvar('tail.thickness_cp', lower=0.001, upper=0.25, scaler=1e2)
         OAS_prob.add_constraint('tail_perf.failure', upper=0.)
+        OAS_prob.add_constraint('tail_perf.thickness_intersects', upper=0.)
 
-    # Add design variables, constraint, and objective on the problem
-    OAS_prob.add_desvar('alpha', lower=-10., upper=10.)
-    OAS_prob.add_constraint('eq_con', equals=0.)
-    OAS_prob.add_objective('fuelburn', scaler=1e-4)
+        # Setup problem
+        OAS_prob.setup()
 
     st = time()
     # Actually run the problem

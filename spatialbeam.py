@@ -8,7 +8,6 @@ rotation about the x, y, and z-axes.
 
 from __future__ import division, print_function
 import numpy as np
-np.random.seed(123)
 
 from openmdao.api import Component, Group
 from scipy.linalg import lu_factor, lu_solve
@@ -536,7 +535,7 @@ class SpatialBeamWeight(Component):
     Returns
     -------
     weight : float
-        Total weight of the structural component.
+        Total weight of the structural spar.
     """
 
     def __init__(self, surface):
@@ -548,7 +547,7 @@ class SpatialBeamWeight(Component):
 
         self.add_param('A', val=np.zeros((self.ny - 1), dtype=data_type))
         self.add_param('nodes', val=np.zeros((self.ny, 3), dtype=data_type))
-        self.add_output('weight', val=0.)
+        self.add_output('structural_weight', val=0.)
 
     def solve_nonlinear(self, params, unknowns, resids):
         A = params['A']
@@ -562,7 +561,7 @@ class SpatialBeamWeight(Component):
         if self.surface['symmetry']:
             weight *= 2.
 
-        unknowns['weight'] = weight
+        unknowns['structural_weight'] = weight
 
     def linearize(self, params, unknowns, resids):
         jac = self.alloc_jacobian()
@@ -581,7 +580,7 @@ class SpatialBeamWeight(Component):
             dweight_dA *= 2.
 
         # Save the result to the jacobian dictionary
-        jac['weight', 'A'] = dweight_dA
+        jac['structural_weight', 'A'] = dweight_dA
 
         # Next, we will compute the derivative of weight wrt nodes.
         # Here we're using results from AD to compute the derivative
@@ -598,7 +597,7 @@ class SpatialBeamWeight(Component):
             nodesb *= 2.
 
         # Store the flattened array in the jacobian dictionary
-        jac['weight', 'nodes'] = nodesb.reshape(1, -1)
+        jac['structural_weight', 'nodes'] = nodesb.reshape(1, -1)
 
         return jac
 
@@ -607,7 +606,7 @@ class SpatialBeamVonMisesTube(Component):
 
     Parameters
     ----------
-    r[ny-1] : numpy array
+    radius[ny-1] : numpy array
         Radii for each FEM element.
     nodes[ny, 3] : numpy array
         Flattened array with coordinates for each FEM node.
@@ -628,7 +627,7 @@ class SpatialBeamVonMisesTube(Component):
 
         self.add_param('nodes', val=np.zeros((self.ny, 3),
                        dtype=data_type))
-        self.add_param('r', val=np.zeros((self.ny - 1),
+        self.add_param('radius', val=np.zeros((self.ny - 1),
                        dtype=data_type))
         self.add_param('disp', val=np.zeros((self.ny, 6),
                        dtype=data_type))
@@ -648,7 +647,7 @@ class SpatialBeamVonMisesTube(Component):
         self.t = 0
 
     def solve_nonlinear(self, params, unknowns, resids):
-        r = params['r']
+        radius = params['radius']
         disp = params['disp']
         nodes = params['nodes']
         vonmises = unknowns['vonmises']
@@ -658,7 +657,7 @@ class SpatialBeamVonMisesTube(Component):
         x_gl = self.x_gl
 
         if fortran_flag:
-            vm = OAS_API.oas_api.calc_vonmises(nodes, r, disp, E, G, x_gl)
+            vm = OAS_API.oas_api.calc_vonmises(nodes, radius, disp, E, G, x_gl)
             unknowns['vonmises'] = vm
 
         else:
@@ -684,16 +683,16 @@ class SpatialBeamVonMisesTube(Component):
                 r1x, r1y, r1z = T.dot(disp[ielem+1, 3:])
 
                 tmp = np.sqrt((r1y - r0y)**2 + (r1z - r0z)**2)
-                sxx0 = E * (u1x - u0x) / L + E * r[ielem] / L * tmp
-                sxx1 = E * (u0x - u1x) / L + E * r[ielem] / L * tmp
-                sxt = G * r[ielem] * (r1x - r0x) / L
+                sxx0 = E * (u1x - u0x) / L + E * radius[ielem] / L * tmp
+                sxx1 = E * (u0x - u1x) / L + E * radius[ielem] / L * tmp
+                sxt = G * radius[ielem] * (r1x - r0x) / L
 
                 vonmises[ielem, 0] = np.sqrt(sxx0**2 + sxt**2)
                 vonmises[ielem, 1] = np.sqrt(sxx1**2 + sxt**2)
 
     def apply_linear(self, params, unknowns, dparams, dunknowns, dresids, mode):
 
-        r = params['r'].real
+        radius = params['radius'].real
         disp = params['disp'].real
         nodes = params['nodes'].real
         vonmises = unknowns['vonmises'].real
@@ -702,14 +701,14 @@ class SpatialBeamVonMisesTube(Component):
         x_gl = self.x_gl
 
         if mode == 'fwd':
-            _, a = OAS_API.oas_api.calc_vonmises_d(nodes, dparams['nodes'], r, dparams['r'], disp, dparams['disp'], E, G, x_gl)
-            dresids['vonmises'] += a
+            _, vonmisesd = OAS_API.oas_api.calc_vonmises_d(nodes, dparams['nodes'], radius, dparams['radius'], disp, dparams['disp'], E, G, x_gl)
+            dresids['vonmises'] += vonmisesd
 
         if mode == 'rev':
-            a, b, c = OAS_API.oas_api.calc_vonmises_b(nodes, r, disp, E, G, x_gl, vonmises, dresids['vonmises'])
-            dparams['nodes'] += a
-            dparams['r'] += b
-            dparams['disp'] += c
+            nodesb, radiusb, dispb = OAS_API.oas_api.calc_vonmises_b(nodes, radius, disp, E, G, x_gl, vonmises, dresids['vonmises'])
+            dparams['nodes'] += nodesb
+            dparams['radius'] += radiusb
+            dparams['disp'] += dispb
 
 class SpatialBeamFailureKS(Component):
     """
@@ -826,6 +825,97 @@ class SpatialBeamFailureExact(Component):
     def linearize(self, params, unknowns, resids):
         return {('failure', 'vonmises') : np.eye(((self.ny-1)*2)) / self.sigma}
 
+class SparWithinWing(Component):
+    """
+
+    .. warning::
+        This component has not been extensively tested.
+        It may require additional coding to work as intended.
+
+    Parameters
+    ----------
+    mesh[nx, ny, 3] : numpy array
+        Array defining the nodal points of the lifting surface.
+    radius[ny-1] : numpy array
+        Radius of each element of the FEM spar.
+
+    Returns
+    -------
+    spar_within_wing[ny-1] : numpy array
+        If all the values are negative, each element is within the wing,
+        based on the surface's t_over_c value and the current chord.
+        Set a constraint with
+        `OASProblem.add_constraint('spar_within_wing', upper=0.)`
+    """
+
+    def __init__(self, surface):
+        super(SparWithinWing, self).__init__()
+
+        self.surface = surface
+        self.ny = surface['num_y']
+        self.nx = surface['num_x']
+
+        self.add_param('mesh', val=np.zeros((self.nx, self.ny, 3), dtype=data_type))
+        self.add_param('radius', val=np.zeros((self.ny-1), dtype=data_type))
+        self.add_output('spar_within_wing', val=np.zeros((self.ny-1), dtype=data_type))
+
+        self.deriv_options['type'] = 'fd'
+        self.deriv_options['form'] = 'central'
+
+    def solve_nonlinear(self, params, unknowns, resids):
+        mesh = params['mesh']
+        max_radius = radii(mesh, self.surface['t_over_c'])
+        unknowns['spar_within_wing'] = params['radius'] - max_radius
+
+    def linearize(self, params, unknowns, resids):
+        jac = {}
+        jac['spar_within_wing', 'radius'] = -np.eye(self.ny-1)
+        fd_jac = self.fd_jacobian(params, unknowns, resids,
+                                        fd_params=['mesh'],
+                                        fd_unknowns=['spar_within_wing'],
+                                        fd_states=[])
+        jac.update(fd_jac)
+        return jac
+
+class NonIntersectingThickness(Component):
+    """
+
+    Parameters
+    ----------
+    thickness[ny-1] : numpy array
+        Thickness of each element of the FEM spar.
+    radius[ny-1] : numpy array
+        Radius of each element of the FEM spar.
+
+    Returns
+    -------
+    thickness_intersects[ny-1] : numpy array
+        If all the values are negative, each element does not intersect itself.
+        If a value is positive, then the thickness within the hollow spar
+        intersects itself and presents an impossible design.
+        Add a constraint as
+        `OASProblem.add_constraint('thickness_intersects', upper=0.)`
+    """
+
+    def __init__(self, surface):
+        super(NonIntersectingThickness, self).__init__()
+
+        self.ny = surface['num_y']
+        self.nx = surface['num_x']
+
+        self.add_param('thickness', val=np.zeros((self.ny-1)))
+        self.add_param('radius', val=np.zeros((self.ny-1)))
+        self.add_output('thickness_intersects', val=np.zeros((self.ny-1)))
+
+    def solve_nonlinear(self, params, unknowns, resids):
+        unknowns['thickness_intersects'] = 2 * params['thickness'] - params['radius']
+
+    def linearize(self, params, unknowns, resids):
+        jac = {}
+        jac['thickness_intersects', 'thickness'] = 2 * np.eye(self.ny-1)
+        jac['thickness_intersects', 'radius'] = -np.eye(self.ny-1)
+        return jac
+
 
 class SpatialBeamStates(Group):
     """ Group that contains the spatial beam states. """
@@ -859,12 +949,20 @@ class SpatialBeamFunctionals(Group):
         self.add('energy',
                  SpatialBeamEnergy(surface),
                  promotes=['*'])
-        self.add('weight',
+        self.add('structural_weight',
                  SpatialBeamWeight(surface),
                  promotes=['*'])
         self.add('vonmises',
                  SpatialBeamVonMisesTube(surface),
                  promotes=['*'])
+        self.add('thicknessconstraint',
+                 NonIntersectingThickness(surface),
+                 promotes=['*'])
+        # The following component has not been fully tested so we leave it
+        # commented out for now. Use at own risk.
+        # self.add('sparconstraint',
+        #          SparWithinWing(surface),
+        #          promotes=['*'])
 
         if surface['exact_failure_constraint']:
             self.add('failure',

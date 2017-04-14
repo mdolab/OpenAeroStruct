@@ -22,8 +22,9 @@ import numpy as np
 # =============================================================================
 # OpenMDAO modules
 # =============================================================================
-from openmdao.api import IndepVarComp, Problem, Group, ScipyOptimizer, Newton, ScipyGMRES, LinearGaussSeidel, NLGaussSeidel, SqliteRecorder, profile
+from openmdao.api import IndepVarComp, Problem, Group, ScipyOptimizer, Newton, ScipyGMRES, LinearGaussSeidel, NLGaussSeidel, SqliteRecorder, profile, CaseReader
 from openmdao.api import view_model
+from six import iteritems
 
 # =============================================================================
 # OpenAeroStruct modules
@@ -94,11 +95,13 @@ class OASProblem(object):
 
     def __init__(self, input_dict={}):
 
+        print('Fortran =', fortran_flag)
+
         # Update prob_dict with user-provided values after getting defaults
         self.prob_dict = self.get_default_prob_dict()
         self.prob_dict.update(input_dict)
 
-        # Set the airspeed velocity based on the inputted Mach number
+        # Set the airspeed velocity based on the supplied Mach number
         # and speed of sound
         self.prob_dict['v'] = self.prob_dict['M'] * self.prob_dict['a']
         self.surfaces = []
@@ -111,11 +114,21 @@ class OASProblem(object):
         if self.prob_dict['type'] == 'aerostruct':
             self.setup = self.setup_aerostruct
 
+        # Set up dictionaries to hold user-supplied parameters for optimization
+        self.desvars = {}
+        self.constraints = {}
+        self.objective = {}
+
     def get_default_surf_dict(self):
         """
         Obtain the default settings for the surface descriptions. Note that
         these defaults are overwritten based on user input for each surface.
         Each dictionary describes one surface.
+
+        Returns
+        -------
+        defaults : dict
+            A python dict containing the default surface-level settings.
         """
 
         defaults = {
@@ -123,8 +136,7 @@ class OASProblem(object):
                     'name' : 'wing',        # name of the surface
                     'num_x' : 3,            # number of chordwise points
                     'num_y' : 5,            # number of spanwise points
-                    'root_chord' : 1.,       # root chord
-                    'span_cos_spacing' : 1,   # 0 for uniform spanwise panels
+                    'span_cos_spacing' : 1, # 0 for uniform spanwise panels
                                             # 1 for cosine-spaced panels
                                             # any value between 0 and 1 for
                                             # a mixed spacing
@@ -141,10 +153,12 @@ class OASProblem(object):
                                     # the surface from its default location
                     'symmetry' : True,     # if true, model one half of wing
                                             # reflected across the plane y = 0
-                    'S_ref_type' : 'wetted',      # 'wetted' or 'projected'
+                    'S_ref_type' : 'wetted', # how we compute the wing area,
+                                             # can be 'wetted' or 'projected'
 
                     # Simple Geometric Variables
-                    'span' : 10.,           # full wingspan
+                    'span' : 10.,           # full wingspan, even for symmetric cases
+                    'root_chord' : 1.,      # root chord
                     'dihedral' : 0.,        # wing dihedral angle in degrees
                                             # positive is upward
                     'sweep' : 0.,           # wing sweep angle in degrees
@@ -159,15 +173,22 @@ class OASProblem(object):
                     'xshear_cp' : None,
                     'zshear_cp' : None,
                     'thickness_cp' : None,
+                    'radius_cp' : None,
 
-                    # Active geometric variables. This list can be reduced to only the
-                    # design variables if desired.
-                    'active_geo_vars' : ['sweep', 'dihedral', 'twist_cp', 'xshear_cp',
-                        'zshear_cp', 'span', 'chord_cp', 'taper', 'thickness_cp'],
+                    # Geometric variables. The user generally does not need
+                    # to change these geometry variables. This is simply
+                    # a list of possible geometry variables that is later
+                    # filtered down based on which are active.
+                    'geo_vars' : ['sweep', 'dihedral', 'twist_cp', 'xshear_cp',
+                        'zshear_cp', 'span', 'chord_cp', 'taper', 'thickness_cp', 'radius_cp'],
 
-                    # Zero-lift aerodynamic performance
-                    'CL0' : 0.0,            # CL value at AoA (alpha) = 0
-                    'CD0' : 0.0,            # CD value at AoA (alpha) = 0
+                    # Aerodynamic performance of the aircraft without the wing.
+                    # These CL0 and CD0 values are added to the CL and CD
+                    # obtained from aerodynamic analysis of the wing to get
+                    # the total CL and CD.
+                    # These CL0 and CD0 values do not vary wrt alpha.
+                    'CL0' : 0.0,            # CL of the aircraft without the wing
+                    'CD0' : 0.0,            # CD of the aircraft without the wing
 
                     # Airfoil properties for viscous drag calculation
                     'k_lam' : 0.05,         # percentage of chord with laminar
@@ -181,9 +202,12 @@ class OASProblem(object):
                     'G' : 30.e9,            # [Pa] shear modulus of the spar
                     'stress' : 20.e6,       # [Pa] yield stress
                     'mrho' : 3.e3,          # [kg/m^3] material density
-                    'fem_origin' : 0.35,    # chordwise location of the spar
-
-                    'W0' : 0.4 * 3e5,       # [kg] MTOW of B777 is 3e5 kg with fuel
+                    'fem_origin' : 0.35,    # normalized chordwise location of the spar
+                    'W0' : 0.4 * 3e5,       # [kg] weight of the airplane without
+                                            # the wing structure and fuel.
+                                            # The default is 40% of the MTOW of
+                                            # B777-300 is 3e5 kg.
+                    'loads' : None,         # [N] allow the user to input loads
 
                     # Constraints
                     'exact_failure_constraint' : False, # if false, use KS function
@@ -196,24 +220,42 @@ class OASProblem(object):
         """
         Obtain the default settings for the problem description. Note that
         these defaults are overwritten based on user input for the problem.
+
+        Returns
+        -------
+        defaults : dict
+            A python dict containing the default problem-level settings.
         """
 
-        defaults = {'optimize' : False,      # flag for analysis or optimization
-                    'optimizer' : 'SNOPT',   # default optimizer
-                    'Re' : 1e6,              # Reynolds number
-                    'reynolds_length' : 1.0, # characteristic Reynolds length
-                    'alpha' : 5.,            # angle of attack
-                    'CT' : 9.80665 * 17.e-6, # [1/s] (9.81 N/kg * 17e-6 kg/N/s)
-                    'R' : 14.3e6,            # [m] maximum range
-                    'M' : 0.84,              # Mach number at cruise
-                    'rho' : 0.38,            # [kg/m^3] air density at 35,000 ft
-                    'a' : 295.4,             # [m/s] speed of sound at 35,000 ft
+        defaults = {
+                    # Problem and solver options
+                    'optimize' : False,      # flag for analysis or optimization
+                    'optimizer' : 'SLSQP',   # default optimizer
                     'force_fd' : False,      # if true, we FD over the whole model
                     'with_viscous' : False,  # if true, compute viscous drag
                     'print_level' : 0,       # int to control output during optimization
                                              # 0 for no additional printing
                                              # 1 for nonlinear solver printing
                                              # 2 for nonlinear and linear solver printing
+                    'previous_case_db' : None,  # name of the .db file for warm restart
+                                                # example: 'aerostruct.db'
+                    'record_db' : True,      # True to output .db file
+                    'profile' : False,       # True to profile the problem's time costs
+                                             # view results using `view_profile prof_raw.0`
+
+                    # Flow/environment properties
+                    'Re' : 1e6,              # Reynolds number
+                    'reynolds_length' : 1.0, # characteristic Reynolds length
+                    'alpha' : 5.,            # [degrees] angle of attack
+                    'M' : 0.84,              # Mach number at cruise
+                    'rho' : 0.38,            # [kg/m^3] air density at 35,000 ft
+                    'a' : 295.4,             # [m/s] speed of sound at 35,000 ft
+                    'g' : 9.80665,           # [m/s^2] acceleration due to gravity
+
+                    # Aircraft properties
+                    'CT' : 9.80665 * 17.e-6, # [1/s] (9.80665 N/kg * 17e-6 kg/N/s)
+                                             # specific fuel consumption
+                    'R' : 11.165e6,            # [m] maximum range (B777-300)
                     }
 
         return defaults
@@ -240,7 +282,7 @@ class OASProblem(object):
         # get the chordwise and spanwise number of points
         if 'mesh' in surf_dict.keys():
             mesh = surf_dict['mesh']
-            num_x, num_y = mesh.shape
+            num_x, num_y = mesh.shape[:2]
 
         # If the user doesn't provide a mesh, obtain the values from surface
         # to create the mesh
@@ -283,8 +325,7 @@ class OASProblem(object):
         else:
             Error("Please either provide a mesh or a valid set of parameters.")
 
-        # Compute span. Not why exactly, but we need .real to make span
-        # only real and not complex to avoid OpenMDAO warnings.
+        # Compute span. We need .real to make span to avoid OpenMDAO warnings.
         quarter_chord = 0.25 * mesh[-1] + 0.75 * mesh[0]
         surf_dict['span'] = max(quarter_chord[:, 1]).real - min(quarter_chord[:, 1]).real
         if surf_dict['symmetry']:
@@ -293,30 +334,24 @@ class OASProblem(object):
         # Apply the user-provided coordinate offset to position the mesh
         mesh = mesh + surf_dict['offset']
 
-        # Get the spar radius
-        r = radii(mesh)
-
-        # Set the number of twist and thickness control points.
-        # These b-spline control points are what the optimizer sees
-        # and controls
-        ones_list = ['chord_cp', 'thickness_cp']
+        # We need to initialize some variables to ones and some others to zeros.
+        # Here we define the lists for each case.
+        ones_list = ['chord_cp', 'thickness_cp', 'radius_cp']
         zeros_list = ['twist_cp', 'xshear_cp', 'zshear_cp']
-        surf_dict['active_bsp_vars'] = list(set(surf_dict['active_geo_vars']) & set(ones_list + zeros_list))
+        surf_dict['bsp_vars'] = ones_list + zeros_list
 
-        for var in surf_dict['active_bsp_vars']:
+        # Loop through bspline variables and set the number of control points if
+        # the user hasn't initalized the array.
+        for var in surf_dict['bsp_vars']:
             numkey = 'num_' + var
             if surf_dict[var] is None:
                 if numkey not in input_dict:
-                    surf_dict[numkey] = np.max([int((num_y - 1) / 5), 5])
-                if var in ones_list:
-                    surf_dict[var] = np.ones(surf_dict[numkey], dtype=data_type)
-                else:
-                    surf_dict[var] = np.zeros(surf_dict[numkey], dtype=data_type)
+                    surf_dict[numkey] = np.max([int((num_y - 1) / 5), min(5, num_y-1)])
             else:
                 surf_dict[numkey] = len(surf_dict[var])
 
-        # If the mesh generation provided an initial twist, set this within
-        # the surf_dict object
+        # Interpolate the twist values from the CRM wing definition to the twist
+        # control points
         if 'CRM' in surf_dict['wing_type']:
             num_twist = surf_dict['num_twist_cp']
 
@@ -339,26 +374,58 @@ class OASProblem(object):
                     twist = np.interp(np.linspace(0, 1, num_twist/2), eta, surf_dict['crm_twist'])
                     twist = np.hstack((twist, twist[::-1]))
 
-            surf_dict['twist_cp'] = twist
+            # Continue to use the user-defined twist_cp if inputted to the
+            # surface dictionary. Otherwise, use the prescribed CRM twist.
+            if surf_dict['twist_cp'] is None:
+                surf_dict['twist_cp'] = twist
 
         # Store updated values
         surf_dict['num_x'] = num_x
         surf_dict['num_y'] = num_y
         surf_dict['mesh'] = mesh
-        surf_dict['r'] = r
-        if 'CRM' in surf_dict['wing_type']:
-            surf_dict['t'] = r / 10
-        else:
-            surf_dict['t'] = r / 20
-        if 'thickness_cp' in surf_dict['active_geo_vars']:
-            surf_dict['thickness_cp'] *= np.max(surf_dict['t'])
 
-        # Set default loads at the tips
-        loads = np.zeros((r.shape[0] + 1, 6), dtype='complex')
-        loads[0, 2] = 1e3
-        if not surf_dict['symmetry']:
-            loads[-1, 2] = 1e3
-        surf_dict['loads'] = loads
+        radius = radii(mesh, surf_dict['t_over_c'])
+
+        # Set initial thicknesses
+        surf_dict['thickness'] = radius / 10
+
+        # We now loop through the possible bspline variables and populate
+        # the 'initial_geo' list with the variables that the geometry
+        # or user provided. For example, the CRM wing defines an initial twist.
+        # We must treat this separately so we add a twist bspline component
+        # even if it is not a desvar.
+        surf_dict['initial_geo'] = []
+        for var in surf_dict['geo_vars']:
+
+            # Add the bspline variables when they're needed
+            if var in surf_dict['bsp_vars']:
+                numkey = 'num_' + var
+                if surf_dict[var] is None:
+
+                    # Add the intialized geometry variables to either ones or zeros.
+                    # These initial values do not perturb the mesh.
+                    if var in ones_list:
+                        surf_dict[var] = np.ones(surf_dict[numkey], dtype=data_type)
+                    elif var in zeros_list:
+                        surf_dict[var] = np.zeros(surf_dict[numkey], dtype=data_type)
+                else:
+                    surf_dict['initial_geo'].append(var)
+
+            # If the user provided a scalar variable (span, sweep, taper, etc),
+            # then include that in the initial_geo list
+            elif var in input_dict.keys():
+                surf_dict['initial_geo'].append(var)
+
+        if 'thickness_cp' in surf_dict['geo_vars']:
+            surf_dict['thickness_cp'] *= np.max(surf_dict['thickness'])
+
+        if surf_dict['loads'] is None:
+            # Set default loads at the tips
+            loads = np.zeros((surf_dict['thickness'].shape[0] + 1, 6), dtype=data_type)
+            loads[0, 2] = 1e3
+            if not surf_dict['symmetry']:
+                loads[-1, 2] = 1e3
+            surf_dict['loads'] = loads
 
         # Throw a warning if the user provides two surfaces with the same name
         name = surf_dict['name']
@@ -377,8 +444,8 @@ class OASProblem(object):
 
     def setup_prob(self):
         """
-        Short method to select the optimizer. Uses SNOPT if available,
-        or SLSQP otherwise.
+        Short method to select the optimizer. Uses pyOptSparse if available,
+        or Scipy's SLSQP otherwise.
         """
 
         try:  # Use pyOptSparse optimizer if installed
@@ -412,7 +479,7 @@ class OASProblem(object):
                                                 }
             elif self.prob_dict['optimizer'] == 'SLSQP':
                 self.prob.driver.options['optimizer'] = 'SLSQP'
-                self.prob.driver.opt_settings = {
+                self.prob.driver.opt_settings = {'ACC' : 1e-10
                                                 }
 
         except:  # Use Scipy SLSQP optimizer if pyOptSparse not installed
@@ -421,23 +488,65 @@ class OASProblem(object):
             self.prob.driver.options['disp'] = True
             self.prob.driver.options['tol'] = 1.0e-10
 
+        # Actually call the OpenMDAO functions to add the design variables,
+        # constraints, and objective.
+        for desvar_name, desvar_data in iteritems(self.desvars):
+            self.prob.driver.add_desvar(desvar_name, **desvar_data)
+        for con_name, con_data in iteritems(self.constraints):
+            self.prob.driver.add_constraint(con_name, **con_data)
+        for obj_name, obj_data in iteritems(self.objective):
+            self.prob.driver.add_objective(obj_name, **obj_data)
+
+        # Use finite differences over the entire model if user selected it
+        if self.prob_dict['force_fd']:
+            self.prob.root.deriv_options['type'] = 'fd'
+
+        # Record optimization history to a database.
+        # Data saved here can be examined using `plot_all.py` or `OptView.py`
+        if self.prob_dict['record_db']:
+            recorder = SqliteRecorder(self.prob_dict['prob_name']+".db")
+            recorder.options['record_params'] = True
+            recorder.options['record_derivs'] = True
+            self.prob.driver.add_recorder(recorder)
+
+        # Profile (time) the problem
+        if self.prob_dict['profile']:
+            profile.setup(self.prob)
+            profile.start()
+
+        # Set up the problem
+        self.prob.setup()
+
+        # Use warm start from previous db file if desired.
+        # Note that we only have access to the unknowns, not the gradient history.
+        if self.prob_dict['previous_case_db'] is not None:
+
+            # Open the previous case and start from the last iteration.
+            # Change the -1 value in get_case() if you want to select a different iteration.
+            cr = CaseReader(self.prob_dict['previous_case_db'])
+            case = cr.get_case(-1)
+
+            # Loop through the unknowns and set them for this problem.
+            for param_name, param_data in iteritems(case.unknowns):
+                self.prob[param_name] = param_data
+
     def add_desvar(self, *args, **kwargs):
         """
-        Helper function that calls the OpenMDAO method to add design variables.
+        Store the design variables and later add them to the OpenMDAO problem.
         """
-        self.prob.driver.add_desvar(*args, **kwargs)
+        self.desvars[str(*args)] = dict(**kwargs)
 
     def add_constraint(self, *args, **kwargs):
         """
-        Helper function that calls the OpenMDAO method to add constraints.
+        Store the constraints and later add them to the OpenMDAO problem.
         """
-        self.prob.driver.add_constraint(*args, **kwargs)
+        self.constraints[str(*args)] = dict(**kwargs)
 
     def add_objective(self, *args, **kwargs):
         """
-        Helper function that calls the OpenMDAO method to add objectives.
+        Store the objectives and later add them to the OpenMDAO problem.
         """
-        self.prob.driver.add_objective(*args, **kwargs)
+        self.objective[str(*args)] = dict(**kwargs)
 
     def run(self):
         """
@@ -445,38 +554,22 @@ class OASProblem(object):
         a .db file and creates an N2 diagram to view the problem hierarchy.
         """
 
-        # Use finite differences over the entire model if user selected it
-        if self.prob_dict['force_fd']:
-            self.prob.root.deriv_options['type'] = 'fd'
-
-        # Record optimization history to a database
-        # Data saved here can be examined using `plot_all.py`
-        recorder = SqliteRecorder(self.prob_dict['prob_name']+".db")
-        recorder.options['record_params'] = True
-        recorder.options['record_derivs'] = True
-        self.prob.driver.add_recorder(recorder)
-
-        # Profile (time) the problem
-        # profile.setup(self.prob)
-        # profile.start()
-
-        # Set up the problem
-        self.prob.setup()
-
         # Have more verbose output about optimization convergence
         if self.prob_dict['print_level']:
             self.prob.print_all_convergence()
 
         # Save an N2 diagram for the problem
-        view_model(self.prob, outfile=self.prob_dict['prob_name']+".html", show_browser=False)
+        if self.prob_dict['record_db']:
+            view_model(self.prob, outfile=self.prob_dict['prob_name']+".html", show_browser=False)
 
         self.prob.run_once()
 
         # If `optimize` == True in prob_dict, perform optimization. Otherwise,
         # simply pass the problem since analysis has already been run.
         if not self.prob_dict['optimize']:
-            # Run a single analysis loop
-            pass
+            # Run a single analysis loop. This shouldn't actually be
+            # necessary, but sometimes the .db file is not complete unless we do this.
+            self.prob.run_once()
         else:
             # Perform optimization
             self.prob.run()
@@ -512,19 +605,33 @@ class OASProblem(object):
             name = surface['name']
             tmp_group = Group()
 
+            # Strip the surface names from the desvars list and save this
+            # modified list as self.desvars
+            desvar_names = []
+            for desvar in self.desvars.keys():
+
+                # Check to make sure that the surface's name is in the design
+                # variable and only add the desvar to the list if it corresponds
+                # to this surface.
+                if name[:-1] in desvar:
+                    desvar_names.append(''.join(desvar.split('.')[1:]))
+
             # Add independent variables that do not belong to a specific component.
             # Note that these are the only ones necessary for structual-only
             # analysis and optimization.
-            indep_vars = [('r', surface['r']), ('loads', surface['loads'])]
-            for var in surface['active_geo_vars']:
-                indep_vars.append((var, surface[var]))
+            # Here we check and only add the variables that are desvars or a
+            # special var, radius, which is necessary to compute weight.
+            indep_vars = [('loads', surface['loads'])]
+            for var in surface['geo_vars']:
+                if var in desvar_names or 'thickness' in var or var in surface['initial_geo']:
+                    indep_vars.append((var, surface[var]))
 
             # Add structural components to the surface-specific group
             tmp_group.add('indep_vars',
                      IndepVarComp(indep_vars),
                      promotes=['*'])
             tmp_group.add('mesh',
-                     GeometryMesh(surface),
+                     GeometryMesh(surface, self.desvars),
                      promotes=['*'])
             tmp_group.add('tube',
                      MaterialsTube(surface),
@@ -535,15 +642,19 @@ class OASProblem(object):
             tmp_group.add('struct_funcs',
                      SpatialBeamFunctionals(surface),
                      promotes=['*'])
-            # Add bspline components for active bspline geometric variables
-            for var in surface['active_bsp_vars']:
-                n_pts = surface['num_y']
-                if var == 'thickness_cp':
-                    n_pts -= 1
-                trunc_var = var.split('_')[0]
-                tmp_group.add(trunc_var + '_bsp',
-                         Bspline(var, trunc_var, surface['num_'+var], n_pts),
-                         promotes=['*'])
+
+            # Add bspline components for active bspline geometric variables.
+            # We only add the component if the corresponding variable is a desvar
+            # or special (radius).
+            for var in surface['bsp_vars']:
+                if var in desvar_names or var in surface['initial_geo'] or 'thickness' in var:
+                    n_pts = surface['num_y']
+                    if var in ['thickness_cp', 'radius_cp']:
+                        n_pts -= 1
+                    trunc_var = var.split('_')[0]
+                    tmp_group.add(trunc_var + '_bsp',
+                             Bspline(var, trunc_var, surface['num_'+var], n_pts),
+                             promotes=['*'])
 
             # Add tmp_group to the problem with the name of the surface.
             # The default is 'wing'.
@@ -577,17 +688,29 @@ class OASProblem(object):
             name = surface['name']
             tmp_group = Group()
 
+            # Strip the surface names from the desvars list and save this
+            # modified list as self.desvars
+            desvar_names = []
+            for desvar in self.desvars.keys():
+
+                # Check to make sure that the surface's name is in the design
+                # variable and only add the desvar to the list if it corresponds
+                # to this surface.
+                if name[:-1] in desvar:
+                    desvar_names.append(''.join(desvar.split('.')[1:]))
+
             # Add independent variables that do not belong to a specific component
             indep_vars = [('disp', np.zeros((surface['num_y'], 6), dtype=data_type))]
-            for var in surface['active_geo_vars']:
-                indep_vars.append((var, surface[var]))
+            for var in surface['geo_vars']:
+                if var in desvar_names or var in surface['initial_geo']:
+                    indep_vars.append((var, surface[var]))
 
             # Add aero components to the surface-specific group
             tmp_group.add('indep_vars',
                      IndepVarComp(indep_vars),
                      promotes=['*'])
             tmp_group.add('mesh',
-                     GeometryMesh(surface),
+                     GeometryMesh(surface, self.desvars),
                      promotes=['*'])
             tmp_group.add('def_mesh',
                      TransferDisplacements(surface),
@@ -595,15 +718,20 @@ class OASProblem(object):
             tmp_group.add('vlmgeom',
                      VLMGeometry(surface),
                      promotes=['*'])
-            # Add bspline components for active bspline geometric variables
-            for var in surface['active_bsp_vars']:
-                n_pts = surface['num_y']
-                if var == 'thickness_cp':
-                    n_pts -= 1
-                trunc_var = var.split('_')[0]
-                tmp_group.add(trunc_var + '_bsp',
-                         Bspline(var, trunc_var, surface['num_'+var], n_pts),
-                         promotes=['*'])
+
+            # Add bspline components for active bspline geometric variables.
+            # We only add the component if the corresponding variable is a desvar.
+            for var in surface['bsp_vars']:
+                if var in desvar_names or var in surface['initial_geo']:
+                    n_pts = surface['num_y']
+                    if var in ['thickness_cp', 'radius_cp']:
+                        n_pts -= 1
+                    trunc_var = var.split('_')[0]
+                    tmp_group.add(trunc_var + '_bsp',
+                             Bspline(var, trunc_var, surface['num_'+var], n_pts),
+                             promotes=['*'])
+
+            # Add monotonic constraints for selected variables
             if surface['monotonic_con'] is not None:
                 if type(surface['monotonic_con']) is not list:
                     surface['monotonic_con'] = [surface['monotonic_con']]
@@ -674,6 +802,10 @@ class OASProblem(object):
         """
         Specific method to add the necessary components to the problem for an
         aerostructural problem.
+
+        Because this code has been extended to work for multiple aerostructural
+        surfaces, a good portion of it is spent doing the bookkeeping for parameter
+        passing and ensuring that each component modifies the correct data.
         """
 
         # Set the problem name if the user doesn't
@@ -696,10 +828,22 @@ class OASProblem(object):
             name = surface['name']
             tmp_group = Group()
 
+            # Strip the surface names from the desvars list and save this
+            # modified list as self.desvars
+            desvar_names = []
+            for desvar in self.desvars.keys():
+
+                # Check to make sure that the surface's name is in the design
+                # variable and only add the desvar to the list if it corresponds
+                # to this surface.
+                if name[:-1] in desvar:
+                    desvar_names.append(''.join(desvar.split('.')[1:]))
+
             # Add independent variables that do not belong to a specific component
-            indep_vars = [('r', surface['r'])]
-            for var in surface['active_geo_vars']:
-                indep_vars.append((var, surface[var]))
+            indep_vars = []
+            for var in surface['geo_vars']:
+                if var in desvar_names or var in surface['initial_geo'] or 'thickness' in var:
+                    indep_vars.append((var, surface[var]))
 
             # Add components to include in the surface's group
             tmp_group.add('indep_vars',
@@ -709,17 +853,30 @@ class OASProblem(object):
                      MaterialsTube(surface),
                      promotes=['*'])
             tmp_group.add('mesh',
-                     GeometryMesh(surface),
+                     GeometryMesh(surface, self.desvars),
                      promotes=['*'])
-            # Add bspline components for active bspline geometric variables
-            for var in surface['active_bsp_vars']:
-                n_pts = surface['num_y']
-                if var == 'thickness_cp':
-                    n_pts -= 1
-                trunc_var = var.split('_')[0]
-                tmp_group.add(trunc_var + '_bsp',
-                         Bspline(var, trunc_var, surface['num_'+var], n_pts),
-                         promotes=['*'])
+
+            # Add bspline components for active bspline geometric variables.
+            # We only add the component if the corresponding variable is a desvar,
+            # a special parameter (radius), or if the user or geometry provided
+            # an initial distribution.
+            for var in surface['bsp_vars']:
+                if var in desvar_names or var in surface['initial_geo'] or 'thickness' in var:
+                    n_pts = surface['num_y']
+                    if var in ['thickness_cp', 'radius_cp']:
+                        n_pts -= 1
+                    trunc_var = var.split('_')[0]
+                    tmp_group.add(trunc_var + '_bsp',
+                             Bspline(var, trunc_var, surface['num_'+var], n_pts),
+                             promotes=['*'])
+
+            # Add monotonic constraints for selected variables
+            if surface['monotonic_con'] is not None:
+                if type(surface['monotonic_con']) is not list:
+                    surface['monotonic_con'] = [surface['monotonic_con']]
+                for var in surface['monotonic_con']:
+                    tmp_group.add('monotonic_' + var,
+                        MonotonicConstraint(var, surface), promotes=['*'])
 
             # Add tmp_group to the problem with the name of the surface.
             name_orig = name
@@ -801,12 +958,13 @@ class OASProblem(object):
             root.connect(name[:-1] + '.J', 'coupled.' + name[:-1] + '.J')
 
             # Connect performance calculation variables
-            root.connect(name[:-1] + '.r', name + 'perf.r')
+            root.connect(name[:-1] + '.radius', name + 'perf.radius')
             root.connect(name[:-1] + '.A', name + 'perf.A')
+            root.connect(name[:-1] + '.thickness', name + 'perf.thickness')
 
             # Connection performance functional variables
-            root.connect(name + 'perf.weight', 'fuelburn.' + name + 'weight')
-            root.connect(name + 'perf.weight', 'eq_con.' + name + 'weight')
+            root.connect(name + 'perf.structural_weight', 'fuelburn.' + name + 'structural_weight')
+            root.connect(name + 'perf.structural_weight', 'eq_con.' + name + 'structural_weight')
             root.connect(name + 'perf.L', 'eq_con.' + name + 'L')
             root.connect(name + 'perf.CL', 'fuelburn.' + name + 'CL')
             root.connect(name + 'perf.CD', 'fuelburn.' + name + 'CD')
@@ -819,12 +977,12 @@ class OASProblem(object):
             root.connect('coupled.' + name[:-1] + '.widths', name + 'perf.widths')
             root.connect('coupled.' + name[:-1] + '.lengths', name + 'perf.lengths')
             root.connect('coupled.' + name[:-1] + '.cos_sweep', name + 'perf.cos_sweep')
+            # root.connect('coupled.' + name[:-1] + '.mesh', name + 'perf.mesh')
 
         # Set solver properties for the coupled group
         coupled.ln_solver = ScipyGMRES()
         coupled.ln_solver.preconditioner = LinearGaussSeidel()
         coupled.aero_states.ln_solver = LinearGaussSeidel()
-
         coupled.nl_solver = NLGaussSeidel()
 
         if self.prob_dict['print_level'] == 2:

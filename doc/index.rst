@@ -1,14 +1,11 @@
-.. OpenAeroStruct documentation master file, created by
-   sphinx-quickstart on Wed Jul 13 13:18:23 2016.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. OpenAeroStruct documentation master file
 
 OpenAeroStruct Documentation
 ==========================================
 
-OpenAeroStruct is a lightweight tool to perform aerostructural optimization using OpenMDAO.
-It couples a vortex-lattice method (VLM) and a 6 degrees of freedom 3-dimensional spatial beam model to simulate the aerodynamic and structural properties of lifting surfaces.
-These simulations are wrapped in an optimizer using NASA's OpenMDAO framework.
+OpenAeroStruct is a lightweight tool that performs aerostructural optimization using OpenMDAO.
+It couples a vortex-lattice method (VLM) and a 6 degrees of freedom 3-dimensional spatial beam model to simulate aerodynamic and structural analyses using lifting surfaces.
+These simulations are wrapped with an optimizer using NASA's OpenMDAO framework.
 The analysis and optimization results can be visualized using included tools, producing figures such as this:
 
 .. image:: ../example.png
@@ -16,21 +13,28 @@ The analysis and optimization results can be visualized using included tools, pr
 Installation
 -----------------
 
-To use OpenAeroStruct, you must first install OpenMDAO 1.7.3 by following the instructions here: https://github.com/openmdao/openmdao. If you are unfamiliar with OpenMDAO and wish to modify the internals of OpenAeroStruct, you should examine the OpenMDAO documentation at http://openmdao.readthedocs.io/en/1.7.3/. The tutorials provided with OpenMDAO, especially The Sellar Problem, are helpful to understand the basics of using OpenMDAO to solve an optimization problem. Note that OpenMDAO 1.7.3 is the most recent version that has been tested and confirmed working with OpenAeroStruct.
+To use OpenAeroStruct, you must first install OpenMDAO 1.7.3 by following the instructions here: https://github.com/openmdao/openmdao. If you are unfamiliar with OpenMDAO and wish to modify the internals of OpenAeroStruct, you should examine the OpenMDAO documentation at http://openmdao.readthedocs.io/en/1.7.3/. The tutorials provided with OpenMDAO, especially the Sellar Problem, are helpful to understand the basics of using OpenMDAO to solve an optimization problem. Note that OpenMDAO 1.7.3 is the most recent version that has been tested and confirmed working with OpenAeroStruct.
 
 Next, clone this repository:
 
 .. code-block:: bash
 
-    git clone https://github.com/johnjasa/OpenAeroStruct.git
+    git clone https://github.com/mdolab/OpenAeroStruct.git
 
-Lastly, from within the OpenAeroStruct folder, make the Fortran files:
+Lastly, from within the OpenAeroStruct folder, compile the Fortran files:
 
 .. code-block:: bash
 
     make
 
 Note that the code will run without compiling the Fortran library, but it will run significantly faster when using Fortran.
+The Fortran code has been tested extensively on Linux, partially on MacOS, and not at all on Windows.
+
+We include a script that runs a variety of aerodynamic, structural, and aerostructural tests. To check your installation, run:
+
+.. code-block:: bash
+
+    python test_suite.py
 
 Usage
 -----
@@ -60,12 +64,12 @@ If you wish to examine the code in more depth, see `run_classes.py` and the meth
 Notes
 -----
 
-This current version of the repository has grown past the previous Matlab implementation. If you are looking for a Matlab-capable version, please see https://github.com/samtx/OpenAeroStruct for the latest version.
+This current version of this repository has grown past the previous Matlab implementation. If you are looking for a Matlab-capable version, please see https://github.com/samtx/OpenAeroStruct for the latest version.
 
 Known Issues
 ------------
 
-* The increase in accuracy of results when using a cosine-spaced mesh is not as great as it should be.
+* The increase in accuracy of results when using a cosine-spaced mesh is not as large as it should be.
 * Aerostructural optimization sometimes fails to converge for certain geometries. The example provided in `run_aerostruct.py` should converge. The structural and aerodynamic values must make sense together, e.g. the beam thickness and radius must be able to support the aerodynamic loads.
 
 

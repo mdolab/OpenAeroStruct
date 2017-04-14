@@ -62,10 +62,11 @@ if __name__ == "__main__":
     if not sys.argv[1].endswith('m'):
 
         # Setup problem and add design variables, constraint, and objective
-        OAS_prob.setup()
         OAS_prob.add_desvar('wing.thickness_cp', lower=0.001, upper=0.25, scaler=1e2)
+        OAS_prob.add_constraint('wing.thickness_intersects', upper=0.)
         OAS_prob.add_constraint('wing.failure', upper=0.)
-        OAS_prob.add_objective('wing.weight', scaler=1e-3)
+        OAS_prob.add_objective('wing.structural_weight', scaler=1e-3)
+        OAS_prob.setup()
 
     # Multiple lifting surfaces
     else:
@@ -75,20 +76,22 @@ if __name__ == "__main__":
                               'span' : 3.,
                               'offset' : np.array([10., 0., 0.])})
 
-        # Setup problem and add design variables, constraints, and objective
-        OAS_prob.setup()
-
         OAS_prob.add_desvar('wing.thickness_cp', lower=0.001, upper=0.25, scaler=1e2)
+        OAS_prob.add_constraint('wing.thickness_intersects', upper=0.)
         OAS_prob.add_constraint('wing.failure', upper=0.)
-        OAS_prob.add_objective('wing.weight', scaler=1e-3)
+        OAS_prob.add_objective('wing.structural_weight', scaler=1e-3)
 
         # Note that these tail variables have no effect on the wing and thus
         # have no need to be changed except to satisfy the failure constraint
         OAS_prob.add_desvar('tail.thickness_cp', lower=0.001, upper=0.25, scaler=1e2)
+        OAS_prob.add_constraint('tail.thickness_intersects', upper=0.)
         OAS_prob.add_constraint('tail.failure', upper=0.)
+
+        # Setup problem
+        OAS_prob.setup()
 
     st = time()
     # Actually run the problem
     OAS_prob.run()
-    print("\nWing weight:", OAS_prob.prob['wing.weight'])
+    print("\nWing structural weight:", OAS_prob.prob['wing.structural_weight'])
     print("Time elapsed: {} secs".format(time() - st))

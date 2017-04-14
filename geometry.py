@@ -6,6 +6,7 @@ from numpy import cos, sin, tan
 
 from openmdao.api import Component
 from b_spline import get_bspline_mtx
+from spatialbeam import radii
 
 try:
     import OAS_API
@@ -29,6 +30,7 @@ def rotate(mesh, theta_y, symmetry, rotate_x=True):
     rotate_x : boolean
         Flag set to True if the user desires the twist variable to always be
         applied perpendicular to the wing (say, in the case of a winglet).
+
     Returns
     -------
     mesh[nx, ny, 3] : numpy array
@@ -83,7 +85,7 @@ def rotate(mesh, theta_y, symmetry, rotate_x=True):
         row += quarter_chord
 
 def scale_x(mesh, chord_dist):
-    """ Modify the chords along the span of the wing by scaling the x-coord.
+    """ Modify the chords along the span of the wing by scaling only the x-coord.
 
     Parameters
     ----------
@@ -109,7 +111,7 @@ def scale_x(mesh, chord_dist):
             quarter_chord[i, 0]
 
 def shear_x(mesh, xshear):
-    """ Shear the wing in the x direction (distributed sweep)
+    """ Shear the wing in the x direction (distributed sweep).
 
     Parameters
     ----------
@@ -123,11 +125,10 @@ def shear_x(mesh, xshear):
     mesh[nx, ny, 3] : numpy array
         Nodal mesh with the new chord lengths.
     """
-    mesh[0,:,0] += xshear
-    mesh[1,:,0] += xshear
+    mesh[:, :, 0] += xshear
 
 def shear_z(mesh, zshear):
-    """ Shear the wing in the z direction (distributed dihedral)
+    """ Shear the wing in the z direction (distributed dihedral).
 
     Parameters
     ----------
@@ -141,8 +142,7 @@ def shear_z(mesh, zshear):
     mesh[nx, ny, 3] : numpy array
         Nodal mesh with the new chord lengths.
     """
-    mesh[0,:,2] += zshear
-    mesh[1,:,2] += zshear
+    mesh[:, :, 2] += zshear
 
 def sweep(mesh, sweep_angle, symmetry):
     """ Apply shearing sweep. Positive sweeps back.
@@ -277,7 +277,11 @@ def taper(mesh, taper_ratio, symmetry):
     quarter_chord = 0.25 * te + 0.75 * le
 
     if symmetry:
-        taper = np.linspace(1, taper_ratio, num_y)[::-1]
+        x = quarter_chord[:, 1]
+        span = x[-1] - x[0]
+        xp = np.array([-span, 0.])
+        fp = np.array([taper_ratio, 1.])
+        taper = np.interp(x.real, xp.real, fp.real)
 
         for i in range(num_x):
             for ind in range(3):
@@ -285,15 +289,16 @@ def taper(mesh, taper_ratio, symmetry):
                     taper + quarter_chord[:, ind]
 
     else:
-        ny2 = (num_y + 1) // 2
-        taper = np.linspace(1, taper_ratio, ny2)[::-1]
-
-        dx = np.hstack((taper, taper[::-1][1:]))
+        x = quarter_chord[:, 1]
+        span = x[-1] - x[0]
+        xp = np.array([-span/2, 0., span/2])
+        fp = np.array([taper_ratio, 1., taper_ratio])
+        taper = np.interp(x.real, xp.real, fp.real)
 
         for i in range(num_x):
             for ind in range(3):
                 mesh[i, :, ind] = (mesh[i, :, ind] - quarter_chord[:, ind]) * \
-                    dx + quarter_chord[:, ind]
+                    taper + quarter_chord[:, ind]
 
 
 class GeometryMesh(Component):
@@ -301,6 +306,11 @@ class GeometryMesh(Component):
     OpenMDAO component that performs mesh manipulation functions. It reads in
     the initial mesh from the surface dictionary and outputs the altered
     mesh based on the geometric design variables.
+
+    Depending on the design variables selected or the supplied geometry information,
+    only some of the follow parameters will actually be given to this component.
+    If parameters are not active (they do not deform the mesh), then
+    they will not be given to this component.
 
     Parameters
     ----------
@@ -322,8 +332,24 @@ class GeometryMesh(Component):
         the geometric design variables.
     """
 
-    def __init__(self, surface):
+    def __init__(self, surface, desvars):
         super(GeometryMesh, self).__init__()
+
+        name = surface['name']
+        self.surface = surface
+
+        # Strip the surface names from the desvars list and save this
+        # modified list as self.desvars
+        desvar_names = []
+        for desvar in desvars.keys():
+
+            # Check to make sure that the surface's name is in the design
+            # variable and only add the desvar to the list if it corresponds
+            # to this surface.
+            if name[:-1] in desvar:
+                desvar_names.append(''.join(desvar.split('.')[1:]))
+
+        self.desvar_names = desvar_names
 
         ny = surface['num_y']
         self.mesh = surface['mesh']
@@ -340,9 +366,9 @@ class GeometryMesh(Component):
             if len(var.split('_')) > 1:
                 param = var.split('_')[0]
                 if var in ones_list:
-                    val = np.ones(ny)
+                    val = np.ones(ny, dtype=data_type)
                 elif var in zeros_list:
-                    val = np.zeros(ny)
+                    val = np.zeros(ny, dtype=data_type)
                 else:
                     val = surface[var]
             else:
@@ -354,10 +380,16 @@ class GeometryMesh(Component):
                 else:
                     val = surface[var]
             self.geo_params[param] = val
-            if var in surface['active_geo_vars']:
+            if var in desvar_names or var in surface['initial_geo']:
                 self.add_param(param, val=val)
 
         self.add_output('mesh', val=self.mesh)
+
+        if 'radius_cp' not in desvar_names and 'radius_cp' not in surface['initial_geo']:
+            self.compute_radius = True
+            self.add_output('radius', val=np.zeros((ny - 1)))
+        else:
+            self.compute_radius = False
 
         self.symmetry = surface['symmetry']
 
@@ -374,7 +406,6 @@ class GeometryMesh(Component):
         self.geo_params.update(params)
 
         if fortran_flag:
-            # Does not have span stretching coded yet
             mesh = OAS_API.oas_api.manipulate_mesh(mesh, self.geo_params['taper'],
                 self.geo_params['chord'], self.geo_params['sweep'], self.geo_params['xshear'],
                 self.geo_params['dihedral'], self.geo_params['zshear'],
@@ -389,6 +420,13 @@ class GeometryMesh(Component):
             dihedral(mesh, self.geo_params['dihedral'], self.symmetry)
             shear_z(mesh, self.geo_params['zshear'])
             rotate(mesh, self.geo_params['twist'], self.symmetry, self.rotate_x)
+
+        # Only compute the radius on the first iteration.
+        if self.compute_radius and 'radius_cp' not in self.desvar_names:
+            # Get spar radii and interpolate to radius control points.
+            # Need to refactor this at some point.
+            unknowns['radius'] = radii(mesh, self.surface['t_over_c'])
+            self.compute_radius = False
 
         unknowns['mesh'] = mesh
 
@@ -548,7 +586,7 @@ def gen_crm_mesh(num_x, num_y, span, chord, span_cos_spacing=0., chord_cos_spaci
         specified parameters.
     eta : numpy array
         Spanwise locations of the airfoil slices. Later used in the
-        interpolation function to obtain correct twist values during at
+        interpolation function to obtain correct twist values at
         points along the span that are not aligned with these slices.
     twist : numpy array
         Twist along the span at the spanwise eta locations. We use these twists
@@ -771,7 +809,6 @@ def gen_rect_mesh(num_x, num_y, span, chord, span_cos_spacing=0., chord_cos_spac
     mesh[nx, ny, 3] : numpy array
         Rectangular nodal mesh defining the final aerodynamic surface with the
         specified parameters.
-
     """
 
     mesh = np.zeros((num_x, num_y, 3), dtype=data_type)

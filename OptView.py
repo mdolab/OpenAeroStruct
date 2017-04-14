@@ -1,8 +1,11 @@
 """
 
 Provides interactive visualization of optimization results created by
-pyOptSparse. Figures produced here can be saved as images or pickled
-for future customization.
+pyOptSparse and OpenMDAO. Figures produced here can be saved as images
+or pickled for future customization.
+
+Usage is `python OptView.py filename' where filename is often `snopt_hist.hst`
+for pyOptSparse or `aero.db` for OpenMDAO, as examples.
 
 John Jasa 2015-2017
 
@@ -11,17 +14,27 @@ John Jasa 2015-2017
 # ======================================================================
 # Standard Python modules
 # ======================================================================
+from __future__ import division, print_function
 import os
 import argparse
 import shelve
-import tkFont
-import Tkinter as Tk
+
+import sys
+major_python_version = sys.version_info[0]
+
+if major_python_version == 2:
+    import tkFont
+    import Tkinter as Tk
+else:
+    import tkinter as Tk
+    from tkinter import font as tkFont
+
 import re
 import warnings
 
 # ======================================================================
 # External Python modules
-# ====================================================================== 
+# ======================================================================
 import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg,\
@@ -32,7 +45,7 @@ import mpl_toolkits.axisartist as AA
 warnings.filterwarnings("ignore",category=matplotlib.cbook.mplDeprecation)
 warnings.filterwarnings("ignore",category=UserWarning)
 import numpy as np
-from pyoptsparse import SqliteDict
+from sqlitedict import SqliteDict
 
 class Display(object):
 
@@ -63,7 +76,7 @@ class Display(object):
             figsize = (14, 10)
         else: # Otherwise, use a slightly smaller window
               # so everything fits on the screen
-            figsize = (6, 6)
+            figsize = (5, 4)
 
         # Instantiate the MPL figure
         self.f = plt.figure(figsize=figsize, dpi=100, facecolor='white')
@@ -138,7 +151,13 @@ class Display(object):
 
                 # Get the number of iterations by looking at the largest number
                 # in the split string names for each entry in the db
-                string = db.keys()[-1].split('|')
+                if major_python_version == 3:
+                    for string in db.keys():
+                        string
+                    string = string.split('|')
+                else:
+                    string = db.keys()[-1].split('|')
+
                 nkey = int(string[-1])
                 self.solver_name = string[0]
 
@@ -854,7 +873,7 @@ class Display(object):
 
     def var_search(self, _):
         """
-        Remove listbox entries that do not contain user-inputted string,
+        Remove listbox entries that do not contain user-supplied string,
         used to search through outputted data.
         """
         self.lb_func.delete(0, Tk.END)

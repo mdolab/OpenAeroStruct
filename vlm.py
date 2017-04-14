@@ -558,6 +558,9 @@ class VLMGeometry(Component):
 
             S_ref = 0.5 * np.sum(proj_norms)
 
+        if self.surface['symmetry']:
+            S_ref *= 2
+
         # Store each array
         unknowns['b_pts'] = b_pts
         unknowns['c_pts'] = c_pts
@@ -595,7 +598,10 @@ class VLMGeometry(Component):
                 seed_mesh = mesh.copy()
                 seed_mesh[:,:,2] = 0.
             meshb, _, _ = OAS_API.oas_api.compute_normals_b(seed_mesh, normalsb, 1.)
+
             jac['S_ref', 'def_mesh'] = np.atleast_2d(meshb.flatten())
+            if self.surface['symmetry']:
+                jac['S_ref', 'def_mesh'] *= 2
 
         else:
             cs_jac = self.complex_step_jacobian(params, unknowns, resids,
@@ -1307,6 +1313,7 @@ class ViscousDrag(Component):
         self.c_max_t = surface['c_max_t']
 
         self.ny = surface['num_y']
+        self.surface = surface
 
         self.add_param('re', val=5.e6)
         self.add_param('M', val=.84)
@@ -1354,7 +1361,7 @@ class ViscousDrag(Component):
             # d_over_q = d / 0.5 / rho / v**2
             self.d_over_q = 2 * cd * chords
 
-            # Calculate form factor
+            # Calculate form factor (Raymer Eq. 12.30)
             self.k_FF = 1.34 * M**0.18 * \
                 (1.0 + 0.6*self.t_over_c/self.c_max_t + 100*self.t_over_c**4)
             FF = self.k_FF * cos_sweep**0.28
@@ -1363,6 +1370,9 @@ class ViscousDrag(Component):
             self.D_over_q = np.sum(self.d_over_q * widths * FF)
 
             unknowns['CDv'] = self.D_over_q / S_ref
+
+            if self.surface['symmetry']:
+                unknowns['CDv'] *= 2
         else:
             unknowns['CDv'] = 0.0
 
@@ -1377,6 +1387,7 @@ class ViscousDrag(Component):
             p180 = np.pi / 180.
             M = params['M']
             S_ref = params['S_ref']
+
             widths = params['widths']
             lengths = params['lengths']
             cos_sweep = params['cos_sweep'] / widths
@@ -1414,6 +1425,12 @@ class ViscousDrag(Component):
             jac['CDv', 'widths'][0, :] = self.d_over_q * FF / S_ref * 0.72
             jac['CDv', 'S_ref'] = - self.D_over_q / S_ref**2
             jac['CDv', 'cos_sweep'][0, :] = 0.28 * self.k_FF * self.d_over_q / S_ref / cos_sweep**0.72
+
+            if self.surface['symmetry']:
+                jac['CDv', 'lengths'][0, :] *=  2
+                jac['CDv', 'widths'][0, :] *= 2
+                jac['CDv', 'S_ref'] *=  2
+                jac['CDv', 'cos_sweep'][0, :] *=  2
 
         return jac
 
@@ -1461,9 +1478,6 @@ class VLMCoeffs(Component):
         L = params['L']
         D = params['D']
 
-        if self.surface['symmetry']:
-            S_ref *= 2
-
         unknowns['CL1'] = L / (0.5 * rho * v**2 * S_ref)
         unknowns['CDi'] = D / (0.5 * rho * v**2 * S_ref)
 
@@ -1474,8 +1488,8 @@ class VLMCoeffs(Component):
         L = params['L']
         D = params['D']
 
-        if self.surface['symmetry']:
-            S_ref *= 2
+        # if self.surface['symmetry']:
+        #     S_ref *= 2
 
         jac = self.alloc_jacobian()
 
@@ -1488,12 +1502,12 @@ class VLMCoeffs(Component):
         jac['CL1', 'rho'] = -L / (0.5 * rho**2 * v**2 * S_ref)
         jac['CDi', 'rho'] = -D / (0.5 * rho**2 * v**2 * S_ref)
 
-        if self.surface['symmetry']:
-            jac['CL1', 'S_ref'] = -L / (.25 * rho * v**2 * S_ref**2)
-            jac['CDi', 'S_ref'] = -D / (.25 * rho * v**2 * S_ref**2)
-        else:
-            jac['CL1', 'S_ref'] = -L / (0.5 * rho * v**2 * S_ref**2)
-            jac['CDi', 'S_ref'] = -D / (0.5 * rho * v**2 * S_ref**2)
+        # if self.surface['symmetry']:
+        #     jac['CL1', 'S_ref'] = -L / (.25 * rho * v**2 * S_ref**2)
+        #     jac['CDi', 'S_ref'] = -D / (.25 * rho * v**2 * S_ref**2)
+        # else:
+        jac['CL1', 'S_ref'] = -L / (0.5 * rho * v**2 * S_ref**2)
+        jac['CDi', 'S_ref'] = -D / (0.5 * rho * v**2 * S_ref**2)
 
         jac['CL1', 'D'] = 0.
         jac['CDi', 'L'] = 0.
@@ -1512,9 +1526,6 @@ class TotalLift(Component):
     -------
     CL : float
         Total coefficient of lift (CL) for the lifting surface.
-    CL_wing : float
-        CL of the main wing, used for CL constrained optimization.
-
     """
 
     def __init__(self, surface):
@@ -1541,13 +1552,12 @@ class TotalDrag(Component):
     CDi : float
         Induced coefficient of drag (CD) for the lifting surface.
     CDv : float
-        Calculated viscous drag for the lifting surface..
+        Calculated viscous drag for the lifting surface.
 
     Returns
     -------
     CD : float
         Total coefficient of drag (CD) for the lifting surface.
-
     """
 
     def __init__(self, surface):

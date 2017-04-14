@@ -3,10 +3,26 @@ import numpy as np
 
 from openmdao.api import Component
 
-
-
 class FunctionalBreguetRange(Component):
-    """ Computes the fuel burn using the Breguet range equation """
+    """ Computes the fuel burn using the Breguet range equation using
+        the computed CL, CD, weight, and provided specific fuel consumption, speed of sound,
+        Mach number, initial weight, and range.
+
+        Note that we add information from each lifting surface.
+
+    Parameters
+    ----------
+    CL : float
+        Total coefficient of lift (CL) for the lifting surface.
+    CD : float
+        Total coefficient of drag (CD) for the lifting surface.
+    weight : float
+        Total weight of the structural spar.
+    Returns
+    -------
+    fuelburn : float
+        Computed fuel burn in kg based on the Breguet range equation.
+    """
 
     def __init__(self, surfaces, prob_dict):
         super(FunctionalBreguetRange, self).__init__()
@@ -19,7 +35,7 @@ class FunctionalBreguetRange(Component):
 
             self.add_param(name+'CL', val=0.)
             self.add_param(name+'CD', val=0.)
-            self.add_param(name+'weight', val=1.)
+            self.add_param(name+'structural_weight', val=0.)
 
         self.add_output('fuelburn', val=0.)
 
@@ -37,46 +53,63 @@ class FunctionalBreguetRange(Component):
             name = surface['name']
 
             # Convert W0 from kg to N
-            W0 = surface['W0'] * 9.80665
+            W0 = surface['W0'] * self.prob_dict['g']
 
             CL = params[name+'CL']
             CD = params[name+'CD']
-            Ws = params[name+'weight']
+            Ws = params[name+'structural_weight']
 
             fuelburn += np.sum((W0 + Ws) * (np.exp(R * CT / a / M * CD / CL) - 1))
 
         # Convert fuelburn from N to kg
-        unknowns['fuelburn'] = fuelburn / 9.80665
+        unknowns['fuelburn'] = fuelburn / self.prob_dict['g']
 
 class FunctionalEquilibrium(Component):
-    """ L = W constraint """
+    """ Lift = weight constraint.
+
+    Note that we add information from each lifting surface.
+
+    Parameters
+    ----------
+    L : float
+        Total lift for the lifting surface.
+    weight : float
+        Total weight of the structural spar.
+    fuelburn : float
+        Computed fuel burn in kg based on the Breguet range equation.
+
+    Returns
+    -------
+    eq_con : float
+        Equality constraint for L=W. eq_con = 0 for the constraint to be satisfied.
+    """
 
     def __init__(self, surfaces, prob_dict):
         super(FunctionalEquilibrium, self).__init__()
 
         self.surfaces = surfaces
+        self.prob_dict = prob_dict
 
         for surface in surfaces:
             name = surface['name']
 
             self.add_param(name+'L', val=0.)
-            self.add_param(name+'weight', val=1.)
+            self.add_param(name+'structural_weight', val=0.)
 
-        self.add_param('fuelburn', val=1.)
+        self.add_param('fuelburn', val=0.)
         self.add_output('eq_con', val=0.)
 
         self.deriv_options['type'] = 'cs'
         self.deriv_options['form'] = 'central'
-        #self.deriv_options['extra_check_partials_form'] = "central"
 
     def solve_nonlinear(self, params, unknowns, resids):
-        weight = 0.
+        structural_weight = 0.
         L = 0.
         W0 = 0.
         for surface in self.surfaces:
             name = surface['name']
-            weight += params[name+'weight']
+            structural_weight += params[name+'structural_weight']
             L += params[name+'L']
-            W0 += (surface['W0'] * 9.80665)
+            W0 += (surface['W0'] * self.prob_dict['g'])
 
-        unknowns['eq_con'] = (weight + params['fuelburn'] * 9.80665 + W0 - L) / W0
+        unknowns['eq_con'] = (structural_weight + params['fuelburn'] * self.prob_dict['g'] + W0 - L) / W0
