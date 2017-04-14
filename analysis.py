@@ -6,23 +6,31 @@
 """
 analysis.py
 
-This module contains wrapper functions for each part of the multidisciplinary analysis of the OpenAeroStruct model. 
-Specifically, this is the solve_nonlinear() method to each OpenMDAO component in OpenAeroStruct. To use them, first 
-call the setup() function, which returns an OASProblem object. This object contains the following attributes:
+This module contains wrapper functions for each part of the multidisciplinary 
+analysis of the OpenAeroStruct model. Specifically, this is the 
+solve_nonlinear() method to each OpenMDAO component in OpenAeroStruct. To use 
+them, first call the setup() function, which returns an OASProblem object. This 
+object contains the following attributes:
 
     OASProblem.prob_dict :   Dictionary of problem parameters
-    OASProblem.surfaces  :   List of surface dictionaries defining properties of each lifting surface
-    OASProblem.comp_dict :   Dictionary of OpenAeroStruct component objects which contain the analysis 
-                               of each with a dictionary of problem parameters
+    OASProblem.surfaces  :   List of surface dictionaries defining properties of
+                                each lifting surface
+    OASProblem.comp_dict :   Dictionary of OpenAeroStruct component objects 
+                                which contain the analysis of each with a 
+                                dictionary of problem parameters
 
-For each wrapper function, optionally pass in the necessary component object from the comp_dict dictionary as a keyword argument.
-Using pre-initialized components drastically reduces the computation time for a full multidisciplinary analysis. Without
-pre-initialization of the component, another argument must be given to initialize the component in the function. This extra argument
-is usually the surface dictionary, but can be other problem or surface parameters. An example with pre-initiazation is shown in
-aerodynamics() and structures(). An example without pre-initialization is shown in aerodynamics2() and structures2().
+For each wrapper function, optionally pass in the necessary component object 
+from the comp_dict dictionary. Using pre-initialized components drastically 
+reduces the computation time for a full multidisciplinary analysis. Without 
+pre-initialization of the component, another argument must be given to initialize
+the component within the function. This extra argument is usually the surface
+dictionary, but can be other problem or surface parameters. An example with 
+pre-initiazation is shown in aerodynamics() and structures(). A example without 
+pre-initialization is shown in aerodynamics2() and structures2().
 
-An example of the multidisciplinary analysis of the coupled system is in the if __name__=="__main__" function. It uses fixed point
-iteration to converge the coupled system of loads and displacements.
+An example of the multidisciplinary analysis of the coupled system is in the 
+if __name__=="__main__" function. It uses fixed point iteration to converge the 
+coupled system of loads and displacements.
 
 Current list of function wrappers available:
     vlm_geometry
@@ -38,27 +46,22 @@ Current list of function wrappers available:
     transfer_displacements
     transfer_loads
 
-For now, these functions only support a single lifting surface. B-spline customization of lifting surfaces is also not supported.
+For now, these functions only support a single lifting surface, and does not 
+support B-spline customization of the lifting surface.
 
 Future work required:
     - Extend functions to be used with multiple lifting surfaces
-    - Write wrappers for remaining components in functionals.py, VLMFunctionals, SpatialBeamFunctionals
+    - Write wrappers for remaining components in functionals.py, VLMFunctionals, 
+        SpatialBeamFunctionals
     - Fix BSpline surface customization
-    - Complete example of full multidisciplinary analysis in if __name__=="__main__" function
+    - Complete example of full multidisciplinary analysis in 
+        if __name__=="__main__" function
 
 """
-
-
-
-
-
-
-
 
 # make compatible Python 2.x to 3.x
 from __future__ import print_function, division
 # from future.builtins import range  # make compatible Python 2.x to 3.x
-# __all__ = ['setup','aerodynamics','structures']
 
 import numpy as np
 import math
@@ -67,13 +70,14 @@ from materials import MaterialsTube
 from spatialbeam import ComputeNodes, AssembleK, SpatialBeamFEM, SpatialBeamDisp#, SpatialBeamEnergy, SpatialBeamWeight, SpatialBeamVonMisesTube, SpatialBeamFailureKS
 from transfer import TransferDisplacements, TransferLoads
 from vlm import VLMGeometry, AssembleAIC, AeroCirculations, VLMForces#, VLMLiftDrag, VLMCoeffs, TotalLift, TotalDrag
-from geometry import GeometryMesh#, Bspline#, gen_crm_mesh, gen_rect_mesh, MonotonicConstraint
+from geometry import GeometryMesh#, Bspline, MonotonicConstraint
 from run_classes import OASProblem
+from openmdao.api import Component
 # from functionals import FunctionalBreguetRange, FunctionalEquilibrium
 
 # to disable OpenMDAO warnings which will create an error in Matlab
-# import warnings
-# warnings.filterwarnings("ignore")
+import warnings
+warnings.filterwarnings("ignore")
 
 try:
     import OAS_API
@@ -84,11 +88,9 @@ except:
     data_type = complex
 
 """
---------------------------------------------------------------------------------
-
+================================================================================
                             GEOMETRY / SETUP
-
---------------------------------------------------------------------------------
+================================================================================
 From run_classes.py: Manipulate geometry mesh based on high-level design parameters """
 
 
@@ -210,10 +212,6 @@ def setup(prob_dict={}, surfaces=[{}]):
     comp_dict['SpatialBeamDisp'] = SpatialBeamDisp(surface)
     OAS_prob.comp_dict = comp_dict
 
-    # return the surfaces list, problem dict, and component dict
-    surfaces = [surface]
-    prob_dict = OAS_prob.prob_dict
-    # return surfaces, prob_dict, comp_dict
     return OAS_prob
 
 
@@ -221,7 +219,7 @@ def setup(prob_dict={}, surfaces=[{}]):
 def gen_init_mesh(surface, comp_dict=None):
     ''' Generate initial def_mesh '''
     if comp_dict:
-        mesh = geometry_mesh(surface, comp=comp_dict['GeometryMesh'])
+        mesh = geometry_mesh(surface, comp_dict['GeometryMesh'])
         disp = np.zeros((surface['num_y'], 6), dtype=data_type)  # zero displacement
         def_mesh = transfer_displacements(mesh, disp, comp=comp_dict['TransferDisplacements'])
     else:
@@ -231,7 +229,7 @@ def gen_init_mesh(surface, comp_dict=None):
     return def_mesh
 
 
-def aerodynamics(def_mesh, surface, prob_dict, comp_dict=None):
+def aerodynamics(def_mesh, surface, prob_dict, comp_dict):
     ''' Use pre-initialized components '''
 
     # Unpack variables
@@ -240,11 +238,11 @@ def aerodynamics(def_mesh, surface, prob_dict, comp_dict=None):
     size = prob_dict.get('tot_panels')
     rho = prob_dict.get('rho')
 
-    b_pts, c_pts, widths, cos_sweep, lengths, normals, S_ref = vlm_geometry(def_mesh, comp=comp_dict['VLMGeometry'])
-    AIC, rhs= assemble_aic(surface, def_mesh, b_pts, c_pts, normals, v, alpha, comp=comp_dict['AssembleAIC'])
-    circulations = aero_circulations(AIC, rhs, comp=comp_dict['AeroCirculations'])
-    sec_forces = vlm_forces(surface, def_mesh, b_pts, circulations, alpha, v, rho, comp=comp_dict['VLMForces'])
-    loads = transfer_loads(def_mesh, sec_forces, comp=comp_dict['TransferLoads'])
+    b_pts, c_pts, widths, cos_sweep, lengths, normals, S_ref = vlm_geometry(def_mesh, comp_dict['VLMGeometry'])
+    AIC, rhs= assemble_aic(surface, def_mesh, b_pts, c_pts, normals, v, alpha, comp_dict['AssembleAIC'])
+    circulations = aero_circulations(AIC, rhs, comp_dict['AeroCirculations'])
+    sec_forces = vlm_forces(surface, def_mesh, b_pts, circulations, alpha, v, rho, comp_dict['VLMForces'])
+    loads = transfer_loads(def_mesh, sec_forces, comp_dict['TransferLoads'])
 
     return loads
 
@@ -267,7 +265,7 @@ def aerodynamics2(def_mesh, surface, prob_dict):
     return loads
 
 
-def structures(loads, surface, prob_dict, comp_dict=None):
+def structures(loads, surface, prob_dict, comp_dict):
     ''' Use pre-initialized components '''
 
     # Unpack variables
@@ -280,11 +278,11 @@ def structures(loads, surface, prob_dict, comp_dict=None):
     alpha = prob_dict.get('alpha')
     size =  prob_dict.get('tot_panels')
 
-    nodes = compute_nodes(mesh, comp=comp_dict['ComputeNodes'])
-    K, forces = assemble_k(A, Iy, Iz, J, nodes, loads, comp=comp_dict['AssembleK'])
-    disp_aug = spatial_beam_fem(K, forces, comp=comp_dict['SpatialBeamFEM'])
-    disp = spatial_beam_disp(disp_aug, comp=comp_dict['SpatialBeamDisp'])
-    def_mesh = transfer_displacements(mesh, disp, comp=comp_dict['TransferDisplacements'])
+    nodes = compute_nodes(mesh, comp_dict['ComputeNodes'])
+    K, forces = assemble_k(A, Iy, Iz, J, nodes, loads, comp_dict['AssembleK'])
+    disp_aug = spatial_beam_fem(K, forces, comp_dict['SpatialBeamFEM'])
+    disp = spatial_beam_disp(disp_aug, comp_dict['SpatialBeamDisp'])
+    def_mesh = transfer_displacements(mesh, disp, comp_dict['TransferDisplacements'])
 
     return def_mesh  # Output the def_mesh matrix
 
@@ -340,7 +338,8 @@ def geometry_mesh(surface, comp=None):
         Chord length for each panel edge.
     taper : float
         Taper ratio for the wing; 1 is untapered, 0 goes to a point at the tip.
-
+    comp : (optional) OpenAeroStruct component object.
+    
     Returns
     -------
     mesh[nx, ny, 3] : numpy array
@@ -348,7 +347,7 @@ def geometry_mesh(surface, comp=None):
         the geometric design variables.
     """
     if not comp:
-        comp = GeometryMesh(surface)
+        comp = GeometryMesh(surface) 
     params = {}
     #
     # The following is copied from the __init__() method of GeometryMesh()
@@ -418,7 +417,7 @@ def geometry_mesh(surface, comp=None):
 #     return ptname_out
 
 
-def transfer_displacements(mesh, disp, surface=None, comp=None):
+def transfer_displacements(mesh, disp, comp):
     """
     Perform displacement transfer.
 
@@ -434,14 +433,16 @@ def transfer_displacements(mesh, disp, surface=None, comp=None):
         Contains displacements for all six degrees of freedom, including
         displacements in the x, y, and z directions, and rotations about the
         x, y, and z axes.
+    comp : Either OpenAeroStruct component object (better), or surface dict.
 
     Returns
     -------
     def_mesh[nx, ny, 3] : numpy array
         Flattened array defining the lifting surfaces after deformation.
     """
-    if not comp:
-        comp = TransferDisplacements(surface)
+    if not isinstance(comp, Component):
+        surface = comp
+        comp = TransferDisplacements(surface)  
     params = {
         'mesh': mesh,
         'disp': disp
@@ -456,21 +457,20 @@ def transfer_displacements(mesh, disp, surface=None, comp=None):
 
 
 """
---------------------------------------------------------------------------------
-
+================================================================================
                                 AERODYNAMICS
-
---------------------------------------------------------------------------------
+================================================================================
 From vlm.py: """
 
 
-def vlm_geometry(def_mesh, surface=None, comp=None):
+def vlm_geometry(def_mesh, comp):
     """ Compute various geometric properties for VLM analysis.
 
     Parameters
     ----------
     def_mesh[nx, ny, 3] : numpy array
         Array defining the nodal coordinates of the lifting surface.
+    comp : Either OpenAeroStruct component object (better), or surface dict.
 
     Returns
     -------
@@ -489,7 +489,8 @@ def vlm_geometry(def_mesh, surface=None, comp=None):
     S_ref : float
         The reference area of the lifting surface.
     """
-    if not comp:
+    if not isinstance(comp, Component):
+        surface = comp
         comp = VLMGeometry(surface)
     params = {
         'def_mesh': def_mesh
@@ -541,6 +542,7 @@ def assemble_aic(surface, def_mesh, b_pts, c_pts, normals, v, alpha, comp=None):
         Freestream air velocity in m/s.
     alpha : float
         Angle of attack in degrees.
+    comp : (Optional) OpenAeroStruct component object.
 
     Returns
     -------
@@ -554,7 +556,6 @@ def assemble_aic(surface, def_mesh, b_pts, c_pts, normals, v, alpha, comp=None):
     surfaces = [surface]
     if not comp:
         comp=AssembleAIC(surfaces)
-
     params = {}
     ny=surface['num_y']
     nx=surface['num_x']
@@ -580,7 +581,7 @@ def assemble_aic(surface, def_mesh, b_pts, c_pts, normals, v, alpha, comp=None):
     return AIC, rhs
 
 
-def aero_circulations(AIC, rhs, size=None, comp=None):
+def aero_circulations(AIC, rhs, comp):
     """
     Compute the circulation strengths of the horseshoe vortices by solving the
     linear system AIC * circulations = n * v.
@@ -595,6 +596,8 @@ def aero_circulations(AIC, rhs, size=None, comp=None):
         horseshoe vortices.
     rhs[(nx-1)*(ny-1)] : numpy array
         The right-hand-side of the linear system that yields the circulations.
+    comp : Either OpenAeroStruct component object (better), or tot_panels.
+
 
     Returns
     -------
@@ -602,10 +605,10 @@ def aero_circulations(AIC, rhs, size=None, comp=None):
         Augmented displacement array. Obtained by solving the system
         AIC * circulations = n * v.
     """
-    if not comp:
-        comp = AeroCirculations(size)
-    if not size:
-        size = comp.size
+    if not isinstance(comp, Component):
+        tot_panels = comp
+        comp = AeroCirculations(tot_panels)
+    size = comp.size
     params = {
         'AIC': AIC,
         'rhs': rhs
@@ -645,6 +648,7 @@ def vlm_forces(surface, def_mesh, b_pts, circulations, alpha, v, rho, comp=None)
         Freestream air velocity in m/s.
     rho : float
         Air density in kg/m^3.
+    comp : (optional) OpenAeroStruct component object.
 
     Returns
     -------
@@ -683,7 +687,7 @@ def vlm_forces(surface, def_mesh, b_pts, circulations, alpha, v, rho, comp=None)
     return sec_forces
 
 
-def transfer_loads(def_mesh, sec_forces, surface=None, comp=None):
+def transfer_loads(def_mesh, sec_forces, comp):
     """
     Perform aerodynamic load transfer.
 
@@ -698,6 +702,7 @@ def transfer_loads(def_mesh, sec_forces, surface=None, comp=None):
         Flattened array containing the sectional forces acting on each panel.
         Stored in Fortran order (only relevant when more than one chordwise
         panel).
+    comp : Either OpenAeroStruct component object (better), or surface dict.
 
     Returns
     -------
@@ -705,7 +710,8 @@ def transfer_loads(def_mesh, sec_forces, surface=None, comp=None):
         Flattened array containing the loads applied on the FEM component,
         computed from the sectional forces.
     """
-    if not comp:
+    if not isinstance(comp, Component):
+        surface = comp
         comp=TransferLoads(surface)
     params={
         'def_mesh': def_mesh,
@@ -721,14 +727,12 @@ def transfer_loads(def_mesh, sec_forces, surface=None, comp=None):
 
 
 """
---------------------------------------------------------------------------------
-
+================================================================================
                                    STRUCTURES
-
---------------------------------------------------------------------------------
+================================================================================
 From spatialbeam.py: Define the structural analysis component using spatial beam theory. """
 
-def spatial_beam_fem(K, forces, size=None, comp=None):
+def spatial_beam_fem(K, forces, comp):
     """
     Compute the displacements and rotations by solving the linear system
     using the structural stiffness matrix.
@@ -743,11 +747,9 @@ def spatial_beam_fem(K, forces, size=None, comp=None):
     forces[6*(ny+1)] : numpy array
         Right-hand-side of the linear system. The loads from the aerodynamic
         analysis or the user-defined loads.
+    comp : Either OpenAeroStruct component object (better), or FEMsize of surface.
 
-    Optional Parameters
-    -------------------
-    size : int
-        The total number of panels on the surface mesh. Equivalent to pro
+
     Returns
     -------
     disp_aug[6*(ny+1)] : numpy array
@@ -755,26 +757,27 @@ def spatial_beam_fem(K, forces, size=None, comp=None):
         K * u = f, where f is a flattened version of loads.
 
     """
-    if not comp:
-        comp=SpatialBeamFEM(size)
-    if not size:
-        size = comp.size
+    if not isinstance(comp, Component):
+        FEMsize = comp
+        comp=SpatialBeamFEM(FEMsize)
+    else:
+        FEMsize = comp.size
     params={
         'K': K,
         'forces': forces
     }
     unknowns={
-        'disp_aug': np.zeros((size), dtype=data_type)
+        'disp_aug': np.zeros((FEMsize), dtype=data_type)
     }
     resids={
-        'disp_aug': np.zeros((size), dtype=data_type)
+        'disp_aug': np.zeros((FEMsize), dtype=data_type)
     }
     comp.solve_nonlinear(params, unknowns, resids)
     disp_aug=unknowns.get('disp_aug')
     return disp_aug
 
 
-def spatial_beam_disp(disp_aug, surface=None, comp=None):
+def spatial_beam_disp(disp_aug, comp):
     """
     Reshape the flattened displacements from the linear system solution into
     a 2D array so we can more easily use the results.
@@ -789,6 +792,7 @@ def spatial_beam_disp(disp_aug, surface=None, comp=None):
     disp_aug[6*(ny+1)] : numpy array
         Augmented displacement array. Obtained by solving the system
         K * disp_aug = forces, where forces is a flattened version of loads.
+    comp : Either OpenAeroStruct component object (better), or surface dict.
 
     Returns
     -------
@@ -796,7 +800,8 @@ def spatial_beam_disp(disp_aug, surface=None, comp=None):
         Actual displacement array formed by truncating disp_aug.
 
     """
-    if not comp:
+    if not isinstance(comp, Component):
+        surface = comp
         comp=SpatialBeamDisp(surface)
     params={
         'disp_aug': disp_aug
@@ -810,7 +815,7 @@ def spatial_beam_disp(disp_aug, surface=None, comp=None):
     return disp
 
 
-def compute_nodes(mesh, surface=None, comp=None):
+def compute_nodes(mesh, comp):
     """
     Compute FEM nodes based on aerodynamic mesh.
 
@@ -821,6 +826,7 @@ def compute_nodes(mesh, surface=None, comp=None):
     ----------
     mesh[nx, ny, 3] : numpy array
         Array defining the nodal points of the lifting surface.
+    comp : Either OpenAeroStruct component object (better), or surface dict.
 
     Returns
     -------
@@ -828,7 +834,8 @@ def compute_nodes(mesh, surface=None, comp=None):
         Flattened array with coordinates for each FEM node.
 
     """
-    if not comp:
+    if not isinstance(comp, Component):
+        surface = comp
         comp=ComputeNodes(surface)
     params={
         'mesh': mesh
@@ -842,7 +849,7 @@ def compute_nodes(mesh, surface=None, comp=None):
     return nodes
 
 
-def assemble_k(A, Iy, Iz, J, nodes, loads, surface=None, comp=None):
+def assemble_k(A, Iy, Iz, J, nodes, loads, comp):
     """
     Compute the displacements and rotations by solving the linear system
     using the structural stiffness matrix.
@@ -862,6 +869,7 @@ def assemble_k(A, Iy, Iz, J, nodes, loads, surface=None, comp=None):
     loads[ny, 6] : numpy array
         Flattened array containing the loads applied on the FEM component,
         computed from the sectional forces.
+    comp : Either OpenAeroStruct component object (better), or surface dict.
 
     Returns
     -------
@@ -872,7 +880,8 @@ def assemble_k(A, Iy, Iz, J, nodes, loads, surface=None, comp=None):
         Right-hand-side of the linear system. The loads from the aerodynamic
         analysis or the user-defined loads.
     """
-    if not comp:
+    if not isinstance(comp, Component):
+        surface = comp
         comp = AssembleK(surface)  # if component is not passed in, surface must be
     params = {
         'A': A,
@@ -894,15 +903,13 @@ def assemble_k(A, Iy, Iz, J, nodes, loads, surface=None, comp=None):
 
 
 """
---------------------------------------------------------------------------------
-
+================================================================================
                                 MATERIALS
-
---------------------------------------------------------------------------------
+================================================================================
 From materials.py: """
 
 
-def materials_tube(r, thickness, surface=None, comp=None):
+def materials_tube(r, thickness, comp):
     """ Compute geometric properties for a tube element.
 
     Parameters
@@ -911,6 +918,7 @@ def materials_tube(r, thickness, surface=None, comp=None):
         Radii for each FEM element.
     thickness : array_like
         Tube thickness for each FEM element.
+    comp : Either OpenAeroStruct component object (better), or surface dict.
 
     Returns
     -------
@@ -924,7 +932,8 @@ def materials_tube(r, thickness, surface=None, comp=None):
         Polar moment of inertia for each FEM element.
 
     """
-    if not comp:
+    if not isinstance(comp, Component):
+        surface = comp
         comp=MaterialsTube(surface)
     # if not r:
     #     r = surface['r']  # this is already contained in surface dict
@@ -949,11 +958,9 @@ def materials_tube(r, thickness, surface=None, comp=None):
     return A, Iy, Iz, J
 
     """
-    --------------------------------------------------------------------------------
-
-                                    FUNCTIONALS
-
-    --------------------------------------------------------------------------------
+================================================================================
+                                FUNCTIONALS
+================================================================================
     From functionals.py:
 
         to be added here...
@@ -1005,10 +1012,12 @@ if __name__ == "__main__":
 
     # Make local functions for coupled system analysis
     def f_aero(def_mesh):
-        loads = aerodynamics(def_mesh, OAS_prob.surfaces[0], OAS_prob.prob_dict, OAS_prob.comp_dict)
+        # loads = aerodynamics(def_mesh, OAS_prob.surfaces[0], OAS_prob.prob_dict, OAS_prob.comp_dict)
+        loads = aerodynamics2(def_mesh, OAS_prob.surfaces[0], OAS_prob.prob_dict)
         return loads
     def f_struct(loads):
-        def_mesh = structures(loads, OAS_prob.surfaces[0], OAS_prob.prob_dict, OAS_prob.comp_dict)
+        # def_mesh = structures(loads, OAS_prob.surfaces[0], OAS_prob.prob_dict, OAS_prob.comp_dict)
+        def_mesh = structures2(loads, OAS_prob.surfaces[0], OAS_prob.prob_dict)
         return def_mesh
 
     # Define FPI parameters
