@@ -12,7 +12,6 @@ SUBDIR_SRC    =	src/adjoint \
 		src/OAS \
 
 default:
-
 # Check if the config.mk file is in the config dir.
 	@if [ ! -f "config/config.mk" ]; then \
 	echo "Before compiling, copy an existing config file from the "; \
