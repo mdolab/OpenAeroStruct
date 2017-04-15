@@ -386,6 +386,7 @@ class OASProblem(object):
         surf_dict['mesh'] = mesh
 
         radius = radii(mesh, surf_dict['t_over_c'])
+        surf_dict['radius'] = radius
 
         # Set initial thicknesses
         surf_dict['thickness'] = radius / 10

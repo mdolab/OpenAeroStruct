@@ -201,7 +201,7 @@ def dihedral(mesh, dihedral_angle, symmetry):
         Nodal mesh defining the aerodynamic surface with dihedral angle.
 
     """
-    
+
     num_x, num_y, _ = mesh.shape
     le = mesh[0]
     p180 = np.pi / 180
@@ -332,7 +332,7 @@ class GeometryMesh(Component):
         the geometric design variables.
     """
 
-    def __init__(self, surface, desvars):
+    def __init__(self, surface, desvars={}):
         super(GeometryMesh, self).__init__()
 
         name = surface['name']

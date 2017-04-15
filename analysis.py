@@ -6,30 +6,30 @@
 """
 analysis.py
 
-This module contains wrapper functions for each part of the multidisciplinary 
-analysis of the OpenAeroStruct model. Specifically, this is the 
-solve_nonlinear() method to each OpenMDAO component in OpenAeroStruct. To use 
-them, first call the setup() function, which returns an OASProblem object. This 
+This module contains wrapper functions for each part of the multidisciplinary
+analysis of the OpenAeroStruct model. Specifically, this is the
+solve_nonlinear() method to each OpenMDAO component in OpenAeroStruct. To use
+them, first call the setup() function, which returns an OASProblem object. This
 object contains the following attributes:
 
     OASProblem.prob_dict :   Dictionary of problem parameters
     OASProblem.surfaces  :   List of surface dictionaries defining properties of
                                 each lifting surface
-    OASProblem.comp_dict :   Dictionary of OpenAeroStruct component objects 
-                                which contain the analysis of each with a 
+    OASProblem.comp_dict :   Dictionary of OpenAeroStruct component objects
+                                which contain the analysis of each with a
                                 dictionary of problem parameters
 
-For each wrapper function, optionally pass in the necessary component object 
-from the comp_dict dictionary. Using pre-initialized components drastically 
-reduces the computation time for a full multidisciplinary analysis. Without 
+For each wrapper function, optionally pass in the necessary component object
+from the comp_dict dictionary. Using pre-initialized components drastically
+reduces the computation time for a full multidisciplinary analysis. Without
 pre-initialization of the component, another argument must be given to initialize
 the component within the function. This extra argument is usually the surface
-dictionary, but can be other problem or surface parameters. An example with 
-pre-initiazation is shown in aerodynamics() and structures(). A example without 
+dictionary, but can be other problem or surface parameters. An example with
+pre-initiazation is shown in aerodynamics() and structures(). A example without
 pre-initialization is shown in aerodynamics2() and structures2().
 
-An example of the multidisciplinary analysis of the coupled system is in the 
-if __name__=="__main__" function. It uses fixed point iteration to converge the 
+An example of the multidisciplinary analysis of the coupled system is in the
+if __name__=="__main__" function. It uses fixed point iteration to converge the
 coupled system of loads and displacements.
 
 Current list of function wrappers available:
@@ -46,15 +46,15 @@ Current list of function wrappers available:
     transfer_displacements
     transfer_loads
 
-For now, these functions only support a single lifting surface, and does not 
+For now, these functions only support a single lifting surface, and does not
 support B-spline customization of the lifting surface.
 
 Future work required:
     - Extend functions to be used with multiple lifting surfaces
-    - Write wrappers for remaining components in functionals.py, VLMFunctionals, 
+    - Write wrappers for remaining components in functionals.py, VLMFunctionals,
         SpatialBeamFunctionals
     - Fix BSpline surface customization
-    - Complete example of full multidisciplinary analysis in 
+    - Complete example of full multidisciplinary analysis in
         if __name__=="__main__" function
 
 """
@@ -177,7 +177,7 @@ def setup(prob_dict={}, surfaces=[{}]):
 
     # Add materials properties for the wing surface to the surface dict in OAS_prob
     for idx, surface in enumerate(OAS_prob.surfaces):
-        A, Iy, Iz, J = materials_tube(surface['r'], surface['t'], surface)
+        A, Iy, Iz, J = materials_tube(surface['radius'], surface['thickness'], surface)
         OAS_prob.surfaces[idx].update({
             'A': A,
             'Iy': Iy,
@@ -339,7 +339,7 @@ def geometry_mesh(surface, comp=None):
     taper : float
         Taper ratio for the wing; 1 is untapered, 0 goes to a point at the tip.
     comp : (optional) OpenAeroStruct component object.
-    
+
     Returns
     -------
     mesh[nx, ny, 3] : numpy array
@@ -347,7 +347,7 @@ def geometry_mesh(surface, comp=None):
         the geometric design variables.
     """
     if not comp:
-        comp = GeometryMesh(surface) 
+        comp = GeometryMesh(surface)
     params = {}
     #
     # The following is copied from the __init__() method of GeometryMesh()
@@ -376,7 +376,7 @@ def geometry_mesh(surface, comp=None):
             else:
                 val = surface[var]
         geo_params[param] = val
-        if var in surface['active_geo_vars']:
+        if var in surface['geo_vars']:
             params.update({param: val})
     unknowns = {
         'mesh': comp.mesh
@@ -442,7 +442,7 @@ def transfer_displacements(mesh, disp, comp):
     """
     if not isinstance(comp, Component):
         surface = comp
-        comp = TransferDisplacements(surface)  
+        comp = TransferDisplacements(surface)
     params = {
         'mesh': mesh,
         'disp': disp
@@ -936,11 +936,11 @@ def materials_tube(r, thickness, comp):
         surface = comp
         comp=MaterialsTube(surface)
     # if not r:
-    #     r = surface['r']  # this is already contained in surface dict
+    #     r = surface['radius']  # this is already contained in surface dict
     # if not thickness:
-    #     thickness = surface['t']  # this is already contained in surface dict
+    #     thickness = surface['thickness']  # this is already contained in surface dict
     params={
-        'r': r,
+        'radius': r,
         'thickness': thickness
     }
     unknowns={
@@ -974,7 +974,7 @@ if __name__ == "__main__":
      To change problem parameters, input the prob_dict dictionary, e.g.
      prob_dict = {
         'rho' : 0.35,
-        'R': 14.0e6
+        'thickness': 14.0e6
      }
     '''
     print('Fortran Flag = {0}'.format(fortran_flag))
