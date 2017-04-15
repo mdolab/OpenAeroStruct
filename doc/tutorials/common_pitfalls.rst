@@ -20,6 +20,9 @@ Here are some common issues and possible solutions for them.
 MDO Course Homework Tips
 ========================
 
+.. note::
+  Make sure to change the default surface and problem dictionaries to use values that are reasonable for your aircraft at the correct flight conditions. All units are SI.
+
 - If you are unsure of where a parameter or unknown is within the problem, view the `.html` files that are produced when running a case. You can use the search function to look for specific variables.
 
 - Download and use the most recent version of the OpenAeroStruct code as there may have been bug fixes for certain issues.
@@ -35,3 +38,8 @@ MDO Course Homework Tips
 - Change `prob_dict['g']` to alter the force of gravity for different load cases.
 
 - The `structural_weight` parameter within the structural discipline is in Newtons, not kg.
+
+- To change the linear and nonlinear solvers for the aerostructural problem, look for the `ln_solver` and `nl_solver` methods within `setup_aerostruct` in `run_classes.py`. See http://openmdao.readthedocs.io/en/latest/srcdocs/packages/openmdao.solvers.html for info on different solvers. Try using Newton and NLGaussSeidel on the coupled system.
+
+.. note::
+  Each solver has different default tolerance values. To make a valid comparison between solvers, consistently set the tolerance criteria for each solver. See the OpenMDAO documentation for the specific keywords and defaults.

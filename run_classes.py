@@ -418,7 +418,7 @@ class OASProblem(object):
             elif var in input_dict.keys():
                 surf_dict['initial_geo'].append(var)
 
-        if 'thickness_cp' in surf_dict['geo_vars']:
+        if 'thickness_cp' not in surf_dict['initial_geo']:
             surf_dict['thickness_cp'] *= np.max(surf_dict['thickness'])
 
         if surf_dict['loads'] is None:
