@@ -991,6 +991,10 @@ class OASProblem(object):
         coupled.aero_states.ln_solver = LinearGaussSeidel()
         coupled.nl_solver = NLGaussSeidel()
 
+        # This is only available in the most recent version of OpenMDAO.
+        # It may help converge tightly coupled systems when using NLGS.
+        # coupled.nl_solver.options['use_aitken'] = True
+
         if self.prob_dict['print_level'] == 2:
             coupled.ln_solver.options['iprint'] = 1
         if self.prob_dict['print_level']:

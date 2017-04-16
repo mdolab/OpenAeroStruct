@@ -47,7 +47,8 @@ if __name__ == "__main__":
 
 
     # Set problem type
-    prob_dict = {'type' : 'aerostruct'}
+    prob_dict = {'type' : 'aerostruct',
+                 'with_viscous' : True,}
 
     if sys.argv[1].startswith('0'):  # run analysis once
         prob_dict.update({'optimize' : False})
@@ -58,13 +59,13 @@ if __name__ == "__main__":
     OAS_prob = OASProblem(prob_dict)
 
     # Create a dictionary to store options about the surface
-    surf_dict = {'name' : 'wing',
-                 'symmetry' : True,
-                 'num_y' : 7,
-                 'num_x' : 2,
-                 'wing_type' : 'CRM',
-                 'CD0' : 0.015,
-                 }
+    surf_dict = {'num_y' : 7,
+              'num_x' : 2,
+              'wing_type' : 'CRM',
+              'CD0' : 0.015,
+              'symmetry' : True,
+              'num_twist_cp' : 2,
+              'num_thickness_cp' : 2}
 
     # Add the specified wing surface to the problem
     OAS_prob.add_surface(surf_dict)
@@ -72,14 +73,14 @@ if __name__ == "__main__":
     # Add design variables, constraint, and objective on the problem
     OAS_prob.add_desvar('alpha', lower=-10., upper=10.)
     OAS_prob.add_constraint('eq_con', equals=0.)
-    OAS_prob.add_objective('fuelburn', scaler=1e-4)
+    OAS_prob.add_objective('fuelburn', scaler=1e-5)
 
     # Single lifting surface
     if not sys.argv[1].endswith('m'):
 
         # Setup problem and add design variables, constraint, and objective
         OAS_prob.add_desvar('wing.twist_cp', lower=-15., upper=15.)
-        OAS_prob.add_desvar('wing.thickness_cp', lower=0.001, upper=0.25, scaler=1e2)
+        OAS_prob.add_desvar('wing.thickness_cp', lower=0.01, upper=0.5, scaler=1e2)
         OAS_prob.add_constraint('wing_perf.failure', upper=0.)
         OAS_prob.add_constraint('wing_perf.thickness_intersects', upper=0.)
         OAS_prob.setup()
@@ -94,11 +95,11 @@ if __name__ == "__main__":
 
         # Add design variables and constraints for both the wing and tail
         OAS_prob.add_desvar('wing.twist_cp', lower=-15., upper=15.)
-        OAS_prob.add_desvar('wing.thickness_cp', lower=0.001, upper=0.25, scaler=1e2)
+        OAS_prob.add_desvar('wing.thickness_cp', lower=0.01, upper=0.5, scaler=1e2)
         OAS_prob.add_constraint('wing_perf.failure', upper=0.)
         OAS_prob.add_constraint('wing_perf.thickness_intersects', upper=0.)
         OAS_prob.add_desvar('tail.twist_cp', lower=-15., upper=15.)
-        OAS_prob.add_desvar('tail.thickness_cp', lower=0.001, upper=0.25, scaler=1e2)
+        OAS_prob.add_desvar('tail.thickness_cp', lower=0.01, upper=0.5, scaler=1e2)
         OAS_prob.add_constraint('tail_perf.failure', upper=0.)
         OAS_prob.add_constraint('tail_perf.thickness_intersects', upper=0.)
 

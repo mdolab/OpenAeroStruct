@@ -366,9 +366,9 @@ class GeometryMesh(Component):
             if len(var.split('_')) > 1:
                 param = var.split('_')[0]
                 if var in ones_list:
-                    val = np.ones(ny, dtype=data_type)
+                    val = np.ones(ny)
                 elif var in zeros_list:
-                    val = np.zeros(ny, dtype=data_type)
+                    val = np.zeros(ny)
                 else:
                     val = surface[var]
             else:
@@ -526,7 +526,7 @@ class MonotonicConstraint(Component):
         self.con_name = 'monotonic_' + var_name
         self.symmetry = surface['symmetry']
         self.ny = surface['num_y']
-        self.add_param(self.var_name, val=np.zeros(self.ny), dtype=data_type)
+        self.add_param(self.var_name, val=np.zeros(self.ny))
         self.add_output(self.con_name, val=np.zeros(self.ny-1))
 
     def solve_nonlinear(self, params, unknowns, resids):
@@ -677,7 +677,7 @@ def gen_crm_mesh(num_x, num_y, span, chord, span_cos_spacing=0., chord_cos_spaci
     # Get the number of points that define this CRM shape and create a mesh
     # array based on this size
     n_raw_points = raw_crm_points.shape[0]
-    mesh = np.empty((2, n_raw_points, 3), dtype=data_type)
+    mesh = np.empty((2, n_raw_points, 3))
 
     # Set the leading and trailing edges of the mesh matrix
     mesh[0, :, :] = le.T
@@ -702,7 +702,7 @@ def gen_crm_mesh(num_x, num_y, span, chord, span_cos_spacing=0., chord_cos_spaci
 
     # Populate a mesh object with the desired num_y dimension based on
     # interpolated values from the raw CRM points.
-    mesh = np.empty((2, ny2, 3), dtype=data_type)
+    mesh = np.empty((2, ny2, 3))
     for j in range(2):
         for i in range(3):
             mesh[j, :, i] = np.interp(lins[::-1], eta, raw_mesh[j, :, i].real)
@@ -769,7 +769,7 @@ def add_chordwise_panels(mesh, num_x, chord_cos_spacing):
     te = mesh[-1, :, :]
 
     # Create a new mesh with the desired num_x and set the leading and trailing edge values
-    new_mesh = np.zeros((num_x, num_y, 3), dtype=data_type)
+    new_mesh = np.zeros((num_x, num_y, 3))
     new_mesh[ 0, :, :] = le
     new_mesh[-1, :, :] = te
 
@@ -811,7 +811,7 @@ def gen_rect_mesh(num_x, num_y, span, chord, span_cos_spacing=0., chord_cos_spac
         specified parameters.
     """
 
-    mesh = np.zeros((num_x, num_y, 3), dtype=data_type)
+    mesh = np.zeros((num_x, num_y, 3))
     ny2 = (num_y + 1) // 2
     beta = np.linspace(0, np.pi/2, ny2)
 
