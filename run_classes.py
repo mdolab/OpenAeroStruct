@@ -119,104 +119,6 @@ class OASProblem(object):
         self.constraints = {}
         self.objective = {}
 
-    def get_default_surf_dict(self):
-        """
-        Obtain the default settings for the surface descriptions. Note that
-        these defaults are overwritten based on user input for each surface.
-        Each dictionary describes one surface.
-
-        Returns
-        -------
-        defaults : dict
-            A python dict containing the default surface-level settings.
-        """
-
-        defaults = {
-                    # Wing definition
-                    'name' : 'wing',        # name of the surface
-                    'num_x' : 3,            # number of chordwise points
-                    'num_y' : 5,            # number of spanwise points
-                    'span_cos_spacing' : 1, # 0 for uniform spanwise panels
-                                            # 1 for cosine-spaced panels
-                                            # any value between 0 and 1 for
-                                            # a mixed spacing
-                    'chord_cos_spacing' : 0.,   # 0 for uniform chordwise panels
-                                            # 1 for cosine-spaced panels
-                                            # any value between 0 and 1 for
-                                            # a mixed spacing
-                    'wing_type' : 'rect',   # initial shape of the wing
-                                            # either 'CRM' or 'rect'
-                                            # 'CRM' can have different options
-                                            # after it, such as 'CRM:alpha_2.75'
-                                            # for the CRM shape at alpha=2.75
-                    'offset' : np.array([0., 0., 0.]), # coordinates to offset
-                                    # the surface from its default location
-                    'symmetry' : True,     # if true, model one half of wing
-                                            # reflected across the plane y = 0
-                    'S_ref_type' : 'wetted', # how we compute the wing area,
-                                             # can be 'wetted' or 'projected'
-
-                    # Simple Geometric Variables
-                    'span' : 10.,           # full wingspan, even for symmetric cases
-                    'root_chord' : 1.,      # root chord
-                    'dihedral' : 0.,        # wing dihedral angle in degrees
-                                            # positive is upward
-                    'sweep' : 0.,           # wing sweep angle in degrees
-                                            # positive sweeps back
-                    'taper' : 1.,           # taper ratio; 1. is uniform chord
-
-                    # B-spline Geometric Variables. The number of control points
-                    # for each of these variables can be specified in surf_dict
-                    # by adding the prefix "num" to the variable (e.g. num_twist)
-                    'twist_cp' : None,
-                    'chord_cp' : None,
-                    'xshear_cp' : None,
-                    'zshear_cp' : None,
-                    'thickness_cp' : None,
-                    'radius_cp' : None,
-
-                    # Geometric variables. The user generally does not need
-                    # to change these geometry variables. This is simply
-                    # a list of possible geometry variables that is later
-                    # filtered down based on which are active.
-                    'geo_vars' : ['sweep', 'dihedral', 'twist_cp', 'xshear_cp',
-                        'zshear_cp', 'span', 'chord_cp', 'taper', 'thickness_cp', 'radius_cp'],
-
-                    # Aerodynamic performance of the aircraft without the wing.
-                    # These CL0 and CD0 values are added to the CL and CD
-                    # obtained from aerodynamic analysis of the wing to get
-                    # the total CL and CD.
-                    # These CL0 and CD0 values do not vary wrt alpha.
-                    'CL0' : 0.0,            # CL of the aircraft without the wing
-                    'CD0' : 0.0,            # CD of the aircraft without the wing
-
-                    # Airfoil properties for viscous drag calculation
-                    'k_lam' : 0.05,         # percentage of chord with laminar
-                                            # flow, used for viscous drag
-                    't_over_c' : 0.12,      # thickness over chord ratio (NACA0012)
-                    'c_max_t' : .303,       # chordwise location of maximum (NACA0012)
-                                            # thickness
-
-                    # Structural values are based on aluminum 7075
-                    'E' : 70.e9,            # [Pa] Young's modulus of the spar
-                    'G' : 30.e9,            # [Pa] shear modulus of the spar
-                    'stress' : 500.e6 / 2.5,# [Pa] yield stress divided by 2.5 for limiting case
-                    'mrho' : 3.e3,          # [kg/m^3] material density
-                    'fem_origin' : 0.35,    # normalized chordwise location of the spar
-                    'W0' : 0.4 * 3e5,       # [kg] weight of the airplane without
-                                            # the wing structure and fuel.
-                                            # The default is 40% of the MTOW of
-                                            # B777-300 is 3e5 kg.
-                    'loads' : None,         # [N] allow the user to input loads
-                    'disp' : None,          # [m] nodal displacements of the FEM model
-
-                    # Constraints
-                    'exact_failure_constraint' : False, # if false, use KS function
-                    'monotonic_con' : None, # add monotonic constraint to the given
-                                                # distributed variable
-                    }
-        return defaults
-
     def get_default_prob_dict(self):
         """
         Obtain the default settings for the problem description. Note that
@@ -257,8 +159,111 @@ class OASProblem(object):
                     'CT' : 9.80665 * 17.e-6, # [1/s] (9.80665 N/kg * 17e-6 kg/N/s)
                                              # specific fuel consumption
                     'R' : 11.165e6,            # [m] maximum range (B777-300)
+                    'cg' : np.zeros((3)), # Center of gravity for the
+                                                 # entire aircraft. Used in trim
+                                                 # and stability calculations.
+                    'W0' : 0.4 * 3e5,       # [kg] weight of the airplane without
+                                            # the wing structure and fuel.
+                                            # The default is 40% of the MTOW of
+                                            # B777-300 is 3e5 kg.
                     }
 
+        return defaults
+
+
+    def get_default_surf_dict(self):
+        """
+        Obtain the default settings for the surface descriptions. Note that
+        these defaults are overwritten based on user input for each surface.
+        Each dictionary describes one surface.
+
+        Returns
+        -------
+        defaults : dict
+            A python dict containing the default surface-level settings.
+        """
+
+        defaults = {
+                    # Wing definition
+                    'name' : 'wing',        # name of the surface
+                    'num_x' : 3,            # number of chordwise points
+                    'num_y' : 5,            # number of spanwise points
+                    'span_cos_spacing' : 1, # 0 for uniform spanwise panels
+                                            # 1 for cosine-spaced panels
+                                            # any value between 0 and 1 for
+                                            # a mixed spacing
+                    'chord_cos_spacing' : 0.,   # 0 for uniform chordwise panels
+                                            # 1 for cosine-spaced panels
+                                            # any value between 0 and 1 for
+                                            # a mixed spacing
+                    'wing_type' : 'rect',   # initial shape of the wing
+                                            # either 'CRM' or 'rect'
+                                            # 'CRM' can have different options
+                                            # after it, such as 'CRM:alpha_2.75'
+                                            # for the CRM shape at alpha=2.75
+                    'offset' : np.zeros((3)), # coordinates to offset
+                                    # the surface from its default location
+                    'symmetry' : True,     # if true, model one half of wing
+                                            # reflected across the plane y = 0
+                    'S_ref_type' : 'wetted', # how we compute the wing area,
+                                             # can be 'wetted' or 'projected'
+
+                    # Simple Geometric Variables
+                    'span' : 10.,           # full wingspan, even for symmetric cases
+                    'root_chord' : 1.,      # root chord
+                    'dihedral' : 0.,        # wing dihedral angle in degrees
+                                            # positive is upward
+                    'sweep' : 0.,           # wing sweep angle in degrees
+                                            # positive sweeps back
+                    'taper' : 1.,           # taper ratio; 1. is uniform chord
+
+                    # B-spline Geometric Variables. The number of control points
+                    # for each of these variables can be specified in surf_dict
+                    # by adding the prefix "num" to the variable (e.g. num_twist)
+                    'twist_cp' : None,
+                    'chord_cp' : None,
+                    'xshear_cp' : None,
+                    'zshear_cp' : None,
+                    'thickness_cp' : None,
+                    'radius_cp' : None,
+
+                    # Geometric variables. The user generally does not need
+                    # to change these geometry variables. This is simply
+                    # a list of possible geometry variables that is later
+                    # filtered down based on which are active.
+                    'geo_vars' : ['sweep', 'dihedral', 'twist_cp', 'xshear_cp',
+                        'zshear_cp', 'span', 'chord_cp', 'taper', 'thickness_cp', 'radius_cp'],
+
+                    # Aerodynamic performance of the lifting surface at
+                    # an angle of attack of 0 (alpha=0).
+                    # These CL0 and CD0 values are added to the CL and CD
+                    # obtained from aerodynamic analysis of the surface to get
+                    # the total CL and CD.
+                    # These CL0 and CD0 values do not vary wrt alpha.
+                    'CL0' : 0.0,            # CL of the surface at alpha=0
+                    'CD0' : 0.0,            # CD of the surface at alpha=0
+
+                    # Airfoil properties for viscous drag calculation
+                    'k_lam' : 0.05,         # percentage of chord with laminar
+                                            # flow, used for viscous drag
+                    't_over_c' : 0.12,      # thickness over chord ratio (NACA0012)
+                    'c_max_t' : .303,       # chordwise location of maximum (NACA0012)
+                                            # thickness
+
+                    # Structural values are based on aluminum 7075
+                    'E' : 70.e9,            # [Pa] Young's modulus of the spar
+                    'G' : 30.e9,            # [Pa] shear modulus of the spar
+                    'stress' : 500.e6 / 2.5,# [Pa] yield stress divided by 2.5 for limiting case
+                    'mrho' : 3.e3,          # [kg/m^3] material density
+                    'fem_origin' : 0.35,    # normalized chordwise location of the spar
+                    'loads' : None,         # [N] allow the user to input loads
+                    'disp' : None,          # [m] nodal displacements of the FEM model
+
+                    # Constraints
+                    'exact_failure_constraint' : False, # if false, use KS function
+                    'monotonic_con' : None, # add monotonic constraint to the given
+                                            # distributed variable. Ex. 'chord_cp'
+                    }
         return defaults
 
 
@@ -763,7 +768,8 @@ class OASProblem(object):
             ('alpha', self.prob_dict['alpha']),
             ('M', self.prob_dict['M']),
             ('re', self.prob_dict['Re']/self.prob_dict['reynolds_length']),
-            ('rho', self.prob_dict['rho'])]
+            ('rho', self.prob_dict['rho']),
+            ('cg', self.prob_dict['cg'])]
         root.add('prob_vars',
                  IndepVarComp(prob_vars),
                  promotes=['*'])
@@ -775,7 +781,7 @@ class OASProblem(object):
         # each surface interacts with the others.
         root.add('aero_states',
                  VLMStates(self.surfaces),
-                 promotes=['circulations', 'v', 'alpha', 'rho'])
+                 promotes=['circulations', 'v', 'alpha', 'rho', 'cg'])
 
         # Explicitly connect parameters from each surface's group and the common
         # 'aero_states' group.
@@ -790,6 +796,9 @@ class OASProblem(object):
             root.connect(name[:-1] + '.def_mesh', 'aero_states.' + name + 'def_mesh')
             root.connect(name[:-1] + '.b_pts', 'aero_states.' + name + 'b_pts')
             root.connect(name[:-1] + '.c_pts', 'aero_states.' + name + 'c_pts')
+            root.connect(name[:-1] + '.S_ref', 'aero_states.' + name + 'S_ref')
+            root.connect(name[:-1] + '.lengths', 'aero_states.' + name + 'lengths')
+            root.connect(name[:-1] + '.widths', 'aero_states.' + name + 'widths')
             root.connect(name[:-1] + '.normals', 'aero_states.' + name + 'normals')
 
             # Connect the results from 'aero_states' to the performance groups
@@ -927,7 +936,7 @@ class OASProblem(object):
         # coupled group.
         coupled.add('aero_states',
                  VLMStates(self.surfaces),
-                 promotes=['v', 'alpha', 'rho'])
+                 promotes=['v', 'alpha', 'rho', 'cg'])
 
         # Explicitly connect parameters from each surface's group and the common
         # 'aero_states' group.
@@ -939,6 +948,9 @@ class OASProblem(object):
             root.connect('coupled.' + name[:-1] + '.def_mesh', 'coupled.aero_states.' + name + 'def_mesh')
             root.connect('coupled.' + name[:-1] + '.b_pts', 'coupled.aero_states.' + name + 'b_pts')
             root.connect('coupled.' + name[:-1] + '.c_pts', 'coupled.aero_states.' + name + 'c_pts')
+            root.connect('coupled.' + name[:-1] + '.lengths', 'coupled.aero_states.' + name + 'lengths')
+            root.connect('coupled.' + name[:-1] + '.widths', 'coupled.aero_states.' + name + 'widths')
+            root.connect('coupled.' + name[:-1] + '.S_ref', 'coupled.aero_states.' + name + 'S_ref')
             root.connect('coupled.' + name[:-1] + '.normals', 'coupled.aero_states.' + name + 'normals')
 
             # Connect the results from 'aero_states' to the performance groups
@@ -1011,14 +1023,15 @@ class OASProblem(object):
         coupled.set_order(order_list)
 
         # Add the coupled group to the root problem
-        root.add('coupled', coupled, promotes=['v', 'alpha', 'rho'])
+        root.add('coupled', coupled, promotes=['v', 'alpha', 'rho', 'cg'])
 
         # Add problem information as an independent variables component
         prob_vars = [('v', self.prob_dict['v']),
             ('alpha', self.prob_dict['alpha']),
             ('M', self.prob_dict['M']),
             ('re', self.prob_dict['Re']/self.prob_dict['reynolds_length']),
-            ('rho', self.prob_dict['rho'])]
+            ('rho', self.prob_dict['rho']),
+            ('cg', self.prob_dict['cg'])]
         root.add('prob_vars',
                  IndepVarComp(prob_vars),
                  promotes=['*'])

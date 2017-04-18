@@ -47,13 +47,11 @@ class FunctionalBreguetRange(Component):
         a = self.prob_dict['a']
         R = self.prob_dict['R']
         M = self.prob_dict['M']
+        W0 = self.prob_dict['W0'] * self.prob_dict['g']
         fuelburn = 0.
 
         for surface in self.surfaces:
             name = surface['name']
-
-            # Convert W0 from kg to N
-            W0 = surface['W0'] * self.prob_dict['g']
 
             CL = params[name+'CL']
             CD = params[name+'CD']
@@ -110,6 +108,6 @@ class FunctionalEquilibrium(Component):
             name = surface['name']
             structural_weight += params[name+'structural_weight']
             L += params[name+'L']
-            W0 += (surface['W0'] * self.prob_dict['g'])
+            W0 += (self.prob_dict['W0'] * self.prob_dict['g'])
 
         unknowns['eq_con'] = (structural_weight + params['fuelburn'] * self.prob_dict['g'] + W0 - L) / W0

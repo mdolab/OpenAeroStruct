@@ -1020,6 +1020,11 @@ class VLMForces(Component):
 
             self.add_param(name+'def_mesh', val=np.zeros((nx, ny, 3), dtype=data_type))
             self.add_param(name+'b_pts', val=np.zeros((nx-1, ny, 3), dtype=data_type))
+            self.add_param(name+'c_pts', val=np.zeros((nx-1, ny-1, 3), dtype=data_type))
+            self.add_param(name+'widths', val=np.zeros((ny-1), dtype=data_type))
+            self.add_param(name+'lengths', val=np.zeros((ny), dtype=data_type))
+
+            self.add_param(name+'S_ref', val=0.)
             self.add_output(name+'sec_forces', val=np.zeros((nx-1, ny-1, 3), dtype=data_type))
 
         self.tot_panels = tot_panels
@@ -1028,6 +1033,10 @@ class VLMForces(Component):
         self.add_param('alpha', val=3.)
         self.add_param('v', val=10.)
         self.add_param('rho', val=3.)
+        self.add_param('cg', val=np.zeros((3), dtype=data_type))
+
+        self.add_output('CM', val=np.zeros((3), dtype=data_type))
+
         self.surfaces = surfaces
 
         self.mtx = np.zeros((tot_panels, tot_panels, 3), dtype=data_type)
@@ -1060,6 +1069,8 @@ class VLMForces(Component):
         self.v[:, 2] += sina * params['v']
 
         i = 0
+        S_ref_tot = 0.
+        M = np.zeros((3), dtype=data_type)
         for surface in self.surfaces:
             name = surface['name']
             nx = surface['num_x']
@@ -1068,6 +1079,10 @@ class VLMForces(Component):
             num_panels = (nx - 1) * (ny - 1)
 
             b_pts = params[name+'b_pts']
+            c_pts = params[name+'c_pts']
+            widths = params[name+'widths']
+            lengths = params[name+'lengths']
+            S_ref = params[name+'S_ref']
 
             if fortran_flag:
                 sec_forces = OAS_API.oas_api.forcecalc(self.v[i:i+num_panels, :], circ[i:i+num_panels], rho, b_pts)
@@ -1086,9 +1101,27 @@ class VLMForces(Component):
                     sec_forces[:, ind] = \
                         (params['rho'] * circ[i:i+num_panels] * cross[:, ind])
 
+            sec_forces = sec_forces.reshape((nx-1, ny-1, 3), order='F')
             unknowns[name+'sec_forces'] = sec_forces.reshape((nx-1, ny-1, 3), order='F')
 
+            panel_chords = (lengths[1:] + lengths[:-1]) / 2.
+            MAC = 1. / S_ref * np.sum(panel_chords**2 * widths)
+
+            if surface['symmetry']:
+                MAC *= 2
+
+            diff = (c_pts - params['cg']) / MAC
+            moment = np.zeros((ny - 1, 3), dtype=data_type)
+            for ind in range(nx-1):
+                moment += np.cross(diff[ind, :, :], sec_forces[ind, :, :], axis=1)
+
+            M += np.sum(moment, axis=0)
+            S_ref_tot += S_ref
             i += num_panels
+
+        unknowns['CM'] = M / (0.5 * rho * params['v']**2 * S_ref_tot)
+        print(unknowns['CM'])
+
 
     def apply_linear(self, params, unknowns, dparams, dunknowns, dresids, mode):
 

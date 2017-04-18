@@ -167,7 +167,7 @@ class AssembleK(Component):
         analysis or the user-defined loads.
     """
 
-    def __init__(self, surface, cg_x=5):
+    def __init__(self, surface):
         super(AssembleK, self).__init__()
 
         self.ny = surface['num_y']
@@ -186,7 +186,6 @@ class AssembleK(Component):
 
         self.E = surface['E']
         self.G = surface['G']
-        self.cg_x = cg_x
 
         self.const2 = np.array([
             [1, -1],
@@ -236,10 +235,9 @@ class AssembleK(Component):
 
     def solve_nonlinear(self, params, unknowns, resids):
 
-        # Find constrained nodes based on closeness to specified cg point
-        nodes = params['nodes']
-        dist = nodes - np.array([self.cg_x, 0, 0])
-        idx = (np.linalg.norm(dist, axis=1)).argmin()
+        # Find constrained nodes based on closeness to the origin.
+        # Here we assume the lifting surfaces are fixed on the xz-plane.
+        idx = (np.linalg.norm(params['nodes'], axis=1)).argmin()
         self.cons = idx
 
         loads = params['loads']
@@ -260,10 +258,10 @@ class AssembleK(Component):
 
     def apply_linear(self, params, unknowns, dparams, dunknowns, dresids, mode):
 
-        # Find constrained nodes based on closeness to specified cg point
+        # Find constrained nodes based on closeness to the origin.
+        # Here we assume the lifting surfaces are fixed on the xz-plane.
         nodes = params['nodes']
-        dist = nodes - np.array([self.cg_x, 0, 0])
-        idx = (np.linalg.norm(dist, axis=1)).argmin()
+        idx = (np.linalg.norm(nodes, axis=1)).argmin()
         self.cons = idx
 
         loads = params['loads']

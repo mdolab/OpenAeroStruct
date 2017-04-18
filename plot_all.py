@@ -120,6 +120,7 @@ class Display(object):
         self.AR = []
         self.S_ref = []
         self.obj = []
+        self.cg = []
 
         meta_db = sqlitedict.SqliteDict(self.db_name, 'metadata')
         self.opt = False
@@ -236,6 +237,7 @@ class Display(object):
                 alpha.append(case_data['Unknowns']['alpha'] * np.pi / 180.)
                 rho.append(case_data['Unknowns']['rho'])
                 v.append(case_data['Unknowns']['v'])
+                self.cg.append(case_data['Unknowns']['cg'])
 
         if self.opt:
             self.num_iters = np.max([int(len(self.mesh) / n_names) - 1, 1])
@@ -346,6 +348,7 @@ class Display(object):
                     center += np.mean(self.def_mesh[i*n_names+j], axis=(0,1))
                 for j in range(n_names):
                     self.def_mesh[i*n_names+j] -= center / n_names
+                self.cg[i] -= center / n_names
 
         # recenter mesh points for better viewing
         for i in range(self.num_iters + 1):
@@ -478,6 +481,9 @@ class Display(object):
                         self.c2.grid_forget()
                 except:
                     self.ax.plot_wireframe(x, y, z, rstride=1, cstride=1, color='k')
+
+                cg = self.cg[self.curr_pos]
+                self.ax.scatter(cg[0], cg[1], cg[2], s=100, color='r')
 
             if self.show_tube:
                 r0 = self.radius[self.curr_pos*n_names+j]
