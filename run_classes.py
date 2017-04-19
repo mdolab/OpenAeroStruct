@@ -586,7 +586,7 @@ class OASProblem(object):
             self.prob.run()
 
         # Uncomment this to check the partial derivatives of each component
-        # self.prob.check_partial_derivatives(compact_print=True)
+        self.prob.check_partial_derivatives(compact_print=True)
 
 
     def setup_struct(self):
