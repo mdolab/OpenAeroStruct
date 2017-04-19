@@ -1130,7 +1130,6 @@ class VLMForces(Component):
         self.S_ref_tot = S_ref_tot
 
         unknowns['CM'] = M / (0.5 * rho * params['v']**2 * S_ref_tot)
-        print(unknowns['CM'])
 
     def apply_linear(self, params, unknowns, dparams, dunknowns, dresids, mode):
 
