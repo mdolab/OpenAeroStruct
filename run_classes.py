@@ -1009,9 +1009,12 @@ class OASProblem(object):
 
         # This is only available in the most recent version of OpenMDAO.
         # It may help converge tightly coupled systems when using NLGS.
-        coupled.nl_solver.options['use_aitken'] = True
-        coupled.nl_solver.options['aitken_alpha_min'] = 0.01
-        # coupled.nl_solver.options['aitken_alpha_max'] = 0.5
+        try:
+            coupled.nl_solver.options['use_aitken'] = True
+            coupled.nl_solver.options['aitken_alpha_min'] = 0.01
+            # coupled.nl_solver.options['aitken_alpha_max'] = 0.5
+        except:
+            pass
 
         if self.prob_dict['print_level'] == 2:
             coupled.ln_solver.options['iprint'] = 1

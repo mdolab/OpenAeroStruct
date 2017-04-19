@@ -22,11 +22,11 @@ sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from OpenAeroStruct import OASProblem
 
 # prob_type = 'aerostruct'
-prob_type = 'aero'
+prob_type = 'aerostruct'
 mesh_level = 'L1'
 
 # Set problem type
-prob_dict = {'optimize' : True,
+prob_dict = {'optimize' : False,
              'type' : prob_type,
              'cg' : np.array([.4, 0., 0.]),
              'optimizer' : 'SNOPT',
@@ -77,7 +77,7 @@ surf_dict = {'num_y' : num_y,
              'zshear_cp' : zshear_cp,
              'xshear_cp' : xshear_cp,
              'chord_cp' : chord_cp,
-             'radius_cp' : radius_cp,
+            #  'radius_cp' : radius_cp,
 
              'E' : 85.e9,
              'G' : 25.e9,
