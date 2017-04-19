@@ -781,7 +781,7 @@ class OASProblem(object):
         # each surface interacts with the others.
         root.add('aero_states',
                  VLMStates(self.surfaces),
-                 promotes=['circulations', 'v', 'alpha', 'rho', 'cg'])
+                 promotes=['circulations', 'v', 'alpha', 'rho', 'cg', 'CM'])
 
         # Explicitly connect parameters from each surface's group and the common
         # 'aero_states' group.

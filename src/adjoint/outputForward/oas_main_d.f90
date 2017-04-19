@@ -1483,25 +1483,41 @@ contains
     out = out + tmp
   end subroutine biotsavart
 !  differentiation of forcecalc_main in forward (tangent) mode (with options i4 dr8 r8):
-!   variations   of useful results: sec_forces
-!   with respect to varying inputs: v circ bpts rho
-!   rw status of diff variables: v:in circ:in bpts:in sec_forces:out
-!                rho:in
+!   variations   of useful results: m sec_forces
+!   with respect to varying inputs: v s_ref circ cpts bpts cg lengths
+!                rho widths
+!   rw status of diff variables: m:out v:in s_ref:in circ:in cpts:in
+!                bpts:in sec_forces:out cg:in lengths:in rho:in
+!                widths:in
   subroutine forcecalc_main_d(v, vd, circ, circd, rho, rhod, bpts, bptsd&
-&   , nx, ny, num_panels, sec_forces, sec_forcesd)
+&   , cg, cgd, cpts, cptsd, lengths, lengthsd, widths, widthsd, s_ref, &
+&   s_refd, symmetry, nx, ny, num_panels, sec_forces, sec_forcesd, m, md&
+& )
     implicit none
     integer, intent(in) :: nx, ny, num_panels
     real(kind=8), intent(in) :: v(num_panels, 3), circ(num_panels), rho&
 &   , bpts(nx-1, ny, 3)
     real(kind=8), intent(in) :: vd(num_panels, 3), circd(num_panels), &
 &   rhod, bptsd(nx-1, ny, 3)
+    real(kind=8), intent(in) :: cpts(nx-1, ny-1, 3), cg(3), s_ref
+    real(kind=8), intent(in) :: cptsd(nx-1, ny-1, 3), cgd(3), s_refd
+    real(kind=8), intent(in) :: lengths(ny), widths(ny-1)
+    real(kind=8), intent(in) :: lengthsd(ny), widthsd(ny-1)
+    logical, intent(in) :: symmetry
     real(kind=8), intent(out) :: sec_forces(num_panels, 3)
     real(kind=8), intent(out) :: sec_forcesd(num_panels, 3)
+    real(kind=8), intent(out) :: m(3)
+    real(kind=8), intent(out) :: md(3)
     real(kind=8) :: bound(num_panels, 3), v_cross_bound(num_panels, 3), &
 &   tmp(3)
     real(kind=8) :: boundd(num_panels, 3), v_cross_boundd(num_panels, 3)&
 &   , tmpd(3)
+    real(kind=8) :: panel_chords(ny-1), mac, moment(ny-1, 3)
+    real(kind=8) :: panel_chordsd(ny-1), macd, momentd(ny-1, 3)
     integer :: i, j, k
+    intrinsic sum
+    real(kind=8), dimension(ny-1) :: arg1
+    real(kind=8), dimension(ny-1) :: arg1d
     boundd = 0.0_8
     do j=1,ny-1
       do i=1,nx-1
@@ -1523,17 +1539,60 @@ contains
 &       rho*circ*v_cross_boundd(:, i)
       sec_forces(:, i) = rho*circ*v_cross_bound(:, i)
     end do
+    panel_chordsd = (lengthsd(2:)+lengthsd(:ny-1))/2.
+    panel_chords = (lengths(2:)+lengths(:ny-1))/2.
+    arg1d(:) = 2*panel_chords*panel_chordsd*widths + panel_chords**2*&
+&     widthsd
+    arg1(:) = panel_chords**2*widths
+    macd = sum(arg1d(:))/s_ref - s_refd*sum(arg1(:))/s_ref**2
+    mac = 1./s_ref*sum(arg1(:))
+    if (symmetry) then
+      macd = 2*macd
+      mac = mac*2
+    end if
+    moment(:, :) = 0.
+    momentd = 0.0_8
+    do j=1,ny-1
+      do i=1,nx-1
+        call cross_d(cpts(i, j, :) - cg, cptsd(i, j, :) - cgd, &
+&              sec_forces((j-1)*(nx-1)+i, :), sec_forcesd((j-1)*(nx-1)+i&
+&              , :), tmp, tmpd)
+        momentd(j, :) = momentd(j, :) + tmpd
+        moment(j, :) = moment(j, :) + tmp
+      end do
+    end do
+    momentd = (momentd*mac-moment*macd)/mac**2
+    moment = moment/mac
+    if (symmetry) then
+      momentd(:, 1) = 0.0_8
+      moment(:, 1) = 0.
+      momentd(:, 3) = 0.0_8
+      moment(:, 3) = 0.
+    end if
+    m = 0.
+    md = 0.0_8
+    do j=1,ny-1
+      md = md + momentd(j, :)
+      m = m + moment(j, :)
+    end do
   end subroutine forcecalc_main_d
-  subroutine forcecalc_main(v, circ, rho, bpts, nx, ny, num_panels, &
-&   sec_forces)
+  subroutine forcecalc_main(v, circ, rho, bpts, cg, cpts, lengths, &
+&   widths, s_ref, symmetry, nx, ny, num_panels, sec_forces, m)
     implicit none
     integer, intent(in) :: nx, ny, num_panels
     real(kind=8), intent(in) :: v(num_panels, 3), circ(num_panels), rho&
 &   , bpts(nx-1, ny, 3)
+    real(kind=8), intent(in) :: cpts(nx-1, ny-1, 3), cg(3), s_ref
+    real(kind=8), intent(in) :: lengths(ny), widths(ny-1)
+    logical, intent(in) :: symmetry
     real(kind=8), intent(out) :: sec_forces(num_panels, 3)
+    real(kind=8), intent(out) :: m(3)
     real(kind=8) :: bound(num_panels, 3), v_cross_bound(num_panels, 3), &
 &   tmp(3)
+    real(kind=8) :: panel_chords(ny-1), mac, moment(ny-1, 3)
     integer :: i, j, k
+    intrinsic sum
+    real(kind=8), dimension(ny-1) :: arg1
     do j=1,ny-1
       do i=1,nx-1
         bound((j-1)*(nx-1)+i, :) = bpts(i, j+1, :) - bpts(i, j, :)
@@ -1545,6 +1604,27 @@ contains
     end do
     do i=1,3
       sec_forces(:, i) = rho*circ*v_cross_bound(:, i)
+    end do
+    panel_chords = (lengths(2:)+lengths(:ny-1))/2.
+    arg1(:) = panel_chords**2*widths
+    mac = 1./s_ref*sum(arg1(:))
+    if (symmetry) mac = mac*2
+    moment(:, :) = 0.
+    do j=1,ny-1
+      do i=1,nx-1
+        call cross(cpts(i, j, :) - cg, sec_forces((j-1)*(nx-1)+i, :), &
+&            tmp)
+        moment(j, :) = moment(j, :) + tmp
+      end do
+    end do
+    moment = moment/mac
+    if (symmetry) then
+      moment(:, 1) = 0.
+      moment(:, 3) = 0.
+    end if
+    m = 0.
+    do j=1,ny-1
+      m = m + moment(j, :)
     end do
   end subroutine forcecalc_main
 !  differentiation of compute_normals_main in forward (tangent) mode (with options i4 dr8 r8):

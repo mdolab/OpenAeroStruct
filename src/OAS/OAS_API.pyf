@@ -84,17 +84,24 @@ python module OAS_API ! in
                 real(kind=8) dimension(nx,ny,3),intent(out),depend(nx,ny) :: mesh
                 real(kind=8) dimension(nx,ny,3),intent(in),depend(nx,ny) :: meshb
             end subroutine manipulate_mesh_b
-            subroutine forcecalc(v,circ,rho,bpts,nx,ny,num_panels,sec_forces) ! in :OAS_API:OAS_API.F90:oas_api
+            subroutine forcecalc(v,circ,rho,bpts,cg,cpts,lengths,widths,s_ref,symmetry,nx,ny,num_panels,sec_forces,m) ! in :OAS_API:OAS_API.F90:oas_api
                 real(kind=8) dimension(num_panels,3),intent(in) :: v
                 real(kind=8) dimension(num_panels),intent(in),depend(num_panels) :: circ
                 real(kind=8) intent(in) :: rho
                 real(kind=8) dimension(nx - 1,ny,3),intent(in) :: bpts
+                real(kind=8) dimension(3),intent(in) :: cg
+                real(kind=8) dimension(nx - 1,ny - 1,3),intent(in),depend(nx,ny) :: cpts
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: lengths
+                real(kind=8) dimension(ny - 1),intent(in),depend(ny) :: widths
+                real(kind=8) intent(in) :: s_ref
+                logical intent(in) :: symmetry
                 integer, optional,intent(in),check((shape(bpts,0)+1)==nx),depend(bpts) :: nx=(shape(bpts,0)+1)
                 integer, optional,intent(in),check(shape(bpts,1)==ny),depend(bpts) :: ny=shape(bpts,1)
                 integer, optional,intent(in),check(shape(v,0)==num_panels),depend(v) :: num_panels=shape(v,0)
                 real(kind=8) dimension(num_panels,3),intent(out),depend(num_panels) :: sec_forces
+                real(kind=8) dimension(3),intent(out) :: m
             end subroutine forcecalc
-            subroutine forcecalc_d(v,vd,circ,circd,rho,rhod,bpts,bptsd,nx,ny,num_panels,sec_forces,sec_forcesd) ! in :OAS_API:OAS_API.F90:oas_api
+            subroutine forcecalc_d(v,vd,circ,circd,rho,rhod,bpts,bptsd,nx,ny,num_panels,sec_forces,sec_forcesd,cg,cgd,cpts,cptsd,lengths,lengthsd,widths,widthsd,s_ref,s_refd,symmetry,m,md) ! in :OAS_API:OAS_API.F90:oas_api
                 use oas_main_d, only: forcecalc_main_d
                 real(kind=8) dimension(num_panels,3),intent(in) :: v
                 real(kind=8) dimension(num_panels,3),intent(in),depend(num_panels) :: vd
@@ -109,8 +116,21 @@ python module OAS_API ! in
                 integer, optional,intent(in),check(shape(v,0)==num_panels),depend(v) :: num_panels=shape(v,0)
                 real(kind=8) dimension(num_panels,3),intent(out),depend(num_panels) :: sec_forces
                 real(kind=8) dimension(num_panels,3),intent(out),depend(num_panels) :: sec_forcesd
+                real(kind=8) dimension(3),intent(in) :: cg
+                real(kind=8) dimension(3),intent(in) :: cgd
+                real(kind=8) dimension(nx - 1,ny - 1,3),intent(in),depend(nx,ny) :: cpts
+                real(kind=8) dimension(nx - 1,ny - 1,3),intent(in),depend(nx,ny) :: cptsd
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: lengths
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: lengthsd
+                real(kind=8) dimension(ny - 1),intent(in),depend(ny) :: widths
+                real(kind=8) dimension(ny - 1),intent(in),depend(ny) :: widthsd
+                real(kind=8) intent(in) :: s_ref
+                real(kind=8) intent(in) :: s_refd
+                logical intent(in) :: symmetry
+                real(kind=8) dimension(3),intent(out) :: m
+                real(kind=8) dimension(3),intent(out) :: md
             end subroutine forcecalc_d
-            subroutine forcecalc_b(v,vb,circ,circb,rho,rhob,bpts,bptsb,nx,ny,num_panels,sec_forces,sec_forcesb) ! in :OAS_API:OAS_API.F90:oas_api
+            subroutine forcecalc_b(v,vb,circ,circb,rho,rhob,bpts,bptsb,nx,ny,num_panels,sec_forces,sec_forcesb,cg,cgb,cpts,cptsb,lengths,lengthsb,widths,widthsb,s_ref,s_refb,symmetry,m,mb) ! in :OAS_API:OAS_API.F90:oas_api
                 use oas_main_b, only: forcecalc_main_b
                 real(kind=8) dimension(num_panels,3),intent(in) :: v
                 real(kind=8) dimension(num_panels,3),intent(out),depend(num_panels) :: vb
@@ -125,6 +145,19 @@ python module OAS_API ! in
                 integer, optional,intent(in),check(shape(v,0)==num_panels),depend(v) :: num_panels=shape(v,0)
                 real(kind=8) dimension(num_panels,3),intent(out),depend(num_panels) :: sec_forces
                 real(kind=8) dimension(num_panels,3),intent(in),depend(num_panels) :: sec_forcesb
+                real(kind=8) dimension(3),intent(in) :: cg
+                real(kind=8) dimension(3),intent(out) :: cgb
+                real(kind=8) dimension(nx - 1,ny - 1,3),intent(in),depend(nx,ny) :: cpts
+                real(kind=8) dimension(nx - 1,ny - 1,3),intent(out),depend(nx,ny) :: cptsb
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: lengths
+                real(kind=8) dimension(ny),intent(out),depend(ny) :: lengthsb
+                real(kind=8) dimension(ny - 1),intent(in),depend(ny) :: widths
+                real(kind=8) dimension(ny - 1),intent(out),depend(ny) :: widthsb
+                real(kind=8) intent(in) :: s_ref
+                real(kind=8) intent(out) :: s_refb
+                logical intent(in) :: symmetry
+                real(kind=8) dimension(3),intent(out) :: m
+                real(kind=8) dimension(3),intent(in) :: mb
             end subroutine forcecalc_b
             subroutine assemblestructmtx(n,tot_n_fem,nodes,a,j,iy,iz,k_a,k_t,k_y,k_z,cons,e,g,x_gl,t,k_elem,pelem_a,pelem_t,pelem_y,pelem_z,t_elem,const2,const_y,const_z,k) ! in :OAS_API:OAS_API.F90:oas_api
                 integer, optional,intent(in),check((len(a)+1)>=n),depend(a) :: n=(len(a)+1)

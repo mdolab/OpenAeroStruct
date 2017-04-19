@@ -711,16 +711,22 @@ contains
 
   end subroutine biotsavart
 
-  subroutine forcecalc_main(v, circ, rho, bpts, nx, ny, num_panels, sec_forces)
+  subroutine forcecalc_main(v, circ, rho, bpts, cg, cpts, lengths, widths, &
+    S_ref, symmetry, nx, ny, num_panels, sec_forces, M)
 
     implicit none
 
     real(kind=8), intent(in) :: v(num_panels, 3), circ(num_panels), rho, bpts(nx-1, ny, 3)
     integer, intent(in) :: nx, ny, num_panels
+    real(kind=8), intent(in) :: cpts(nx-1, ny-1, 3), cg(3), S_ref
+    real(kind=8), intent(in) :: lengths(ny), widths(ny-1)
+    logical, intent(in) :: symmetry
 
     real(kind=8), intent(out) :: sec_forces(num_panels, 3)
+    real(kind=8), intent(out) :: M(3)
 
     real(kind=8) :: bound(num_panels, 3), v_cross_bound(num_panels, 3), tmp(3)
+    real(kind=8) :: panel_chords(ny-1), MAC, moment(ny-1, 3)
     integer :: i, j, k
 
     do j=1,ny-1
@@ -736,6 +742,32 @@ contains
 
     do i=1,3
       sec_forces(:, i) = rho * circ * v_cross_bound(:, i)
+    end do
+
+    panel_chords = (lengths(2:) + lengths(:ny-1)) / 2.
+    MAC = 1. / S_ref * sum(panel_chords**2 * widths)
+
+    if (symmetry) then
+      MAC = MAC * 2
+    end if
+
+    moment(:, :) = 0.
+    do j=1,ny-1
+      do i=1,nx-1
+        call cross(cpts(i, j, :) - cg, sec_forces((j-1)*(nx-1) + i, :), tmp)
+        moment(j, :) = moment(j, :) + tmp
+      end do
+    end do
+    moment = moment / MAC
+
+    if (symmetry) then
+      moment(:, 1) = 0.
+      moment(:, 3) = 0.
+    end if
+
+    M = 0.
+    do j=1,ny-1
+      M = M + moment(j, :)
     end do
 
   end subroutine

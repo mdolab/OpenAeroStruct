@@ -60,7 +60,7 @@ ad_forward:
 	assembleaeromtx_main(alpha, points, bpts, mesh) > (mtx) \
 	calc_vonmises_main(nodes, r, disp) > vonmises \
 	transferdisplacements_main(mesh, disp) > def_mesh \
-	forcecalc_main(v, circ, rho, bpts) > sec_forces \
+	forcecalc_main(v, circ, rho, bpts, cg, cpts, lengths, widths, S_ref) > (sec_forces, M) \
 	manipulate_mesh_main(sweep, twist, chord, dihedral, taper, xshear, zshear, span) > mesh \
 	compute_normals_main(mesh) > normals, S_ref" ../OAS/OAS_main.F90 \
 	-forward $(TAPENADE_PRECISION) \
@@ -88,7 +88,7 @@ ad_reverse:
 	assembleaeromtx_main(alpha, points, bpts, mesh) > (mtx) \
 	calc_vonmises_main(nodes, r, disp) > vonmises \
 	transferdisplacements_main(mesh, disp) > def_mesh \
-	forcecalc_main(v, circ, rho, bpts) > sec_forces \
+	forcecalc_main(v, circ, rho, bpts, cg, cpts, lengths, widths, S_ref) > (sec_forces, M) \
 	manipulate_mesh_main(sweep, twist, chord, dihedral, taper, xshear, zshear, span) > mesh \
 	compute_normals_main(mesh) > normals, S_ref" ../OAS/OAS_main.F90 \
 	-reverse $(TAPENADE_PRECISION) \

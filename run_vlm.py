@@ -57,7 +57,7 @@ if __name__ == "__main__":
     OAS_prob = OASProblem(prob_dict)
 
     # Create a dictionary to store options about the surface
-    surf_dict = {'num_y' : 51,
+    surf_dict = {'num_y' : 7,
                  'num_x' : 2,
                  'wing_type' : 'CRM',
                  'CD0' : 0.015,
