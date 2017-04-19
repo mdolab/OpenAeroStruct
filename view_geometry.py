@@ -54,8 +54,7 @@ except:
 class Display(object):
     def __init__(self, db_name):
 
-
-        self.f = plt.figure(dpi=100, figsize=(8, 8), facecolor='white')
+        self.f = plt.figure(dpi=100, figsize=(14, 14), facecolor='white')
 
         self.ax = plt.subplot2grid((4, 4), (0, 0), rowspan=4,
                                    colspan=4, projection='3d')
@@ -348,70 +347,6 @@ class Display(object):
             diff = (self.max_vm - self.min_vm) * 0.05
             self.min_vm -= diff
             self.max_vm += diff
-
-    def plot_sides(self):
-
-        if self.show_wing:
-
-            self.ax2.cla()
-            self.ax2.locator_params(axis='y',nbins=5)
-            self.ax2.locator_params(axis='x',nbins=3)
-            self.ax2.set_ylim([self.min_twist, self.max_twist])
-            self.ax2.set_xlim([-1, 1])
-            self.ax2.set_ylabel('twist', rotation="horizontal", ha="right")
-
-            self.ax3.cla()
-            self.ax3.text(0.05, 0.8, 'elliptical',
-                transform=self.ax3.transAxes, color='g')
-            self.ax3.locator_params(axis='y',nbins=4)
-            self.ax3.locator_params(axis='x',nbins=3)
-            self.ax3.set_ylim([self.min_l, self.max_l])
-            self.ax3.set_xlim([-1, 1])
-            self.ax3.set_ylabel('lift', rotation="horizontal", ha="right")
-
-        if self.show_tube:
-
-            self.ax4.cla()
-            self.ax4.locator_params(axis='y',nbins=4)
-            self.ax4.locator_params(axis='x',nbins=3)
-            self.ax4.set_ylim([self.min_t, self.max_t])
-            self.ax4.set_xlim([-1, 1])
-            self.ax4.set_ylabel('thickness', rotation="horizontal", ha="right")
-
-            self.ax5.cla()
-            self.ax5.locator_params(axis='y',nbins=4)
-            self.ax5.locator_params(axis='x',nbins=3)
-            self.ax5.set_ylim([self.min_vm, self.max_vm])
-            self.ax5.set_ylim([0, 25e6])
-            self.ax5.set_xlim([-1, 1])
-            self.ax5.set_ylabel('von mises', rotation="horizontal", ha="right")
-            # 20.e6 Pa stress limit hardcoded for aluminum
-            self.ax5.axhline(20.e6, c='r', lw=2, ls='--')
-            self.ax5.text(0.05, 0.85, 'failure limit',
-                transform=self.ax5.transAxes, color='r')
-
-        n_names = len(self.names)
-        for j, name in enumerate(self.names):
-            m_vals = self.mesh[self.curr_pos*n_names+j].copy()
-            span = m_vals[0, -1, 1] - m_vals[0, 0, 1]
-            rel_span = (m_vals[0, :, 1] - m_vals[0, 0, 1]) * 2 / span - 1
-            span_diff = ((m_vals[0, :-1, 1] + m_vals[0, 1:, 1]) / 2 - m_vals[0, 0, 1]) * 2 / span - 1
-
-            if self.show_wing:
-                t_vals = self.twist[self.curr_pos*n_names+j]
-                l_vals = self.lift[self.curr_pos*n_names+j]
-                le_vals = self.lift_ell[self.curr_pos*n_names+j]
-
-                self.ax2.plot(rel_span, t_vals, lw=2, c='b')
-                self.ax3.plot(rel_span, le_vals, '--', lw=2, c='g')
-                self.ax3.plot(span_diff, l_vals, lw=2, c='b')
-
-            if self.show_tube:
-                thick_vals = self.thickness[self.curr_pos*n_names+j]
-                vm_vals = self.vonmises[self.curr_pos*n_names+j]
-
-                self.ax4.plot(span_diff, thick_vals, lw=2, c='b')
-                self.ax5.plot(span_diff, vm_vals, lw=2, c='b')
 
     def plot_wing(self):
 

@@ -253,7 +253,7 @@ class OASProblem(object):
                     # Structural values are based on aluminum 7075
                     'E' : 70.e9,            # [Pa] Young's modulus of the spar
                     'G' : 30.e9,            # [Pa] shear modulus of the spar
-                    'stress' : 500.e6 / 2.5,# [Pa] yield stress divided by 2.5 for limiting case
+                    'yield' : 500.e6 / 2.5, # [Pa] yield stress divided by 2.5 for limiting case
                     'mrho' : 3.e3,          # [kg/m^3] material density
                     'fem_origin' : 0.35,    # normalized chordwise location of the spar
                     'loads' : None,         # [N] allow the user to input loads
@@ -671,6 +671,8 @@ class OASProblem(object):
             # The default is 'wing'.
             root.add(name[:-1], tmp_group, promotes=[])
 
+            root.add_metadata(surface['name'] + 'yield_stress', surface['yield'])
+
         # Actually set up the problem
         self.setup_prob()
 
@@ -932,11 +934,13 @@ class OASProblem(object):
 
             root.add(name_orig + 'perf', tmp_group, promotes=["rho", "v", "alpha", "re", "M"])
 
+            root.add_metadata(surface['name'] + 'yield_stress', surface['yield'])
+
         # Add a single 'aero_states' component for the whole system within the
         # coupled group.
         coupled.add('aero_states',
                  VLMStates(self.surfaces),
-                 promotes=['v', 'alpha', 'rho', 'cg'])
+                 promotes=['v', 'alpha', 'rho', 'cg', 'CM'])
 
         # Explicitly connect parameters from each surface's group and the common
         # 'aero_states' group.
@@ -1005,7 +1009,9 @@ class OASProblem(object):
 
         # This is only available in the most recent version of OpenMDAO.
         # It may help converge tightly coupled systems when using NLGS.
-        # coupled.nl_solver.options['use_aitken'] = True
+        coupled.nl_solver.options['use_aitken'] = True
+        coupled.nl_solver.options['aitken_alpha_min'] = 0.01
+        # coupled.nl_solver.options['aitken_alpha_max'] = 0.5
 
         if self.prob_dict['print_level'] == 2:
             coupled.ln_solver.options['iprint'] = 1
@@ -1023,7 +1029,7 @@ class OASProblem(object):
         coupled.set_order(order_list)
 
         # Add the coupled group to the root problem
-        root.add('coupled', coupled, promotes=['v', 'alpha', 'rho', 'cg'])
+        root.add('coupled', coupled, promotes=['v', 'alpha', 'rho', 'cg', 'CM'])
 
         # Add problem information as an independent variables component
         prob_vars = [('v', self.prob_dict['v']),

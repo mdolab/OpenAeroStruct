@@ -134,6 +134,11 @@ class Display(object):
                 if keys_length > 2:
                     self.opt = True
 
+        self.yield_stress_dict = {}
+        for key, value in iteritems(meta_db['system_metadata']):
+            if 'yield_stress' in key:
+                self.yield_stress_dict.update({key : value})
+
         deriv_keys = sqlitedict.SqliteDict(self.db_name, 'derivs').keys()
         deriv_keys = [int(key.split('|')[-1]) for key in deriv_keys]
 
@@ -409,14 +414,17 @@ class Display(object):
             self.ax4.set_ylabel('thickness', rotation="horizontal", ha="right")
 
             self.ax5.cla()
+            max_yield_stress = 0.
+            for key, yield_stress in iteritems(self.yield_stress_dict):
+                self.ax5.axhline(yield_stress, c='r', lw=2, ls='--')
+                max_yield_stress = max(max_yield_stress, yield_stress)
+
             self.ax5.locator_params(axis='y',nbins=4)
             self.ax5.locator_params(axis='x',nbins=3)
             self.ax5.set_ylim([self.min_vm, self.max_vm])
-            self.ax5.set_ylim([0, 220e6])
+            self.ax5.set_ylim([0, max_yield_stress*1.1])
             self.ax5.set_xlim([-1, 1])
             self.ax5.set_ylabel('von mises', rotation="horizontal", ha="right")
-            # 500.e6 / 2.5 Pa stress limit hardcoded for aluminum
-            self.ax5.axhline(500.e6 / 2.5, c='r', lw=2, ls='--')
             self.ax5.text(0.075, 1.1, 'failure limit',
                 transform=self.ax5.transAxes, color='r')
 

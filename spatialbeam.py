@@ -747,7 +747,7 @@ class SpatialBeamFailureKS(Component):
         self.add_param('vonmises', val=np.zeros((self.ny-1, 2), dtype=data_type))
         self.add_output('failure', val=0.)
 
-        self.sigma = surface['stress']
+        self.sigma = surface['yield']
         self.rho = rho
 
     def solve_nonlinear(self, params, unknowns, resids):
@@ -813,7 +813,7 @@ class SpatialBeamFailureExact(Component):
         self.add_param('vonmises', val=np.zeros((self.ny-1, 2), dtype=data_type))
         self.add_output('failure', val=np.zeros((self.ny-1, 2), dtype=data_type))
 
-        self.sigma = surface['stress']
+        self.sigma = surface['yield']
 
     def solve_nonlinear(self, params, unknowns, resids):
         sigma = self.sigma
