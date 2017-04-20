@@ -1484,23 +1484,21 @@ contains
   end subroutine biotsavart
 !  differentiation of forcecalc_main in forward (tangent) mode (with options i4 dr8 r8):
 !   variations   of useful results: m sec_forces
-!   with respect to varying inputs: v s_ref circ cpts bpts cg lengths
+!   with respect to varying inputs: v s_ref circ bpts cg lengths
 !                rho widths
-!   rw status of diff variables: m:out v:in s_ref:in circ:in cpts:in
-!                bpts:in sec_forces:out cg:in lengths:in rho:in
-!                widths:in
+!   rw status of diff variables: m:out v:in s_ref:in circ:in bpts:in
+!                sec_forces:out cg:in lengths:in rho:in widths:in
   subroutine forcecalc_main_d(v, vd, circ, circd, rho, rhod, bpts, bptsd&
-&   , cg, cgd, cpts, cptsd, lengths, lengthsd, widths, widthsd, s_ref, &
-&   s_refd, symmetry, nx, ny, num_panels, sec_forces, sec_forcesd, m, md&
-& )
+&   , cg, cgd, lengths, lengthsd, widths, widthsd, s_ref, s_refd, &
+&   symmetry, nx, ny, num_panels, sec_forces, sec_forcesd, m, md)
     implicit none
     integer, intent(in) :: nx, ny, num_panels
     real(kind=8), intent(in) :: v(num_panels, 3), circ(num_panels), rho&
 &   , bpts(nx-1, ny, 3)
     real(kind=8), intent(in) :: vd(num_panels, 3), circd(num_panels), &
 &   rhod, bptsd(nx-1, ny, 3)
-    real(kind=8), intent(in) :: cpts(nx-1, ny-1, 3), cg(3), s_ref
-    real(kind=8), intent(in) :: cptsd(nx-1, ny-1, 3), cgd(3), s_refd
+    real(kind=8), intent(in) :: cg(3), s_ref
+    real(kind=8), intent(in) :: cgd(3), s_refd
     real(kind=8), intent(in) :: lengths(ny), widths(ny-1)
     real(kind=8), intent(in) :: lengthsd(ny), widthsd(ny-1)
     logical, intent(in) :: symmetry
@@ -1554,9 +1552,9 @@ contains
     momentd = 0.0_8
     do j=1,ny-1
       do i=1,nx-1
-        call cross_d(cpts(i, j, :) - cg, cptsd(i, j, :) - cgd, &
-&              sec_forces((j-1)*(nx-1)+i, :), sec_forcesd((j-1)*(nx-1)+i&
-&              , :), tmp, tmpd)
+        call cross_d((bpts(i, j+1, :)+bpts(i, j, :))/2. - cg, (bptsd(i, &
+&              j+1, :)+bptsd(i, j, :))/2. - cgd, sec_forces((j-1)*(nx-1)&
+&              +i, :), sec_forcesd((j-1)*(nx-1)+i, :), tmp, tmpd)
         momentd(j, :) = momentd(j, :) + tmpd
         moment(j, :) = moment(j, :) + tmp
       end do
@@ -1576,13 +1574,13 @@ contains
       m = m + moment(j, :)
     end do
   end subroutine forcecalc_main_d
-  subroutine forcecalc_main(v, circ, rho, bpts, cg, cpts, lengths, &
-&   widths, s_ref, symmetry, nx, ny, num_panels, sec_forces, m)
+  subroutine forcecalc_main(v, circ, rho, bpts, cg, lengths, widths, &
+&   s_ref, symmetry, nx, ny, num_panels, sec_forces, m)
     implicit none
     integer, intent(in) :: nx, ny, num_panels
     real(kind=8), intent(in) :: v(num_panels, 3), circ(num_panels), rho&
 &   , bpts(nx-1, ny, 3)
-    real(kind=8), intent(in) :: cpts(nx-1, ny-1, 3), cg(3), s_ref
+    real(kind=8), intent(in) :: cg(3), s_ref
     real(kind=8), intent(in) :: lengths(ny), widths(ny-1)
     logical, intent(in) :: symmetry
     real(kind=8), intent(out) :: sec_forces(num_panels, 3)
@@ -1612,8 +1610,8 @@ contains
     moment(:, :) = 0.
     do j=1,ny-1
       do i=1,nx-1
-        call cross(cpts(i, j, :) - cg, sec_forces((j-1)*(nx-1)+i, :), &
-&            tmp)
+        call cross((bpts(i, j+1, :)+bpts(i, j, :))/2. - cg, sec_forces((&
+&            j-1)*(nx-1)+i, :), tmp)
         moment(j, :) = moment(j, :) + tmp
       end do
     end do

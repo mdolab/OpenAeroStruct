@@ -2078,23 +2078,22 @@ contains
   end subroutine biotsavart
 !  differentiation of forcecalc_main in reverse (adjoint) mode (with options i4 dr8 r8):
 !   gradient     of useful results: m sec_forces
-!   with respect to varying inputs: m v s_ref circ cpts bpts sec_forces
+!   with respect to varying inputs: m v s_ref circ bpts sec_forces
 !                cg lengths rho widths
 !   rw status of diff variables: m:in-zero v:out s_ref:out circ:out
-!                cpts:out bpts:out sec_forces:in-out cg:out lengths:out
+!                bpts:out sec_forces:in-out cg:out lengths:out
 !                rho:out widths:out
   subroutine forcecalc_main_b(v, vb, circ, circb, rho, rhob, bpts, bptsb&
-&   , cg, cgb, cpts, cptsb, lengths, lengthsb, widths, widthsb, s_ref, &
-&   s_refb, symmetry, nx, ny, num_panels, sec_forces, sec_forcesb, m, mb&
-& )
+&   , cg, cgb, lengths, lengthsb, widths, widthsb, s_ref, s_refb, &
+&   symmetry, nx, ny, num_panels, sec_forces, sec_forcesb, m, mb)
     implicit none
     integer, intent(in) :: nx, ny, num_panels
     real(kind=8), intent(in) :: v(num_panels, 3), circ(num_panels), rho&
 &   , bpts(nx-1, ny, 3)
     real(kind=8) :: vb(num_panels, 3), circb(num_panels), rhob, bptsb(nx&
 &   -1, ny, 3)
-    real(kind=8), intent(in) :: cpts(nx-1, ny-1, 3), cg(3), s_ref
-    real(kind=8) :: cptsb(nx-1, ny-1, 3), cgb(3), s_refb
+    real(kind=8), intent(in) :: cg(3), s_ref
+    real(kind=8) :: cgb(3), s_refb
     real(kind=8), intent(in) :: lengths(ny), widths(ny-1)
     real(kind=8) :: lengthsb(ny), widthsb(ny-1)
     logical, intent(in) :: symmetry
@@ -2110,8 +2109,8 @@ contains
     real(kind=8) :: panel_chordsb(ny-1), macb, momentb(ny-1, 3)
     integer :: i, j, k
     intrinsic sum
-    real(kind=8), dimension(3) :: arg1
-    real(kind=8), dimension(3) :: arg1b
+    real*8, dimension(3) :: arg1
+    real*8, dimension(3) :: arg1b
     integer :: branch
     real(kind=8) :: tempb0
     real(kind=8) :: tempb(num_panels)
@@ -2138,7 +2137,7 @@ contains
     moment(:, :) = 0.
     do j=1,ny-1
       do i=1,nx-1
-        arg1(:) = cpts(i, j, :) - cg
+        arg1(:) = (bpts(i, j+1, :)+bpts(i, j, :))/2. - cg
         call cross(arg1(:), sec_forces((j-1)*(nx-1)+i, :), tmp)
         moment(j, :) = moment(j, :) + tmp
       end do
@@ -2159,17 +2158,18 @@ contains
     end if
     macb = sum(-(moment*momentb/mac))/mac
     momentb = momentb/mac
-    cptsb = 0.0_8
+    bptsb = 0.0_8
     cgb = 0.0_8
     tmpb = 0.0_8
     do j=ny-1,1,-1
       do i=nx-1,1,-1
         tmpb = tmpb + momentb(j, :)
-        arg1(:) = cpts(i, j, :) - cg
+        arg1(:) = (bpts(i, j+1, :)+bpts(i, j, :))/2. - cg
         arg1b = 0.0_8
         call cross_b(arg1(:), arg1b(:), sec_forces((j-1)*(nx-1)+i, :), &
 &              sec_forcesb((j-1)*(nx-1)+i, :), tmp, tmpb)
-        cptsb(i, j, :) = cptsb(i, j, :) + arg1b
+        bptsb(i, j+1, :) = bptsb(i, j+1, :) + arg1b/2.
+        bptsb(i, j, :) = bptsb(i, j, :) + arg1b/2.
         cgb = cgb - arg1b
       end do
     end do
@@ -2203,7 +2203,6 @@ contains
       call cross_b(v(i, :), vb(i, :), bound(i, :), boundb(i, :), tmp, &
 &            tmpb)
     end do
-    bptsb = 0.0_8
     do j=ny-1,1,-1
       do i=nx-1,1,-1
         bptsb(i, j+1, :) = bptsb(i, j+1, :) + boundb((j-1)*(nx-1)+i, :)
@@ -2213,13 +2212,13 @@ contains
     end do
     mb = 0.0_8
   end subroutine forcecalc_main_b
-  subroutine forcecalc_main(v, circ, rho, bpts, cg, cpts, lengths, &
-&   widths, s_ref, symmetry, nx, ny, num_panels, sec_forces, m)
+  subroutine forcecalc_main(v, circ, rho, bpts, cg, lengths, widths, &
+&   s_ref, symmetry, nx, ny, num_panels, sec_forces, m)
     implicit none
     integer, intent(in) :: nx, ny, num_panels
     real(kind=8), intent(in) :: v(num_panels, 3), circ(num_panels), rho&
 &   , bpts(nx-1, ny, 3)
-    real(kind=8), intent(in) :: cpts(nx-1, ny-1, 3), cg(3), s_ref
+    real(kind=8), intent(in) :: cg(3), s_ref
     real(kind=8), intent(in) :: lengths(ny), widths(ny-1)
     logical, intent(in) :: symmetry
     real(kind=8), intent(out) :: sec_forces(num_panels, 3)
@@ -2229,7 +2228,7 @@ contains
     real(kind=8) :: panel_chords(ny-1), mac, moment(ny-1, 3)
     integer :: i, j, k
     intrinsic sum
-    real(kind=8), dimension(3) :: arg1
+    real*8, dimension(3) :: arg1
     do j=1,ny-1
       do i=1,nx-1
         bound((j-1)*(nx-1)+i, :) = bpts(i, j+1, :) - bpts(i, j, :)
@@ -2248,7 +2247,7 @@ contains
     moment(:, :) = 0.
     do j=1,ny-1
       do i=1,nx-1
-        arg1(:) = cpts(i, j, :) - cg
+        arg1(:) = (bpts(i, j+1, :)+bpts(i, j, :))/2. - cg
         call cross(arg1(:), sec_forces((j-1)*(nx-1)+i, :), tmp)
         moment(j, :) = moment(j, :) + tmp
       end do

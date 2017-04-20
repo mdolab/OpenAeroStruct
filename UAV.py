@@ -22,11 +22,11 @@ sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from OpenAeroStruct import OASProblem
 
 # prob_type = 'aerostruct'
-prob_type = 'aerostruct'
+prob_type = 'aero'
 mesh_level = 'L1'
 
 # Set problem type
-prob_dict = {'optimize' : False,
+prob_dict = {'optimize' : True,
              'type' : prob_type,
              'cg' : np.array([.4, 0., 0.]),
              'optimizer' : 'SNOPT',
@@ -35,6 +35,7 @@ prob_dict = {'optimize' : False,
              'a' : 322.2,  # at 15,000 ft
              'rho' : 0.770816, # kg/m^3
              'R' : 2574e3, # estimated range based on cruise speed and flight endurance
+             'print_level' : 1,
              }
 
 prob_dict.update({})
@@ -93,7 +94,6 @@ if prob_type == 'aero':
     # Setup problem and add design variables, constraint, and objective
     # OAS_prob.add_desvar('alpha', lower=-10., upper=15.)
     OAS_prob.add_desvar('wing.twist_cp', lower=-10., upper=15.)
-    OAS_prob.add_desvar('wing.thickness_cp', lower=.001, upper=.5)
 
     # OAS_prob.add_desvar('wing.chord_cp', lower=0.5, upper=3.)
     # OAS_prob.add_desvar('wing.xshear_cp', lower=-10., upper=15.)

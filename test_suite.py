@@ -437,7 +437,8 @@ class TestAeroStruct(unittest.TestCase):
                 if 'assembly_forces_Iy' in key or 'assembly_forces_J' in key or \
                 'assembly_forces_A' in key or 'assembly_K_loads' in key or \
                 'assembly_forces_loads' in key or 'assembly_forces_Iz' in key or \
-                'assembly_forces_nodes' in key:
+                'assembly_forces_nodes' in key or 'CM_wing_S_ref' in key or \
+                'CM_rho' in key:
                     pass
                 elif 'K' in key or 'vonmises' in key:
                     self.assertAlmostEqual(0., error, places=0)

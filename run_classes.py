@@ -580,7 +580,9 @@ class OASProblem(object):
         if not self.prob_dict['optimize']:
             # Run a single analysis loop. This shouldn't actually be
             # necessary, but sometimes the .db file is not complete unless we do this.
-            self.prob.run_once()
+            # Currently this is commented out to avoid unnecessary running twice.
+            # self.prob.run_once()
+            pass
         else:
             # Perform optimization
             self.prob.run()
