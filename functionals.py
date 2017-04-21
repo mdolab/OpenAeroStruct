@@ -61,6 +61,8 @@ class FunctionalBreguetRange(Component):
 
         # Convert fuelburn from N to kg
         unknowns['fuelburn'] = fuelburn / self.prob_dict['g']
+        if unknowns['fuelburn'].imag == 0.:
+            print(unknowns['fuelburn'])
 
 class FunctionalEquilibrium(Component):
     """ Lift = weight constraint.

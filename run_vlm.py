@@ -45,8 +45,7 @@ if __name__ == "__main__":
         raise
 
     # Set problem type
-    prob_dict = {'type' : 'aero',
-                 'cg' : np.array([28., 0., 5.])}
+    prob_dict = {'type' : 'aero'}
 
     if sys.argv[1].startswith('0'):  # run analysis once
         prob_dict.update({'optimize' : False})
@@ -59,7 +58,7 @@ if __name__ == "__main__":
     # Create a dictionary to store options about the surface
     surf_dict = {'num_y' : 7,
                  'num_x' : 2,
-                 'wing_type' : 'CRM',
+                 'wing_type' : 'rect',
                  'CD0' : 0.015,
                  'symmetry' : True,
                  'num_twist_cp' : 5,

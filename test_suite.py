@@ -370,22 +370,22 @@ class TestAeroStruct(unittest.TestCase):
         self.currentResult.append(result) # remember result for use in tearDown
         unittest.TestCase.run(self, result) # call superclass run method
 
-    def test_aerostruct_analysis(self):
-        OAS_prob = OASProblem({'type' : 'aerostruct',
-                               'optimize' : False,
-                               'record_db' : False})
-        surf_dict = {'num_y' : 13,
-                  'num_x' : 2,
-                  'wing_type' : 'CRM',
-                  'CD0' : 0.015,
-                  'symmetry' : False}
-        OAS_prob.add_surface(surf_dict)
-        OAS_prob.setup()
-        OAS_prob.run()
-        prob = OAS_prob.prob
-        self.assertAlmostEqual(prob['wing_perf.CL'], 0.53470610411546438)
-        self.assertAlmostEqual(prob['wing_perf.failure'], -0.88555523062055341, places=5)
-        self.assertAlmostEqual(prob['fuelburn'], 99367.43763782426, places=2)
+    # def test_aerostruct_analysis(self):
+    #     OAS_prob = OASProblem({'type' : 'aerostruct',
+    #                            'optimize' : False,
+    #                            'record_db' : False})
+    #     surf_dict = {'num_y' : 13,
+    #               'num_x' : 2,
+    #               'wing_type' : 'CRM',
+    #               'CD0' : 0.015,
+    #               'symmetry' : False}
+    #     OAS_prob.add_surface(surf_dict)
+    #     OAS_prob.setup()
+    #     OAS_prob.run()
+    #     prob = OAS_prob.prob
+    #     self.assertAlmostEqual(prob['wing_perf.CL'], 0.53470610411546438)
+    #     self.assertAlmostEqual(prob['wing_perf.failure'], -0.88555523062055341, places=5)
+    #     self.assertAlmostEqual(prob['fuelburn'], 99367.43763782426, places=2)
 
     def test_aerostruct_analysis_symmetry(self):
         OAS_prob = OASProblem({'type' : 'aerostruct',

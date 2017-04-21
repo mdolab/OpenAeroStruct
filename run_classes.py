@@ -145,6 +145,8 @@ class OASProblem(object):
                     'record_db' : True,      # True to output .db file
                     'profile' : False,       # True to profile the problem's time costs
                                              # view results using `view_profile prof_raw.0`
+                    'compute_static_margin' : True,  # if true, compute and print the
+                                                      # static margin after the run is finished
 
                     # Flow/environment properties
                     'Re' : 1e6,              # Reynolds number
@@ -586,6 +588,24 @@ class OASProblem(object):
         else:
             # Perform optimization
             self.prob.run()
+
+        if self.prob_dict['compute_static_margin'] and 'aero' in self.prob_dict['type']:
+
+            self.prob.driver.recorders._recorders = []
+            CL = self.prob['wing_perf.CL']
+            CM = self.prob['CM'][1]
+            step = 1e-5
+            self.prob['alpha'] += step
+            self.prob.run_once()
+            CL_new = self.prob['wing_perf.CL']
+            CM_new = self.prob['CM'][1]
+            self.prob['alpha'] -= step
+            self.prob.run_once()
+
+            static_margin = -(CM_new - CM) / (CL_new - CL)
+            print("Static margin is:", static_margin)
+
+            self.prob.root.add_metadata('static_margin', static_margin)
 
         # Uncomment this to check the partial derivatives of each component
         # self.prob.check_partial_derivatives(compact_print=True)
