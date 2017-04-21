@@ -34,7 +34,7 @@ def radii(mesh, t_c=0.15):
     vectors = mesh[-1, :, :] - mesh[0, :, :]
     chords = np.sqrt(np.sum(vectors**2, axis=1))
     chords = 0.5 * chords[:-1] + 0.5 * chords[1:]
-    return t_c * chords
+    return t_c * chords / 2.
 
 
 def _assemble_system(nodes, A, J, Iy, Iz, loads,
@@ -561,6 +561,7 @@ class SpatialBeamWeight(Component):
             weight *= 2.
 
         unknowns['structural_weight'] = weight
+        print('weight:', weight/9.81)
 
     def linearize(self, params, unknowns, resids):
         jac = self.alloc_jacobian()

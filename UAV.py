@@ -22,7 +22,7 @@ sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from OpenAeroStruct import OASProblem
 
 prob_type = 'aerostruct'
-mesh_level = 'L1.5'
+mesh_level = 'L3'
 
 # Set problem type
 prob_dict = {'optimize' : True,
@@ -30,10 +30,13 @@ prob_dict = {'optimize' : True,
              'cg' : np.array([.4, 0., 0.]),
              'optimizer' : 'SNOPT',
              'with_viscous' : True,
-             'W0' : 14.,  # 14-18kg empty weight
-             'a' : 322.2,  # at 15,000 ft
-             'rho' : 0.770816, # kg/m^3
+             'W0' : 12.,  # 14-18kg empty weight
+             'a' : 322.2,  # m/s at 15,000 ft
+             'rho' : 0.770816, # kg/m^3 at 15,000 ft
              'R' : 2574e3 / 2, # estimated range based on cruise speed and flight endurance
+             'CT' : 10.e-5,
+             'Re' : 1e5,
+             'M' : .1,
              }
 
 prob_dict.update({})
@@ -62,6 +65,9 @@ if mesh_level == 'L1.5':
 elif mesh_level == 'L2':
     num_y = 21
     num_x = 3
+elif mesh_level == 'L2.5':
+    num_y = 15
+    num_x = 2
 else:
     num_y = 7
     num_x = 2
@@ -83,9 +89,10 @@ surf_dict = {'num_y' : num_y,
 
              'E' : 85.e9,
              'G' : 25.e9,
-             'yield' : 350.e6 / 2.5 / 10,
-             'mrho' : 3.e3,
+             'yield' : 350.e6 / 2.5,
+             'mrho' : 1.5e3,
              'CD0' : 0.02,
+            #  't_over_c' : 0.18,
 
              }
 
@@ -114,8 +121,8 @@ else:
 
     # Setup problem and add design variables, constraint, and objective
     OAS_prob.add_desvar('wing.twist_cp', lower=-15., upper=15.)
-    OAS_prob.add_desvar('wing.thickness_cp', lower=0.001, upper=0.5, scaler=10.)
-    OAS_prob.add_desvar('wing.sweep', lower=-60., upper=60.)
+    OAS_prob.add_desvar('wing.thickness_cp', lower=0.0001, upper=0.5, scaler=1e3)
+    OAS_prob.add_desvar('wing.sweep', lower=-60., upper=60., scaler=1e-1)
     OAS_prob.add_constraint('wing_perf.failure', upper=0.)
     OAS_prob.add_constraint('wing_perf.thickness_intersects', upper=0.)
     OAS_prob.add_constraint('CM', equals=0.)

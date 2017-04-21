@@ -65,8 +65,8 @@ if __name__ == "__main__":
               'wing_type' : 'CRM',
               'CD0' : 0.015,
               'symmetry' : False,
-              'num_twist_cp' : 2,
-              'num_thickness_cp' : 2}
+              'num_twist_cp' : 3,
+              'num_thickness_cp' : 3}
 
     # Add the specified wing surface to the problem
     OAS_prob.add_surface(surf_dict)

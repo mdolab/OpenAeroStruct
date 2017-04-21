@@ -1032,8 +1032,8 @@ class OASProblem(object):
         # This is only available in the most recent version of OpenMDAO.
         # It may help converge tightly coupled systems when using NLGS.
         try:
-            coupled.nl_solver.options['use_aitken'] = True
-            coupled.nl_solver.options['aitken_alpha_min'] = 0.01
+            coupled.nl_solver.options['use_aitken'] = False
+            # coupled.nl_solver.options['aitken_alpha_min'] = 0.01
             # coupled.nl_solver.options['aitken_alpha_max'] = 0.5
         except:
             pass
