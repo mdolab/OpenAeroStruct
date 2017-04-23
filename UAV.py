@@ -33,10 +33,11 @@ prob_dict = {'optimize' : True,
              'W0' : 12.,  # 14-18kg empty weight
              'a' : 322.2,  # m/s at 15,000 ft
              'rho' : 0.770816, # kg/m^3 at 15,000 ft
-             'R' : 2574e3 / 2, # estimated range based on cruise speed and flight endurance
-             'CT' : 10.e-5,
-             'Re' : 1e5,
+             'R' : 2500e3, # estimated range based on cruise speed and flight endurance
+             'CT' : 9.80665 * 8.6e-6,
+             'Re' : 4e5,
              'M' : .1,
+             'compute_static_margin' : True,
              }
 
 prob_dict.update({})
@@ -85,14 +86,13 @@ surf_dict = {'num_y' : num_y,
              'zshear_cp' : zshear_cp,
              'xshear_cp' : xshear_cp,
              'chord_cp' : chord_cp,
-            #  'radius_cp' : radius_cp,
 
+             # Material properties taken from http://www.performance-composites.com/carbonfibre/mechanicalproperties_2.asp
              'E' : 85.e9,
              'G' : 25.e9,
              'yield' : 350.e6 / 2.5,
-             'mrho' : 1.5e3,
+             'mrho' : 1.6e3,
              'CD0' : 0.02,
-            #  't_over_c' : 0.18,
 
              }
 
@@ -115,7 +115,7 @@ if prob_type == 'aero':
 
 else:
     # Add design variables, constraint, and objective on the problem
-    # OAS_prob.add_desvar('alpha', lower=-10., upper=10.)
+    OAS_prob.add_desvar('alpha', lower=-10., upper=10.)
     OAS_prob.add_constraint('eq_con', equals=0.)
     OAS_prob.add_objective('fuelburn', scaler=0.1)
 

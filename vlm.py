@@ -1020,11 +1020,6 @@ class VLMForces(Component):
 
             self.add_param(name+'def_mesh', val=np.zeros((nx, ny, 3), dtype=data_type))
             self.add_param(name+'b_pts', val=np.zeros((nx-1, ny, 3), dtype=data_type))
-            self.add_param(name+'c_pts', val=np.zeros((nx-1, ny-1, 3), dtype=data_type))
-            self.add_param(name+'widths', val=np.zeros((ny-1), dtype=data_type))
-            self.add_param(name+'lengths', val=np.zeros((ny), dtype=data_type))
-
-            self.add_param(name+'S_ref', val=0.)
             self.add_output(name+'sec_forces', val=np.zeros((nx-1, ny-1, 3), dtype=data_type))
 
         self.tot_panels = tot_panels
@@ -1033,9 +1028,6 @@ class VLMForces(Component):
         self.add_param('alpha', val=3.)
         self.add_param('v', val=10.)
         self.add_param('rho', val=3.)
-        self.add_param('cg', val=np.zeros((3), dtype=data_type))
-
-        self.add_output('CM', val=np.zeros((3), dtype=data_type))
 
         self.surfaces = surfaces
 
@@ -1050,7 +1042,6 @@ class VLMForces(Component):
         circ = params['circulations']
         alpha = params['alpha'] * np.pi / 180.
         rho = params['rho']
-        cg = params['cg']
         cosa = np.cos(alpha)
         sina = np.sin(alpha)
 
@@ -1070,8 +1061,6 @@ class VLMForces(Component):
         self.v[:, 2] += sina * params['v']
 
         i = 0
-        S_ref_tot = 0.
-        M = np.zeros((3), dtype=data_type)
         for surface in self.surfaces:
             name = surface['name']
             nx = surface['num_x']
@@ -1080,13 +1069,9 @@ class VLMForces(Component):
             num_panels = (nx - 1) * (ny - 1)
 
             b_pts = params[name+'b_pts']
-            widths = params[name+'widths']
-            lengths = params[name+'lengths']
-            S_ref = params[name+'S_ref']
 
             if fortran_flag:
-                sec_forces, M_tmp = OAS_API.oas_api.forcecalc(self.v[i:i+num_panels, :], circ[i:i+num_panels], rho, b_pts, cg, lengths, widths, S_ref, surface['symmetry'])
-                M += M_tmp
+                sec_forces = OAS_API.oas_api.forcecalc(self.v[i:i+num_panels, :], circ[i:i+num_panels], rho, b_pts)
             else:
 
                 bound = b_pts[:, 1:, :] - b_pts[:, :-1, :]
@@ -1105,32 +1090,7 @@ class VLMForces(Component):
             sec_forces = sec_forces.reshape((nx-1, ny-1, 3), order='F')
             unknowns[name+'sec_forces'] = sec_forces
 
-            if not fortran_flag:
-                panel_chords = (lengths[1:] + lengths[:-1]) / 2.
-                MAC = 1. / S_ref * np.sum(panel_chords**2 * widths)
-
-                if surface['symmetry']:
-                    MAC *= 2
-
-                pts = (params[name+'b_pts'][:, 1:, :] + \
-                    params[name+'b_pts'][:, :-1, :]) / 2
-                diff = (pts - cg) / MAC
-                moment = np.zeros((ny - 1, 3), dtype=data_type)
-                for ind in range(nx-1):
-                    moment += np.cross(diff[ind, :, :], sec_forces[ind, :, :], axis=1)
-
-                if surface['symmetry']:
-                    moment[:, 0] = 0.
-                    moment[:, 2] = 0.
-                M += np.sum(moment, axis=0)
-
-            S_ref_tot += S_ref
             i += num_panels
-
-        self.M = M
-        self.S_ref_tot = S_ref_tot
-
-        unknowns['CM'] = M / (0.5 * rho * params['v']**2 * S_ref_tot)
 
     def apply_linear(self, params, unknowns, dparams, dunknowns, dresids, mode):
 
@@ -1167,9 +1127,6 @@ class VLMForces(Component):
             vd[:, 2] += sinad * v
 
             i = 0
-            Md = 0.
-            S_ref_tot = 0.
-            S_ref_totd = 0.
             rho = params['rho'].real
             for surface in self.surfaces:
                 name = surface['name']
@@ -1179,29 +1136,17 @@ class VLMForces(Component):
                 num_panels = (nx - 1) * (ny - 1)
 
                 b_pts = params[name+'b_pts']
-                widths = params[name+'widths']
-                lengths = params[name+'lengths']
-                S_ref = params[name+'S_ref']
 
                 sec_forces = unknowns[name+'sec_forces'].real
 
-                sec_forces, sec_forcesd, M, Md_tmp = OAS_API.oas_api.forcecalc_d(self.v[i:i+num_panels, :], vd[i:i+num_panels],
+                sec_forces, sec_forcesd = OAS_API.oas_api.forcecalc_d(self.v[i:i+num_panels, :], vd[i:i+num_panels],
                                             circ[i:i+num_panels], dparams['circulations'][i:i+num_panels],
                                             rho, dparams['rho'],
-                                            b_pts, dparams[name+'b_pts'],
-                                            params['cg'], dparams['cg'],
-                                            lengths, dparams[name+'lengths'],
-                                            widths, dparams[name+'widths'],
-                                            S_ref, dparams[name+'S_ref'],
-                                            surface['symmetry'])
+                                            b_pts, dparams[name+'b_pts'])
 
                 dresids[name+'sec_forces'] += sec_forcesd.reshape((nx-1, ny-1, 3), order='F')
-                Md += Md_tmp
-                S_ref_tot += S_ref
-                S_ref_totd += dparams[name+'S_ref']
                 i += num_panels
 
-            dresids['CM'] = (Md*0.5*rho*v**2*S_ref_tot - M*0.5*((dparams['rho']*S_ref_tot + rho*S_ref_totd)*v**2 + rho*S_ref_tot*2*v*dparams['v'])) / (.5*rho*v**2*S_ref_tot)**2
 
         if mode == 'rev':
 
@@ -1213,17 +1158,7 @@ class VLMForces(Component):
             i = 0
             rho = params['rho'].real
             v = params['v']
-            cg = params['cg']
             vb = np.zeros(self.v.shape)
-
-            temp0 = 0.5*rho*self.S_ref_tot
-            temp = temp0*v**2
-            tempb = np.sum(-(self.M * dresids['CM'] / temp))/temp
-            tempb0 = v**2*tempb
-            Mb = dresids['CM']/temp
-            dparams['rho'] += self.S_ref_tot*0.5*tempb0
-            sb = 0.5*rho*tempb0
-            dparams['v'] += temp0*2*v*tempb
 
             for surface in self.surfaces:
                 name = surface['name']
@@ -1232,23 +1167,16 @@ class VLMForces(Component):
                 num_panels = (nx - 1) * (ny - 1)
 
                 b_pts = params[name+'b_pts']
-                widths = params[name+'widths']
-                lengths = params[name+'lengths']
-                S_ref = params[name+'S_ref']
 
                 sec_forcesb = dresids[name+'sec_forces'].reshape((num_panels, 3), order='F')
                 sec_forces = unknowns[name+'sec_forces'].real
 
-                v_b, circb, rhob, bptsb, _, cgb, lengthsb, widthsb, S_refb, _ = OAS_API.oas_api.forcecalc_b(self.v[i:i+num_panels, :], circ[i:i+num_panels], rho, b_pts, sec_forcesb, cg, lengths, widths, S_ref, surface['symmetry'], Mb)
+                v_b, circb, rhob, bptsb, _ = OAS_API.oas_api.forcecalc_b(self.v[i:i+num_panels, :], circ[i:i+num_panels], rho, b_pts, sec_forcesb)
 
                 dparams['circulations'][i:i+num_panels] += circb
                 vb[i:i+num_panels] = v_b
                 dparams['rho'] += rhob
-                dparams['cg'] += cgb
                 dparams[name+'b_pts'] += bptsb
-                dparams[name+'lengths'] += lengthsb
-                dparams[name+'widths'] += widthsb
-                dparams[name+'S_ref'] += S_refb + sb
 
                 i += num_panels
 

@@ -407,7 +407,7 @@ class TestAeroStruct(unittest.TestCase):
     def test_aerostruct_analysis_symmetry_deriv(self):
         OAS_prob = OASProblem({'type' : 'aerostruct',
                                'optimize' : False,
-                               'record_db' : False})
+                               'record_db' : True})
         surf_dict = {'symmetry' : True,
                   'num_y' : 7,
                   'num_x' : 2,

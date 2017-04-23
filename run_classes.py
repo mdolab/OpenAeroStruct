@@ -34,7 +34,7 @@ from transfer import TransferDisplacements, TransferLoads
 from vlm import VLMStates, VLMFunctionals, VLMGeometry
 from spatialbeam import SpatialBeamStates, SpatialBeamFunctionals, radii
 from materials import MaterialsTube
-from functionals import FunctionalBreguetRange, FunctionalEquilibrium
+from functionals import TotalPerformance, TotalAeroPerformance, FunctionalBreguetRange, FunctionalEquilibrium
 
 try:
     import OAS_API
@@ -145,7 +145,7 @@ class OASProblem(object):
                     'record_db' : True,      # True to output .db file
                     'profile' : False,       # True to profile the problem's time costs
                                              # view results using `view_profile prof_raw.0`
-                    'compute_static_margin' : True,  # if true, compute and print the
+                    'compute_static_margin' : False,  # if true, compute and print the
                                                       # static margin after the run is finished
 
                     # Flow/environment properties
@@ -168,6 +168,8 @@ class OASProblem(object):
                                             # the wing structure and fuel.
                                             # The default is 40% of the MTOW of
                                             # B777-300 is 3e5 kg.
+                    'update_cg' : True,     # if true, update the cg value
+                                            # based on the structural weight
                     }
 
         return defaults
@@ -582,15 +584,12 @@ class OASProblem(object):
         if not self.prob_dict['optimize']:
             # Run a single analysis loop. This shouldn't actually be
             # necessary, but sometimes the .db file is not complete unless we do this.
-            # Currently this is commented out to avoid unnecessary running twice.
-            # self.prob.run_once()
-            pass
+            self.prob.run_once()
         else:
             # Perform optimization
             self.prob.run()
 
         if self.prob_dict['compute_static_margin'] and 'aero' in self.prob_dict['type']:
-
             self.prob.driver.recorders._recorders = []
             CL = self.prob['wing_perf.CL']
             CM = self.prob['CM'][1]
@@ -805,7 +804,7 @@ class OASProblem(object):
         # each surface interacts with the others.
         root.add('aero_states',
                  VLMStates(self.surfaces),
-                 promotes=['circulations', 'v', 'alpha', 'rho', 'cg', 'CM'])
+                 promotes=['circulations', 'v', 'alpha', 'rho'])
 
         # Explicitly connect parameters from each surface's group and the common
         # 'aero_states' group.
@@ -820,9 +819,6 @@ class OASProblem(object):
             root.connect(name[:-1] + '.def_mesh', 'aero_states.' + name + 'def_mesh')
             root.connect(name[:-1] + '.b_pts', 'aero_states.' + name + 'b_pts')
             root.connect(name[:-1] + '.c_pts', 'aero_states.' + name + 'c_pts')
-            root.connect(name[:-1] + '.S_ref', 'aero_states.' + name + 'S_ref')
-            root.connect(name[:-1] + '.lengths', 'aero_states.' + name + 'lengths')
-            root.connect(name[:-1] + '.widths', 'aero_states.' + name + 'widths')
             root.connect(name[:-1] + '.normals', 'aero_states.' + name + 'normals')
 
             # Connect the results from 'aero_states' to the performance groups
@@ -833,6 +829,17 @@ class OASProblem(object):
             root.connect(name[:-1] + '.widths', name + 'perf' + '.widths')
             root.connect(name[:-1] + '.lengths', name + 'perf' + '.lengths')
             root.connect(name[:-1] + '.cos_sweep', name + 'perf' + '.cos_sweep')
+
+            # Connect S_ref for performance calcs
+            root.connect(name[:-1] + '.S_ref', 'total_perf.' + name + 'S_ref')
+            root.connect(name[:-1] + '.widths', 'total_perf.' + name + 'widths')
+            root.connect(name[:-1] + '.lengths', 'total_perf.' + name + 'lengths')
+            root.connect(name[:-1] + '.b_pts', 'total_perf.' + name + 'b_pts')
+            root.connect('aero_states.' + name + 'sec_forces', 'total_perf.' + name + 'sec_forces')
+
+        root.add('total_perf',
+                  TotalAeroPerformance(self.surfaces, self.prob_dict),
+                  promotes=['CM', 'v', 'rho'])
 
         # Actually set up the problem
         self.setup_prob()
@@ -936,6 +943,7 @@ class OASProblem(object):
                      SpatialBeamStates(surface),
                      promotes=['*'])
             tmp_group.struct_states.ln_solver = LinearGaussSeidel()
+            tmp_group.struct_states.ln_solver.options['atol'] = 1e-20
 
             name = name_orig
             coupled.add(name[:-1], tmp_group, promotes=[])
@@ -962,7 +970,7 @@ class OASProblem(object):
         # coupled group.
         coupled.add('aero_states',
                  VLMStates(self.surfaces),
-                 promotes=['v', 'alpha', 'rho', 'cg', 'CM'])
+                 promotes=['v', 'alpha', 'rho'])
 
         # Explicitly connect parameters from each surface's group and the common
         # 'aero_states' group.
@@ -974,9 +982,6 @@ class OASProblem(object):
             root.connect('coupled.' + name[:-1] + '.def_mesh', 'coupled.aero_states.' + name + 'def_mesh')
             root.connect('coupled.' + name[:-1] + '.b_pts', 'coupled.aero_states.' + name + 'b_pts')
             root.connect('coupled.' + name[:-1] + '.c_pts', 'coupled.aero_states.' + name + 'c_pts')
-            root.connect('coupled.' + name[:-1] + '.lengths', 'coupled.aero_states.' + name + 'lengths')
-            root.connect('coupled.' + name[:-1] + '.widths', 'coupled.aero_states.' + name + 'widths')
-            root.connect('coupled.' + name[:-1] + '.S_ref', 'coupled.aero_states.' + name + 'S_ref')
             root.connect('coupled.' + name[:-1] + '.normals', 'coupled.aero_states.' + name + 'normals')
 
             # Connect the results from 'aero_states' to the performance groups
@@ -1007,11 +1012,10 @@ class OASProblem(object):
             root.connect(name[:-1] + '.thickness', name + 'perf.thickness')
 
             # Connection performance functional variables
-            root.connect(name + 'perf.structural_weight', 'fuelburn.' + name + 'structural_weight')
-            root.connect(name + 'perf.structural_weight', 'eq_con.' + name + 'structural_weight')
-            root.connect(name + 'perf.L', 'eq_con.' + name + 'L')
-            root.connect(name + 'perf.CL', 'fuelburn.' + name + 'CL')
-            root.connect(name + 'perf.CD', 'fuelburn.' + name + 'CD')
+            root.connect(name + 'perf.structural_weight', 'total_perf.' + name + 'structural_weight')
+            root.connect(name + 'perf.L', 'total_perf.' + name + 'L')
+            root.connect(name + 'perf.CL', 'total_perf.' + name + 'CL')
+            root.connect(name + 'perf.CD', 'total_perf.' + name + 'CD')
 
             # Connect paramters from the 'coupled' group to the performance
             # group.
@@ -1054,7 +1058,7 @@ class OASProblem(object):
         coupled.set_order(order_list)
 
         # Add the coupled group to the root problem
-        root.add('coupled', coupled, promotes=['v', 'alpha', 'rho', 'cg', 'CM'])
+        root.add('coupled', coupled, promotes=['v', 'alpha', 'rho'])
 
         # Add problem information as an independent variables component
         prob_vars = [('v', self.prob_dict['v']),
@@ -1070,11 +1074,8 @@ class OASProblem(object):
         # Add functionals to evaluate performance of the system.
         # Note that only the interesting results are promoted here; not all
         # of the parameters.
-        root.add('fuelburn',
-                 FunctionalBreguetRange(self.surfaces, self.prob_dict),
-                 promotes=['fuelburn'])
-        root.add('eq_con',
-                 FunctionalEquilibrium(self.surfaces, self.prob_dict),
+        root.add('total_perf',
+                 TotalPerformance(self.surfaces, self.prob_dict),
                  promotes=['eq_con', 'fuelburn'])
 
         # Actually set up the system

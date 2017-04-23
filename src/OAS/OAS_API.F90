@@ -89,72 +89,112 @@ contains
 
   end subroutine
 
-  subroutine forcecalc(v, circ, rho, bpts, cg, lengths, widths, &
-    S_ref, symmetry, nx, ny, num_panels, sec_forces, M)
+  subroutine forcecalc(v, circ, rho, bpts, nx, ny, num_panels, sec_forces)
 
     implicit none
 
     real(kind=8), intent(in) :: v(num_panels, 3), circ(num_panels), rho, bpts(nx-1, ny, 3)
     integer, intent(in) :: nx, ny, num_panels
-    real(kind=8), intent(in) :: cg(3), S_ref
-    real(kind=8), intent(in) :: lengths(ny), widths(ny-1)
-    logical, intent(in) :: symmetry
 
     real(kind=8), intent(out) :: sec_forces(num_panels, 3)
-    real(kind=8), intent(out) :: M(3)
 
-    call forcecalc_main(v, circ, rho, bpts, cg, lengths, widths, &
-        S_ref, symmetry, nx, ny, num_panels, sec_forces, M)
+    call forcecalc_main(v, circ, rho, bpts, nx, ny, num_panels, sec_forces)
 
   end subroutine
 
   subroutine forcecalc_d(v, vd, circ, circd, rho, rhod, bpts, bptsd, &
-    nx, ny, num_panels, sec_forces, sec_forcesd, cg, cgd, &
-    lengths, lengthsd, widths, widthsd, S_ref, S_refd, symmetry, M, Md)
+    nx, ny, num_panels, sec_forces, sec_forcesd)
 
     use oas_main_d, only: forcecalc_main_d
     implicit none
 
     real(kind=8), intent(in) :: v(num_panels, 3), circ(num_panels), rho, bpts(nx-1, ny, 3)
     real(kind=8), intent(in) :: vd(num_panels, 3), circd(num_panels), rhod, bptsd(nx-1, ny, 3)
-    real(kind=8), intent(in) :: cg(3), S_ref
-    real(kind=8), intent(in) :: cgd(3), S_refd
-    real(kind=8), intent(in) :: lengths(ny), widths(ny-1)
-    real(kind=8), intent(in) :: lengthsd(ny), widthsd(ny-1)
     integer, intent(in) :: nx, ny, num_panels
-    logical, intent(in) :: symmetry
 
     real(kind=8), intent(out) :: sec_forces(num_panels, 3), sec_forcesd(num_panels, 3)
-    real(kind=8), intent(out) :: M(3), Md(3)
 
     call forcecalc_main_d(v, vd, circ, circd, rho, rhod, bpts, bptsd, &
-      cg, cgd, lengths, lengthsd, widths, widthsd, &
-      S_ref, S_refd, symmetry, nx, ny, num_panels, sec_forces, sec_forcesd, M, Md)
+    nx, ny, num_panels, sec_forces, sec_forcesd)
 
   end subroutine
 
   subroutine forcecalc_b(v, vb, circ, circb, rho, rhob, bpts, bptsb, &
-    nx, ny, num_panels, sec_forces, sec_forcesb, cg, cgb, &
-    lengths, lengthsb, widths, widthsb, S_ref, S_refb, symmetry, M, Mb)
+    nx, ny, num_panels, sec_forces, sec_forcesb)
 
     use oas_main_b, only: forcecalc_main_b
     implicit none
 
     real(kind=8), intent(in) :: v(num_panels, 3), circ(num_panels), rho, bpts(nx-1, ny, 3)
-    real(kind=8), intent(in) :: sec_forcesb(num_panels, 3), Mb(3)
-    real(kind=8), intent(in) :: cg(3), S_ref
-    real(kind=8), intent(in) :: lengths(ny), widths(ny-1)
+    real(kind=8), intent(in) :: sec_forcesb(num_panels, 3)
     integer, intent(in) :: nx, ny, num_panels
-    logical, intent(in) :: symmetry
 
-    real(kind=8), intent(out) :: sec_forces(num_panels, 3), M(3)
+    real(kind=8), intent(out) :: sec_forces(num_panels, 3)
     real(kind=8), intent(out) :: vb(num_panels, 3), circb(num_panels), rhob, bptsb(nx-1, ny, 3)
-    real(kind=8), intent(out) :: lengthsb(ny), widthsb(ny-1)
-    real(kind=8), intent(out) :: cgb(3), S_refb
 
     call forcecalc_main_b(v, vb, circ, circb, rho, rhob, bpts, bptsb, &
-      cg, cgb, lengths, lengthsb, widths, widthsb, &
-      S_ref, S_refb, symmetry, nx, ny, num_panels, sec_forces, sec_forcesb, M, Mb)
+    nx, ny, num_panels, sec_forces, sec_forcesb)
+
+  end subroutine
+
+  subroutine momentcalc(bpts, cg, lengths, widths, S_ref, sec_forces, symmetry, nx, ny, M)
+
+    implicit none
+
+    real(kind=8), intent(in) :: bpts(nx-1, ny, 3)
+    integer, intent(in) :: nx, ny
+    real(kind=8), intent(in) :: cg(3), S_ref
+    real(kind=8), intent(in) :: lengths(ny), widths(ny-1)
+    logical, intent(in) :: symmetry
+    real(kind=8), intent(in) :: sec_forces(nx-1, ny-1, 3)
+
+    real(kind=8), intent(out) :: M(3)
+
+    real(kind=8) :: panel_chords(ny-1), MAC, moment(ny-1, 3)
+    integer :: i, j, k
+
+    call momentcalc_main(bpts, cg, lengths, widths, S_ref, sec_forces, symmetry, nx, ny, M)
+
+  end subroutine
+
+  subroutine momentcalc_d(bpts, bptsd, cg, cgd, lengths, lengthsd, widths, widthsd, &
+    S_ref, S_refd, sec_forces, sec_forcesd, symmetry, nx, ny, M, Md)
+
+    use oas_main_d, only: momentcalc_main_d
+    implicit none
+
+    real(kind=8), intent(in) :: bpts(nx-1, ny, 3), cg(3), S_ref
+    real(kind=8), intent(in) :: lengths(ny), widths(ny-1), sec_forces(nx-1, ny-1, 3)
+    real(kind=8), intent(in) :: bptsd(nx-1, ny, 3), cgd(3), S_refd
+    real(kind=8), intent(in) :: lengthsd(ny), widthsd(ny-1), sec_forcesd(nx-1, ny-1, 3)
+    logical, intent(in) :: symmetry
+    integer, intent(in) :: nx, ny
+
+    real(kind=8), intent(out) :: M(3), Md(3)
+
+    call momentcalc_main_d(bpts, bptsd, cg, cgd, lengths, lengthsd, widths, widthsd, &
+    S_ref, S_refd, sec_forces, sec_forcesd, symmetry, nx, ny, M, Md)
+
+  end subroutine
+
+  subroutine momentcalc_b(bpts, bptsb, cg, cgb, lengths, lengthsb, widths, widthsb, &
+    S_ref, S_refb, sec_forces, sec_forcesb, symmetry, nx, ny, M, Mb)
+
+    use oas_main_b, only: momentcalc_main_b
+    implicit none
+
+    real(kind=8), intent(in) :: bpts(nx-1, ny, 3), cg(3), S_ref
+    real(kind=8), intent(in) :: lengths(ny), widths(ny-1), sec_forces(nx-1, ny-1, 3)
+    real(kind=8), intent(in) :: Mb(3)
+    logical, intent(in) :: symmetry
+    integer, intent(in) :: nx, ny
+
+    real(kind=8), intent(out) :: M(3)
+    real(kind=8), intent(out) :: bptsb(nx-1, ny, 3), cgb(3), S_refb
+    real(kind=8), intent(out) :: lengthsb(ny), widthsb(ny-1), sec_forcesb(nx-1, ny-1, 3)
+
+    call momentcalc_main_b(bpts, bptsb, cg, cgb, lengths, lengthsb, widths, widthsb, &
+    S_ref, S_refb, sec_forces, sec_forcesb, symmetry, nx, ny, M, Mb)
 
   end subroutine
 
