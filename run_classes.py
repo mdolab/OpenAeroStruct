@@ -990,7 +990,6 @@ class OASProblem(object):
             # Connect the results from 'coupled' to the performance groups
             root.connect('coupled.' + name[:-1] + '.def_mesh', 'coupled.' + name + 'loads.def_mesh')
             root.connect('coupled.aero_states.' + name + 'sec_forces', 'coupled.' + name + 'loads.sec_forces')
-            root.connect('coupled.' + name + 'loads.loads', name + 'perf.loads')
 
             # Connect the output of the loads component with the FEM
             # displacement parameter. This links the coupling within the coupled
@@ -1016,6 +1015,7 @@ class OASProblem(object):
             root.connect(name + 'perf.L', 'total_perf.' + name + 'L')
             root.connect(name + 'perf.CL', 'total_perf.' + name + 'CL')
             root.connect(name + 'perf.CD', 'total_perf.' + name + 'CD')
+            root.connect('coupled.aero_states.' + name + 'sec_forces', 'total_perf.' + name + 'sec_forces')
 
             # Connect paramters from the 'coupled' group to the performance
             # group.
@@ -1025,7 +1025,12 @@ class OASProblem(object):
             root.connect('coupled.' + name[:-1] + '.widths', name + 'perf.widths')
             root.connect('coupled.' + name[:-1] + '.lengths', name + 'perf.lengths')
             root.connect('coupled.' + name[:-1] + '.cos_sweep', name + 'perf.cos_sweep')
-            # root.connect('coupled.' + name[:-1] + '.mesh', name + 'perf.mesh')
+
+            root.connect('coupled.' + name[:-1] + '.S_ref', 'total_perf.' + name + 'S_ref')
+            root.connect('coupled.' + name[:-1] + '.widths', 'total_perf.' + name + 'widths')
+            root.connect('coupled.' + name[:-1] + '.lengths', 'total_perf.' + name + 'lengths')
+            root.connect('coupled.' + name[:-1] + '.b_pts', 'total_perf.' + name + 'b_pts')
+            root.connect(name + 'perf.cg_location', 'total_perf.' + name + 'cg_location')
 
         # Set solver properties for the coupled group
         coupled.ln_solver = ScipyGMRES()
@@ -1076,7 +1081,7 @@ class OASProblem(object):
         # of the parameters.
         root.add('total_perf',
                  TotalPerformance(self.surfaces, self.prob_dict),
-                 promotes=['eq_con', 'fuelburn'])
+                 promotes=['eq_con', 'fuelburn', 'CM', 'v', 'rho'])
 
         # Actually set up the system
         self.setup_prob()

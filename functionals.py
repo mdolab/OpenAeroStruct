@@ -69,8 +69,6 @@ class FunctionalBreguetRange(Component):
 
         # Convert fuelburn from N to kg
         unknowns['fuelburn'] = fuelburn / self.prob_dict['g']
-        if unknowns['fuelburn'].imag == 0.:
-            print(unknowns['fuelburn'])
 
 class FunctionalEquilibrium(Component):
     """ Lift = weight constraint.
@@ -106,6 +104,7 @@ class FunctionalEquilibrium(Component):
 
         self.add_param('fuelburn', val=0.)
         self.add_output('eq_con', val=0.)
+        self.add_output('total_weight', val=0.)
 
         self.deriv_options['type'] = 'cs'
         self.deriv_options['form'] = 'central'
@@ -113,18 +112,16 @@ class FunctionalEquilibrium(Component):
     def solve_nonlinear(self, params, unknowns, resids):
         structural_weight = 0.
         L = 0.
-        W0 = 0.
+        W0 = self.prob_dict['W0'] * self.prob_dict['g']
         for surface in self.surfaces:
             name = surface['name']
             structural_weight += params[name+'structural_weight']
             L += params[name+'L']
-            W0 += (self.prob_dict['W0'] * self.prob_dict['g'])
 
         tot_weight = structural_weight + params['fuelburn'] * self.prob_dict['g'] + W0
-        if tot_weight.imag==0:
-            print('Total weight:', tot_weight/9.80566)
 
-        unknowns['eq_con'] = (structural_weight + params['fuelburn'] * self.prob_dict['g'] + W0 - L) / W0
+        unknowns['total_weight'] = tot_weight
+        unknowns['eq_con'] = (tot_weight - L) / W0
 
 class ComputeCM(Component):
     """
@@ -243,14 +240,9 @@ class ComputeCM(Component):
                 S_ref = params[name+'S_ref']
                 sec_forces = params[name+'sec_forces'].real
 
-                if 'cg' in dparams:
-                    cgd = dparams['cg']
-                else:
-                    cgd = params['cg'] * 0.
-
                 M, Md_tmp = OAS_API.oas_api.momentcalc_d(
                                             b_pts, dparams[name+'b_pts'],
-                                            params['cg'], cgd,
+                                            params['cg'], dparams['cg'],
                                             lengths, dparams[name+'lengths'],
                                             widths, dparams[name+'widths'],
                                             S_ref, dparams[name+'S_ref'],
@@ -294,8 +286,7 @@ class ComputeCM(Component):
 
                 bptsb, cgb, lengthsb, widthsb, S_refb, sec_forcesb, _ = OAS_API.oas_api.momentcalc_b(b_pts, cg, lengths, widths, S_ref, sec_forces, surface['symmetry'], Mb)
 
-                if 'cg' in dparams:
-                    dparams['cg'] += cgb
+                dparams['cg'] += cgb
                 dparams[name+'b_pts'] += bptsb
                 dparams[name+'lengths'] += lengthsb
                 dparams[name+'widths'] += widthsb
@@ -303,6 +294,49 @@ class ComputeCM(Component):
                 dparams[name+'S_ref'] += S_refb + sb
 
                 i += num_panels
+
+class ComputeCG(Component):
+    """ Lift = weight constraint.
+
+    Note that we add information from each lifting surface.
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+    """
+
+    def __init__(self, surfaces, prob_dict):
+        super(ComputeCG, self).__init__()
+
+        self.prob_dict = prob_dict
+        self.surfaces = surfaces
+
+        for surface in surfaces:
+            name = surface['name']
+
+            self.add_param(name+'nodes', val=0.)
+            self.add_param(name+'structural_weight', val=0.)
+            self.add_param(name+'cg_location', val=np.zeros((3), dtype=data_type))
+
+        self.add_param('total_weight', val=0.)
+        self.add_param('fuelburn', val=0.)
+        self.add_output('cg', val=np.zeros((3), dtype=complex))
+
+        self.deriv_options['type'] = 'cs'
+        self.deriv_options['form'] = 'central'
+
+    def solve_nonlinear(self, params, unknowns, resids):
+        g = self.prob_dict['g']
+        W0_cg = self.prob_dict['W0'] * self.prob_dict['cg'] * g
+
+        spar_cg = 0.
+        for surface in self.surfaces:
+            name = surface['name']
+            spar_cg = params[name + 'cg_location'] * params[name + 'structural_weight']
+
+        unknowns['cg'] = (W0_cg + spar_cg) / (params['total_weight'] - params['fuelburn'] * g)
 
 class TotalPerformance(Group):
 
@@ -317,6 +351,9 @@ class TotalPerformance(Group):
                  promotes=['*'])
         self.add('moment',
                  ComputeCM(surfaces, prob_dict),
+                 promotes=['*'])
+        self.add('CG',
+                 ComputeCG(surfaces, prob_dict),
                  promotes=['*'])
 
 class TotalAeroPerformance(Group):

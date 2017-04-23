@@ -49,7 +49,8 @@ if __name__ == "__main__":
     # Set problem type
     prob_dict = {'type' : 'aerostruct',
                  'with_viscous' : True,
-                 'cg' : np.array([28., 0., 5.])}
+                 'cg' : np.array([28., 0., 5.]),
+                 'compute_static_margin' : True}
 
     if sys.argv[1].startswith('0'):  # run analysis once
         prob_dict.update({'optimize' : False})
@@ -64,7 +65,7 @@ if __name__ == "__main__":
               'num_x' : 2,
               'wing_type' : 'CRM',
               'CD0' : 0.015,
-              'symmetry' : False,
+              'symmetry' : True,
               'num_twist_cp' : 3,
               'num_thickness_cp' : 3}
 
@@ -113,3 +114,4 @@ if __name__ == "__main__":
 
     print("\nFuelburn:", OAS_prob.prob['fuelburn'])
     print("Time elapsed: {} secs".format(time() - st))
+    print(OAS_prob.prob['CM'])

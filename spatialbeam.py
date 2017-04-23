@@ -547,21 +547,27 @@ class SpatialBeamWeight(Component):
         self.add_param('A', val=np.zeros((self.ny - 1), dtype=data_type))
         self.add_param('nodes', val=np.zeros((self.ny, 3), dtype=data_type))
         self.add_output('structural_weight', val=0.)
+        self.add_output('cg_location', val=np.zeros((3), dtype=data_type))
 
     def solve_nonlinear(self, params, unknowns, resids):
         A = params['A']
         nodes = params['nodes']
 
         # Calculate the volume and weight of the total structure
-        volume = np.sum(np.linalg.norm(nodes[1:, :] - nodes[:-1, :], axis=1) * A)
+        element_volumes = np.linalg.norm(nodes[1:, :] - nodes[:-1, :], axis=1) * A
+        volume = np.sum(element_volumes)
+
+        center_of_elements = (nodes[1:, :] + nodes[:-1, :]) / 2.
+        cg_loc = np.sum(center_of_elements.T * element_volumes, axis=1) / volume
 
         weight = volume * self.surface['mrho'] * 9.81
 
         if self.surface['symmetry']:
             weight *= 2.
+            cg_loc[1] = 0.
 
         unknowns['structural_weight'] = weight
-        print('weight:', weight/9.81)
+        unknowns['cg_location'] = cg_loc
 
     def linearize(self, params, unknowns, resids):
         jac = self.alloc_jacobian()
@@ -946,9 +952,10 @@ class SpatialBeamFunctionals(Group):
     def __init__(self, surface):
         super(SpatialBeamFunctionals, self).__init__()
 
-        self.add('energy',
-                 SpatialBeamEnergy(surface),
-                 promotes=['*'])
+        # Commented out energy for now since we haven't ever used its output
+        # self.add('energy',
+        #          SpatialBeamEnergy(surface),
+        #          promotes=['*'])
         self.add('structural_weight',
                  SpatialBeamWeight(surface),
                  promotes=['*'])
