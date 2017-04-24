@@ -542,7 +542,7 @@ class TestAeroStruct(unittest.TestCase):
 
             OAS_prob.run()
             prob = OAS_prob.prob
-            self.assertAlmostEqual(prob['fuelburn'], 231379.34720600961, places=1)
+            self.assertAlmostEqual(prob['fuelburn'], 253082.26228470812, places=1)
             self.assertAlmostEqual(prob['wing_perf.failure'], 0, places=5)
 
 

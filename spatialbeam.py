@@ -571,6 +571,13 @@ class SpatialBeamWeight(Component):
 
     def linearize(self, params, unknowns, resids):
         jac = self.alloc_jacobian()
+
+        fd_jac = self.fd_jacobian(params, unknowns, resids,
+                                        fd_params=['A', 'nodes'],
+                                        fd_unknowns=['cg_location'],
+                                        fd_states=[])
+        jac.update(fd_jac)
+
         A = params['A']
         nodes = params['nodes']
 

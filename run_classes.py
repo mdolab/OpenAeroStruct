@@ -839,7 +839,7 @@ class OASProblem(object):
 
         root.add('total_perf',
                   TotalAeroPerformance(self.surfaces, self.prob_dict),
-                  promotes=['CM', 'v', 'rho'])
+                  promotes=['CM', 'v', 'rho', 'cg'])
 
         # Actually set up the problem
         self.setup_prob()
