@@ -32,7 +32,7 @@ from six import iteritems
 from geometry import GeometryMesh, Bspline, gen_crm_mesh, gen_rect_mesh, MonotonicConstraint
 from transfer import TransferDisplacements, TransferLoads
 from vlm import VLMStates, VLMFunctionals, VLMGeometry
-from spatialbeam import SpatialBeamStates, SpatialBeamFunctionals, radii
+from spatialbeam import SpatialBeamStates, SpatialBeamFunctionals, SpatialBeamSetup, radii
 from materials import MaterialsTube
 from functionals import TotalPerformance, TotalAeroPerformance, FunctionalBreguetRange, FunctionalEquilibrium
 
@@ -668,6 +668,9 @@ class OASProblem(object):
             tmp_group.add('tube',
                      MaterialsTube(surface),
                      promotes=['*'])
+            tmp_group.add('struct_setup',
+                     SpatialBeamSetup(surface),
+                     promotes=['*'])
             tmp_group.add('struct_states',
                      SpatialBeamStates(surface),
                      promotes=['*'])
@@ -901,6 +904,9 @@ class OASProblem(object):
             tmp_group.add('mesh',
                      GeometryMesh(surface, self.desvars),
                      promotes=['*'])
+            tmp_group.add('struct_setup',
+                     SpatialBeamSetup(surface),
+                     promotes=['*'])
 
             # Add bspline components for active bspline geometric variables.
             # We only add the component if the corresponding variable is a desvar,
@@ -977,6 +983,8 @@ class OASProblem(object):
         for surface in self.surfaces:
             name = surface['name']
 
+            root.connect(name[:-1] + '.K', 'coupled.' + name[:-1] + '.K')
+
             # Perform the connections with the modified names within the
             # 'aero_states' group.
             root.connect('coupled.' + name[:-1] + '.def_mesh', 'coupled.aero_states.' + name + 'def_mesh')
@@ -999,12 +1007,6 @@ class OASProblem(object):
             # Connect aerodyamic mesh to coupled group mesh
             root.connect(name[:-1] + '.mesh', 'coupled.' + name[:-1] + '.mesh')
 
-            # Connect structural design variables
-            root.connect(name[:-1] + '.A', 'coupled.' + name[:-1] + '.A')
-            root.connect(name[:-1] + '.Iy', 'coupled.' + name[:-1] + '.Iy')
-            root.connect(name[:-1] + '.Iz', 'coupled.' + name[:-1] + '.Iz')
-            root.connect(name[:-1] + '.J', 'coupled.' + name[:-1] + '.J')
-
             # Connect performance calculation variables
             root.connect(name[:-1] + '.radius', name + 'perf.radius')
             root.connect(name[:-1] + '.A', name + 'perf.A')
@@ -1019,7 +1021,7 @@ class OASProblem(object):
 
             # Connect paramters from the 'coupled' group to the performance
             # group.
-            root.connect('coupled.' + name[:-1] + '.nodes', name + 'perf.nodes')
+            root.connect(name[:-1] + '.nodes', name + 'perf.nodes')
             root.connect('coupled.' + name[:-1] + '.disp', name + 'perf.disp')
             root.connect('coupled.' + name[:-1] + '.S_ref', name + 'perf.S_ref')
             root.connect('coupled.' + name[:-1] + '.widths', name + 'perf.widths')

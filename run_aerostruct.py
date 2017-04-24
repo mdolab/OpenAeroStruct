@@ -51,7 +51,8 @@ if __name__ == "__main__":
                  'with_viscous' : True,
                  'cg' : np.array([28., 0., 5.]),
                  'compute_static_margin' : True,
-                 'profile' : True}
+                 'profile' : True,
+                 'optimizer' : 'SNOPT'}
 
     if sys.argv[1].startswith('0'):  # run analysis once
         prob_dict.update({'optimize' : False})

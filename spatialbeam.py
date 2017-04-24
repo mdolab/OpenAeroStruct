@@ -37,11 +37,11 @@ def radii(mesh, t_c=0.15):
     return t_c * chords / 2.
 
 
-def _assemble_system(nodes, A, J, Iy, Iz, loads,
+def _assemble_system(nodes, A, J, Iy, Iz,
                      K_a, K_t, K_y, K_z,
                      cons, E, G, x_gl, T,
                      K_elem, S_a, S_t, S_y, S_z, T_elem,
-                     const2, const_y, const_z, n, size, K, forces):
+                     const2, const_y, const_z, n, size, K):
 
     """
     Assemble the structural stiffness matrix based on 6 degrees of freedom
@@ -49,12 +49,6 @@ def _assemble_system(nodes, A, J, Iy, Iz, loads,
 
     Can be run in Fortran or Python code depending on the flags used.
     """
-
-    # Populate the right-hand side of the linear system using the
-    # prescribed or computed loads
-    forces[:] = 0.0
-    forces[:6*n] = loads.reshape(n*6)
-    forces[np.abs(forces) < 1e-6] = 0.
 
     # Fortran
     if fortran_flag:
@@ -133,7 +127,7 @@ def _assemble_system(nodes, A, J, Iy, Iz, loads,
                 K[-6+k, 6*cons+k] = 1.e9
                 K[6*cons+k, -6+k] = 1.e9
 
-    return K, forces
+    return K
 
 
 class AssembleK(Component):
@@ -179,10 +173,8 @@ class AssembleK(Component):
         self.add_param('Iz', val=np.zeros((self.ny - 1), dtype=data_type))
         self.add_param('J', val=np.zeros((self.ny - 1), dtype=data_type))
         self.add_param('nodes', val=np.zeros((self.ny, 3), dtype=data_type))
-        self.add_param('loads', val=np.zeros((self.ny, 6), dtype=data_type))
 
         self.add_output('K', val=np.zeros((size, size), dtype=data_type))
-        self.add_output('forces', val=np.zeros((size), dtype=data_type))
 
         self.E = surface['E']
         self.G = surface['G']
@@ -241,21 +233,18 @@ class AssembleK(Component):
         idx = (np.linalg.norm(dist, axis=1)).argmin()
         self.cons = idx
 
-        loads = params['loads']
-
-        self.K, self.forces = \
+        self.K = \
             _assemble_system(params['nodes'],
                              params['A'], params['J'], params['Iy'],
-                             params['Iz'], loads, self.K_a, self.K_t,
+                             params['Iz'], self.K_a, self.K_t,
                              self.K_y, self.K_z, self.cons,
                              self.E, self.G, self.x_gl, self.T, self.K_elem,
                              self.S_a, self.S_t, self.S_y, self.S_z,
                              self.T_elem, self.const2, self.const_y,
                              self.const_z, self.ny, self.size,
-                             self.K, self.forces)
+                             self.K)
 
         unknowns['K'] = self.K
-        unknowns['forces'] = self.forces
 
     def apply_linear(self, params, unknowns, dparams, dunknowns, dresids, mode):
 
@@ -264,8 +253,6 @@ class AssembleK(Component):
         dist = nodes - np.array([5., 0, 0])
         idx = (np.linalg.norm(dist, axis=1)).argmin()
         self.cons = idx
-
-        loads = params['loads']
 
         A = params['A']
         J = params['J']
@@ -282,7 +269,6 @@ class AssembleK(Component):
                                          self.const2, self.const_y, self.const_z)
 
             dresids['K'] += Kd
-            dresids['forces'][:-6] += dparams['loads'].reshape(-1)
 
         if mode == 'rev':
             nodesb, Ab, Jb, Iyb, Izb = OAS_API.oas_api.assemblestructmtx_b(nodes, A, J, Iy, Iz,
@@ -297,6 +283,56 @@ class AssembleK(Component):
             dparams['Iy'] += Iyb
             dparams['Iz'] += Izb
 
+class CreateRHS(Component):
+    """
+    Compute the displacements and rotations by solving the linear system
+    using the structural stiffness matrix.
+
+    Parameters
+    ----------
+    A[ny-1] : numpy array
+        Areas for each FEM element.
+    Iy[ny-1] : numpy array
+        Mass moment of inertia around the y-axis for each FEM element.
+    Iz[ny-1] : numpy array
+        Mass moment of inertia around the z-axis for each FEM element.
+    J[ny-1] : numpy array
+        Polar moment of inertia for each FEM element.
+    nodes[ny, 3] : numpy array
+        Flattened array with coordinates for each FEM node.
+    loads[ny, 6] : numpy array
+        Flattened array containing the loads applied on the FEM component,
+        computed from the sectional forces.
+
+    Returns
+    -------
+    K[(nx-1)*(ny-1), (nx-1)*(ny-1)] : numpy array
+        Stiffness matrix for the entire FEM system. Used to solve the linear
+        system K * u = f to obtain the displacements, u.
+    forces[(nx-1)*(ny-1)] : numpy array
+        Right-hand-side of the linear system. The loads from the aerodynamic
+        analysis or the user-defined loads.
+    """
+
+    def __init__(self, surface):
+        super(CreateRHS, self).__init__()
+
+        self.ny = surface['num_y']
+
+        self.add_param('loads', val=np.zeros((self.ny, 6), dtype=data_type))
+        self.add_output('forces', val=np.zeros(((self.ny+1)*6), dtype=data_type))
+
+    def solve_nonlinear(self, params, unknowns, resids):
+        # Populate the right-hand side of the linear system using the
+        # prescribed or computed loads
+        unknowns['forces'][:6*self.ny] = params['loads'].reshape(self.ny*6)
+        unknowns['forces'][np.abs(unknowns['forces']) < 1e-6] = 0.
+
+    def apply_linear(self, params, unknowns, dparams, dunknowns, dresids, mode):
+        if mode == 'fwd':
+            dresids['forces'][:-6] += dparams['loads'].reshape(-1)
+
+        if mode == 'rev':
             dparams['loads'] += dresids['forces'][:-6].reshape(-1, 6)
 
 
@@ -929,6 +965,19 @@ class NonIntersectingThickness(Component):
         jac['thickness_intersects', 'radius'] = -np.eye(self.ny-1)
         return jac
 
+class SpatialBeamSetup(Group):
+    """ Group that sets up the spatial beam components and assembles the
+        stiffness matrix."""
+
+    def __init__(self, surface):
+        super(SpatialBeamSetup, self).__init__()
+
+        self.add('nodes',
+                 ComputeNodes(surface),
+                 promotes=['*'])
+        self.add('assembly',
+                 AssembleK(surface),
+                 promotes=['*'])
 
 class SpatialBeamStates(Group):
     """ Group that contains the spatial beam states. """
@@ -938,11 +987,8 @@ class SpatialBeamStates(Group):
 
         size = 6 * surface['num_y'] + 6
 
-        self.add('nodes',
-                 ComputeNodes(surface),
-                 promotes=['*'])
-        self.add('assembly',
-                 AssembleK(surface),
+        self.add('create_rhs',
+                 CreateRHS(surface),
                  promotes=['*'])
         self.add('fem',
                  SpatialBeamFEM(size),
