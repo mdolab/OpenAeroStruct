@@ -46,7 +46,6 @@ class FunctionalBreguetRange(Component):
             self.add_param(name+'structural_weight', val=0.)
 
         self.add_output('fuelburn', val=0.)
-        self.add_output('weighted_obj', val=0.)
 
         self.deriv_options['type'] = 'cs'
         self.deriv_options['form'] = 'central'
@@ -59,8 +58,6 @@ class FunctionalBreguetRange(Component):
         W0 = self.prob_dict['W0'] * self.prob_dict['g']
         fuelburn = 0.
 
-        beta = self.prob_dict['beta']
-
         for surface in self.surfaces:
             name = surface['name']
 
@@ -70,16 +67,8 @@ class FunctionalBreguetRange(Component):
 
             fuelburn += np.sum((W0 + Ws) * (np.exp(R * CT / a / M * CD / CL) - 1))
 
-        if fuelburn < 0:
-            print()
-            print()
-            print(fuelburn, (np.exp(R * CT / a / M * CD / CL) - 1), R, CT, a, M, CD, CL)
-            print()
-            print()
-
         # Convert fuelburn from N to kg
         unknowns['fuelburn'] = fuelburn / self.prob_dict['g']
-        unknowns['weighted_obj'] = (beta * fuelburn + (1 - beta) * (W0 + Ws + fuelburn)) / self.prob_dict['g']
 
 class FunctionalEquilibrium(Component):
     """ Lift = weight constraint.

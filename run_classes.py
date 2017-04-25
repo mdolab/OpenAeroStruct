@@ -169,7 +169,6 @@ class OASProblem(object):
                                             # the wing structure and fuel.
                                             # The default is 40% of the MTOW of
                                             # B777-300 is 3e5 kg.
-                    'beta' : 1.,            # weighting factor for mixed objective
                     }
 
         return defaults
@@ -577,13 +576,10 @@ class OASProblem(object):
         if self.prob_dict['record_db']:
             view_model(self.prob, outfile=self.prob_dict['prob_name']+".html", show_browser=False)
 
-        # self.prob.run_once()
-
         # If `optimize` == True in prob_dict, perform optimization. Otherwise,
         # simply pass the problem since analysis has already been run.
         if not self.prob_dict['optimize']:
-            # Run a single analysis loop. This shouldn't actually be
-            # necessary, but sometimes the .db file is not complete unless we do this.
+            # Run a single analysis loop
             self.prob.run_once()
         else:
             # Perform optimization
@@ -1082,7 +1078,7 @@ class OASProblem(object):
         # of the parameters.
         root.add('total_perf',
                  TotalPerformance(self.surfaces, self.prob_dict),
-                 promotes=['eq_con', 'fuelburn', 'CM', 'v', 'rho', 'cg', 'weighted_obj', 'total_weight'])
+                 promotes=['eq_con', 'fuelburn', 'CM', 'v', 'rho', 'cg', 'total_weight'])
 
         # Actually set up the system
         self.setup_prob()
