@@ -22,7 +22,7 @@ import numpy as np
 # =============================================================================
 # OpenMDAO modules
 # =============================================================================
-from openmdao.api import IndepVarComp, Problem, Group, ScipyOptimizer, Newton, ScipyGMRES, LinearGaussSeidel, NLGaussSeidel, SqliteRecorder, profile, CaseReader
+from openmdao.api import IndepVarComp, Problem, Group, ScipyOptimizer, Newton, ScipyGMRES, LinearGaussSeidel, NLGaussSeidel, SqliteRecorder, profile, CaseReader, DirectSolver
 from openmdao.api import view_model
 from six import iteritems
 
@@ -35,6 +35,7 @@ from vlm import VLMStates, VLMFunctionals, VLMGeometry
 from spatialbeam import SpatialBeamStates, SpatialBeamFunctionals, SpatialBeamSetup, radii
 from materials import MaterialsTube
 from functionals import TotalPerformance, TotalAeroPerformance, FunctionalBreguetRange, FunctionalEquilibrium
+from gs_newton import HybridGSNewton
 
 try:
     import OAS_API
@@ -168,8 +169,7 @@ class OASProblem(object):
                                             # the wing structure and fuel.
                                             # The default is 40% of the MTOW of
                                             # B777-300 is 3e5 kg.
-                    'update_cg' : True,     # if true, update the cg value
-                                            # based on the structural weight
+                    'beta' : 1.,            # weighting factor for mixed objective
                     }
 
         return defaults
@@ -577,7 +577,7 @@ class OASProblem(object):
         if self.prob_dict['record_db']:
             view_model(self.prob, outfile=self.prob_dict['prob_name']+".html", show_browser=False)
 
-        self.prob.run_once()
+        # self.prob.run_once()
 
         # If `optimize` == True in prob_dict, perform optimization. Otherwise,
         # simply pass the problem since analysis has already been run.
@@ -1043,8 +1043,8 @@ class OASProblem(object):
         # This is only available in the most recent version of OpenMDAO.
         # It may help converge tightly coupled systems when using NLGS.
         try:
-            coupled.nl_solver.options['use_aitken'] = False
-            # coupled.nl_solver.options['aitken_alpha_min'] = 0.01
+            coupled.nl_solver.options['use_aitken'] = True
+            coupled.nl_solver.options['aitken_alpha_min'] = 0.01
             # coupled.nl_solver.options['aitken_alpha_max'] = 0.5
         except:
             pass
@@ -1072,8 +1072,7 @@ class OASProblem(object):
             ('alpha', self.prob_dict['alpha']),
             ('M', self.prob_dict['M']),
             ('re', self.prob_dict['Re']/self.prob_dict['reynolds_length']),
-            ('rho', self.prob_dict['rho']),
-            ('cg', self.prob_dict['cg'])]
+            ('rho', self.prob_dict['rho'])]
         root.add('prob_vars',
                  IndepVarComp(prob_vars),
                  promotes=['*'])
@@ -1083,7 +1082,7 @@ class OASProblem(object):
         # of the parameters.
         root.add('total_perf',
                  TotalPerformance(self.surfaces, self.prob_dict),
-                 promotes=['eq_con', 'fuelburn', 'CM', 'v', 'rho'])
+                 promotes=['eq_con', 'fuelburn', 'CM', 'v', 'rho', 'cg', 'weighted_obj', 'total_weight'])
 
         # Actually set up the system
         self.setup_prob()

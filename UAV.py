@@ -22,25 +22,23 @@ sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from OpenAeroStruct import OASProblem
 
 prob_type = 'aerostruct'
-mesh_level = 'L3'
+mesh_level = 'L2'
 
 # Set problem type
 prob_dict = {'optimize' : True,
              'type' : prob_type,
-             'cg' : np.array([.4, 0., 0.]),
+             'compute_static_margin' : True,
              'optimizer' : 'SNOPT',
              'with_viscous' : True,
-             'W0' : 12.,  # 14-18kg empty weight
+             'W0' : 14.,  # 16 kg empty weight
              'a' : 322.2,  # m/s at 15,000 ft
              'rho' : 0.770816, # kg/m^3 at 15,000 ft
              'R' : 2500e3, # estimated range based on cruise speed and flight endurance
-             'CT' : 9.80665 * 8.6e-6,
+             'CT' : 9.80665 * 8.6e-6,  # piston-prop estimation from Raymer
              'Re' : 4e5,
-             'M' : .1,
-             'compute_static_margin' : True,
+             'M' : .093, # calc'd from 30 m/s cruise speed
+             'cg' : np.array([.4, 0., 0.]),  # estimated based on aircraft pictures
              }
-
-prob_dict.update({})
 
 # Instantiate problem and add default surface
 OAS_prob = OASProblem(prob_dict)
@@ -60,7 +58,7 @@ radius_cp[0] = 0.015
 if mesh_level == 'L1':
     num_y = 101
     num_x = 5
-if mesh_level == 'L1.5':
+elif mesh_level == 'L1.5':
     num_y = 61
     num_x = 3
 elif mesh_level == 'L2':
@@ -90,9 +88,9 @@ surf_dict = {'num_y' : num_y,
              # Material properties taken from http://www.performance-composites.com/carbonfibre/mechanicalproperties_2.asp
              'E' : 85.e9,
              'G' : 25.e9,
-             'yield' : 350.e6 / 2.5,
+             'yield' : 350.e6 / 1.25 / 2.5,
              'mrho' : 1.6e3,
-             'CD0' : 0.02,
+             'CD0' : 0.015,
 
              }
 
@@ -107,15 +105,16 @@ if prob_type == 'aero':
 
     # OAS_prob.add_desvar('wing.chord_cp', lower=0.5, upper=3.)
     # OAS_prob.add_desvar('wing.xshear_cp', lower=-10., upper=15.)
-    OAS_prob.add_desvar('wing.sweep', lower=-60., upper=60.)
+    # OAS_prob.add_desvar('wing.sweep', lower=-60., upper=60.)
     # OAS_prob.add_desvar('wing.taper', lower=.5, upper=2.)
-    OAS_prob.add_constraint('wing_perf.CL', equals=0.5)
-    OAS_prob.add_constraint('CM', equals=0.)
-    OAS_prob.add_objective('wing_perf.CD', scaler=1e4)
+    OAS_prob.add_constraint('wing_perf.CL', equals=0.6032)
+    # OAS_prob.add_constraint('CM', equals=0.)
+    OAS_prob.add_objective('wing_perf.CD', scaler=1e3)
 
 else:
+
     # Add design variables, constraint, and objective on the problem
-    OAS_prob.add_desvar('alpha', lower=-10., upper=10.)
+    # OAS_prob.add_desvar('alpha', lower=-10., upper=10.)
     OAS_prob.add_constraint('eq_con', equals=0.)
     OAS_prob.add_objective('fuelburn', scaler=0.1)
 
