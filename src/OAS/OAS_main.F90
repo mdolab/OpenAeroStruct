@@ -774,6 +774,7 @@ contains
 
     if (symmetry) then
       moment(:, 1) = 0.
+      moment(:, 2) = moment(:, 2) * 2
       moment(:, 3) = 0.
     end if
 

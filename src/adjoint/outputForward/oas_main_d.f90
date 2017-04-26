@@ -1603,6 +1603,8 @@ contains
     if (symmetry) then
       momentd(:, 1) = 0.0_8
       moment(:, 1) = 0.
+      momentd(:, 2) = 2*momentd(:, 2)
+      moment(:, 2) = moment(:, 2)*2
       momentd(:, 3) = 0.0_8
       moment(:, 3) = 0.
     end if
@@ -1642,6 +1644,7 @@ contains
     moment = moment/mac
     if (symmetry) then
       moment(:, 1) = 0.
+      moment(:, 2) = moment(:, 2)*2
       moment(:, 3) = 0.
     end if
     m = 0.

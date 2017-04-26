@@ -383,9 +383,10 @@ class TestAeroStruct(unittest.TestCase):
         OAS_prob.setup()
         OAS_prob.run()
         prob = OAS_prob.prob
-        self.assertAlmostEqual(prob['wing_perf.CL'], 0.65879857690501509)
-        self.assertAlmostEqual(prob['wing_perf.failure'], 0.13694402508132755, places=5)
-        self.assertAlmostEqual(prob['fuelburn'], 55565.087861150947, places=2)
+        self.assertAlmostEqual(prob['wing_perf.CL'], 0.65879857971579936)
+        self.assertAlmostEqual(prob['wing_perf.failure'], 0.13694402690795321, places=5)
+        self.assertAlmostEqual(prob['fuelburn'], 55565.087226705218, places=2)
+        self.assertAlmostEqual(prob['CM'][1], -1.8300294544356677, places=2)
 
     def test_aerostruct_analysis_symmetry(self):
         OAS_prob = OASProblem({'type' : 'aerostruct',
@@ -400,9 +401,11 @@ class TestAeroStruct(unittest.TestCase):
         OAS_prob.setup()
         OAS_prob.run()
         prob = OAS_prob.prob
-        self.assertAlmostEqual(prob['wing_perf.CL'], 0.69060515847644877)
-        self.assertAlmostEqual(prob['wing_perf.failure'], 0.064535343742541204, places=5)
-        self.assertAlmostEqual(prob['fuelburn'], 57109.066996163638, places=2)
+        self.assertAlmostEqual(prob['wing_perf.CL'], 0.69060518215723909)
+        self.assertAlmostEqual(prob['wing_perf.failure'], 0.064535555449504969, places=5)
+        self.assertAlmostEqual(prob['fuelburn'], 57109.065516474155, places=2)
+        self.assertAlmostEqual(prob['CM'][1], -1.8818795614667052, places=2)
+
 
     def test_aerostruct_analysis_symmetry_deriv(self):
         OAS_prob = OASProblem({'type' : 'aerostruct',
@@ -465,7 +468,7 @@ class TestAeroStruct(unittest.TestCase):
             OAS_prob.add_constraint('wing_perf.failure', upper=0.)
             OAS_prob.add_constraint('wing_perf.thickness_intersects', upper=0.)
             OAS_prob.add_desvar('alpha', lower=-10., upper=10.)
-            OAS_prob.add_constraint('eq_con', equals=0.)
+            OAS_prob.add_constraint('L_equals_W', equals=0.)
             OAS_prob.add_objective('fuelburn', scaler=1e-5)
 
             OAS_prob.setup()
@@ -474,6 +477,7 @@ class TestAeroStruct(unittest.TestCase):
             prob = OAS_prob.prob
             self.assertAlmostEqual(prob['fuelburn'], 96889.255792361335, places=0)
             self.assertAlmostEqual(prob['wing_perf.failure'], 0., places=4)
+            self.assertAlmostEqual(prob['CM'][1], -1.3935667518160293, places=2)
 
     if fortran_flag:
         def test_aerostruct_optimization_symmetry(self):
@@ -495,7 +499,7 @@ class TestAeroStruct(unittest.TestCase):
             OAS_prob.add_constraint('wing_perf.failure', upper=0.)
             OAS_prob.add_constraint('wing_perf.thickness_intersects', upper=0.)
             OAS_prob.add_desvar('alpha', lower=-10., upper=10.)
-            OAS_prob.add_constraint('eq_con', equals=0.)
+            OAS_prob.add_constraint('L_equals_W', equals=0.)
             OAS_prob.add_objective('fuelburn', scaler=1e-4)
 
             OAS_prob.setup()
@@ -535,7 +539,7 @@ class TestAeroStruct(unittest.TestCase):
             OAS_prob.add_constraint('tail_perf.thickness_intersects', upper=0.)
 
             OAS_prob.add_desvar('alpha', lower=-10., upper=10.)
-            OAS_prob.add_constraint('eq_con', equals=0.)
+            OAS_prob.add_constraint('L_equals_W', equals=0.)
             OAS_prob.add_objective('fuelburn', scaler=1e-5)
 
             OAS_prob.setup()

@@ -468,7 +468,7 @@ class VLMGeometry(Component):
     c_pts[nx-1, ny-1, 3] : numpy array
         Collocation points on the 3/4 chord line where the flow tangency
         condition is satisfed. Used to set up the linear system.
-    widths[nx-1, ny-1] : numpy array
+    widths[ny-1] : numpy array
         The spanwise widths of each individual panel.
     lengths[ny] : numpy array
         The chordwise length of the entire airfoil following the camber line.
@@ -988,7 +988,7 @@ class VLMForces(Component):
     b_pts[nx-1, ny, 3] : numpy array
         Bound points for the horseshoe vortices, found along the 1/4 chord.
 
-    circulations : numpy array
+    circulations[(nx-1)*(ny-1)] : numpy array
         Flattened vector of horseshoe vortex strengths calculated by solving
         the linear system of AIC_mtx * circulations = rhs, where rhs is
         based on the air velocity at each collocation point.
@@ -1002,7 +1002,7 @@ class VLMForces(Component):
     Returns
     -------
     sec_forces[nx-1, ny-1, 3] : numpy array
-        Flattened array containing the sectional forces acting on each panel.
+        Contains the sectional forces acting on each panel.
         Stored in Fortran order (only relevant with more than one chordwise
         panel).
 
@@ -1553,7 +1553,7 @@ class TotalDrag(Component):
     CDi : float
         Induced coefficient of drag (CD) for the lifting surface.
     CDv : float
-        Calculated viscous drag for the lifting surface.
+        Calculated coefficient of viscous drag for the lifting surface.
 
     Returns
     -------

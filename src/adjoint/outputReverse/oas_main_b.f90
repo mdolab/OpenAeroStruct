@@ -2216,6 +2216,7 @@ contains
     call popcontrol1b(branch)
     if (branch .eq. 0) then
       momentb(:, 3) = 0.0_8
+      momentb(:, 2) = 2*momentb(:, 2)
       momentb(:, 1) = 0.0_8
     end if
     macb = sum(-(moment*momentb/mac))/mac
@@ -2277,6 +2278,7 @@ contains
     moment = moment/mac
     if (symmetry) then
       moment(:, 1) = 0.
+      moment(:, 2) = moment(:, 2)*2
       moment(:, 3) = 0.
     end if
     m = 0.

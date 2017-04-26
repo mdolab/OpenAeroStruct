@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
     # Add design variables, constraint, and objective on the problem
     OAS_prob.add_desvar('alpha', lower=-10., upper=10.)
-    OAS_prob.add_constraint('eq_con', equals=0.)
+    OAS_prob.add_constraint('L_equals_W', equals=0.)
     OAS_prob.add_objective('fuelburn', scaler=1e-5)
 
     # Single lifting surface

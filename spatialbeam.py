@@ -569,8 +569,11 @@ class SpatialBeamWeight(Component):
 
     Returns
     -------
-    weight : float
+    structural_weight : float
         Total weight of the structural spar.
+    cg_location[3] : numpy array
+        Location of the structural spar's cg.
+        
     """
 
     def __init__(self, surface):
