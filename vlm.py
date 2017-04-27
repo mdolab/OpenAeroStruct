@@ -298,6 +298,9 @@ def _assemble_AIC_mtx(mtx, params, surfaces, skip=False):
     mtx /= 4 * np.pi
 
 def _assemble_AIC_mtx_d(mtxd, params, dparams, dunknowns, dresids, surfaces, skip=False):
+    """
+    Differentiated code to get the forward mode seeds for the AIC matrix assembly.
+    """
 
     alpha = params['alpha']
     alphad = dparams['alpha']
@@ -375,6 +378,9 @@ def _assemble_AIC_mtx_d(mtxd, params, dparams, dunknowns, dresids, surfaces, ski
     mtxd /= 4 * np.pi
 
 def _assemble_AIC_mtx_b(mtxb, params, dparams, dunknowns, dresids, surfaces, skip=False):
+    """
+    Differentiated code to get the reverse mode seeds for the AIC matrix assembly.
+    """
 
     alpha = params['alpha']
 
@@ -451,8 +457,6 @@ def _assemble_AIC_mtx_b(mtxb, params, dparams, dunknowns, dresids, surfaces, ski
         i_bpts_ += n_bpts_
         i_panels_ += n_panels_
 
-
-
 class VLMGeometry(Component):
     """ Compute various geometric properties for VLM analysis.
 
@@ -513,18 +517,18 @@ class VLMGeometry(Component):
                 0.5 * 0.25 * mesh[:-1,  1:, :] + \
                 0.5 * 0.75 * mesh[1:,  1:, :]
 
-        # Compute the widths of each panel
-        qc = 0.25 * mesh[-1] + 0.75 * mesh[0]
-        widths = np.linalg.norm(qc[1:, :] - qc[:-1, :], axis=1)
+        # Compute the widths of each panel at the quarter-chord line
+        quarter_chord = 0.25 * mesh[-1] + 0.75 * mesh[0]
+        widths = np.linalg.norm(quarter_chord[1:, :] - quarter_chord[:-1, :], axis=1)
 
         # Compute the numerator of the cosine of the sweep angle of each panel
         # (we need this for the viscous drag dependence on sweep, and we only compute
         # the numerator because the denominator of the cosine fraction is the width,
         # which we have already computed. They are combined in the viscous drag
         # calculation.)
-        cos_sweep = np.linalg.norm(qc[1:, [1,2]] - qc[:-1, [1,2]], axis=1)
+        cos_sweep = np.linalg.norm(quarter_chord[1:, [1,2]] - quarter_chord[:-1, [1,2]], axis=1)
 
-        # Compute the cambered length of each chordwise set of mesh points
+        # Compute the length of each chordwise set of mesh points through the camber line.
         dx = mesh[1:, :, 0] - mesh[:-1, :, 0]
         dy = mesh[1:, :, 1] - mesh[:-1, :, 1]
         dz = mesh[1:, :, 2] - mesh[:-1, :, 2]
@@ -537,16 +541,19 @@ class VLMGeometry(Component):
             mesh[:-1, :-1, :] - mesh[1:,  1:, :],
             axis=2)
 
+        # Normalize the normal vectors
         norms = np.sqrt(np.sum(normals**2, axis=2))
         for j in range(3):
             normals[:, :, j] /= norms
 
+        # Compute the wetted surface area
         if self.surface['S_ref_type'] == 'wetted':
             S_ref = 0.5 * np.sum(norms)
 
+        # Compute the projected surface area
         elif self.surface['S_ref_type'] == 'projected':
             proj_mesh = mesh.copy()
-            proj_mesh[:,:,2] = 0.
+            proj_mesh[: , :, 2] = 0.
             proj_normals = np.cross(
                 proj_mesh[:-1,  1:, :] - proj_mesh[1:, :-1, :],
                 proj_mesh[:-1, :-1, :] - proj_mesh[1:,  1:, :],
@@ -558,10 +565,11 @@ class VLMGeometry(Component):
 
             S_ref = 0.5 * np.sum(proj_norms)
 
+        # Multiply the surface area by 2 if symmetric to get consistent area measures
         if self.surface['symmetry']:
             S_ref *= 2
 
-        # Store each array
+        # Store each array in the unknowns dict
         unknowns['b_pts'] = b_pts
         unknowns['c_pts'] = c_pts
         unknowns['widths'] = widths
@@ -571,7 +579,7 @@ class VLMGeometry(Component):
         unknowns['S_ref'] = S_ref
 
     def linearize(self, params, unknowns, resids):
-        """ Jacobian for geometry."""
+        """ Jacobian for VLM geometry."""
 
         jac = self.alloc_jacobian()
         name = self.surface['name']
@@ -596,7 +604,7 @@ class VLMGeometry(Component):
                 seed_mesh = mesh
             elif self.surface['S_ref_type'] == 'projected':
                 seed_mesh = mesh.copy()
-                seed_mesh[:,:,2] = 0.
+                seed_mesh[:, :, 2] = 0.
             meshb, _, _ = OAS_API.oas_api.compute_normals_b(seed_mesh, normalsb, 1.)
 
             jac['S_ref', 'def_mesh'] = np.atleast_2d(meshb.flatten())
@@ -665,7 +673,7 @@ class AssembleAIC(Component):
     Note that the flow tangency condition is enforced at the 3/4 chord point.
     There are multiple versions of the first four parameters with one
     for each surface defined.
-    Each of these parameters has the name of the surface prepended on the
+    Each of these four parameters has the name of the surface prepended on the
     actual parameter name.
 
     Parameters
@@ -1201,6 +1209,7 @@ class VLMForces(Component):
 class VLMLiftDrag(Component):
     """
     Calculate total lift and drag in force units based on section forces.
+    This is for one given lifting surface.
 
     Parameters
     ----------
@@ -1284,6 +1293,8 @@ class VLMLiftDrag(Component):
 class ViscousDrag(Component):
     """
     Compute the skin friction drag if the with_viscous option is True.
+    If not, the CDv is 0.
+    This component exists for each lifting surface.
 
     Parameters
     ----------
@@ -1320,15 +1331,15 @@ class ViscousDrag(Component):
         self.t_over_c = surface['t_over_c']
         self.c_max_t = surface['c_max_t']
 
-        self.ny = surface['num_y']
+        ny = surface['num_y']
         self.surface = surface
 
         self.add_param('re', val=5.e6)
         self.add_param('M', val=.84)
         self.add_param('S_ref', val=0.)
-        self.add_param('cos_sweep', val=np.zeros((self.ny-1)))
-        self.add_param('widths', val=np.zeros((self.ny-1)))
-        self.add_param('lengths', val=np.zeros((self.ny)))
+        self.add_param('cos_sweep', val=np.zeros((ny-1)))
+        self.add_param('widths', val=np.zeros((ny-1)))
+        self.add_param('lengths', val=np.zeros((ny)))
         self.add_output('CDv', val=0.)
         self.with_viscous = with_viscous
 
@@ -1340,8 +1351,6 @@ class ViscousDrag(Component):
             widths = params['widths']
             lengths = params['lengths']
             cos_sweep = params['cos_sweep'] / widths
-
-            self.d_over_q = np.zeros((self.ny - 1))
 
             # Take panel chord length to be average of its edge lengths
             chords = (lengths[1:] + lengths[:-1]) / 2.
@@ -1366,7 +1375,6 @@ class ViscousDrag(Component):
             cd = (cdlam_tr - cdturb_tr)*self.k_lam + cdturb_total
 
             # Multiply by section width to get total normalized drag for section
-            # d_over_q = d / 0.5 / rho / v**2
             self.d_over_q = 2 * cd * chords
 
             # Calculate form factor (Raymer Eq. 12.30)
@@ -1443,7 +1451,7 @@ class ViscousDrag(Component):
         return jac
 
 class VLMCoeffs(Component):
-    """ Compute lift and drag coefficients.
+    """ Compute lift and drag coefficients for each individual lifting surface.
 
     Parameters
     ----------
@@ -1603,8 +1611,10 @@ class VLMStates(Group):
 
 
 class VLMFunctionals(Group):
-    """ Group that contains the aerodynamic functionals used to evaluate
-    performance. """
+    """
+    Group that contains the aerodynamic functionals used to evaluate
+    performance.
+    """
 
     def __init__(self, surface, prob_dict):
         super(VLMFunctionals, self).__init__()

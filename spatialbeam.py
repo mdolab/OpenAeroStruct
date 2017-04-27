@@ -20,22 +20,20 @@ except:
     fortran_flag = False
     data_type = complex
 
-
 def norm(vec):
     return np.sqrt(np.sum(vec**2))
-
 
 def unit(vec):
     return vec / norm(vec)
 
-
 def radii(mesh, t_c=0.15):
-    """ Obtain the radii of the FEM component based on chord. """
+    """
+    Obtain the radii of the FEM element based on local chord.
+    """
     vectors = mesh[-1, :, :] - mesh[0, :, :]
     chords = np.sqrt(np.sum(vectors**2, axis=1))
     chords = 0.5 * chords[:-1] + 0.5 * chords[1:]
     return t_c * chords / 2.
-
 
 def _assemble_system(nodes, A, J, Iy, Iz,
                      K_a, K_t, K_y, K_z,
@@ -130,6 +128,52 @@ def _assemble_system(nodes, A, J, Iy, Iz,
     return K
 
 
+class ComputeNodes(Component):
+    """
+    Compute FEM nodes based on aerodynamic mesh.
+
+    The FEM nodes are placed at fem_origin * chord,
+    with the default fem_origin = 0.35.
+
+    Parameters
+    ----------
+    mesh[nx, ny, 3] : numpy array
+        Array defining the nodal points of the lifting surface.
+
+    Returns
+    -------
+    nodes[ny, 3] : numpy array
+        Flattened array with coordinates for each FEM node.
+
+    """
+
+    def __init__(self, surface):
+        super(ComputeNodes, self).__init__()
+
+        self.ny = surface['num_y']
+        self.nx = surface['num_x']
+        self.fem_origin = surface['fem_origin']
+
+        self.add_param('mesh', val=np.zeros((self.nx, self.ny, 3), dtype=data_type))
+        self.add_output('nodes', val=np.zeros((self.ny, 3), dtype=data_type))
+
+    def solve_nonlinear(self, params, unknowns, resids):
+        w = self.fem_origin
+        mesh = params['mesh']
+
+        unknowns['nodes'] = (1-w) * mesh[0, :, :] + w * mesh[-1, :, :]
+
+    def linearize(self, params, unknowns, resids):
+        jac = self.alloc_jacobian()
+        w = self.fem_origin
+
+        n = self.ny * 3
+        jac['nodes', 'mesh'][:n, :n] = np.eye(n) * (1-w)
+        jac['nodes', 'mesh'][:n, -n:] = np.eye(n) * w
+
+        return jac
+
+
 class AssembleK(Component):
     """
     Compute the displacements and rotations by solving the linear system
@@ -147,18 +191,12 @@ class AssembleK(Component):
         Polar moment of inertia for each FEM element.
     nodes[ny, 3] : numpy array
         Flattened array with coordinates for each FEM node.
-    loads[ny, 6] : numpy array
-        Flattened array containing the loads applied on the FEM component,
-        computed from the sectional forces.
 
     Returns
     -------
-    K[(nx-1)*(ny-1), (nx-1)*(ny-1)] : numpy array
+    K[6*(ny+1), 6*(ny+1)] : numpy array
         Stiffness matrix for the entire FEM system. Used to solve the linear
         system K * u = f to obtain the displacements, u.
-    forces[(nx-1)*(ny-1)] : numpy array
-        Right-hand-side of the linear system. The loads from the aerodynamic
-        analysis or the user-defined loads.
     """
 
     def __init__(self, surface):
@@ -227,7 +265,7 @@ class AssembleK(Component):
 
     def solve_nonlinear(self, params, unknowns, resids):
 
-        # Find constrained nodes based on closeness to specified cg point
+        # Find constrained nodes based on closeness to central point
         nodes = params['nodes']
         dist = nodes - np.array([5., 0, 0])
         idx = (np.linalg.norm(dist, axis=1)).argmin()
@@ -285,31 +323,19 @@ class AssembleK(Component):
 
 class CreateRHS(Component):
     """
-    Compute the displacements and rotations by solving the linear system
-    using the structural stiffness matrix.
+    Compute the right-hand-side of the K * u = f linear system to solve for the displacements.
+    The RHS is based on the loads. For the aerostructural case, these are
+    recomputed at each design point based on the aerodynamic loads.
 
     Parameters
     ----------
-    A[ny-1] : numpy array
-        Areas for each FEM element.
-    Iy[ny-1] : numpy array
-        Mass moment of inertia around the y-axis for each FEM element.
-    Iz[ny-1] : numpy array
-        Mass moment of inertia around the z-axis for each FEM element.
-    J[ny-1] : numpy array
-        Polar moment of inertia for each FEM element.
-    nodes[ny, 3] : numpy array
-        Flattened array with coordinates for each FEM node.
     loads[ny, 6] : numpy array
         Flattened array containing the loads applied on the FEM component,
         computed from the sectional forces.
 
     Returns
     -------
-    K[(nx-1)*(ny-1), (nx-1)*(ny-1)] : numpy array
-        Stiffness matrix for the entire FEM system. Used to solve the linear
-        system K * u = f to obtain the displacements, u.
-    forces[(nx-1)*(ny-1)] : numpy array
+    forces[6*(ny+1)] : numpy array
         Right-hand-side of the linear system. The loads from the aerodynamic
         analysis or the user-defined loads.
     """
@@ -326,15 +352,16 @@ class CreateRHS(Component):
         # Populate the right-hand side of the linear system using the
         # prescribed or computed loads
         unknowns['forces'][:6*self.ny] = params['loads'].reshape(self.ny*6)
+
+        # Remove extremely small values from the RHS so the linear system
+        # can more easily be solved
         unknowns['forces'][np.abs(unknowns['forces']) < 1e-6] = 0.
 
-    def apply_linear(self, params, unknowns, dparams, dunknowns, dresids, mode):
-        if mode == 'fwd':
-            dresids['forces'][:-6] += dparams['loads'].reshape(-1)
-
-        if mode == 'rev':
-            dparams['loads'] += dresids['forces'][:-6].reshape(-1, 6)
-
+    def linearize(self, params, unknowns, resids):
+        jac = self.alloc_jacobian()
+        n = self.ny * 6
+        jac['forces', 'loads'][:n, :n] = np.eye((n))
+        return jac
 
 class SpatialBeamFEM(Component):
     """
@@ -437,7 +464,7 @@ class SpatialBeamDisp(Component):
     Reshape the flattened displacements from the linear system solution into
     a 2D array so we can more easily use the results.
 
-    The solution to the linear system has additional results due to the
+    The solution to the linear system has meaingless entires due to the
     constraints on the FEM model. The displacements from this portion of
     the linear system are not needed, so we select only the relevant
     portion of the displacements for further calculations.
@@ -472,52 +499,6 @@ class SpatialBeamDisp(Component):
         jac = self.alloc_jacobian()
         n = self.ny * 6
         jac['disp', 'disp_aug'][:n, :n] = np.eye((n))
-        return jac
-
-
-class ComputeNodes(Component):
-    """
-    Compute FEM nodes based on aerodynamic mesh.
-
-    The FEM nodes are placed at fem_origin * chord,
-    with the default fem_origin = 0.35.
-
-    Parameters
-    ----------
-    mesh[nx, ny, 3] : numpy array
-        Array defining the nodal points of the lifting surface.
-
-    Returns
-    -------
-    nodes[ny, 3] : numpy array
-        Flattened array with coordinates for each FEM node.
-
-    """
-
-    def __init__(self, surface):
-        super(ComputeNodes, self).__init__()
-
-        self.ny = surface['num_y']
-        self.nx = surface['num_x']
-        self.fem_origin = surface['fem_origin']
-
-        self.add_param('mesh', val=np.zeros((self.nx, self.ny, 3), dtype=data_type))
-        self.add_output('nodes', val=np.zeros((self.ny, 3), dtype=data_type))
-
-    def solve_nonlinear(self, params, unknowns, resids):
-        w = self.fem_origin
-        mesh = params['mesh']
-
-        unknowns['nodes'] = (1-w) * mesh[0, :, :] + w * mesh[-1, :, :]
-
-    def linearize(self, params, unknowns, resids):
-        jac = self.alloc_jacobian()
-        w = self.fem_origin
-
-        n = self.ny * 3
-        jac['nodes', 'mesh'][:n, :n] = np.eye(n) * (1-w)
-        jac['nodes', 'mesh'][:n, -n:] = np.eye(n) * w
-
         return jac
 
 
@@ -570,10 +551,10 @@ class SpatialBeamWeight(Component):
     Returns
     -------
     structural_weight : float
-        Total weight of the structural spar.
+        Weight of the structural spar.
     cg_location[3] : numpy array
         Location of the structural spar's cg.
-        
+
     """
 
     def __init__(self, surface):
@@ -658,10 +639,10 @@ class SpatialBeamVonMisesTube(Component):
 
     Parameters
     ----------
-    radius[ny-1] : numpy array
-        Radii for each FEM element.
     nodes[ny, 3] : numpy array
         Flattened array with coordinates for each FEM node.
+    radius[ny-1] : numpy array
+        Radii for each FEM element.
     disp[ny, 6] : numpy array
         Displacements of each FEM node.
 
