@@ -141,7 +141,7 @@ def setup(prob_dict={}, surfaces=[{}]):
     Structural values are based on aluminum
         E = 70.e9            # [Pa] Young's modulus of the spar
         G = 30.e9            # [Pa] shear modulus of the spar
-        stress = 20.e6       # [Pa] yield stress
+        yield = 20.e6        # [Pa] yield stress
         mrho = 3.e3          # [kg/m^3] material density
         fem_origin = 0.35    # chordwise location of the spar
     Other

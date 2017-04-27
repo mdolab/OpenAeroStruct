@@ -126,6 +126,58 @@ python module OAS_API ! in
                 real(kind=8) dimension(num_panels,3),intent(out),depend(num_panels) :: sec_forces
                 real(kind=8) dimension(num_panels,3),intent(in),depend(num_panels) :: sec_forcesb
             end subroutine forcecalc_b
+            subroutine momentcalc(bpts,cg,lengths,widths,s_ref,sec_forces,symmetry,nx,ny,m) ! in :OAS_API:OAS_API.F90:oas_api
+                real(kind=8) dimension(nx - 1,ny,3),intent(in) :: bpts
+                real(kind=8) dimension(3),intent(in) :: cg
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: lengths
+                real(kind=8) dimension(ny - 1),intent(in),depend(ny) :: widths
+                real(kind=8) intent(in) :: s_ref
+                real(kind=8) dimension(nx - 1,ny - 1,3),intent(in),depend(nx,ny) :: sec_forces
+                logical intent(in) :: symmetry
+                integer, optional,intent(in),check((shape(bpts,0)+1)==nx),depend(bpts) :: nx=(shape(bpts,0)+1)
+                integer, optional,intent(in),check(shape(bpts,1)==ny),depend(bpts) :: ny=shape(bpts,1)
+                real(kind=8) dimension(3),intent(out) :: m
+            end subroutine momentcalc
+            subroutine momentcalc_d(bpts,bptsd,cg,cgd,lengths,lengthsd,widths,widthsd,s_ref,s_refd,sec_forces,sec_forcesd,symmetry,nx,ny,m,md) ! in :OAS_API:OAS_API.F90:oas_api
+                use oas_main_d, only: momentcalc_main_d
+                real(kind=8) dimension(nx - 1,ny,3),intent(in) :: bpts
+                real(kind=8) dimension(nx - 1,ny,3),intent(in),depend(nx,ny) :: bptsd
+                real(kind=8) dimension(3),intent(in) :: cg
+                real(kind=8) dimension(3),intent(in) :: cgd
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: lengths
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: lengthsd
+                real(kind=8) dimension(ny - 1),intent(in),depend(ny) :: widths
+                real(kind=8) dimension(ny - 1),intent(in),depend(ny) :: widthsd
+                real(kind=8) intent(in) :: s_ref
+                real(kind=8) intent(in) :: s_refd
+                real(kind=8) dimension(nx - 1,ny - 1,3),intent(in),depend(nx,ny) :: sec_forces
+                real(kind=8) dimension(nx - 1,ny - 1,3),intent(in),depend(nx,ny) :: sec_forcesd
+                logical intent(in) :: symmetry
+                integer, optional,intent(in),check((shape(bpts,0)+1)==nx),depend(bpts) :: nx=(shape(bpts,0)+1)
+                integer, optional,intent(in),check(shape(bpts,1)==ny),depend(bpts) :: ny=shape(bpts,1)
+                real(kind=8) dimension(3),intent(out) :: m
+                real(kind=8) dimension(3),intent(out) :: md
+            end subroutine momentcalc_d
+            subroutine momentcalc_b(bpts,bptsb,cg,cgb,lengths,lengthsb,widths,widthsb,s_ref,s_refb,sec_forces,sec_forcesb,symmetry,nx,ny,m,mb) ! in :OAS_API:OAS_API.F90:oas_api
+                use oas_main_b, only: momentcalc_main_b
+                real(kind=8) dimension(nx - 1,ny,3),intent(in) :: bpts
+                real(kind=8) dimension(nx - 1,ny,3),intent(out),depend(nx,ny) :: bptsb
+                real(kind=8) dimension(3),intent(in) :: cg
+                real(kind=8) dimension(3),intent(out) :: cgb
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: lengths
+                real(kind=8) dimension(ny),intent(out),depend(ny) :: lengthsb
+                real(kind=8) dimension(ny - 1),intent(in),depend(ny) :: widths
+                real(kind=8) dimension(ny - 1),intent(out),depend(ny) :: widthsb
+                real(kind=8) intent(in) :: s_ref
+                real(kind=8) intent(out) :: s_refb
+                real(kind=8) dimension(nx - 1,ny - 1,3),intent(in),depend(nx,ny) :: sec_forces
+                real(kind=8) dimension(nx - 1,ny - 1,3),intent(out),depend(nx,ny) :: sec_forcesb
+                logical intent(in) :: symmetry
+                integer, optional,intent(in),check((shape(bpts,0)+1)==nx),depend(bpts) :: nx=(shape(bpts,0)+1)
+                integer, optional,intent(in),check(shape(bpts,1)==ny),depend(bpts) :: ny=shape(bpts,1)
+                real(kind=8) dimension(3),intent(out) :: m
+                real(kind=8) dimension(3),intent(in) :: mb
+            end subroutine momentcalc_b
             subroutine assemblestructmtx(n,tot_n_fem,nodes,a,j,iy,iz,k_a,k_t,k_y,k_z,cons,e,g,x_gl,t,k_elem,pelem_a,pelem_t,pelem_y,pelem_z,t_elem,const2,const_y,const_z,k) ! in :OAS_API:OAS_API.F90:oas_api
                 integer, optional,intent(in),check((len(a)+1)>=n),depend(a) :: n=(len(a)+1)
                 integer, optional,intent(in),check(shape(nodes,0)==tot_n_fem),depend(nodes) :: tot_n_fem=shape(nodes,0)

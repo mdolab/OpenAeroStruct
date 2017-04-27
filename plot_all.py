@@ -120,6 +120,7 @@ class Display(object):
         self.AR = []
         self.S_ref = []
         self.obj = []
+        self.cg = []
 
         meta_db = sqlitedict.SqliteDict(self.db_name, 'metadata')
         self.opt = False
@@ -132,6 +133,11 @@ class Display(object):
                     keys_length = len(self.db.keys())
                 if keys_length > 2:
                     self.opt = True
+
+        self.yield_stress_dict = {}
+        for key, value in iteritems(meta_db['system_metadata']):
+            if 'yield_stress' in key:
+                self.yield_stress_dict.update({key : value})
 
         deriv_keys = sqlitedict.SqliteDict(self.db_name, 'derivs').keys()
         deriv_keys = [int(key.split('|')[-1]) for key in deriv_keys]
@@ -236,6 +242,7 @@ class Display(object):
                 alpha.append(case_data['Unknowns']['alpha'] * np.pi / 180.)
                 rho.append(case_data['Unknowns']['rho'])
                 v.append(case_data['Unknowns']['v'])
+                self.cg.append(case_data['Unknowns']['cg'])
 
         if self.opt:
             self.num_iters = np.max([int(len(self.mesh) / n_names) - 1, 1])
@@ -346,6 +353,7 @@ class Display(object):
                     center += np.mean(self.def_mesh[i*n_names+j], axis=(0,1))
                 for j in range(n_names):
                     self.def_mesh[i*n_names+j] -= center / n_names
+                self.cg[i] -= center / n_names
 
         # recenter mesh points for better viewing
         for i in range(self.num_iters + 1):
@@ -406,14 +414,17 @@ class Display(object):
             self.ax4.set_ylabel('thickness', rotation="horizontal", ha="right")
 
             self.ax5.cla()
+            max_yield_stress = 0.
+            for key, yield_stress in iteritems(self.yield_stress_dict):
+                self.ax5.axhline(yield_stress, c='r', lw=2, ls='--')
+                max_yield_stress = max(max_yield_stress, yield_stress)
+
             self.ax5.locator_params(axis='y',nbins=4)
             self.ax5.locator_params(axis='x',nbins=3)
             self.ax5.set_ylim([self.min_vm, self.max_vm])
-            self.ax5.set_ylim([0, 220e6])
+            self.ax5.set_ylim([0, max_yield_stress*1.1])
             self.ax5.set_xlim([-1, 1])
             self.ax5.set_ylabel('von mises', rotation="horizontal", ha="right")
-            # 500.e6 / 2.5 Pa stress limit hardcoded for aluminum
-            self.ax5.axhline(500.e6 / 2.5, c='r', lw=2, ls='--')
             self.ax5.text(0.075, 1.1, 'failure limit',
                 transform=self.ax5.transAxes, color='r')
 
@@ -478,6 +489,9 @@ class Display(object):
                         self.c2.grid_forget()
                 except:
                     self.ax.plot_wireframe(x, y, z, rstride=1, cstride=1, color='k')
+
+                cg = self.cg[self.curr_pos]
+                self.ax.scatter(cg[0], cg[1], cg[2], s=100, color='r')
 
             if self.show_tube:
                 r0 = self.radius[self.curr_pos*n_names+j]

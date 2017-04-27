@@ -25,6 +25,9 @@ MDO Course Homework Tips
 
 - If you are unsure of where a parameter or unknown is within the problem, view the `.html` files that are produced when running a case. You can use the search function to look for specific variables.
 
+.. note::
+  Some of the parameters may be promoted above the component level into the group level. For example, with an aerostructural case you would access the loads through `prob['coupled.wing_loads.loads']`.
+
 - Download and use the most recent version of the OpenAeroStruct code as there may have been bug fixes for certain issues.
 
 - Make sure all of your Python packages are up-to-date, including (but not limited to) Numpy, Scipy, Matplotlib,
@@ -35,11 +38,13 @@ MDO Course Homework Tips
 
 - To create your own objective function, examine the `FunctionalBreguetRange` component within `functionals.py`. This component computes the fuel burn of the aircraft based on the calculated CL, CD, and structural weight values, along with other provided parameters. You can modify this component to also output a weighted objective between the fuel burn and the weight.
 
-- Change `prob_dict['g']` to alter the force of gravity for different load cases.
-
 - The `structural_weight` parameter within the structural discipline is in Newtons, not kg.
 
-- To change the linear and nonlinear solvers for the aerostructural problem, look for the `ln_solver` and `nl_solver` methods within `setup_aerostruct` in `run_classes.py`. See http://openmdao.readthedocs.io/en/latest/srcdocs/packages/openmdao.solvers.html for info on different solvers. Try using Newton and NLGaussSeidel on the coupled system.
+- To change the linear and nonlinear solvers for the aerostructural problem, look for the `ln_solver` and `nl_solver` methods within `setup_aerostruct` in `run_classes.py`. See http://openmdao.readthedocs.io/en/latest/srcdocs/packages/openmdao.solvers.html for info on different solvers. Try using Newton and NLGaussSeidel on the coupled system. Check out MDO_Intro_OpenMDAO_OpenAeroStruct.pdf on Canvas for detailed information.
 
 .. note::
   Each solver has different default tolerance values. To make a valid comparison between solvers, consistently set the tolerance criteria for each solver. See the OpenMDAO documentation for the specific keywords and defaults.
+
+- If you change an option or parameter in either the surface or problem dictionary and the results do not seem to change, check to make sure that you put the option in the correct dictionary. For example, you set the optimizer in the problem dictionary and set the CD0 in the surface dictionary.
+
+- See the MDO course notes for an explanation of the process for sequential optimization. The correct design variables, constraints, and objective functions are detailed there.

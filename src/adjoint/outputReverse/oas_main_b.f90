@@ -47,8 +47,7 @@ contains
 &   /2), dy_qc_r((ny-1)/2)
     real(kind=8) :: dz_qc_lb((ny-1)/2), dz_qc_rb((ny-1)/2), dy_qc_lb((ny&
 &   -1)/2), dy_qc_rb((ny-1)/2)
-    real(kind=8) :: xp(2), fp(2), xp_(3), fp_(3), computed_span, tol
-    real(kind=8) :: fpb(2), fp_b(3)
+    real(kind=8) :: computed_span
     integer :: ny2, ix, iy, ind
     intrinsic tan
     intrinsic atan
@@ -56,6 +55,9 @@ contains
     intrinsic sin
     real(kind=8), dimension(3) :: arg1
     real(kind=8), dimension(3) :: arg1b
+    integer :: ad_to
+    integer :: ad_to0
+    integer :: ad_to1
     integer :: branch
     real(kind=8) :: tempb3((ny-1)/2)
     real(kind=8) :: tempb2((ny-1)/2)
@@ -64,18 +66,16 @@ contains
     real(kind=8) :: tempb(ny)
     p180 = 3.14159265358979323846264338/180.
     mesh = input_mesh
-    tol = 1e-10
 ! taper
     le = mesh(1, :, :)
     te = mesh(nx, :, :)
     quarter_chord = 0.25*te + 0.75*le
     if (symmetry) then
       computed_span = quarter_chord(ny, 2) - quarter_chord(1, 2)
-      xp(1) = -computed_span - tol
-      xp(2) = tol
-      fp(1) = taper
-      fp(2) = 1.
-      call interp1d(1, ny, xp, fp, ny, quarter_chord(:, 2), taper_lins)
+      do iy=1,ny
+        taper_lins(iy) = (quarter_chord(iy, 2)-quarter_chord(1, 2))/&
+&         computed_span*(1-taper) + taper
+      end do
       do iy=1,ny
         do ix=1,nx
           do ind=1,3
@@ -88,13 +88,21 @@ contains
       call pushcontrol1b(0)
     else
       computed_span = quarter_chord(ny, 2) - quarter_chord(1, 2)
-      xp_(1) = -(computed_span/2) - tol
-      xp_(2) = 0.
-      xp_(3) = computed_span/2 + tol
-      fp_(1) = taper
-      fp_(2) = 1.
-      fp_(3) = taper
-      call interp1d(1, ny, xp_, fp_, ny, quarter_chord(:, 2), dx)
+      ny2 = (ny-1)/2
+      do iy=1,ny2
+        dx(iy) = 1 + quarter_chord(iy, 2)/(computed_span/2)*taper
+      end do
+      call pushinteger4(iy - 1)
+      do iy=1,ny2
+        dx(iy) = (quarter_chord(iy, 2)-quarter_chord(1, 2))/(&
+&         computed_span/2)*(1-taper) + taper
+      end do
+      call pushinteger4(iy - 1)
+      do iy=ny,ny2+1,-1
+        dx(iy) = -((quarter_chord(iy, 2)-quarter_chord(ny, 2))/(&
+&         computed_span/2)*(1-taper)) + taper
+      end do
+      call pushinteger4(iy + 1)
       do iy=1,ny
         do ix=1,nx
           do ind=1,3
@@ -446,10 +454,11 @@ contains
           end do
         end do
       end do
-      call interp1d_b(1, ny, xp, fp, fpb, ny, quarter_chord(:, 2), &
-&               taper_lins, taper_linsb)
-      fpb(2) = 0.0_8
-      taperb = taperb + fpb(1)
+      do iy=ny,1,-1
+        taperb = taperb + (1.0_8-(quarter_chord(iy, 2)-quarter_chord(1, &
+&         2))/computed_span)*taper_linsb(iy)
+        taper_linsb(iy) = 0.0_8
+      end do
     else
       do iy=ny,1,-1
         do ix=nx,1,-1
@@ -461,12 +470,23 @@ contains
           end do
         end do
       end do
-      call interp1d_b(1, ny, xp_, fp_, fp_b, ny, quarter_chord(:, 2), dx&
-&               , dxb)
-      taperb = taperb + fp_b(3)
-      fp_b(3) = 0.0_8
-      fp_b(2) = 0.0_8
-      taperb = taperb + fp_b(1)
+      call popinteger4(ad_to1)
+      do iy=ad_to1,ny,1
+        taperb = taperb + ((quarter_chord(iy, 2)-quarter_chord(ny, 2))*2&
+&         /computed_span+1.0_8)*dxb(iy)
+        dxb(iy) = 0.0_8
+      end do
+      call popinteger4(ad_to0)
+      do iy=ad_to0,1,-1
+        taperb = taperb + (1.0_8-(quarter_chord(iy, 2)-quarter_chord(1, &
+&         2))*2/computed_span)*dxb(iy)
+        dxb(iy) = 0.0_8
+      end do
+      call popinteger4(ad_to)
+      do iy=ad_to,1,-1
+        taperb = taperb + quarter_chord(iy, 2)*2*dxb(iy)/computed_span
+        dxb(iy) = 0.0_8
+      end do
     end if
     meshb = 0.0_8
   end subroutine manipulate_mesh_main_b
@@ -490,7 +510,7 @@ contains
 &   ), new_span
     real(kind=8) :: dz_qc_l((ny-1)/2), dz_qc_r((ny-1)/2), dy_qc_l((ny-1)&
 &   /2), dy_qc_r((ny-1)/2)
-    real(kind=8) :: xp(2), fp(2), xp_(3), fp_(3), computed_span, tol
+    real(kind=8) :: computed_span
     integer :: ny2, ix, iy, ind
     intrinsic tan
     intrinsic atan
@@ -500,18 +520,16 @@ contains
     p180 = 3.14159265358979323846264338/180.
     mesh = input_mesh
     one = 1.
-    tol = 1e-10
 ! taper
     le = mesh(1, :, :)
     te = mesh(nx, :, :)
     quarter_chord = 0.25*te + 0.75*le
     if (symmetry) then
       computed_span = quarter_chord(ny, 2) - quarter_chord(1, 2)
-      xp(1) = -computed_span - tol
-      xp(2) = tol
-      fp(1) = taper
-      fp(2) = 1.
-      call interp1d(1, ny, xp, fp, ny, quarter_chord(:, 2), taper_lins)
+      do iy=1,ny
+        taper_lins(iy) = (quarter_chord(iy, 2)-quarter_chord(1, 2))/&
+&         computed_span*(1-taper) + taper
+      end do
       do iy=1,ny
         do ix=1,nx
           do ind=1,3
@@ -522,13 +540,18 @@ contains
       end do
     else
       computed_span = quarter_chord(ny, 2) - quarter_chord(1, 2)
-      xp_(1) = -(computed_span/2) - tol
-      xp_(2) = 0.
-      xp_(3) = computed_span/2 + tol
-      fp_(1) = taper
-      fp_(2) = 1.
-      fp_(3) = taper
-      call interp1d(1, ny, xp_, fp_, ny, quarter_chord(:, 2), dx)
+      ny2 = (ny-1)/2
+      do iy=1,ny2
+        dx(iy) = 1 + quarter_chord(iy, 2)/(computed_span/2)*taper
+      end do
+      do iy=1,ny2
+        dx(iy) = (quarter_chord(iy, 2)-quarter_chord(1, 2))/(&
+&         computed_span/2)*(1-taper) + taper
+      end do
+      do iy=ny,ny2+1,-1
+        dx(iy) = -((quarter_chord(iy, 2)-quarter_chord(ny, 2))/(&
+&         computed_span/2)*(1-taper)) + taper
+      end do
       do iy=1,ny
         do ix=1,nx
           do ind=1,3
@@ -2054,10 +2077,10 @@ contains
     out = out + tmp
   end subroutine biotsavart
 !  differentiation of forcecalc_main in reverse (adjoint) mode (with options i4 dr8 r8):
-!   gradient     of useful results: v circ bpts sec_forces rho
+!   gradient     of useful results: sec_forces
 !   with respect to varying inputs: v circ bpts sec_forces rho
-!   rw status of diff variables: v:incr circ:incr bpts:incr sec_forces:in-out
-!                rho:incr
+!   rw status of diff variables: v:out circ:out bpts:out sec_forces:in-out
+!                rho:out
   subroutine forcecalc_main_b(v, vb, circ, circb, rho, rhob, bpts, bptsb&
 &   , nx, ny, num_panels, sec_forces, sec_forcesb)
     implicit none
@@ -2083,6 +2106,8 @@ contains
       call cross(v(i, :), bound(i, :), tmp)
       v_cross_bound(i, :) = tmp
     end do
+    circb = 0.0_8
+    rhob = 0.0_8
     v_cross_boundb = 0.0_8
     do i=3,1,-1
       tempb = v_cross_bound(:, i)*sec_forcesb(:, i)
@@ -2092,6 +2117,7 @@ contains
 &       (:, i)
       sec_forcesb(:, i) = 0.0_8
     end do
+    vb = 0.0_8
     boundb = 0.0_8
     tmpb = 0.0_8
     do i=num_panels,1,-1
@@ -2100,6 +2126,7 @@ contains
       call cross_b(v(i, :), vb(i, :), bound(i, :), boundb(i, :), tmp, &
 &            tmpb)
     end do
+    bptsb = 0.0_8
     do j=ny-1,1,-1
       do i=nx-1,1,-1
         bptsb(i, j+1, :) = bptsb(i, j+1, :) + boundb((j-1)*(nx-1)+i, :)
@@ -2131,6 +2158,134 @@ contains
       sec_forces(:, i) = rho*circ*v_cross_bound(:, i)
     end do
   end subroutine forcecalc_main
+!  differentiation of momentcalc_main in reverse (adjoint) mode (with options i4 dr8 r8):
+!   gradient     of useful results: m
+!   with respect to varying inputs: m s_ref bpts sec_forces cg
+!                lengths widths
+!   rw status of diff variables: m:in-zero s_ref:out bpts:out sec_forces:out
+!                cg:out lengths:out widths:out
+  subroutine momentcalc_main_b(bpts, bptsb, cg, cgb, lengths, lengthsb, &
+&   widths, widthsb, s_ref, s_refb, sec_forces, sec_forcesb, symmetry, &
+&   nx, ny, m, mb)
+    implicit none
+    integer, intent(in) :: nx, ny
+    real(kind=8), intent(in) :: bpts(nx-1, ny, 3)
+    real(kind=8) :: bptsb(nx-1, ny, 3)
+    real(kind=8), intent(in) :: cg(3), s_ref
+    real(kind=8) :: cgb(3), s_refb
+    real(kind=8), intent(in) :: lengths(ny), widths(ny-1)
+    real(kind=8) :: lengthsb(ny), widthsb(ny-1)
+    logical, intent(in) :: symmetry
+    real(kind=8), intent(in) :: sec_forces(nx-1, ny-1, 3)
+    real(kind=8) :: sec_forcesb(nx-1, ny-1, 3)
+    real(kind=8) :: m(3)
+    real(kind=8) :: mb(3)
+    real(kind=8) :: panel_chords(ny-1), mac, moment(ny-1, 3), tmp(3)
+    real(kind=8) :: panel_chordsb(ny-1), macb, momentb(ny-1, 3), tmpb(3)
+    integer :: i, j, k
+    intrinsic sum
+    real*8, dimension(3) :: arg1
+    real*8, dimension(3) :: arg1b
+    integer :: branch
+    real(kind=8) :: tempb
+    panel_chords = (lengths(2:)+lengths(:ny-1))/2.
+    mac = 1./s_ref*sum(panel_chords**2*widths)
+    if (symmetry) then
+      mac = mac*2
+      call pushcontrol1b(0)
+    else
+      call pushcontrol1b(1)
+    end if
+    moment(:, :) = 0.
+    do j=1,ny-1
+      do i=1,nx-1
+        arg1(:) = (bpts(i, j+1, :)+bpts(i, j, :))/2. - cg
+        call cross(arg1(:), sec_forces(i, j, :), tmp)
+        moment(j, :) = moment(j, :) + tmp
+      end do
+    end do
+    if (symmetry) then
+      call pushcontrol1b(0)
+    else
+      call pushcontrol1b(1)
+    end if
+    momentb = 0.0_8
+    do j=ny-1,1,-1
+      momentb(j, :) = momentb(j, :) + mb
+    end do
+    call popcontrol1b(branch)
+    if (branch .eq. 0) then
+      momentb(:, 3) = 0.0_8
+      momentb(:, 2) = 2*momentb(:, 2)
+      momentb(:, 1) = 0.0_8
+    end if
+    macb = sum(-(moment*momentb/mac))/mac
+    momentb = momentb/mac
+    bptsb = 0.0_8
+    sec_forcesb = 0.0_8
+    cgb = 0.0_8
+    tmpb = 0.0_8
+    do j=ny-1,1,-1
+      do i=nx-1,1,-1
+        tmpb = tmpb + momentb(j, :)
+        arg1(:) = (bpts(i, j+1, :)+bpts(i, j, :))/2. - cg
+        arg1b = 0.0_8
+        call cross_b(arg1(:), arg1b(:), sec_forces(i, j, :), sec_forcesb&
+&              (i, j, :), tmp, tmpb)
+        bptsb(i, j+1, :) = bptsb(i, j+1, :) + arg1b/2.
+        bptsb(i, j, :) = bptsb(i, j, :) + arg1b/2.
+        cgb = cgb - arg1b
+      end do
+    end do
+    call popcontrol1b(branch)
+    if (branch .eq. 0) macb = 2*macb
+    widthsb = 0.0_8
+    panel_chordsb = 0.0_8
+    tempb = macb/s_ref
+    panel_chordsb = 2*panel_chords*widths*tempb
+    widthsb = panel_chords**2*tempb
+    s_refb = -(sum(panel_chords**2*widths)*tempb/s_ref)
+    lengthsb = 0.0_8
+    lengthsb(2:ny) = lengthsb(2:ny) + panel_chordsb/2.
+    lengthsb(1:ny-1) = lengthsb(1:ny-1) + panel_chordsb/2.
+    mb = 0.0_8
+  end subroutine momentcalc_main_b
+  subroutine momentcalc_main(bpts, cg, lengths, widths, s_ref, &
+&   sec_forces, symmetry, nx, ny, m)
+    implicit none
+    integer, intent(in) :: nx, ny
+    real(kind=8), intent(in) :: bpts(nx-1, ny, 3)
+    real(kind=8), intent(in) :: cg(3), s_ref
+    real(kind=8), intent(in) :: lengths(ny), widths(ny-1)
+    logical, intent(in) :: symmetry
+    real(kind=8), intent(in) :: sec_forces(nx-1, ny-1, 3)
+    real(kind=8), intent(out) :: m(3)
+    real(kind=8) :: panel_chords(ny-1), mac, moment(ny-1, 3), tmp(3)
+    integer :: i, j, k
+    intrinsic sum
+    real*8, dimension(3) :: arg1
+    panel_chords = (lengths(2:)+lengths(:ny-1))/2.
+    mac = 1./s_ref*sum(panel_chords**2*widths)
+    if (symmetry) mac = mac*2
+    moment(:, :) = 0.
+    do j=1,ny-1
+      do i=1,nx-1
+        arg1(:) = (bpts(i, j+1, :)+bpts(i, j, :))/2. - cg
+        call cross(arg1(:), sec_forces(i, j, :), tmp)
+        moment(j, :) = moment(j, :) + tmp
+      end do
+    end do
+    moment = moment/mac
+    if (symmetry) then
+      moment(:, 1) = 0.
+      moment(:, 2) = moment(:, 2)*2
+      moment(:, 3) = 0.
+    end if
+    m = 0.
+    do j=1,ny-1
+      m = m + moment(j, :)
+    end do
+  end subroutine momentcalc_main
 !  differentiation of compute_normals_main in reverse (adjoint) mode (with options i4 dr8 r8):
 !   gradient     of useful results: s_ref mesh normals
 !   with respect to varying inputs: s_ref mesh normals
@@ -2215,92 +2370,6 @@ contains
     end do
     s_ref = 0.5*sum(norms)
   end subroutine compute_normals_main
-!  differentiation of interp1d in reverse (adjoint) mode (with options i4 dr8 r8):
-!   gradient     of useful results: p_interp
-!   with respect to varying inputs: p_data
-  subroutine interp1d_b(m, data_num, t_data, p_data, p_datab, interp_num&
-&   , t_interp, p_interp, p_interpb)
-    implicit none
-    integer :: data_num
-    integer :: m
-    integer :: interp_num
-    integer :: interp
-    integer :: left
-    real(kind=8) :: p_data(data_num)
-    real(kind=8) :: p_datab(data_num)
-    real(kind=8) :: p_interp(interp_num)
-    real(kind=8) :: p_interpb(interp_num)
-    integer :: right
-    real(kind=8) :: t
-    real(kind=8) :: t_data(data_num)
-    real(kind=8) :: t_interp(interp_num)
-    real(kind=8) :: tempb
-    do interp=1,interp_num
-      t = t_interp(interp)
-!
-!  find the interval [ tdata(left), tdata(right) ] that contains, or is
-!  nearest to, tval.
-!
-      call pushinteger4(right)
-      call pushinteger4(left)
-      call r8vec_bracket(data_num, t_data, t, left, right)
-    end do
-    p_datab = 0.0_8
-    do interp=interp_num,1,-1
-      t = t_interp(interp)
-      tempb = p_interpb(interp)/(t_data(right)-t_data(left))
-      p_datab(left) = p_datab(left) + (t_data(right)-t)*tempb
-      p_datab(right) = p_datab(right) + (t-t_data(left))*tempb
-      p_interpb(interp) = 0.0_8
-      call popinteger4(left)
-      call popinteger4(right)
-    end do
-  end subroutine interp1d_b
-  subroutine interp1d(m, data_num, t_data, p_data, interp_num, t_interp&
-&   , p_interp)
-    implicit none
-    integer :: data_num
-    integer :: m
-    integer :: interp_num
-    integer :: interp
-    integer :: left
-    real(kind=8) :: p_data(data_num)
-    real(kind=8) :: p_interp(interp_num)
-    integer :: right
-    real(kind=8) :: t
-    real(kind=8) :: t_data(data_num)
-    real(kind=8) :: t_interp(interp_num)
-    do interp=1,interp_num
-      t = t_interp(interp)
-!
-!  find the interval [ tdata(left), tdata(right) ] that contains, or is
-!  nearest to, tval.
-!
-      call r8vec_bracket(data_num, t_data, t, left, right)
-      p_interp(interp) = ((t_data(right)-t)*p_data(left)+(t-t_data(left)&
-&       )*p_data(right))/(t_data(right)-t_data(left))
-    end do
-    return
-  end subroutine interp1d
-  subroutine r8vec_bracket(n, x, xval, left, right)
-    implicit none
-    integer :: n
-    integer :: i
-    integer :: left
-    integer :: right
-    real(kind=8) :: x(n)
-    real(kind=8) :: xval
-    do i=2,n-1
-      if (xval .lt. x(i)) then
-        left = i - 1
-        right = i
-        return
-      end if
-    end do
-    left = n - 1
-    right = n
-    return
-  end subroutine r8vec_bracket
 !  differentiation of unit in reverse (adjoint) mode (with options i4 dr8 r8):
 !   gradient     of useful results: u v
 !   with respect to varying inputs: u v

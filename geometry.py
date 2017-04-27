@@ -356,10 +356,14 @@ class GeometryMesh(Component):
 
         # Variables that should be initialized to one
         ones_list = ['taper', 'chord_cp']
+
         # Variables that should be initialized to zero
         zeros_list = ['sweep', 'dihedral', 'twist_cp', 'xshear_cp', 'zshear_cp']
+
         # Variables that should be initialized to given value
         set_list = ['span']
+
+        # Make a list of all geometry variables by adding all individual lists
         all_geo_vars = ones_list + zeros_list + set_list
         self.geo_params = {}
         for var in all_geo_vars:
@@ -380,11 +384,16 @@ class GeometryMesh(Component):
                 else:
                     val = surface[var]
             self.geo_params[param] = val
+
+            # If the user supplied a variable or it's a desvar, we add it as a
+            # parameter.
             if var in desvar_names or var in surface['initial_geo']:
                 self.add_param(param, val=val)
 
         self.add_output('mesh', val=self.mesh)
 
+        # If the user doesn't provide the radius or it's not a desver, then we must
+        # compute it here.
         if 'radius_cp' not in desvar_names and 'radius_cp' not in surface['initial_geo']:
             self.compute_radius = True
             self.add_output('radius', val=np.zeros((ny - 1)))
@@ -432,9 +441,17 @@ class GeometryMesh(Component):
 
     def apply_linear(self, params, unknowns, dparams, dunknowns, dresids, mode):
         mesh = self.mesh.copy()
+
+        # We actually use the values in self.geo_params to modify the mesh,
+        # but we update self.geo_params using the OpenMDAO params here.
+        # This makes the geometry manipulation process work for any combination
+        # of design variables without having special logic.
         self.geo_params.update(params)
 
         if mode == 'fwd':
+
+            # We don't know which parameters will be used for a given case
+            # so we must check
             if 'sweep' in dparams:
                 sweepd = dparams['sweep']
             else:
@@ -504,15 +521,10 @@ class MonotonicConstraint(Component):
     """ Produce a constraint that is violated if the chord lengths of the wing
         do not decrease monotonically from the root to the taper.
 
-        Currently only implemented for a symmetric wing.
-
     Parameters
     ----------
     var_name : string
         The variable to which the user would like to apply the monotonic constraint.
-
-    var_size : int
-        The size of the variable vector.
 
     Returns
     -------
@@ -552,7 +564,7 @@ class MonotonicConstraint(Component):
         return jac
 
 def gen_crm_mesh(num_x, num_y, span, chord, span_cos_spacing=0., chord_cos_spacing=0., wing_type="CRM:jig"):
-    """ Generate Common Research MOdel wing mesh.
+    """ Generate Common Research Model wing mesh.
 
     Parameters
     ----------
@@ -722,7 +734,7 @@ def gen_crm_mesh(num_x, num_y, span, chord, span_cos_spacing=0., chord_cos_spaci
 
 
 def add_chordwise_panels(mesh, num_x, chord_cos_spacing):
-    """ Divide the wing into multiple chordwise panels.
+    """ Generate a new mesh with multiple chordwise panels.
 
     Parameters
     ----------
@@ -736,7 +748,6 @@ def add_chordwise_panels(mesh, num_x, chord_cos_spacing):
         A value of 0. corresponds to uniform spacing and a value of 1.
         corresponds to regular cosine spacing. This increases the number of
         chordwise node points near the wingtips.
-
 
     Returns
     -------

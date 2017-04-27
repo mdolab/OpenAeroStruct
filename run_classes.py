@@ -22,7 +22,7 @@ import numpy as np
 # =============================================================================
 # OpenMDAO modules
 # =============================================================================
-from openmdao.api import IndepVarComp, Problem, Group, ScipyOptimizer, Newton, ScipyGMRES, LinearGaussSeidel, NLGaussSeidel, SqliteRecorder, profile, CaseReader
+from openmdao.api import IndepVarComp, Problem, Group, ScipyOptimizer, Newton, ScipyGMRES, LinearGaussSeidel, NLGaussSeidel, SqliteRecorder, profile, CaseReader, DirectSolver
 from openmdao.api import view_model
 from six import iteritems
 
@@ -32,9 +32,10 @@ from six import iteritems
 from geometry import GeometryMesh, Bspline, gen_crm_mesh, gen_rect_mesh, MonotonicConstraint
 from transfer import TransferDisplacements, TransferLoads
 from vlm import VLMStates, VLMFunctionals, VLMGeometry
-from spatialbeam import SpatialBeamStates, SpatialBeamFunctionals, radii
+from spatialbeam import SpatialBeamStates, SpatialBeamFunctionals, SpatialBeamSetup, radii
 from materials import MaterialsTube
-from functionals import FunctionalBreguetRange, FunctionalEquilibrium
+from functionals import TotalPerformance, TotalAeroPerformance, FunctionalBreguetRange, FunctionalEquilibrium
+from gs_newton import HybridGSNewton
 
 try:
     import OAS_API
@@ -119,6 +120,61 @@ class OASProblem(object):
         self.constraints = {}
         self.objective = {}
 
+    def get_default_prob_dict(self):
+        """
+        Obtain the default settings for the problem description. Note that
+        these defaults are overwritten based on user input for the problem.
+
+        Returns
+        -------
+        defaults : dict
+            A python dict containing the default problem-level settings.
+        """
+
+        defaults = {
+                    # Problem and solver options
+                    'optimize' : False,      # flag for analysis or optimization
+                    'optimizer' : 'SLSQP',   # default optimizer
+                    'force_fd' : False,      # if true, we FD over the whole model
+                    'with_viscous' : False,  # if true, compute viscous drag
+                    'print_level' : 0,       # int to control output during optimization
+                                             # 0 for no additional printing
+                                             # 1 for nonlinear solver printing
+                                             # 2 for nonlinear and linear solver printing
+                    'previous_case_db' : None,  # name of the .db file for warm restart
+                                                # example: 'aerostruct.db'
+                    'record_db' : True,      # True to output .db file
+                    'profile' : False,       # True to profile the problem's time costs
+                                             # view results using `view_profile prof_raw.0`
+                    'compute_static_margin' : False,  # if true, compute and print the
+                                                      # static margin after the run is finished
+
+                    # Flow/environment properties
+                    'Re' : 1e6,              # Reynolds number
+                    'reynolds_length' : 1.0, # characteristic Reynolds length
+                    'alpha' : 5.,            # [degrees] angle of attack
+                    'M' : 0.84,              # Mach number at cruise
+                    'rho' : 0.38,            # [kg/m^3] air density at 35,000 ft
+                    'a' : 295.4,             # [m/s] speed of sound at 35,000 ft
+                    'g' : 9.80665,           # [m/s^2] acceleration due to gravity
+
+                    # Aircraft properties
+                    'CT' : 9.80665 * 17.e-6, # [1/s] (9.80665 N/kg * 17e-6 kg/N/s)
+                                             # specific fuel consumption
+                    'R' : 11.165e6,            # [m] maximum range (B777-300)
+                    'cg' : np.zeros((3)), # Center of gravity for the
+                                                 # entire aircraft. Used in trim
+                                                 # and stability calculations.
+                    'W0' : 0.4 * 3e5,       # [kg] weight of the airplane without
+                                            # the wing structure and fuel.
+                                            # The default is 40% of the MTOW of
+                                            # B777-300 is 3e5 kg.
+                    'beta' : 1.,            # weighting factor for mixed objective
+                    }
+
+        return defaults
+
+
     def get_default_surf_dict(self):
         """
         Obtain the default settings for the surface descriptions. Note that
@@ -149,7 +205,7 @@ class OASProblem(object):
                                             # 'CRM' can have different options
                                             # after it, such as 'CRM:alpha_2.75'
                                             # for the CRM shape at alpha=2.75
-                    'offset' : np.array([0., 0., 0.]), # coordinates to offset
+                    'offset' : np.zeros((3)), # coordinates to offset
                                     # the surface from its default location
                     'symmetry' : True,     # if true, model one half of wing
                                             # reflected across the plane y = 0
@@ -182,13 +238,14 @@ class OASProblem(object):
                     'geo_vars' : ['sweep', 'dihedral', 'twist_cp', 'xshear_cp',
                         'zshear_cp', 'span', 'chord_cp', 'taper', 'thickness_cp', 'radius_cp'],
 
-                    # Aerodynamic performance of the aircraft without the wing.
+                    # Aerodynamic performance of the lifting surface at
+                    # an angle of attack of 0 (alpha=0).
                     # These CL0 and CD0 values are added to the CL and CD
-                    # obtained from aerodynamic analysis of the wing to get
+                    # obtained from aerodynamic analysis of the surface to get
                     # the total CL and CD.
                     # These CL0 and CD0 values do not vary wrt alpha.
-                    'CL0' : 0.0,            # CL of the aircraft without the wing
-                    'CD0' : 0.0,            # CD of the aircraft without the wing
+                    'CL0' : 0.0,            # CL of the surface at alpha=0
+                    'CD0' : 0.0,            # CD of the surface at alpha=0
 
                     # Airfoil properties for viscous drag calculation
                     'k_lam' : 0.05,         # percentage of chord with laminar
@@ -200,65 +257,17 @@ class OASProblem(object):
                     # Structural values are based on aluminum 7075
                     'E' : 70.e9,            # [Pa] Young's modulus of the spar
                     'G' : 30.e9,            # [Pa] shear modulus of the spar
-                    'stress' : 500.e6 / 2.5,# [Pa] yield stress divided by 2.5 for limiting case
+                    'yield' : 500.e6 / 2.5, # [Pa] yield stress divided by 2.5 for limiting case
                     'mrho' : 3.e3,          # [kg/m^3] material density
                     'fem_origin' : 0.35,    # normalized chordwise location of the spar
-                    'W0' : 0.4 * 3e5,       # [kg] weight of the airplane without
-                                            # the wing structure and fuel.
-                                            # The default is 40% of the MTOW of
-                                            # B777-300 is 3e5 kg.
                     'loads' : None,         # [N] allow the user to input loads
                     'disp' : None,          # [m] nodal displacements of the FEM model
 
                     # Constraints
                     'exact_failure_constraint' : False, # if false, use KS function
                     'monotonic_con' : None, # add monotonic constraint to the given
-                                                # distributed variable
+                                            # distributed variable. Ex. 'chord_cp'
                     }
-        return defaults
-
-    def get_default_prob_dict(self):
-        """
-        Obtain the default settings for the problem description. Note that
-        these defaults are overwritten based on user input for the problem.
-
-        Returns
-        -------
-        defaults : dict
-            A python dict containing the default problem-level settings.
-        """
-
-        defaults = {
-                    # Problem and solver options
-                    'optimize' : False,      # flag for analysis or optimization
-                    'optimizer' : 'SLSQP',   # default optimizer
-                    'force_fd' : False,      # if true, we FD over the whole model
-                    'with_viscous' : False,  # if true, compute viscous drag
-                    'print_level' : 0,       # int to control output during optimization
-                                             # 0 for no additional printing
-                                             # 1 for nonlinear solver printing
-                                             # 2 for nonlinear and linear solver printing
-                    'previous_case_db' : None,  # name of the .db file for warm restart
-                                                # example: 'aerostruct.db'
-                    'record_db' : True,      # True to output .db file
-                    'profile' : False,       # True to profile the problem's time costs
-                                             # view results using `view_profile prof_raw.0`
-
-                    # Flow/environment properties
-                    'Re' : 1e6,              # Reynolds number
-                    'reynolds_length' : 1.0, # characteristic Reynolds length
-                    'alpha' : 5.,            # [degrees] angle of attack
-                    'M' : 0.84,              # Mach number at cruise
-                    'rho' : 0.38,            # [kg/m^3] air density at 35,000 ft
-                    'a' : 295.4,             # [m/s] speed of sound at 35,000 ft
-                    'g' : 9.80665,           # [m/s^2] acceleration due to gravity
-
-                    # Aircraft properties
-                    'CT' : 9.80665 * 17.e-6, # [1/s] (9.80665 N/kg * 17e-6 kg/N/s)
-                                             # specific fuel consumption
-                    'R' : 11.165e6,            # [m] maximum range (B777-300)
-                    }
-
         return defaults
 
 
@@ -568,8 +577,6 @@ class OASProblem(object):
         if self.prob_dict['record_db']:
             view_model(self.prob, outfile=self.prob_dict['prob_name']+".html", show_browser=False)
 
-        self.prob.run_once()
-
         # If `optimize` == True in prob_dict, perform optimization. Otherwise,
         # simply pass the problem since analysis has already been run.
         if not self.prob_dict['optimize']:
@@ -579,6 +586,34 @@ class OASProblem(object):
         else:
             # Perform optimization
             self.prob.run()
+
+        # If the problem type is aero or aerostruct, we can compute the static margin.
+        # This is a naive tempoerary implementation that currently finite differences
+        # over the entire model to obtain the static margin.
+        if self.prob_dict['compute_static_margin'] and 'aero' in self.prob_dict['type']:
+
+            # Turn off problem recording (so nothing for these computations
+            # appears in the .db file) and get the current CL and CM.
+            self.prob.driver.recorders._recorders = []
+            CL = self.prob['wing_perf.CL']
+            CM = self.prob['CM'][1]
+            step = 1e-5
+
+            # Perturb alpha and run an analysis loop to obtain the new CL and CM.
+            self.prob['alpha'] += step
+            self.prob.run_once()
+            CL_new = self.prob['wing_perf.CL']
+            CM_new = self.prob['CM'][1]
+
+            # Un-perturb alpha and run a single analysis loop to get the problem
+            # back to where it was before we finite differenced.
+            self.prob['alpha'] -= step
+            self.prob.run_once()
+
+            # Compute, print, and save the static margin in metadata.
+            static_margin = -(CM_new - CM) / (CL_new - CL)
+            print("Static margin is:", static_margin)
+            self.prob.root.add_metadata('static_margin', static_margin)
 
         # Uncomment this to check the partial derivatives of each component
         # self.prob.check_partial_derivatives(compact_print=True)
@@ -642,6 +677,9 @@ class OASProblem(object):
             tmp_group.add('tube',
                      MaterialsTube(surface),
                      promotes=['*'])
+            tmp_group.add('struct_setup',
+                     SpatialBeamSetup(surface),
+                     promotes=['*'])
             tmp_group.add('struct_states',
                      SpatialBeamStates(surface),
                      promotes=['*'])
@@ -665,6 +703,8 @@ class OASProblem(object):
             # Add tmp_group to the problem with the name of the surface.
             # The default is 'wing'.
             root.add(name[:-1], tmp_group, promotes=[])
+
+            root.add_metadata(surface['name'] + 'yield_stress', surface['yield'])
 
         # Actually set up the problem
         self.setup_prob()
@@ -763,7 +803,8 @@ class OASProblem(object):
             ('alpha', self.prob_dict['alpha']),
             ('M', self.prob_dict['M']),
             ('re', self.prob_dict['Re']/self.prob_dict['reynolds_length']),
-            ('rho', self.prob_dict['rho'])]
+            ('rho', self.prob_dict['rho']),
+            ('cg', self.prob_dict['cg'])]
         root.add('prob_vars',
                  IndepVarComp(prob_vars),
                  promotes=['*'])
@@ -800,6 +841,17 @@ class OASProblem(object):
             root.connect(name[:-1] + '.widths', name + 'perf' + '.widths')
             root.connect(name[:-1] + '.lengths', name + 'perf' + '.lengths')
             root.connect(name[:-1] + '.cos_sweep', name + 'perf' + '.cos_sweep')
+
+            # Connect S_ref for performance calcs
+            root.connect(name[:-1] + '.S_ref', 'total_perf.' + name + 'S_ref')
+            root.connect(name[:-1] + '.widths', 'total_perf.' + name + 'widths')
+            root.connect(name[:-1] + '.lengths', 'total_perf.' + name + 'lengths')
+            root.connect(name[:-1] + '.b_pts', 'total_perf.' + name + 'b_pts')
+            root.connect('aero_states.' + name + 'sec_forces', 'total_perf.' + name + 'sec_forces')
+
+        root.add('total_perf',
+                  TotalAeroPerformance(self.surfaces, self.prob_dict),
+                  promotes=['CM', 'v', 'rho', 'cg'])
 
         # Actually set up the problem
         self.setup_prob()
@@ -861,6 +913,9 @@ class OASProblem(object):
             tmp_group.add('mesh',
                      GeometryMesh(surface, self.desvars),
                      promotes=['*'])
+            tmp_group.add('struct_setup',
+                     SpatialBeamSetup(surface),
+                     promotes=['*'])
 
             # Add bspline components for active bspline geometric variables.
             # We only add the component if the corresponding variable is a desvar,
@@ -903,6 +958,7 @@ class OASProblem(object):
                      SpatialBeamStates(surface),
                      promotes=['*'])
             tmp_group.struct_states.ln_solver = LinearGaussSeidel()
+            tmp_group.struct_states.ln_solver.options['atol'] = 1e-20
 
             name = name_orig
             coupled.add(name[:-1], tmp_group, promotes=[])
@@ -923,6 +979,8 @@ class OASProblem(object):
 
             root.add(name_orig + 'perf', tmp_group, promotes=["rho", "v", "alpha", "re", "M"])
 
+            root.add_metadata(surface['name'] + 'yield_stress', surface['yield'])
+
         # Add a single 'aero_states' component for the whole system within the
         # coupled group.
         coupled.add('aero_states',
@@ -933,6 +991,8 @@ class OASProblem(object):
         # 'aero_states' group.
         for surface in self.surfaces:
             name = surface['name']
+
+            root.connect(name[:-1] + '.K', 'coupled.' + name[:-1] + '.K')
 
             # Perform the connections with the modified names within the
             # 'aero_states' group.
@@ -947,7 +1007,6 @@ class OASProblem(object):
             # Connect the results from 'coupled' to the performance groups
             root.connect('coupled.' + name[:-1] + '.def_mesh', 'coupled.' + name + 'loads.def_mesh')
             root.connect('coupled.aero_states.' + name + 'sec_forces', 'coupled.' + name + 'loads.sec_forces')
-            root.connect('coupled.' + name + 'loads.loads', name + 'perf.loads')
 
             # Connect the output of the loads component with the FEM
             # displacement parameter. This links the coupling within the coupled
@@ -957,33 +1016,33 @@ class OASProblem(object):
             # Connect aerodyamic mesh to coupled group mesh
             root.connect(name[:-1] + '.mesh', 'coupled.' + name[:-1] + '.mesh')
 
-            # Connect structural design variables
-            root.connect(name[:-1] + '.A', 'coupled.' + name[:-1] + '.A')
-            root.connect(name[:-1] + '.Iy', 'coupled.' + name[:-1] + '.Iy')
-            root.connect(name[:-1] + '.Iz', 'coupled.' + name[:-1] + '.Iz')
-            root.connect(name[:-1] + '.J', 'coupled.' + name[:-1] + '.J')
-
             # Connect performance calculation variables
             root.connect(name[:-1] + '.radius', name + 'perf.radius')
             root.connect(name[:-1] + '.A', name + 'perf.A')
             root.connect(name[:-1] + '.thickness', name + 'perf.thickness')
 
             # Connection performance functional variables
-            root.connect(name + 'perf.structural_weight', 'fuelburn.' + name + 'structural_weight')
-            root.connect(name + 'perf.structural_weight', 'eq_con.' + name + 'structural_weight')
-            root.connect(name + 'perf.L', 'eq_con.' + name + 'L')
-            root.connect(name + 'perf.CL', 'fuelburn.' + name + 'CL')
-            root.connect(name + 'perf.CD', 'fuelburn.' + name + 'CD')
+            root.connect(name + 'perf.structural_weight', 'total_perf.' + name + 'structural_weight')
+            root.connect(name + 'perf.L', 'total_perf.' + name + 'L')
+            root.connect(name + 'perf.CL', 'total_perf.' + name + 'CL')
+            root.connect(name + 'perf.CD', 'total_perf.' + name + 'CD')
+            root.connect('coupled.aero_states.' + name + 'sec_forces', 'total_perf.' + name + 'sec_forces')
 
-            # Connect paramters from the 'coupled' group to the performance
-            # group.
-            root.connect('coupled.' + name[:-1] + '.nodes', name + 'perf.nodes')
+            # Connect parameters from the 'coupled' group to the performance
+            # groups for the individual surfaces.
+            root.connect(name[:-1] + '.nodes', name + 'perf.nodes')
             root.connect('coupled.' + name[:-1] + '.disp', name + 'perf.disp')
             root.connect('coupled.' + name[:-1] + '.S_ref', name + 'perf.S_ref')
             root.connect('coupled.' + name[:-1] + '.widths', name + 'perf.widths')
             root.connect('coupled.' + name[:-1] + '.lengths', name + 'perf.lengths')
             root.connect('coupled.' + name[:-1] + '.cos_sweep', name + 'perf.cos_sweep')
-            # root.connect('coupled.' + name[:-1] + '.mesh', name + 'perf.mesh')
+
+            # Connect parameters from the 'coupled' group to the total performance group.
+            root.connect('coupled.' + name[:-1] + '.S_ref', 'total_perf.' + name + 'S_ref')
+            root.connect('coupled.' + name[:-1] + '.widths', 'total_perf.' + name + 'widths')
+            root.connect('coupled.' + name[:-1] + '.lengths', 'total_perf.' + name + 'lengths')
+            root.connect('coupled.' + name[:-1] + '.b_pts', 'total_perf.' + name + 'b_pts')
+            root.connect(name + 'perf.cg_location', 'total_perf.' + name + 'cg_location')
 
         # Set solver properties for the coupled group
         coupled.ln_solver = ScipyGMRES()
@@ -993,7 +1052,12 @@ class OASProblem(object):
 
         # This is only available in the most recent version of OpenMDAO.
         # It may help converge tightly coupled systems when using NLGS.
-        # coupled.nl_solver.options['use_aitken'] = True
+        try:
+            coupled.nl_solver.options['use_aitken'] = True
+            coupled.nl_solver.options['aitken_alpha_min'] = 0.01
+            # coupled.nl_solver.options['aitken_alpha_max'] = 0.5
+        except:
+            pass
 
         if self.prob_dict['print_level'] == 2:
             coupled.ln_solver.options['iprint'] = 1
@@ -1026,12 +1090,9 @@ class OASProblem(object):
         # Add functionals to evaluate performance of the system.
         # Note that only the interesting results are promoted here; not all
         # of the parameters.
-        root.add('fuelburn',
-                 FunctionalBreguetRange(self.surfaces, self.prob_dict),
-                 promotes=['fuelburn'])
-        root.add('eq_con',
-                 FunctionalEquilibrium(self.surfaces, self.prob_dict),
-                 promotes=['eq_con', 'fuelburn'])
+        root.add('total_perf',
+                 TotalPerformance(self.surfaces, self.prob_dict),
+                 promotes=['L_equals_W', 'fuelburn', 'CM', 'v', 'rho', 'cg', 'weighted_obj', 'total_weight'])
 
         # Actually set up the system
         self.setup_prob()

@@ -54,11 +54,18 @@ if __name__ == "__main__":
 
     # Instantiate problem and add default surface
     OAS_prob = OASProblem(prob_dict)
-    OAS_prob.add_surface({'name' : 'wing',
-                          'symmetry' : True,
-                          'num_y' : 11,
-                          'num_x' : 2,
-                          'span_cos_spacing' : .5})
+
+    # Create a dictionary to store options about the surface
+    surf_dict = {'num_y' : 7,
+                 'num_x' : 2,
+                 'wing_type' : 'rect',
+                 'CD0' : 0.015,
+                 'symmetry' : True,
+                 'num_twist_cp' : 5,
+                 'num_thickness_cp' : 2}
+
+    # Add the specified wing surface to the problem
+    OAS_prob.add_surface(surf_dict)
 
     # Single lifting surface
     if not sys.argv[1].endswith('m'):
@@ -109,3 +116,4 @@ if __name__ == "__main__":
     print("\nWing CL:", OAS_prob.prob['wing_perf.CL'])
     print("Wing CD:", OAS_prob.prob['wing_perf.CD'])
     print("Time elapsed: {} secs".format(time() - st))
+    print(OAS_prob.prob['CM'])

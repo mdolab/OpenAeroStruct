@@ -48,7 +48,9 @@ if __name__ == "__main__":
 
     # Set problem type
     prob_dict = {'type' : 'aerostruct',
-                 'with_viscous' : True,}
+                 'with_viscous' : True,
+                 'cg' : np.array([30., 0., 5.]),
+                 'compute_static_margin' : True}
 
     if sys.argv[1].startswith('0'):  # run analysis once
         prob_dict.update({'optimize' : False})
@@ -59,20 +61,20 @@ if __name__ == "__main__":
     OAS_prob = OASProblem(prob_dict)
 
     # Create a dictionary to store options about the surface
-    surf_dict = {'num_y' : 7,
-              'num_x' : 2,
-              'wing_type' : 'CRM',
-              'CD0' : 0.015,
-              'symmetry' : True,
-              'num_twist_cp' : 2,
-              'num_thickness_cp' : 2}
+    surf_dict = {'num_y' : 11,
+                 'num_x' : 3,
+                 'wing_type' : 'CRM',
+                 'CD0' : 0.015,
+                 'symmetry' : True,
+                 'num_twist_cp' : 3,
+                 'num_thickness_cp' : 3}
 
     # Add the specified wing surface to the problem
     OAS_prob.add_surface(surf_dict)
 
     # Add design variables, constraint, and objective on the problem
     OAS_prob.add_desvar('alpha', lower=-10., upper=10.)
-    OAS_prob.add_constraint('eq_con', equals=0.)
+    OAS_prob.add_constraint('L_equals_W', equals=0.)
     OAS_prob.add_objective('fuelburn', scaler=1e-5)
 
     # Single lifting surface
@@ -89,8 +91,14 @@ if __name__ == "__main__":
     else:
 
         # Add additional lifting surface
-        surf_dict.update({'name' : 'tail',
-                          'offset' : np.array([0., 0., 10.])})
+        surf_dict = {'name' : 'tail',
+                     'num_y' : 7,
+                     'num_x' : 2,
+                     'span' : 20.,
+                     'root_chord' : 5.,
+                     'wing_type' : 'rect',
+                     'offset' : np.array([50., 0., 5.]),
+                     'twist_cp' : np.array([-9.5])}
         OAS_prob.add_surface(surf_dict)
 
         # Add design variables and constraints for both the wing and tail
@@ -112,3 +120,4 @@ if __name__ == "__main__":
 
     print("\nFuelburn:", OAS_prob.prob['fuelburn'])
     print("Time elapsed: {} secs".format(time() - st))
+    print(OAS_prob.prob['CM'])
