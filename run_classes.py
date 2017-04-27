@@ -587,21 +587,32 @@ class OASProblem(object):
             # Perform optimization
             self.prob.run()
 
+        # If the problem type is aero or aerostruct, we can compute the static margin.
+        # This is a naive tempoerary implementation that currently finite differences
+        # over the entire model to obtain the static margin.
         if self.prob_dict['compute_static_margin'] and 'aero' in self.prob_dict['type']:
+
+            # Turn off problem recording (so nothing for these computations
+            # appears in the .db file) and get the current CL and CM.
             self.prob.driver.recorders._recorders = []
             CL = self.prob['wing_perf.CL']
             CM = self.prob['CM'][1]
             step = 1e-5
+
+            # Perturb alpha and run an analysis loop to obtain the new CL and CM.
             self.prob['alpha'] += step
             self.prob.run_once()
             CL_new = self.prob['wing_perf.CL']
             CM_new = self.prob['CM'][1]
+
+            # Un-perturb alpha and run a single analysis loop to get the problem
+            # back to where it was before we finite differenced.
             self.prob['alpha'] -= step
             self.prob.run_once()
 
+            # Compute, print, and save the static margin in metadata.
             static_margin = -(CM_new - CM) / (CL_new - CL)
             print("Static margin is:", static_margin)
-
             self.prob.root.add_metadata('static_margin', static_margin)
 
         # Uncomment this to check the partial derivatives of each component
@@ -1017,8 +1028,8 @@ class OASProblem(object):
             root.connect(name + 'perf.CD', 'total_perf.' + name + 'CD')
             root.connect('coupled.aero_states.' + name + 'sec_forces', 'total_perf.' + name + 'sec_forces')
 
-            # Connect paramters from the 'coupled' group to the performance
-            # group.
+            # Connect parameters from the 'coupled' group to the performance
+            # groups for the individual surfaces.
             root.connect(name[:-1] + '.nodes', name + 'perf.nodes')
             root.connect('coupled.' + name[:-1] + '.disp', name + 'perf.disp')
             root.connect('coupled.' + name[:-1] + '.S_ref', name + 'perf.S_ref')
@@ -1026,6 +1037,7 @@ class OASProblem(object):
             root.connect('coupled.' + name[:-1] + '.lengths', name + 'perf.lengths')
             root.connect('coupled.' + name[:-1] + '.cos_sweep', name + 'perf.cos_sweep')
 
+            # Connect parameters from the 'coupled' group to the total performance group.
             root.connect('coupled.' + name[:-1] + '.S_ref', 'total_perf.' + name + 'S_ref')
             root.connect('coupled.' + name[:-1] + '.widths', 'total_perf.' + name + 'widths')
             root.connect('coupled.' + name[:-1] + '.lengths', 'total_perf.' + name + 'lengths')

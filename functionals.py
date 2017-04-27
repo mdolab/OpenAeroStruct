@@ -75,7 +75,12 @@ class FunctionalBreguetRange(Component):
 
         # Convert fuelburn from N to kg
         unknowns['fuelburn'] = fuelburn / self.prob_dict['g']
+
+        # This lines makes the 'weight' the total aircraft weight
         unknowns['weighted_obj'] = (beta * fuelburn + (1 - beta) * (W0 + Ws + fuelburn)) / self.prob_dict['g']
+
+        # Whereas this line only considers the structural weight
+        # unknowns['weighted_obj'] = (beta * fuelburn + (1 - beta) * Ws) / self.prob_dict['g']
 
 class FunctionalEquilibrium(Component):
     """
@@ -96,7 +101,7 @@ class FunctionalEquilibrium(Component):
     Returns
     -------
     L_equals_W : float
-        Equality constraint for L=W. L_equals_W = 0 for the constraint to be satisfied.
+        Equality constraint for lift = total weight. L_equals_W = 0 for the constraint to be satisfied.
     total_weight : float
         Total weight of the entire aircraft, including W0, all structural weights,
         and fuel.
@@ -268,6 +273,8 @@ class ComputeCM(Component):
         M = np.zeros((3), dtype=data_type)
         for surface in self.surfaces:
             name = surface['name']
+            nx = surface['num_x']
+            ny = surface['num_y']
 
             b_pts = params[name+'b_pts']
             widths = params[name+'widths']
