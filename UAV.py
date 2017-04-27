@@ -1,12 +1,7 @@
-""" Example runscript to perform aerodynamics-only optimization.
+"""
+Trimmed design optimization of the ScanEagle UAV.
 
-Call as `python run_vlm.py 0` to run a single analysis, or
-call as `python run_vlm.py 1` to perform optimization.
-
-To run with multiple lifting surfaces instead of a single one,
-Call as `python run_vlm.py 0m` to run a single analysis, or
-call as `python run_vlm.py 1m` to perform optimization.
-
+Some of the finer levels may not converge well for aerostructural optimization.
 """
 
 from __future__ import division, print_function
@@ -21,8 +16,12 @@ sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 
 from OpenAeroStruct import OASProblem
 
+# Can do 'aerostruct', 'aero', or 'struct'
 prob_type = 'aerostruct'
-mesh_level = 'L2'
+
+# L1 is finest, L3 is coarsest. Can do L1, L1.5, L2, L2.5, L3
+mesh_level = 'L1.5'
+print(mesh_level)
 
 # Set problem type
 prob_dict = {'optimize' : True,
@@ -58,25 +57,30 @@ radius_cp[0] = 0.015
 if mesh_level == 'L1':
     num_y = 101
     num_x = 5
+    spacing = .2
 elif mesh_level == 'L1.5':
-    num_y = 61
+    num_y = 41
     num_x = 3
+    spacing = .5
 elif mesh_level == 'L2':
     num_y = 21
     num_x = 3
+    spacing = 1.
 elif mesh_level == 'L2.5':
     num_y = 15
     num_x = 2
+    spacing = 1.
 else:
     num_y = 7
     num_x = 2
+    spacing = 1.
 
 # Create a dictionary to store options about the surface
 surf_dict = {'num_y' : num_y,
              'num_x' : num_x,
              'wing_type' : 'rect',
              'symmetry' : True,
-             'span_cos_spacing' : 1.,
+             'span_cos_spacing' : spacing,
              'span' : 3.11,
              'root_chord' : .3,  # estimate
              'sweep' : 20.,
@@ -127,7 +131,6 @@ else:
     OAS_prob.add_constraint('CM', equals=0.)
 
 OAS_prob.setup()
-
 
 st = time()
 
