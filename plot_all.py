@@ -494,31 +494,58 @@ class Display(object):
                 self.ax.scatter(cg[0], cg[1], cg[2], s=100, color='r')
 
             if self.show_tube:
+                # Get the array of radii and thickness values for the FEM system
                 r0 = self.radius[self.curr_pos*n_names+j]
                 t0 = self.thickness[self.curr_pos*n_names+j]
+
+                # Create a normalized array of values for the colormap
                 colors = t0
                 colors = colors / np.max(colors)
+
+                # Set the number of rectangular patches on the cylinder
                 num_circ = 12
                 fem_origin = 0.35
+
+                # Get the number of spanwise nodal points
                 n = mesh0.shape[1]
+
+                # Create an array of angles around a circle
                 p = np.linspace(0, 2*np.pi, num_circ)
+
+                # This is just to show the deformed mesh if selected
                 if self.show_wing:
                     if self.show_def_mesh.get():
                         mesh0[:, :, 2] = def_mesh0[:, :, 2]
+
+                # Loop through each element in the FEM system
                 for i, thick in enumerate(t0):
+
+                    # Get the radii describing the circles at each nodal point
                     r = np.array((r0[i], r0[i]))
                     R, P = np.meshgrid(r, p)
+
+                    # Get the X and Z coordinates for all points around the circle
                     X, Z = R*np.cos(P), R*np.sin(P)
+
+                    # Get the chord and center location for the FEM system
                     chords = mesh0[-1, :, 0] - mesh0[0, :, 0]
                     comp = fem_origin * chords + mesh0[0, :, 0]
+
+                    # Add the location of the element centers to the circle coordinates
                     X[:, 0] += comp[i]
                     X[:, 1] += comp[i+1]
                     Z[:, 0] += fem_origin * (mesh0[-1, i, 2] - mesh0[0, i, 2]) + mesh0[0, i, 2]
                     Z[:, 1] += fem_origin * (mesh0[-1, i+1, 2] - mesh0[0, i+1, 2]) + mesh0[0, i+1, 2]
+
+                    # Get the spanwise locations of the spar points
                     Y = np.empty(X.shape)
                     Y[:] = np.linspace(mesh0[0, i, 1], mesh0[0, i+1, 1], 2)
+
+                    # Set the colors of the rectangular surfaces
                     col = np.zeros(X.shape)
                     col[:] = colors[i]
+
+                    # Plot the rectangular surfaces for each individual FEM element
                     try:
                         self.ax.plot_surface(X, Y, Z, rstride=1, cstride=1,
                             facecolors=cm.viridis(col), linewidth=0)
