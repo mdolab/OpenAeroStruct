@@ -75,8 +75,6 @@ class FunctionalBreguetRange(Component):
 
         # Convert fuelburn from N to kg
         unknowns['fuelburn'] = fuelburn / self.prob_dict['g']
-        if fuelburn.imag == 0:
-            print(unknowns['fuelburn'])
 
         # This lines makes the 'weight' the total aircraft weight
         unknowns['weighted_obj'] = (beta * fuelburn + (1 - beta) * (W0 + Ws + fuelburn)) / self.prob_dict['g']

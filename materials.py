@@ -18,9 +18,9 @@ class MaterialsTube(Component):
     A : numpy array
         Areas for each FEM element.
     Iy : numpy array
-        Mass moment of inertia around the y-axis for each FEM element.
+        Area moment of inertia around the y-axis for each FEM element.
     Iz : numpy array
-        Mass moment of inertia around the z-axis for each FEM element.
+        Area moment of inertia around the z-axis for each FEM element.
     J : numpy array
         Polar moment of inertia for each FEM element.
     """
@@ -31,8 +31,6 @@ class MaterialsTube(Component):
         self.surface = surface
 
         self.ny = surface['num_y']
-        self.nx = surface['num_x']
-        self.n = self.nx * self.ny
         self.mesh = surface['mesh']
         name = surface['name']
 
@@ -48,9 +46,13 @@ class MaterialsTube(Component):
     def solve_nonlinear(self, params, unknowns, resids):
         name = self.surface['name']
         pi = np.pi
+
+        # Add thickness to the interior of the radius.
+        # The outer radius is the params['radius'] amount.
         r1 = params['radius'] - params['thickness']
         r2 = params['radius']
 
+        # Compute the area, area moments of inertia, and polar moment of inertia
         unknowns['A'] = pi * (r2**2 - r1**2)
         unknowns['Iy'] = pi * (r2**4 - r1**4) / 4.
         unknowns['Iz'] = pi * (r2**4 - r1**4) / 4.

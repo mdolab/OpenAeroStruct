@@ -20,7 +20,7 @@ from OpenAeroStruct import OASProblem
 prob_type = 'aerostruct'
 
 # L1 is finest, L3 is coarsest. Can do L1, L1.5, L2, L2.5, L3
-mesh_level = 'L1.5'
+mesh_level = 'L2'
 print(mesh_level)
 
 # Set problem type

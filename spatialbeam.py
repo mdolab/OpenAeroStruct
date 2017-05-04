@@ -184,9 +184,9 @@ class AssembleK(Component):
     A[ny-1] : numpy array
         Areas for each FEM element.
     Iy[ny-1] : numpy array
-        Mass moment of inertia around the y-axis for each FEM element.
+        Area moment of inertia around the y-axis for each FEM element.
     Iz[ny-1] : numpy array
-        Mass moment of inertia around the z-axis for each FEM element.
+        Area moment of inertia around the z-axis for each FEM element.
     J[ny-1] : numpy array
         Polar moment of inertia for each FEM element.
     nodes[ny, 3] : numpy array
@@ -941,11 +941,11 @@ class NonIntersectingThickness(Component):
         self.add_output('thickness_intersects', val=np.zeros((self.ny-1)))
 
     def solve_nonlinear(self, params, unknowns, resids):
-        unknowns['thickness_intersects'] = 2 * params['thickness'] - params['radius']
+        unknowns['thickness_intersects'] = params['thickness'] - params['radius']
 
     def linearize(self, params, unknowns, resids):
         jac = {}
-        jac['thickness_intersects', 'thickness'] = 2 * np.eye(self.ny-1)
+        jac['thickness_intersects', 'thickness'] = np.eye(self.ny-1)
         jac['thickness_intersects', 'radius'] = -np.eye(self.ny-1)
         return jac
 
