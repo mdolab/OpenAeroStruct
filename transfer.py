@@ -162,7 +162,7 @@ class TransferLoads(Component):
         s_pts = 0.5 * (1-w) * mesh[0, :-1, :] + \
                 0.5 *   w   * mesh[-1, :-1, :] + \
                 0.5 * (1-w) * mesh[0,  1:, :] + \
-                0.5 *   w   * mesh[-1:,  1:, :]
+                0.5 *   w   * mesh[-1,  1:, :]
 
         # Find the moment arm between the aerodynamic centers of each panel
         # and the FEM elmeents

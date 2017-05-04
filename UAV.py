@@ -29,9 +29,9 @@ prob_dict = {'optimize' : True,
              'compute_static_margin' : True,
              'optimizer' : 'SNOPT',
              'with_viscous' : True,
-             'W0' : 14.,  # 16 kg empty weight
-             'a' : 322.2,  # m/s at 15,000 ft
-             'rho' : 0.770816, # kg/m^3 at 15,000 ft
+             'W0' : 14.,  # kg, empty weight from manufacturer
+             'a' : 322.2,  # m/s, at 15,000 ft
+             'rho' : 0.770816, # kg/m^3, at 15,000 ft
              'R' : 2500e3, # estimated range based on cruise speed and flight endurance
              'CT' : 9.80665 * 8.6e-6,  # piston-prop estimation from Raymer
              'Re' : 4e5,

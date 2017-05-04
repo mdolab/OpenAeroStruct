@@ -135,9 +135,12 @@ class Display(object):
                     self.opt = True
 
         self.yield_stress_dict = {}
+        self.fem_origin_dict = {}
         for key, value in iteritems(meta_db['system_metadata']):
             if 'yield_stress' in key:
                 self.yield_stress_dict.update({key : value})
+            if 'fem_origin' in key:
+                self.fem_origin_dict.update({key : value})
 
         deriv_keys = sqlitedict.SqliteDict(self.db_name, 'derivs').keys()
         deriv_keys = [int(key.split('|')[-1]) for key in deriv_keys]
@@ -504,7 +507,7 @@ class Display(object):
 
                 # Set the number of rectangular patches on the cylinder
                 num_circ = 12
-                fem_origin = 0.35
+                fem_origin = self.fem_origin_dict[name.split('.')[-1] + '_fem_origin']
 
                 # Get the number of spanwise nodal points
                 n = mesh0.shape[1]

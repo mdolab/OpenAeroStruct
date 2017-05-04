@@ -705,6 +705,7 @@ class OASProblem(object):
             root.add(name[:-1], tmp_group, promotes=[])
 
             root.add_metadata(surface['name'] + 'yield_stress', surface['yield'])
+            root.add_metadata(surface['name'] + 'fem_origin', surface['fem_origin'])
 
         # Actually set up the problem
         self.setup_prob()
@@ -980,6 +981,7 @@ class OASProblem(object):
             root.add(name_orig + 'perf', tmp_group, promotes=["rho", "v", "alpha", "re", "M"])
 
             root.add_metadata(surface['name'] + 'yield_stress', surface['yield'])
+            root.add_metadata(surface['name'] + 'fem_origin', surface['fem_origin'])
 
         # Add a single 'aero_states' component for the whole system within the
         # coupled group.

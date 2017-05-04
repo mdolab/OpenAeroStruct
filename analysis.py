@@ -859,9 +859,9 @@ def assemble_k(A, Iy, Iz, J, nodes, loads, comp):
     A[ny-1] : numpy array
         Areas for each FEM element.
     Iy[ny-1] : numpy array
-        Mass moment of inertia around the y-axis for each FEM element.
+        Area moment of inertia around the y-axis for each FEM element.
     Iz[ny-1] : numpy array
-        Mass moment of inertia around the z-axis for each FEM element.
+        Area moment of inertia around the z-axis for each FEM element.
     J[ny-1] : numpy array
         Polar moment of inertia for each FEM element.
     nodes[ny, 3] : numpy array
@@ -925,9 +925,9 @@ def materials_tube(r, thickness, comp):
     A : array_like
         Areas for each FEM element.
     Iy : array_like
-        Mass moment of inertia around the y-axis for each FEM element.
+        Area moment of inertia around the y-axis for each FEM element.
     Iz : array_like
-        Mass moment of inertia around the z-axis for each FEM element.
+        Area moment of inertia around the z-axis for each FEM element.
     J : array_like
         Polar moment of inertia for each FEM element.
 
