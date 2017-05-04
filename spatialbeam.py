@@ -8,7 +8,6 @@ rotation about the x, y, and z-axes.
 
 from __future__ import division, print_function
 import numpy as np
-
 from openmdao.api import Component, Group
 from scipy.linalg import lu_factor, lu_solve
 
@@ -58,7 +57,6 @@ def _assemble_system(nodes, A, J, Iy, Iz,
 
     # Python
     else:
-
         K[:] = 0.
 
         # Loop over each element
@@ -160,7 +158,6 @@ class ComputeNodes(Component):
     def solve_nonlinear(self, params, unknowns, resids):
         w = self.fem_origin
         mesh = params['mesh']
-
         unknowns['nodes'] = (1-w) * mesh[0, :, :] + w * mesh[-1, :, :]
 
     def linearize(self, params, unknowns, resids):
@@ -214,9 +211,11 @@ class AssembleK(Component):
 
         self.add_output('K', val=np.zeros((size, size), dtype=data_type))
 
+        # Get material properties from the surface dictionary
         self.E = surface['E']
         self.G = surface['G']
 
+        # Set up arrays to easily set up the K matrix
         self.const2 = np.array([
             [1, -1],
             [-1, 1],

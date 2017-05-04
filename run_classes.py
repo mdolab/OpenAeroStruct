@@ -170,6 +170,7 @@ class OASProblem(object):
                                             # The default is 40% of the MTOW of
                                             # B777-300 is 3e5 kg.
                     'beta' : 1.,            # weighting factor for mixed objective
+                    'S_ref_total' : None,   # [m^2] total reference area for the aircraft
                     }
 
         return defaults
@@ -616,7 +617,7 @@ class OASProblem(object):
             self.prob.root.add_metadata('static_margin', static_margin)
 
         # Uncomment this to check the partial derivatives of each component
-        # self.prob.check_partial_derivatives(compact_print=True)
+        self.prob.check_partial_derivatives(compact_print=True)
 
 
     def setup_struct(self):
@@ -806,6 +807,7 @@ class OASProblem(object):
             ('re', self.prob_dict['Re']/self.prob_dict['reynolds_length']),
             ('rho', self.prob_dict['rho']),
             ('cg', self.prob_dict['cg'])]
+
         root.add('prob_vars',
                  IndepVarComp(prob_vars),
                  promotes=['*'])
@@ -846,13 +848,13 @@ class OASProblem(object):
             # Connect S_ref for performance calcs
             root.connect(name[:-1] + '.S_ref', 'total_perf.' + name + 'S_ref')
             root.connect(name[:-1] + '.widths', 'total_perf.' + name + 'widths')
-            root.connect(name[:-1] + '.lengths', 'total_perf.' + name + 'lengths')
+            root.connect(name[:-1] + '.chords', 'total_perf.' + name + 'chords')
             root.connect(name[:-1] + '.b_pts', 'total_perf.' + name + 'b_pts')
             root.connect('aero_states.' + name + 'sec_forces', 'total_perf.' + name + 'sec_forces')
 
         root.add('total_perf',
                   TotalAeroPerformance(self.surfaces, self.prob_dict),
-                  promotes=['CM', 'v', 'rho', 'cg'])
+                  promotes=['CM', 'CL', 'CD', 'v', 'rho', 'cg'])
 
         # Actually set up the problem
         self.setup_prob()
@@ -1042,7 +1044,7 @@ class OASProblem(object):
             # Connect parameters from the 'coupled' group to the total performance group.
             root.connect('coupled.' + name[:-1] + '.S_ref', 'total_perf.' + name + 'S_ref')
             root.connect('coupled.' + name[:-1] + '.widths', 'total_perf.' + name + 'widths')
-            root.connect('coupled.' + name[:-1] + '.lengths', 'total_perf.' + name + 'lengths')
+            root.connect('coupled.' + name[:-1] + '.chords', 'total_perf.' + name + 'chords')
             root.connect('coupled.' + name[:-1] + '.b_pts', 'total_perf.' + name + 'b_pts')
             root.connect(name + 'perf.cg_location', 'total_perf.' + name + 'cg_location')
 
@@ -1085,6 +1087,7 @@ class OASProblem(object):
             ('M', self.prob_dict['M']),
             ('re', self.prob_dict['Re']/self.prob_dict['reynolds_length']),
             ('rho', self.prob_dict['rho'])]
+
         root.add('prob_vars',
                  IndepVarComp(prob_vars),
                  promotes=['*'])
@@ -1094,7 +1097,7 @@ class OASProblem(object):
         # of the parameters.
         root.add('total_perf',
                  TotalPerformance(self.surfaces, self.prob_dict),
-                 promotes=['L_equals_W', 'fuelburn', 'CM', 'v', 'rho', 'cg', 'weighted_obj', 'total_weight'])
+                 promotes=['L_equals_W', 'fuelburn', 'CM', 'CL', 'CD', 'v', 'rho', 'cg', 'weighted_obj', 'total_weight'])
 
         # Actually set up the system
         self.setup_prob()

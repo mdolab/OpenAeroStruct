@@ -4,19 +4,22 @@ import numpy as np
 from openmdao.api import Component
 
 class MaterialsTube(Component):
-    """ Compute geometric properties for a tube element.
+    """
+    Compute geometric properties for a tube element.
+    The thicknesses are added to the interior of the element, so the
+    'radius' value is the outer radius of the tube.
 
     Parameters
     ----------
     radius : numpy array
-        Radii for each FEM element.
+        Outer radii for each FEM element.
     thickness : numpy array
         Tube thickness for each FEM element.
 
     Returns
     -------
     A : numpy array
-        Areas for each FEM element.
+        Cross-sectional area for each FEM element.
     Iy : numpy array
         Area moment of inertia around the y-axis for each FEM element.
     Iz : numpy array

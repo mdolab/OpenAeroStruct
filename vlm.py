@@ -14,6 +14,15 @@ import numpy as np
 from openmdao.api import Component, Group
 from scipy.linalg import lu_factor, lu_solve
 
+def view_mat(mat):
+    """ Helper function used to visually examine matrices. """
+    import matplotlib.pyplot as plt
+    if len(mat.shape) > 2:
+        mat = numpy.sum(mat, axis=2)
+    im = plt.imshow(mat.real, interpolation='none')
+    plt.colorbar(im, orientation='horizontal')
+    plt.show()
+
 try:
     import OAS_API
     fortran_flag = True
@@ -476,6 +485,8 @@ class VLMGeometry(Component):
         The spanwise widths of each individual panel.
     lengths[ny] : numpy array
         The chordwise length of the entire airfoil following the camber line.
+    chords[ny] : numpy array
+        The chordwise distance between the leading and trailing edges.
     normals[nx-1, ny-1, 3] : numpy array
         The normal vector for each panel, computed as the cross of the two
         diagonals from the mesh points.
@@ -501,6 +512,7 @@ class VLMGeometry(Component):
         self.add_output('widths', val=np.zeros((self.ny-1)))
         self.add_output('cos_sweep', val=np.zeros((self.ny-1)))
         self.add_output('lengths', val=np.zeros((self.ny)))
+        self.add_output('chords', val=np.zeros((self.ny)))
         self.add_output('normals', val=np.zeros((self.nx-1, self.ny-1, 3)))
         self.add_output('S_ref', val=0.)
 
@@ -569,6 +581,8 @@ class VLMGeometry(Component):
         if self.surface['symmetry']:
             S_ref *= 2
 
+        chords = np.linalg.norm(mesh[0, :, :] - mesh[-1, :, :], axis=1)
+
         # Store each array in the unknowns dict
         unknowns['b_pts'] = b_pts
         unknowns['c_pts'] = c_pts
@@ -577,6 +591,7 @@ class VLMGeometry(Component):
         unknowns['lengths'] = lengths
         unknowns['normals'] = normals
         unknowns['S_ref'] = S_ref
+        unknowns['chords'] = chords
 
     def linearize(self, params, unknowns, resids):
         """ Jacobian for VLM geometry."""
@@ -663,6 +678,22 @@ class VLMGeometry(Component):
                 jac['lengths', 'def_mesh'][i, ((j+1)*ny+i)*3 + 1] += dy[j] / l
                 jac['lengths', 'def_mesh'][i, (j*ny+i)*3 + 2] -= dz[j] / l
                 jac['lengths', 'def_mesh'][i, ((j+1)*ny+i)*3 + 2] += dz[j] / l
+
+        jac['chords', 'def_mesh'] = np.zeros_like(jac['chords', 'def_mesh'])
+        for i in range(ny):
+            dx = mesh[0, i, 0] - mesh[-1, i, 0]
+            dy = mesh[0, i, 1] - mesh[-1, i, 1]
+            dz = mesh[0, i, 2] - mesh[-1, i, 2]
+            for j in range(1):
+                l = np.sqrt(dx**2 + dy**2 + dz**2)
+                print(l)
+                jac['chords', 'def_mesh'][i, (j*ny+i)*3] += dx / l
+                jac['chords', 'def_mesh'][i, ((j+1)*ny+i)*3] -= dx / l
+                jac['chords', 'def_mesh'][i, (j*ny+i)*3 + 1] += dy / l
+                jac['chords', 'def_mesh'][i, ((j+1)*ny+i)*3 + 1] -= dy / l
+                jac['chords', 'def_mesh'][i, (j*ny+i)*3 + 2] += dz / l
+                jac['chords', 'def_mesh'][i, ((j+1)*ny+i)*3 + 2] -= dz / l
+
 
         return jac
 

@@ -24,7 +24,7 @@ mesh_level = 'L2'
 print(mesh_level)
 
 # Set problem type
-prob_dict = {'optimize' : True,
+prob_dict = {'optimize' : False,
              'type' : prob_type,
              'compute_static_margin' : True,
              'optimizer' : 'SNOPT',

@@ -216,7 +216,7 @@ class ComputeCM(Component):
         Bound points for the horseshoe vortices, found along the 1/4 chord.
     widths[ny-1] : numpy array
         The spanwise widths of each individual panel.
-    lengths[ny] : numpy array
+    chords[ny] : numpy array
         The chordwise length of the entire airfoil following the camber line.
     S_ref : float
         The reference area of the lifting surface.
@@ -249,7 +249,7 @@ class ComputeCM(Component):
 
             self.add_param(name+'b_pts', val=np.zeros((nx-1, ny, 3), dtype=data_type))
             self.add_param(name+'widths', val=np.zeros((ny-1), dtype=data_type))
-            self.add_param(name+'lengths', val=np.zeros((ny), dtype=data_type))
+            self.add_param(name+'chords', val=np.zeros((ny), dtype=data_type))
             self.add_param(name+'S_ref', val=0.)
             self.add_param(name+'sec_forces', val=np.zeros((nx-1, ny-1, 3), dtype=data_type))
 
@@ -260,6 +260,7 @@ class ComputeCM(Component):
         self.add_output('CM', val=np.zeros((3), dtype=data_type))
 
         self.surfaces = surfaces
+        self.prob_dict = prob_dict
 
         if not fortran_flag:
             self.deriv_options['type'] = 'cs'
@@ -271,25 +272,26 @@ class ComputeCM(Component):
 
         S_ref_tot = 0.
         M = np.zeros((3), dtype=data_type)
-        for surface in self.surfaces:
+
+        for j, surface in enumerate(self.surfaces):
             name = surface['name']
             nx = surface['num_x']
             ny = surface['num_y']
 
             b_pts = params[name+'b_pts']
             widths = params[name+'widths']
-            lengths = params[name+'lengths']
+            chords = params[name+'chords']
             S_ref = params[name+'S_ref']
             sec_forces = params[name+'sec_forces']
 
+            panel_chords = (chords[1:] + chords[:-1]) / 2.
+            MAC = 1. / S_ref * np.sum(panel_chords**2 * widths)
+
             if fortran_flag:
-                M_tmp = OAS_API.oas_api.momentcalc(b_pts, cg, lengths, widths, S_ref, sec_forces, surface['symmetry'])
+                M_tmp = OAS_API.oas_api.momentcalc(b_pts, cg, chords, widths, S_ref, sec_forces, surface['symmetry'])
                 M += M_tmp
 
             else:
-                panel_chords = (lengths[1:] + lengths[:-1]) / 2.
-                MAC = 1. / S_ref * np.sum(panel_chords**2 * widths)
-
                 if surface['symmetry']:
                     MAC *= 2
 
@@ -306,81 +308,154 @@ class ComputeCM(Component):
                     moment[:, 2] = 0.
                 M += np.sum(moment, axis=0)
 
+            # For the first (main) lifting surface, we save the MAC
+            if j == 0:
+                MAC_wing = MAC
             S_ref_tot += S_ref
 
         self.M = M
-        self.S_ref_tot = S_ref_tot
 
-        unknowns['CM'] = M / (0.5 * rho * params['v']**2 * S_ref_tot)
+        # Use the user-provided reference area; otherwise compute the total
+        # area of all lifting surfaces.
+        if self.prob_dict['S_ref_total'] is None:
+            self.S_ref_tot = S_ref_tot
+        else:
+            self.S_ref_tot = self.prob_dict['S_ref_total']
 
-    def apply_linear(self, params, unknowns, dparams, dunknowns, dresids, mode):
+        unknowns['CM'] = M / (0.5 * rho * params['v']**2 * self.S_ref_tot * MAC_wing)
 
-        if mode == 'fwd':
+    def linearize(self, params, unknowns, resids):
 
-            rho = params['rho']
-            v = params['v']
-            Md = 0.
-            S_ref_tot = 0.
-            S_ref_totd = 0.
-            for surface in self.surfaces:
+        jac = self.alloc_jacobian()
+
+        cg = params['cg']
+        rho = params['rho']
+        v = params['v']
+
+        for j in range(3):
+            CMb = np.zeros((3))
+            CMb[j] = 1.
+
+            for i, surface in enumerate(self.surfaces):
                 name = surface['name']
+                ny = surface['num_y']
 
                 b_pts = params[name+'b_pts']
                 widths = params[name+'widths']
-                lengths = params[name+'lengths']
-                S_ref = params[name+'S_ref']
-                sec_forces = params[name+'sec_forces'].real
-
-                M, Md_tmp = OAS_API.oas_api.momentcalc_d(
-                                            b_pts, dparams[name+'b_pts'],
-                                            params['cg'], dparams['cg'],
-                                            lengths, dparams[name+'lengths'],
-                                            widths, dparams[name+'widths'],
-                                            S_ref, dparams[name+'S_ref'],
-                                            sec_forces, dparams[name+'sec_forces'],
-                                            surface['symmetry'])
-
-                Md += Md_tmp
-                S_ref_tot += S_ref
-                S_ref_totd += dparams[name+'S_ref']
-
-            dresids['CM'] = (Md*0.5*rho*v**2*S_ref_tot - M*0.5*((dparams['rho']*S_ref_tot + rho*S_ref_totd)*v**2 + rho*S_ref_tot*2*v*dparams['v'])) / (.5*rho*v**2*S_ref_tot)**2
-
-        if mode == 'rev':
-            cg = params['cg']
-            rho = params['rho']
-            v = params['v']
-
-            temp0 = 0.5*rho*self.S_ref_tot
-            temp = temp0*v**2
-            tempb = np.sum(-(self.M * dresids['CM'] / temp))/temp
-            tempb0 = v**2*tempb
-            Mb = dresids['CM']/temp
-            dparams['rho'] += self.S_ref_tot*0.5*tempb0
-            sb = 0.5*rho*tempb0
-            dparams['v'] += temp0*2*v*tempb
-
-            for surface in self.surfaces:
-                name = surface['name']
-
-                b_pts = params[name+'b_pts']
-                widths = params[name+'widths']
-                lengths = params[name+'lengths']
+                chords = params[name+'chords']
                 S_ref = params[name+'S_ref']
                 sec_forces = params[name+'sec_forces']
 
-                bptsb, cgb, lengthsb, widthsb, S_refb, sec_forcesb, _ = OAS_API.oas_api.momentcalc_b(b_pts, cg, lengths, widths, S_ref, sec_forces, surface['symmetry'], Mb)
+                if i == 0:
+                    panel_chords = (chords[1:] + chords[:-1]) / 2.
+                    MAC = 1. / S_ref * np.sum(panel_chords**2 * widths)
+                    temp1 = self.S_ref_tot * MAC
+                    temp0 = 0.5 * rho * v**2
+                    temp = temp0 * temp1
+                    tempb = np.sum(-(self.M * CMb / temp)) / temp
+                    Mb = CMb / temp
+                    Mb_master = Mb.copy()
+                    jac['CM', 'rho'][j] += v**2*temp1*0.5*tempb
+                    jac['CM', 'v'][j] += 0.5*rho*temp1*2*v*tempb
+                    s_totb = temp0 * MAC * tempb
+                    macb = temp0 * self.S_ref_tot * tempb
+                    chordsb = np.zeros((ny))
+                    tempb0 = macb / S_ref
+                    panel_chordsb = 2*panel_chords*widths*tempb0
+                    widthsb = panel_chords**2*tempb0
+                    sb = -np.sum(panel_chords**2*widths)*tempb0/S_ref
+                    chordsb[1:] += panel_chordsb/2.
+                    chordsb[:-1] += panel_chordsb/2.
+                    cb = chordsb
+                    wb = widthsb
 
-                dparams['cg'] += cgb
-                dparams[name+'b_pts'] += bptsb
-                dparams[name+'lengths'] += lengthsb
-                dparams[name+'widths'] += widthsb
-                dparams[name+'sec_forces'] += sec_forcesb
-                dparams[name+'S_ref'] += S_refb + sb
+                else:
+                    cb = 0.
+                    wb = 0.
+                    sb = 0.
+                    Mb = Mb_master.copy()
+
+                bptsb, cgb, chordsb, widthsb, S_refb, sec_forcesb, _ = OAS_API.oas_api.momentcalc_b(b_pts, cg, chords, widths, S_ref, sec_forces, surface['symmetry'], Mb)
+
+                jac['CM', 'cg'][j, :] += cgb
+                jac['CM', name+'b_pts'][j, :] += bptsb.flatten()
+                jac['CM', name+'chords'][j, :] += chordsb + cb
+                jac['CM', name+'widths'][j, :] += widthsb + wb
+                jac['CM', name+'sec_forces'][j, :] += sec_forcesb.flatten()
+                jac['CM', name+'S_ref'][j, :] += S_refb + sb + s_totb
+
+        return jac
+
+class ComputeTotalCLCD(Component):
+    """
+    Compute the coefficients of lift (CL) and drag (CD) for the entire aircraft.
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+
+    """
+
+    def __init__(self, surfaces, prob_dict):
+        super(ComputeTotalCLCD, self).__init__()
+
+        for surface in surfaces:
+            name = surface['name']
+            self.add_param(name+'CL', val=0.)
+            self.add_param(name+'CD', val=0.)
+            self.add_param(name+'S_ref', val=0.)
+
+        self.add_param('v', val=10.)
+        self.add_param('rho', val=3.)
+
+        self.add_output('CL', val=0.)
+        self.add_output('CD', val=0.)
+
+        self.surfaces = surfaces
+        self.prob_dict = prob_dict
+
+    def solve_nonlinear(self, params, unknowns, resids):
+        rho = params['rho']
+        v = params['v']
+
+        CL = 0.
+        CD = 0.
+        computed_total_S_ref = 0.
+        for surface in self.surfaces:
+            name = surface['name']
+            S_ref = params[name+'S_ref']
+            CL += params[name+'CL'] * S_ref
+            CD += params[name+'CD'] * S_ref
+            computed_total_S_ref += S_ref
+
+        if self.prob_dict['S_ref_total'] is not None:
+            S_ref_total = self.prob_dict['S_ref_total']
+        else:
+            S_ref_total = computed_total_S_ref
+
+        unknowns['CL'] = CL / S_ref_total
+        unknowns['CD'] = CD / S_ref_total
+        self.S_ref_total = S_ref_total
+
+    def linearize(self, params, unknowns, resids):
+        jac = self.alloc_jacobian()
+
+        for surface in self.surfaces:
+            name = surface['name']
+            S_ref = params[name+'S_ref']
+            jac['CL', name+'CL'] = S_ref / self.S_ref_total
+            jac['CD', name+'CD'] = S_ref / self.S_ref_total
+            jac['CL', name+'S_ref'] = params[name+'CL'] / self.S_ref_total
+            jac['CD', name+'S_ref'] = params[name+'CD'] / self.S_ref_total
+
+        return jac
+
 
 class TotalPerformance(Group):
     """
-    Group to hold the total aerostructural performance components.
+    Group to contain the total aerostructural performance components.
     """
 
     def __init__(self, surfaces, prob_dict):
@@ -398,10 +473,13 @@ class TotalPerformance(Group):
         self.add('moment',
                  ComputeCM(surfaces, prob_dict),
                  promotes=['*'])
+        self.add('CL_CD',
+                 ComputeTotalCLCD(surfaces, prob_dict),
+                 promotes=['*'])
 
 class TotalAeroPerformance(Group):
     """
-    Group to hold the total aerodynamic performance components.
+    Group to contain the total aerodynamic performance components.
     """
 
     def __init__(self, surfaces, prob_dict):
@@ -409,4 +487,7 @@ class TotalAeroPerformance(Group):
 
         self.add('moment',
                  ComputeCM(surfaces, prob_dict),
+                 promotes=['*'])
+        self.add('CL_CD',
+                 ComputeTotalCLCD(surfaces, prob_dict),
                  promotes=['*'])
