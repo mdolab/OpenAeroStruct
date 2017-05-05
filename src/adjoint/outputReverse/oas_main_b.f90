@@ -2160,11 +2160,11 @@ contains
   end subroutine forcecalc_main
 !  differentiation of momentcalc_main in reverse (adjoint) mode (with options i4 dr8 r8):
 !   gradient     of useful results: m
-!   with respect to varying inputs: m s_ref bpts sec_forces cg
-!                lengths widths
-!   rw status of diff variables: m:in-zero s_ref:out bpts:out sec_forces:out
-!                cg:out lengths:out widths:out
-  subroutine momentcalc_main_b(bpts, bptsb, cg, cgb, lengths, lengthsb, &
+!   with respect to varying inputs: chords m s_ref bpts sec_forces
+!                cg widths
+!   rw status of diff variables: chords:out m:in-zero s_ref:out
+!                bpts:out sec_forces:out cg:out widths:out
+  subroutine momentcalc_main_b(bpts, bptsb, cg, cgb, chords, chordsb, &
 &   widths, widthsb, s_ref, s_refb, sec_forces, sec_forcesb, symmetry, &
 &   nx, ny, m, mb)
     implicit none
@@ -2173,8 +2173,8 @@ contains
     real(kind=8) :: bptsb(nx-1, ny, 3)
     real(kind=8), intent(in) :: cg(3), s_ref
     real(kind=8) :: cgb(3), s_refb
-    real(kind=8), intent(in) :: lengths(ny), widths(ny-1)
-    real(kind=8) :: lengthsb(ny), widthsb(ny-1)
+    real(kind=8), intent(in) :: chords(ny), widths(ny-1)
+    real(kind=8) :: chordsb(ny), widthsb(ny-1)
     logical, intent(in) :: symmetry
     real(kind=8), intent(in) :: sec_forces(nx-1, ny-1, 3)
     real(kind=8) :: sec_forcesb(nx-1, ny-1, 3)
@@ -2188,7 +2188,7 @@ contains
     real*8, dimension(3) :: arg1b
     integer :: branch
     real(kind=8) :: tempb
-    panel_chords = (lengths(2:)+lengths(:ny-1))/2.
+    panel_chords = (chords(2:)+chords(:ny-1))/2.
     mac = 1./s_ref*sum(panel_chords**2*widths)
     if (symmetry) then
       mac = mac*2
@@ -2245,18 +2245,18 @@ contains
     panel_chordsb = 2*panel_chords*widths*tempb
     widthsb = panel_chords**2*tempb
     s_refb = -(sum(panel_chords**2*widths)*tempb/s_ref)
-    lengthsb = 0.0_8
-    lengthsb(2:ny) = lengthsb(2:ny) + panel_chordsb/2.
-    lengthsb(1:ny-1) = lengthsb(1:ny-1) + panel_chordsb/2.
+    chordsb = 0.0_8
+    chordsb(2:ny) = chordsb(2:ny) + panel_chordsb/2.
+    chordsb(1:ny-1) = chordsb(1:ny-1) + panel_chordsb/2.
     mb = 0.0_8
   end subroutine momentcalc_main_b
-  subroutine momentcalc_main(bpts, cg, lengths, widths, s_ref, &
-&   sec_forces, symmetry, nx, ny, m)
+  subroutine momentcalc_main(bpts, cg, chords, widths, s_ref, sec_forces&
+&   , symmetry, nx, ny, m)
     implicit none
     integer, intent(in) :: nx, ny
     real(kind=8), intent(in) :: bpts(nx-1, ny, 3)
     real(kind=8), intent(in) :: cg(3), s_ref
-    real(kind=8), intent(in) :: lengths(ny), widths(ny-1)
+    real(kind=8), intent(in) :: chords(ny), widths(ny-1)
     logical, intent(in) :: symmetry
     real(kind=8), intent(in) :: sec_forces(nx-1, ny-1, 3)
     real(kind=8), intent(out) :: m(3)
@@ -2264,7 +2264,7 @@ contains
     integer :: i, j, k
     intrinsic sum
     real*8, dimension(3) :: arg1
-    panel_chords = (lengths(2:)+lengths(:ny-1))/2.
+    panel_chords = (chords(2:)+chords(:ny-1))/2.
     mac = 1./s_ref*sum(panel_chords**2*widths)
     if (symmetry) mac = mac*2
     moment(:, :) = 0.

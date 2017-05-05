@@ -49,9 +49,7 @@ if __name__ == "__main__":
     # Set problem type
     prob_dict = {'type' : 'aerostruct',
                  'with_viscous' : True,
-                 'cg' : np.array([30., 0., 5.]),
-                 'compute_static_margin' : False,
-                #  'S_ref_total' : 1000.,
+                 'cg' : np.array([30., 0., 5.])
                  }
 
     if sys.argv[1].startswith('0'):  # run analysis once
@@ -124,4 +122,3 @@ if __name__ == "__main__":
 
     print("\nFuelburn:", OAS_prob.prob['fuelburn'])
     print("Time elapsed: {} secs".format(time() - st))
-    print(OAS_prob.prob['CM'])

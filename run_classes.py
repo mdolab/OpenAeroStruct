@@ -617,7 +617,7 @@ class OASProblem(object):
             self.prob.root.add_metadata('static_margin', static_margin)
 
         # Uncomment this to check the partial derivatives of each component
-        self.prob.check_partial_derivatives(compact_print=True)
+        # self.prob.check_partial_derivatives(compact_print=True)
 
 
     def setup_struct(self):
@@ -850,6 +850,8 @@ class OASProblem(object):
             root.connect(name[:-1] + '.widths', 'total_perf.' + name + 'widths')
             root.connect(name[:-1] + '.chords', 'total_perf.' + name + 'chords')
             root.connect(name[:-1] + '.b_pts', 'total_perf.' + name + 'b_pts')
+            root.connect(name + 'perf' + '.CL', 'total_perf.' + name + 'CL')
+            root.connect(name + 'perf' + '.CD', 'total_perf.' + name + 'CD')
             root.connect('aero_states.' + name + 'sec_forces', 'total_perf.' + name + 'sec_forces')
 
         root.add('total_perf',
@@ -1067,16 +1069,6 @@ class OASProblem(object):
             coupled.ln_solver.options['iprint'] = 1
         if self.prob_dict['print_level']:
             coupled.nl_solver.options['iprint'] = 1
-
-        # Ensure that the groups are ordered correctly within the coupled group
-        # so that a system with multiple surfaces is solved corretly.
-        order_list = []
-        for surface in self.surfaces:
-            order_list.append(surface['name'][:-1])
-        order_list.append('aero_states')
-        for surface in self.surfaces:
-            order_list.append(surface['name']+'loads')
-        coupled.set_order(order_list)
 
         # Add the coupled group to the root problem
         root.add('coupled', coupled, promotes=['v', 'alpha', 'rho'])

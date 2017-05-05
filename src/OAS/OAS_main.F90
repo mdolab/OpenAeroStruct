@@ -740,14 +740,14 @@ contains
 
   end subroutine
 
-  subroutine momentcalc_main(bpts, cg, lengths, widths, S_ref, sec_forces, symmetry, nx, ny, M)
+  subroutine momentcalc_main(bpts, cg, chords, widths, S_ref, sec_forces, symmetry, nx, ny, M)
 
     implicit none
 
     real(kind=8), intent(in) :: bpts(nx-1, ny, 3)
     integer, intent(in) :: nx, ny
     real(kind=8), intent(in) :: cg(3), S_ref
-    real(kind=8), intent(in) :: lengths(ny), widths(ny-1)
+    real(kind=8), intent(in) :: chords(ny), widths(ny-1)
     logical, intent(in) :: symmetry
     real(kind=8), intent(in) :: sec_forces(nx-1, ny-1, 3)
 
@@ -756,7 +756,7 @@ contains
     real(kind=8) :: panel_chords(ny-1), MAC, moment(ny-1, 3), tmp(3)
     integer :: i, j, k
 
-    panel_chords = (lengths(2:) + lengths(:ny-1)) / 2.
+    panel_chords = (chords(2:) + chords(:ny-1)) / 2.
     MAC = 1. / S_ref * sum(panel_chords**2 * widths)
 
     if (symmetry) then

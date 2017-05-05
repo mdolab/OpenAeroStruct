@@ -43,10 +43,10 @@ class FunctionalBreguetRange(Component):
 
         for surface in surfaces:
             name = surface['name']
-
-            self.add_param(name+'CL', val=0.)
-            self.add_param(name+'CD', val=0.)
             self.add_param(name+'structural_weight', val=0.)
+
+        self.add_param('CL', val=0.)
+        self.add_param('CD', val=0.)
 
         self.add_output('fuelburn', val=0.)
         self.add_output('weighted_obj', val=0.)
@@ -60,18 +60,19 @@ class FunctionalBreguetRange(Component):
         R = self.prob_dict['R']
         M = self.prob_dict['M']
         W0 = self.prob_dict['W0'] * self.prob_dict['g']
-        fuelburn = 0.
 
         beta = self.prob_dict['beta']
 
+        # Loop through the surfaces and add up the structural weights
+        # to get the total structural weight.
+        Ws = 0.
         for surface in self.surfaces:
             name = surface['name']
+            Ws += params[name+'structural_weight']
 
-            CL = params[name+'CL']
-            CD = params[name+'CD']
-            Ws = params[name+'structural_weight']
-
-            fuelburn += np.sum((W0 + Ws) * (np.exp(R * CT / a / M * CD / CL) - 1))
+        CL = params['CL']
+        CD = params['CD']
+        fuelburn = np.sum((W0 + Ws) * (np.exp(R * CT / a / M * CD / CL) - 1))
 
         # Convert fuelburn from N to kg
         unknowns['fuelburn'] = fuelburn / self.prob_dict['g']
@@ -392,9 +393,23 @@ class ComputeTotalCLCD(Component):
 
     Parameters
     ----------
+    CL : float
+        Coefficient of lift (CL) for one lifting surface.
+    CD : float
+        Coefficient of drag (CD) for one lifting surface.
+    S_ref : float
+        Surface area for one lifting surface.
+    v : float
+        Fresstream air velocity.
+    rho : float
+        Air density in kg/m^3.
 
     Returns
     -------
+    CL : float
+        Total coefficient of lift (CL) for the entire aircraft.
+    CD : float
+        Total coefficient of drag (CD) for the entire aircraft.
 
     """
 

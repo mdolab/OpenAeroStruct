@@ -686,7 +686,6 @@ class VLMGeometry(Component):
             dz = mesh[0, i, 2] - mesh[-1, i, 2]
             for j in range(1):
                 l = np.sqrt(dx**2 + dy**2 + dz**2)
-                print(l)
                 jac['chords', 'def_mesh'][i, (j*ny+i)*3] += dx / l
                 jac['chords', 'def_mesh'][i, ((j+1)*ny+i)*3] -= dx / l
                 jac['chords', 'def_mesh'][i, (j*ny+i)*3 + 1] += dy / l

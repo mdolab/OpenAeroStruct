@@ -1549,11 +1549,11 @@ contains
   end subroutine forcecalc_main
 !  differentiation of momentcalc_main in forward (tangent) mode (with options i4 dr8 r8):
 !   variations   of useful results: m
-!   with respect to varying inputs: s_ref bpts sec_forces cg lengths
-!                widths
-!   rw status of diff variables: m:out s_ref:in bpts:in sec_forces:in
-!                cg:in lengths:in widths:in
-  subroutine momentcalc_main_d(bpts, bptsd, cg, cgd, lengths, lengthsd, &
+!   with respect to varying inputs: chords s_ref bpts sec_forces
+!                cg widths
+!   rw status of diff variables: chords:in m:out s_ref:in bpts:in
+!                sec_forces:in cg:in widths:in
+  subroutine momentcalc_main_d(bpts, bptsd, cg, cgd, chords, chordsd, &
 &   widths, widthsd, s_ref, s_refd, sec_forces, sec_forcesd, symmetry, &
 &   nx, ny, m, md)
     implicit none
@@ -1562,8 +1562,8 @@ contains
     real(kind=8), intent(in) :: bptsd(nx-1, ny, 3)
     real(kind=8), intent(in) :: cg(3), s_ref
     real(kind=8), intent(in) :: cgd(3), s_refd
-    real(kind=8), intent(in) :: lengths(ny), widths(ny-1)
-    real(kind=8), intent(in) :: lengthsd(ny), widthsd(ny-1)
+    real(kind=8), intent(in) :: chords(ny), widths(ny-1)
+    real(kind=8), intent(in) :: chordsd(ny), widthsd(ny-1)
     logical, intent(in) :: symmetry
     real(kind=8), intent(in) :: sec_forces(nx-1, ny-1, 3)
     real(kind=8), intent(in) :: sec_forcesd(nx-1, ny-1, 3)
@@ -1575,8 +1575,8 @@ contains
     intrinsic sum
     real(kind=8), dimension(ny-1) :: arg1
     real(kind=8), dimension(ny-1) :: arg1d
-    panel_chordsd = (lengthsd(2:)+lengthsd(:ny-1))/2.
-    panel_chords = (lengths(2:)+lengths(:ny-1))/2.
+    panel_chordsd = (chordsd(2:)+chordsd(:ny-1))/2.
+    panel_chords = (chords(2:)+chords(:ny-1))/2.
     arg1d(:) = 2*panel_chords*panel_chordsd*widths + panel_chords**2*&
 &     widthsd
     arg1(:) = panel_chords**2*widths
@@ -1615,13 +1615,13 @@ contains
       m = m + moment(j, :)
     end do
   end subroutine momentcalc_main_d
-  subroutine momentcalc_main(bpts, cg, lengths, widths, s_ref, &
-&   sec_forces, symmetry, nx, ny, m)
+  subroutine momentcalc_main(bpts, cg, chords, widths, s_ref, sec_forces&
+&   , symmetry, nx, ny, m)
     implicit none
     integer, intent(in) :: nx, ny
     real(kind=8), intent(in) :: bpts(nx-1, ny, 3)
     real(kind=8), intent(in) :: cg(3), s_ref
-    real(kind=8), intent(in) :: lengths(ny), widths(ny-1)
+    real(kind=8), intent(in) :: chords(ny), widths(ny-1)
     logical, intent(in) :: symmetry
     real(kind=8), intent(in) :: sec_forces(nx-1, ny-1, 3)
     real(kind=8), intent(out) :: m(3)
@@ -1629,7 +1629,7 @@ contains
     integer :: i, j, k
     intrinsic sum
     real(kind=8), dimension(ny-1) :: arg1
-    panel_chords = (lengths(2:)+lengths(:ny-1))/2.
+    panel_chords = (chords(2:)+chords(:ny-1))/2.
     arg1(:) = panel_chords**2*widths
     mac = 1./s_ref*sum(arg1(:))
     if (symmetry) mac = mac*2

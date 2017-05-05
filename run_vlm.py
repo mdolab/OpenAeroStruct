@@ -116,4 +116,3 @@ if __name__ == "__main__":
     print("\nWing CL:", OAS_prob.prob['wing_perf.CL'])
     print("Wing CD:", OAS_prob.prob['wing_perf.CD'])
     print("Time elapsed: {} secs".format(time() - st))
-    print(OAS_prob.prob['CM'])
