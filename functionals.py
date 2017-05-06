@@ -288,14 +288,14 @@ class ComputeCM(Component):
             panel_chords = (chords[1:] + chords[:-1]) / 2.
             MAC = 1. / S_ref * np.sum(panel_chords**2 * widths)
 
+            if surface['symmetry']:
+                MAC *= 2
+
             if fortran_flag:
                 M_tmp = OAS_API.oas_api.momentcalc(b_pts, cg, chords, widths, S_ref, sec_forces, surface['symmetry'])
                 M += M_tmp
 
             else:
-                if surface['symmetry']:
-                    MAC *= 2
-
                 pts = (params[name+'b_pts'][:, 1:, :] + \
                     params[name+'b_pts'][:, :-1, :]) / 2
                 diff = (pts - cg) / MAC
@@ -350,6 +350,8 @@ class ComputeCM(Component):
                 if i == 0:
                     panel_chords = (chords[1:] + chords[:-1]) / 2.
                     MAC = 1. / S_ref * np.sum(panel_chords**2 * widths)
+                    if surface['symmetry']:
+                        MAC *= 2
                     temp1 = self.S_ref_tot * MAC
                     temp0 = 0.5 * rho * v**2
                     temp = temp0 * temp1
@@ -360,6 +362,8 @@ class ComputeCM(Component):
                     jac['CM', 'v'][j] += 0.5*rho*temp1*2*v*tempb
                     s_totb = temp0 * MAC * tempb
                     macb = temp0 * self.S_ref_tot * tempb
+                    if surface['symmetry']:
+                        macb *= 2
                     chordsb = np.zeros((ny))
                     tempb0 = macb / S_ref
                     panel_chordsb = 2*panel_chords*widths*tempb0
