@@ -170,7 +170,6 @@ class OASProblem(object):
                                             # The default is 40% of the MTOW of
                                             # B777-300 is 3e5 kg.
                     'beta' : 1.,            # weighting factor for mixed objective
-                    'S_ref_total' : None,   # [m^2] total reference area for the aircraft
                     }
 
         return defaults
@@ -221,6 +220,7 @@ class OASProblem(object):
                     'sweep' : 0.,           # wing sweep angle in degrees
                                             # positive sweeps back
                     'taper' : 1.,           # taper ratio; 1. is uniform chord
+                    'S_ref' : None,         # [m^2] area of the lifting surface
 
                     # B-spline Geometric Variables. The number of control points
                     # for each of these variables can be specified in surf_dict

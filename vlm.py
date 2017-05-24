@@ -558,8 +558,13 @@ class VLMGeometry(Component):
         for j in range(3):
             normals[:, :, j] /= norms
 
+        # If the user provides an S_ref, we use that value.
+        # This value is multiplied by 2 if the problem is symmetric.
+        if self.surface['S_ref'] is not None:
+            S_ref = self.surface['S_ref']
+
         # Compute the wetted surface area
-        if self.surface['S_ref_type'] == 'wetted':
+        elif self.surface['S_ref_type'] == 'wetted':
             S_ref = 0.5 * np.sum(norms)
 
         # Compute the projected surface area
@@ -625,6 +630,8 @@ class VLMGeometry(Component):
             jac['S_ref', 'def_mesh'] = np.atleast_2d(meshb.flatten())
             if self.surface['symmetry']:
                 jac['S_ref', 'def_mesh'] *= 2
+            if self.surface['S_ref'] is not None:
+                jac['S_ref', 'def_mesh'][:] = 0.
 
         else:
             cs_jac = self.complex_step_jacobian(params, unknowns, resids,

@@ -316,12 +316,12 @@ class ComputeCM(Component):
 
         self.M = M
 
-        # Use the user-provided reference area; otherwise compute the total
-        # area of all lifting surfaces.
-        if self.prob_dict['S_ref_total'] is None:
+        # Use the user-provided reference area from the main wing;
+        # otherwise compute the total area of all lifting surfaces.
+        if self.surfaces[0]['S_ref'] is None:
             self.S_ref_tot = S_ref_tot
         else:
-            self.S_ref_tot = self.prob_dict['S_ref_total']
+            self.S_ref_tot = self.surfaces[0]['S_ref']
 
         unknowns['CM'] = M / (0.5 * rho * params['v']**2 * self.S_ref_tot * MAC_wing)
 
@@ -449,8 +449,8 @@ class ComputeTotalCLCD(Component):
             CD += params[name+'CD'] * S_ref
             computed_total_S_ref += S_ref
 
-        if self.prob_dict['S_ref_total'] is not None:
-            S_ref_total = self.prob_dict['S_ref_total']
+        if self.surfaces[0]['S_ref'] is not None:
+            S_ref_total = self.surfaces[0]['S_ref']
         else:
             S_ref_total = computed_total_S_ref
 
