@@ -45,7 +45,7 @@ The user-specified options overwrite any of the default options.
 Keywords are case-specific.
 
 .. note::
-  Depending on your problem size, using `force_fd = True` might lower
+  Depending on your problem size, using `force_fd : True` might lower
   the computation time for your optimization compared to using the semi-analytic
   method that is the default. This option simply computes
   the total derivatives by finite-differencing over the entire model.

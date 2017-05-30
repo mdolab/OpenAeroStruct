@@ -563,28 +563,31 @@ class VLMGeometry(Component):
         if self.surface['S_ref'] is not None:
             S_ref = self.surface['S_ref']
 
-        # Compute the wetted surface area
-        elif self.surface['S_ref_type'] == 'wetted':
-            S_ref = 0.5 * np.sum(norms)
+        else:
+            # Compute the wetted surface area
+            if self.surface['S_ref_type'] == 'wetted':
+                S_ref = 0.5 * np.sum(norms)
 
-        # Compute the projected surface area
-        elif self.surface['S_ref_type'] == 'projected':
-            proj_mesh = mesh.copy()
-            proj_mesh[: , :, 2] = 0.
-            proj_normals = np.cross(
-                proj_mesh[:-1,  1:, :] - proj_mesh[1:, :-1, :],
-                proj_mesh[:-1, :-1, :] - proj_mesh[1:,  1:, :],
-                axis=2)
+            # Compute the projected surface area
+            elif self.surface['S_ref_type'] == 'projected':
+                proj_mesh = mesh.copy()
+                proj_mesh[: , :, 2] = 0.
+                proj_normals = np.cross(
+                    proj_mesh[:-1,  1:, :] - proj_mesh[1:, :-1, :],
+                    proj_mesh[:-1, :-1, :] - proj_mesh[1:,  1:, :],
+                    axis=2)
 
-            proj_norms = np.sqrt(np.sum(proj_normals**2, axis=2))
-            for j in xrange(3):
-                proj_normals[:, :, j] /= proj_norms
+                proj_norms = np.sqrt(np.sum(proj_normals**2, axis=2))
+                for j in xrange(3):
+                    proj_normals[:, :, j] /= proj_norms
 
-            S_ref = 0.5 * np.sum(proj_norms)
+                S_ref = 0.5 * np.sum(proj_norms)
 
-        # Multiply the surface area by 2 if symmetric to get consistent area measures
-        if self.surface['symmetry']:
-            S_ref *= 2
+            # Multiply the surface area by 2 if symmetric to get consistent area measures.
+            # However, only do this if we compute the area, not if the user inputs
+            # the reference area.
+            if self.surface['symmetry']:
+                S_ref *= 2
 
         chords = np.linalg.norm(mesh[0, :, :] - mesh[-1, :, :], axis=1)
 
