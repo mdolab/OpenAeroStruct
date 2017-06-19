@@ -466,8 +466,22 @@ class ComputeTotalCLCD(Component):
             S_ref = params[name+'S_ref']
             jac['CL', name+'CL'] = S_ref / self.S_ref_total
             jac['CD', name+'CD'] = S_ref / self.S_ref_total
-            jac['CL', name+'S_ref'] = params[name+'CL'] / self.S_ref_total
-            jac['CD', name+'S_ref'] = params[name+'CD'] / self.S_ref_total
+
+            dCL_dS_ref = 0.
+            surf_CL = params[name + 'CL']
+            dCD_dS_ref = 0.
+            surf_CD = params[name + 'CD']
+            for surface_ in self.surfaces:
+                name_ = surface_['name']
+                if not name == name_:
+                    S_ref_ = params[name_ + 'S_ref']
+                    dCL_dS_ref += surf_CL * S_ref_
+                    dCL_dS_ref -= params[name_ + 'CL'] * S_ref_
+                    dCD_dS_ref += surf_CD * S_ref_
+                    dCD_dS_ref -= params[name_ + 'CD'] * S_ref_
+
+            jac['CL', name + 'S_ref'] = dCL_dS_ref / self.S_ref_total**2
+            jac['CD', name + 'S_ref'] = dCD_dS_ref / self.S_ref_total**2
 
         return jac
 

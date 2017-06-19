@@ -824,14 +824,27 @@ def gen_rect_mesh(num_x, num_y, span, chord, span_cos_spacing=0., chord_cos_spac
 
     mesh = np.zeros((num_x, num_y, 3))
     ny2 = (num_y + 1) // 2
-    beta = np.linspace(0, np.pi/2, ny2)
 
-    # mixed spacing with span_cos_spacing as a weighting factor
-    # this is for the spanwise spacing
-    cosine = .5 * np.cos(beta)  # cosine spacing
-    uniform = np.linspace(0, .5, ny2)[::-1]  # uniform spacing
-    half_wing = cosine * span_cos_spacing + (1 - span_cos_spacing) * uniform
-    full_wing = np.hstack((-half_wing[:-1], half_wing[::-1])) * span
+    # Hotfix a special case for spacing bunched at the root and tips
+    if span_cos_spacing == 2.:
+        beta = np.linspace(0, np.pi, ny2)
+
+        # mixed spacing with span_cos_spacing as a weighting factor
+        # this is for the spanwise spacing
+        cosine = .25 * (1 - np.cos(beta)) # cosine spacing
+        uniform = np.linspace(0, .5, ny2)[::-1]  # uniform spacing
+        half_wing = cosine[::-1] * span_cos_spacing + (1 - span_cos_spacing) * uniform
+        full_wing = np.hstack((-half_wing[:-1], half_wing[::-1])) * span
+
+    else:
+        beta = np.linspace(0, np.pi/2, ny2)
+
+        # mixed spacing with span_cos_spacing as a weighting factor
+        # this is for the spanwise spacing
+        cosine = .5 * np.cos(beta)  # cosine spacing
+        uniform = np.linspace(0, .5, ny2)[::-1]  # uniform spacing
+        half_wing = cosine * span_cos_spacing + (1 - span_cos_spacing) * uniform
+        full_wing = np.hstack((-half_wing[:-1], half_wing[::-1])) * span
 
     nx2 = (num_x + 1) / 2
     beta = np.linspace(0, np.pi/2, nx2)

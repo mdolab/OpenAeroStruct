@@ -18,7 +18,7 @@ def view_mat(mat):
     """ Helper function used to visually examine matrices. """
     import matplotlib.pyplot as plt
     if len(mat.shape) > 2:
-        mat = numpy.sum(mat, axis=2)
+        mat = np.sum(mat, axis=2)
     im = plt.imshow(mat.real, interpolation='none')
     plt.colorbar(im, orientation='horizontal')
     plt.show()
@@ -108,6 +108,9 @@ def _assemble_AIC_mtx(mtx, params, surfaces, skip=False):
     cosa = np.cos(alpha * np.pi / 180.)
     sina = np.sin(alpha * np.pi / 180.)
     u = np.array([cosa, 0, sina])
+    # Set the u-vector to the x-vector to match AVL
+    # u[0] = 1.
+    # u[2] = 0.
 
     i_ = 0
     i_bpts_ = 0

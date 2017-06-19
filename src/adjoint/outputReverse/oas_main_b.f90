@@ -1590,6 +1590,8 @@ contains
     real(kind=8) :: tempb(3)
     pi = 4.d0*atan(1.d0)
 ! trailing vortices in avl follow the x-axis; no cos or sin
+! u(1) = 1.
+! u(3) = 0.
     u(1) = cos(alpha*pi/180.)
     u(2) = 0.
     u(3) = sin(alpha*pi/180.)
@@ -1888,6 +1890,8 @@ contains
     intrinsic sin
     pi = 4.d0*atan(1.d0)
 ! trailing vortices in avl follow the x-axis; no cos or sin
+! u(1) = 1.
+! u(3) = 0.
     u(1) = cos(alpha*pi/180.)
     u(2) = 0.
     u(3) = sin(alpha*pi/180.)
