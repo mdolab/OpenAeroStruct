@@ -1,11 +1,3 @@
-#      ******************************************************************
-#      *                                                                *
-#      * Description: Rules to make the objects. These are the general  *
-#      *              rules. If in a subdirectory different rules must  *
-#      *              be used, this file should not be included.        *
-#      *                                                                *
-#      ******************************************************************
-
 .F90.o:	Makefile
 	$(FF90) $(FF90_ALL_FLAGS) -c $< -o $(OBJDIR)/$(@F)
 	@echo
@@ -19,12 +11,6 @@
 	@echo
 
 .f.o:	Makefile
-	$(FF90) $(FF90_ALL_FLAGS) -c $< -o $(OBJDIR)/$(@F)
-	@echo
-	@echo "        --- Compiled $*.f successfully ---"
-	@echo
-
-.F.o:	Makefile
 	$(FF90) $(FF90_ALL_FLAGS) -c $< -o $(OBJDIR)/$(@F)
 	@echo
 	@echo "        --- Compiled $*.f successfully ---"

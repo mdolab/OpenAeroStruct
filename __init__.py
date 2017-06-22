@@ -1,1 +1,1 @@
-from run_classes import OASProblem
+from .run_classes import OASProblem

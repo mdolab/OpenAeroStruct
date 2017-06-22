@@ -5,8 +5,8 @@ import numpy as np
 from numpy import cos, sin, tan
 
 from openmdao.api import Component
-from b_spline import get_bspline_mtx
-from spatialbeam import radii
+from .b_spline import get_bspline_mtx
+from .spatialbeam import radii
 
 try:
     import OAS_API
@@ -833,7 +833,7 @@ def gen_rect_mesh(num_x, num_y, span, chord, span_cos_spacing=0., chord_cos_spac
         # this is for the spanwise spacing
         cosine = .25 * (1 - np.cos(beta)) # cosine spacing
         uniform = np.linspace(0, .5, ny2)[::-1]  # uniform spacing
-        half_wing = cosine[::-1] * span_cos_spacing + (1 - span_cos_spacing) * uniform
+        half_wing = cosine[::-1] * span_cos_spacing
         full_wing = np.hstack((-half_wing[:-1], half_wing[::-1])) * span
 
     else:

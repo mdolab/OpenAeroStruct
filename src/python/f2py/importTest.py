@@ -1,20 +1,15 @@
-#! /usr/bin/env python
 
+from __future__ import print_function
 import sys
 
-modules = ['OAS_API']
+print('Testing if module OpenAeroStruct can be imported...')
+try:
+    import OAS_API
+except:
+    print('Error importing OAS_API.so')
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+# end try
 
-for name in modules:
-    print ''
-    print "Testing if module %s can be imported..." % name
-    import_cmd = "import %s" % name
-    try:
-        exec import_cmd
-    except Exception, inst:
-        print "Error: %s." % inst
-        sys.exit(1)
-    # end try
-
-    print "OK! Module %s was successfully imported." % name
-
-print ''
+print('Module OpenAeroStruct was successfully imported.')

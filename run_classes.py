@@ -29,13 +29,13 @@ from six import iteritems
 # =============================================================================
 # OpenAeroStruct modules
 # =============================================================================
-from geometry import GeometryMesh, Bspline, gen_crm_mesh, gen_rect_mesh, MonotonicConstraint
-from transfer import TransferDisplacements, TransferLoads
-from vlm import VLMStates, VLMFunctionals, VLMGeometry
-from spatialbeam import SpatialBeamStates, SpatialBeamFunctionals, SpatialBeamSetup, radii
-from materials import MaterialsTube
-from functionals import TotalPerformance, TotalAeroPerformance, FunctionalBreguetRange, FunctionalEquilibrium
-from gs_newton import HybridGSNewton
+from .geometry import GeometryMesh, Bspline, gen_crm_mesh, gen_rect_mesh, MonotonicConstraint
+from .transfer import TransferDisplacements, TransferLoads
+from .vlm import VLMStates, VLMFunctionals, VLMGeometry
+from .spatialbeam import SpatialBeamStates, SpatialBeamFunctionals, SpatialBeamSetup, radii
+from .materials import MaterialsTube
+from .functionals import TotalPerformance, TotalAeroPerformance, FunctionalBreguetRange, FunctionalEquilibrium
+from .gs_newton import HybridGSNewton
 
 try:
     import OAS_API
@@ -96,7 +96,7 @@ class OASProblem(object):
 
     def __init__(self, input_dict={}):
 
-        print('Fortran =', fortran_flag)
+        # print('Fortran =', fortran_flag)
 
         # Update prob_dict with user-provided values after getting defaults
         self.prob_dict = self.get_default_prob_dict()
@@ -531,7 +531,7 @@ class OASProblem(object):
             profile.start()
 
         # Set up the problem
-        self.prob.setup()
+        self.prob.setup(check=False)
 
         # Use warm start from previous db file if desired.
         # Note that we only have access to the unknowns, not the gradient history.
