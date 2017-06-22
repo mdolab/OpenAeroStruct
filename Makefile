@@ -31,6 +31,7 @@ clean:
 
 module:
 	mkdir -p obj
+	mkdir -p mod
 	ln -sf config/config.mk config.mk
 	@for subdir in $(SUBDIR_SRC) ; \
 		do \
