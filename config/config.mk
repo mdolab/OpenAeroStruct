@@ -13,7 +13,14 @@ CC_FLAGS   = -O2 -fPIC
 
 # Define potentially different python, python-config and f2py executables:
 PYTHON = python
-PYTHON-CONFIG = python-config
+python_version_full := $(wordlist 2,4,$(subst ., ,$(shell python --version 2>&1)))
+python_version_major := $(word 1,${python_version_full})
+ifeq ($(python_version_major), 2)
+    PYTHON-CONFIG = python-config
+endif
+ifeq ($(python_version_major), 3)
+    PYTHON-CONFIG = python3.6-config
+endif
 F2PY = f2py
 
 # Define additional flags for linking

@@ -1248,6 +1248,139 @@ class VLMForces(Component):
 
             _assemble_AIC_mtx_b(mtxb, params, dparams, dunknowns, dresids, self.surfaces, skip=True)
 
+class VLMLiftCoeff2D(Component):
+    """
+    Calculate 2D lift coefficient distribution based on section forces.
+    This is for one given lifting surface.
+
+    Parameters
+    ----------
+    alpha : float
+        Angle of attack in degrees.
+    sec_forces[nx-1, ny-1, 3] : numpy array
+        Flattened array containing the sectional forces acting on each panel.
+        Stored in Fortran order (only relevant with more than one chordwise
+        panel).
+    widths[ny-1] : numpy array
+        The spanwise widths of each individual panel.
+    chords[ny] : numpy array
+        The chordwise distance between the leading and trailing edges.
+    v : float
+        Freestream air velocity in m/s.
+    rho : float
+        Air density in kg/m^3.
+
+    Returns
+    -------
+    Cl[ny-1] : numpy array
+        2D lift coefficient distribution for the lifting surface.
+
+    """
+
+    def __init__(self, surface):
+        super(VLMLiftCoeff2D, self).__init__()
+
+        self.surface = surface
+        self.ny = surface['num_y']
+        self.nx = surface['num_x']
+        self.num_panels = (self.nx-1) * (self.ny-1)
+
+        # Inputs
+        self.add_param('alpha', val=3.)
+        self.add_param('sec_forces', val=np.zeros((self.nx-1, self.ny-1, 3)))
+        self.add_param('widths', val=np.zeros((self.ny-1)))
+        self.add_param('chords', val=np.zeros((self.ny)))
+        self.add_param('v', val=0.)
+        self.add_param('rho', val=0.)
+
+        # Outputs
+        self.add_output('Cl', val=np.zeros((self.ny-1)))
+
+    def solve_nonlinear(self, params, unknowns, resids):
+
+        # Input parameters
+        alpha = params['alpha'] * np.pi / 180.
+        cosa = np.cos(alpha)
+        sina = np.sin(alpha)
+        sec_forces = params['sec_forces']
+        widths = params['widths']
+        chords = params['chords']
+        v = params['v']
+        rho = params['rho']
+
+        # Lift distribution: dimensional l(y) = -Fx(y) sin(alpha) + Fz(y) cos(alpha) / widths(y)
+        forces = np.sum(sec_forces, axis=0) # sum section forces in the chordwise x-direction: forces(ny,3)
+        lift_dist = (-forces[:, 0] * sina + forces[:, 2] * cosa) / widths[:]
+
+        # Mid-panel chord
+        chord = 0.5 * (chords[1:] + chords[:-1]) # chord c(y)
+
+        # Lift coefficient distribution
+        unknowns['Cl'] = lift_dist[:] / ( 0.5 * rho * v**2 * chord[:] )
+
+    def linearize(self, params, unknowns, resids):
+        """ Jacobian for 2D lift coefficient distribution."""
+
+        jac = self.alloc_jacobian()
+
+        # Input parameters
+        alpha = params['alpha'] * np.pi / 180.
+        cosa = np.cos(alpha)
+        sina = np.sin(alpha)
+        sec_forces = params['sec_forces']
+        widths = params['widths']
+        chords = params['chords']
+        v = params['v']
+        rho = params['rho']
+
+        # Lift distribution: dimensional l(y) = -Fx(y) sin(alpha) + Fz(y) cos(alpha) / widths(y)
+        forces = np.sum(sec_forces, axis=0) # sum section forces in the chordwise x-direction: forces(ny,3)
+        lift_dist = (-forces[:, 0] * sina + forces[:, 2] * cosa) / widths[:]
+
+        # Mid-panel chord
+        chord = 0.5 * (chords[1:] + chords[:-1]) # chord c(y)
+
+        # Linearization of lift coefficient distribution
+        # unknowns['Cl'] = lift_dist[:] / ( 0.5 * rho * v**2 * chord[:] )
+
+        # Analytic derivatives for alpha
+        p180 = np.pi / 180.
+        jac['Cl', 'alpha'] = p180 * \
+                   (-forces[:, 0] * cosa - forces[:, 2] * sina) / widths[:] / \
+                   ( 0.5 * rho * v**2 * chord[:] )
+
+        # Analytic derivatives for sec_forces
+        tmp = np.array([-sina, 0, cosa])
+        for ix in range(self.nx-1):
+            for jy in range(self.ny-1):
+                for ind in range(3):
+                   jac['Cl', 'sec_forces'][jy, ix*(self.ny-1)*3 + jy*3 + ind] = \
+                       tmp[ind] / widths[jy] / ( 0.5 * rho * v**2 * chord[jy] )
+
+        # Analytic derivatives for widths
+        jac['Cl', 'widths'] = np.diag( -1./ widths[:]**2 * \
+                               (-forces[:, 0] * sina + forces[:, 2] * cosa) / \
+                               ( 0.5 * rho * v**2 * chord[:] ) )
+
+        # Analytic derivatives for chords
+        for iy in range(self.ny-1):
+            jac['Cl', 'chords'][iy,iy  ] = \
+                             -1. / ( 0.5 * (chords[iy] + chords[iy+1])**2 ) * \
+                             lift_dist[iy] / ( 0.5 * rho * v**2 )
+            jac['Cl', 'chords'][iy,iy+1] = \
+                             -1. / ( 0.5 * (chords[iy] + chords[iy+1])**2 ) * \
+                             lift_dist[iy] / ( 0.5 * rho * v**2 )
+
+        # Analytic derivatives for v
+        jac['Cl', 'v'] = -2. / v**3 * \
+                          lift_dist[:] / ( 0.5 * rho * chord[:] )
+
+        # Analytic derivatives for rho
+        jac['Cl', 'rho'] = -1. / rho**2 * \
+                           lift_dist[:] / ( 0.5 * v**2 * chord[:] )
+
+        return jac
+
 
 class VLMLiftDrag(Component):
     """
@@ -1678,4 +1811,7 @@ class VLMFunctionals(Group):
                  promotes=['*'])
         self.add('viscousdrag',
                  ViscousDrag(surface, with_viscous),
+                 promotes=['*'])
+        self.add('liftcoeff',
+                 VLMLiftCoeff2D(surface),
                  promotes=['*'])

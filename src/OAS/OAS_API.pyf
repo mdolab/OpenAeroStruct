@@ -16,7 +16,7 @@ python module OAS_API ! in
                 real(kind=8) intent(out) :: s_ref
                 real(kind=8) intent(in) :: s_refb
             end subroutine compute_normals_b
-            subroutine manipulate_mesh(nx,ny,input_mesh,taper,chord,sweep,xshear,dihedral,zshear,twist,span,symmetry,rotate_x,mesh) ! in :OAS_API:OAS_API.F90:oas_api
+            subroutine manipulate_mesh(nx,ny,input_mesh,taper,chord,sweep,xshear,span,yshear,dihedral,zshear,twist,symmetry,rotate_x,mesh) ! in :OAS_API:OAS_API.F90:oas_api
                 integer, optional,intent(in),check(shape(input_mesh,0)==nx),depend(input_mesh) :: nx=shape(input_mesh,0)
                 integer, optional,intent(in),check(shape(input_mesh,1)==ny),depend(input_mesh) :: ny=shape(input_mesh,1)
                 real(kind=8) dimension(nx,ny,3),intent(in) :: input_mesh
@@ -24,15 +24,16 @@ python module OAS_API ! in
                 real(kind=8) dimension(ny),intent(in),depend(ny) :: chord
                 real(kind=8) intent(in) :: sweep
                 real(kind=8) dimension(ny),intent(in),depend(ny) :: xshear
+                real(kind=8) intent(in) :: span
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: yshear
                 real(kind=8) intent(in) :: dihedral
                 real(kind=8) dimension(ny),intent(in),depend(ny) :: zshear
                 real(kind=8) dimension(ny),intent(in),depend(ny) :: twist
-                real(kind=8) intent(in) :: span
                 logical intent(in) :: symmetry
                 logical intent(in) :: rotate_x
                 real(kind=8) dimension(nx,ny,3),intent(out),depend(nx,ny) :: mesh
             end subroutine manipulate_mesh
-            subroutine manipulate_mesh_d(nx,ny,input_mesh,taper,taperd,chord,chordd,sweep,sweepd,xshear,xsheard,dihedral,dihedrald,zshear,zsheard,twist,twistd,span,spand,symmetry,rotate_x,mesh,meshd) ! in :OAS_API:OAS_API.F90:oas_api
+            subroutine manipulate_mesh_d(nx,ny,input_mesh,taper,taperd,chord,chordd,sweep,sweepd,xshear,xsheard,span,spand,yshear,ysheard,dihedral,dihedrald,zshear,zsheard,twist,twistd,symmetry,rotate_x,mesh,meshd) ! in :OAS_API:OAS_API.F90:oas_api
                 use oas_main_d, only: manipulate_mesh_main_d
                 integer, optional,intent(in),check(shape(input_mesh,0)==nx),depend(input_mesh) :: nx=shape(input_mesh,0)
                 integer, optional,intent(in),check(shape(input_mesh,1)==ny),depend(input_mesh) :: ny=shape(input_mesh,1)
@@ -45,20 +46,22 @@ python module OAS_API ! in
                 real(kind=8) intent(in) :: sweepd
                 real(kind=8) dimension(ny),intent(in),depend(ny) :: xshear
                 real(kind=8) dimension(ny),intent(in),depend(ny) :: xsheard
+                real(kind=8) intent(in) :: span
+                real(kind=8) intent(in) :: spand
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: yshear
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: ysheard
                 real(kind=8) intent(in) :: dihedral
                 real(kind=8) intent(in) :: dihedrald
                 real(kind=8) dimension(ny),intent(in),depend(ny) :: zshear
                 real(kind=8) dimension(ny),intent(in),depend(ny) :: zsheard
                 real(kind=8) dimension(ny),intent(in),depend(ny) :: twist
                 real(kind=8) dimension(ny),intent(in),depend(ny) :: twistd
-                real(kind=8) intent(in) :: span
-                real(kind=8) intent(in) :: spand
                 logical intent(in) :: symmetry
                 logical intent(in) :: rotate_x
                 real(kind=8) dimension(nx,ny,3),intent(out),depend(nx,ny) :: mesh
                 real(kind=8) dimension(nx,ny,3),intent(out),depend(nx,ny) :: meshd
             end subroutine manipulate_mesh_d
-            subroutine manipulate_mesh_b(nx,ny,input_mesh,taper,taperb,chord,chordb,sweep,sweepb,xshear,xshearb,dihedral,dihedralb,zshear,zshearb,twist,twistb,span,spanb,symmetry,rotate_x,mesh,meshb) ! in :OAS_API:OAS_API.F90:oas_api
+            subroutine manipulate_mesh_b(nx,ny,input_mesh,taper,taperb,chord,chordb,sweep,sweepb,xshear,xshearb,span,spanb,yshear,yshearb,dihedral,dihedralb,zshear,zshearb,twist,twistb,symmetry,rotate_x,mesh,meshb) ! in :OAS_API:OAS_API.F90:oas_api
                 use oas_main_b, only: manipulate_mesh_main_b
                 integer, optional,intent(in),check(shape(input_mesh,0)==nx),depend(input_mesh) :: nx=shape(input_mesh,0)
                 integer, optional,intent(in),check(shape(input_mesh,1)==ny),depend(input_mesh) :: ny=shape(input_mesh,1)
@@ -71,14 +74,16 @@ python module OAS_API ! in
                 real(kind=8) intent(out) :: sweepb
                 real(kind=8) dimension(ny),intent(in),depend(ny) :: xshear
                 real(kind=8) dimension(ny),intent(out),depend(ny) :: xshearb
+                real(kind=8) intent(in) :: span
+                real(kind=8) intent(out) :: spanb
+                real(kind=8) dimension(ny),intent(in),depend(ny) :: yshear
+                real(kind=8) dimension(ny),intent(out),depend(ny) :: yshearb
                 real(kind=8) intent(in) :: dihedral
                 real(kind=8) intent(out) :: dihedralb
                 real(kind=8) dimension(ny),intent(in),depend(ny) :: zshear
                 real(kind=8) dimension(ny),intent(out),depend(ny) :: zshearb
                 real(kind=8) dimension(ny),intent(in),depend(ny) :: twist
                 real(kind=8) dimension(ny),intent(out),depend(ny) :: twistb
-                real(kind=8) intent(in) :: span
-                real(kind=8) intent(out) :: spanb
                 logical intent(in) :: symmetry
                 logical intent(in) :: rotate_x
                 real(kind=8) dimension(nx,ny,3),intent(out),depend(nx,ny) :: mesh

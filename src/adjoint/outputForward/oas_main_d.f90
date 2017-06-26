@@ -7,23 +7,23 @@ module oas_main_d
 contains
 !  differentiation of manipulate_mesh_main in forward (tangent) mode (with options i4 dr8 r8):
 !   variations   of useful results: mesh
-!   with respect to varying inputs: span taper sweep chord twist
-!                dihedral xshear zshear
-!   rw status of diff variables: span:in taper:in sweep:in chord:in
-!                mesh:out twist:in dihedral:in xshear:in zshear:in
+!   with respect to varying inputs: span yshear taper sweep chord
+!                twist dihedral xshear zshear
+!   rw status of diff variables: span:in yshear:in taper:in sweep:in
+!                chord:in mesh:out twist:in dihedral:in xshear:in
+!                zshear:in
   subroutine manipulate_mesh_main_d(nx, ny, input_mesh, taper, taperd, &
-&   chord, chordd, sweep, sweepd, xshear, xsheard, dihedral, dihedrald, &
-&   zshear, zsheard, twist, twistd, span, spand, symmetry, rotate_x, &
-&   mesh, meshd)
+&   chord, chordd, sweep, sweepd, xshear, xsheard, span, spand, yshear, &
+&   ysheard, dihedral, dihedrald, zshear, zsheard, twist, twistd, &
+&   symmetry, rotate_x, mesh, meshd)
     implicit none
     integer, intent(in) :: nx, ny
-    real(kind=8), intent(in) :: input_mesh(nx, ny, 3), taper, chord(ny)&
-&   , sweep
-    real(kind=8), intent(in) :: taperd, chordd(ny), sweepd
-    real(kind=8), intent(in) :: xshear(ny), dihedral, zshear(ny), twist(&
-&   ny), span
-    real(kind=8), intent(in) :: xsheard(ny), dihedrald, zsheard(ny), &
-&   twistd(ny), spand
+    real(kind=8), intent(in) :: input_mesh(nx, ny, 3), taper, chord(ny)
+    real(kind=8), intent(in) :: taperd, chordd(ny)
+    real(kind=8), intent(in) :: sweep, xshear(ny), span, yshear(ny)
+    real(kind=8), intent(in) :: sweepd, xsheard(ny), spand, ysheard(ny)
+    real(kind=8), intent(in) :: dihedral, zshear(ny), twist(ny)
+    real(kind=8), intent(in) :: dihedrald, zsheard(ny), twistd(ny)
     logical, intent(in) :: symmetry, rotate_x
     real(kind=8), intent(out) :: mesh(nx, ny, 3)
     real(kind=8), intent(out) :: meshd(nx, ny, 3)
@@ -125,27 +125,6 @@ contains
       mesh(:, iy, 1) = (mesh(:, iy, 1)-quarter_chord(iy, 1))*chord(iy) +&
 &       quarter_chord(iy, 1)
     end do
-! span
-    led = meshd(1, :, :)
-    le = mesh(1, :, :)
-    ted = meshd(nx, :, :)
-    te = mesh(nx, :, :)
-    quarter_chordd = 0.25*ted + 0.75*led
-    quarter_chord = 0.25*te + 0.75*le
-    new_spand = spand
-    new_span = span
-    if (symmetry) then
-      new_spand = spand/2.
-      new_span = span/2.
-    end if
-    sd = (quarter_chordd(:, 2)*(quarter_chord(ny, 2)-quarter_chord(1, 2)&
-&     )-quarter_chord(:, 2)*(quarter_chordd(ny, 2)-quarter_chordd(1, 2))&
-&     )/(quarter_chord(ny, 2)-quarter_chord(1, 2))**2
-    s = quarter_chord(:, 2)/(quarter_chord(ny, 2)-quarter_chord(1, 2))
-    do ix=1,nx
-      meshd(ix, :, 2) = sd*new_span + s*new_spand
-      mesh(ix, :, 2) = s*new_span
-    end do
 ! sweep
     led = meshd(1, :, :)
     le = mesh(1, :, :)
@@ -175,6 +154,32 @@ contains
     do ix=1,nx
       meshd(ix, :, 1) = meshd(ix, :, 1) + xsheard
       mesh(ix, :, 1) = mesh(ix, :, 1) + xshear
+    end do
+! span
+    led = meshd(1, :, :)
+    le = mesh(1, :, :)
+    ted = meshd(nx, :, :)
+    te = mesh(nx, :, :)
+    quarter_chordd = 0.25*ted + 0.75*led
+    quarter_chord = 0.25*te + 0.75*le
+    new_spand = spand
+    new_span = span
+    if (symmetry) then
+      new_spand = spand/2.
+      new_span = span/2.
+    end if
+    sd = (quarter_chordd(:, 2)*(quarter_chord(ny, 2)-quarter_chord(1, 2)&
+&     )-quarter_chord(:, 2)*(quarter_chordd(ny, 2)-quarter_chordd(1, 2))&
+&     )/(quarter_chord(ny, 2)-quarter_chord(1, 2))**2
+    s = quarter_chord(:, 2)/(quarter_chord(ny, 2)-quarter_chord(1, 2))
+    do ix=1,nx
+      meshd(ix, :, 2) = sd*new_span + s*new_spand
+      mesh(ix, :, 2) = s*new_span
+    end do
+! y shear
+    do ix=1,nx
+      meshd(ix, :, 2) = meshd(ix, :, 2) + ysheard
+      mesh(ix, :, 2) = mesh(ix, :, 2) + yshear
     end do
 ! dihedral
     led = meshd(1, :, :)
@@ -288,14 +293,13 @@ contains
     end do
   end subroutine manipulate_mesh_main_d
   subroutine manipulate_mesh_main(nx, ny, input_mesh, taper, chord, &
-&   sweep, xshear, dihedral, zshear, twist, span, symmetry, rotate_x, &
-&   mesh)
+&   sweep, xshear, span, yshear, dihedral, zshear, twist, symmetry, &
+&   rotate_x, mesh)
     implicit none
     integer, intent(in) :: nx, ny
-    real(kind=8), intent(in) :: input_mesh(nx, ny, 3), taper, chord(ny)&
-&   , sweep
-    real(kind=8), intent(in) :: xshear(ny), dihedral, zshear(ny), twist(&
-&   ny), span
+    real(kind=8), intent(in) :: input_mesh(nx, ny, 3), taper, chord(ny)
+    real(kind=8), intent(in) :: sweep, xshear(ny), span, yshear(ny)
+    real(kind=8), intent(in) :: dihedral, zshear(ny), twist(ny)
     logical, intent(in) :: symmetry, rotate_x
     real(kind=8), intent(out) :: mesh(nx, ny, 3)
     real(kind=8) :: le(ny, 3), te(ny, 3), quarter_chord(ny, 3), p180, &
@@ -365,16 +369,6 @@ contains
       mesh(:, iy, 1) = (mesh(:, iy, 1)-quarter_chord(iy, 1))*chord(iy) +&
 &       quarter_chord(iy, 1)
     end do
-! span
-    le = mesh(1, :, :)
-    te = mesh(nx, :, :)
-    quarter_chord = 0.25*te + 0.75*le
-    new_span = span
-    if (symmetry) new_span = span/2.
-    s = quarter_chord(:, 2)/(quarter_chord(ny, 2)-quarter_chord(1, 2))
-    do ix=1,nx
-      mesh(ix, :, 2) = s*new_span
-    end do
 ! sweep
     le = mesh(1, :, :)
     tan_theta = tan(p180*sweep)
@@ -393,6 +387,20 @@ contains
 ! x shear
     do ix=1,nx
       mesh(ix, :, 1) = mesh(ix, :, 1) + xshear
+    end do
+! span
+    le = mesh(1, :, :)
+    te = mesh(nx, :, :)
+    quarter_chord = 0.25*te + 0.75*le
+    new_span = span
+    if (symmetry) new_span = span/2.
+    s = quarter_chord(:, 2)/(quarter_chord(ny, 2)-quarter_chord(1, 2))
+    do ix=1,nx
+      mesh(ix, :, 2) = s*new_span
+    end do
+! y shear
+    do ix=1,nx
+      mesh(ix, :, 2) = mesh(ix, :, 2) + yshear
     end do
 ! dihedral
     le = mesh(1, :, :)

@@ -26,12 +26,6 @@ all:
 	 @echo Numpy Include Directory: $(NUMPY_INCLUDES)
 	 @echo "#------------------------------------------------------#"
 
-# Generate Numpy include directory
-	$(eval NUMPY_FOO = $(shell $(PYTHON) -c 'from __future__ import print_function; import numpy; print(numpy.__path__)'))
-	 @echo "#------------------------------------------------------#"
-	 @echo NumpyFOO: $(NUMPY_FOO)
-	 @echo "#------------------------------------------------------#"
-
 # Generate f2py root directory
 	$(eval F2PY_ROOT = $(shell $(PYTHON) get_f2py.py))
 	 @echo "#------------------------------------------------------#"

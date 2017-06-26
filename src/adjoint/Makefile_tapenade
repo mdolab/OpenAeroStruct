@@ -62,7 +62,7 @@ ad_forward:
 	transferdisplacements_main(mesh, disp) > def_mesh \
 	forcecalc_main(v, circ, rho, bpts) > (sec_forces) \
 	momentcalc_main(bpts, cg, chords, widths, S_ref, sec_forces) > (M) \
-	manipulate_mesh_main(sweep, twist, chord, dihedral, taper, xshear, zshear, span) > mesh \
+	manipulate_mesh_main(sweep, twist, chord, dihedral, taper, xshear, yshear, zshear, span) > mesh \
 	compute_normals_main(mesh) > normals, S_ref" ../OAS/OAS_main.F90 \
 	-forward $(TAPENADE_PRECISION) \
 	-O temp_forward $(I_RES_FILES)
@@ -91,7 +91,7 @@ ad_reverse:
 	transferdisplacements_main(mesh, disp) > def_mesh \
 	forcecalc_main(v, circ, rho, bpts) > (sec_forces) \
 	momentcalc_main(bpts, cg, chords, widths, S_ref, sec_forces) > (M) \
-	manipulate_mesh_main(sweep, twist, chord, dihedral, taper, xshear, zshear, span) > mesh \
+	manipulate_mesh_main(sweep, twist, chord, dihedral, taper, xshear, yshear, zshear, span) > mesh \
 	compute_normals_main(mesh) > normals, S_ref" ../OAS/OAS_main.F90 \
 	-reverse $(TAPENADE_PRECISION) \
 	-O temp_reverse $(I_RES_FILES)

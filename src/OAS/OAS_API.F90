@@ -26,66 +26,70 @@ contains
   end subroutine
 
   subroutine manipulate_mesh(nx, ny, input_mesh, taper, chord, sweep, xshear, &
-    dihedral, zshear, twist, span, symmetry, rotate_x, mesh)
+    span, yshear, dihedral, zshear, twist, symmetry, rotate_x, mesh)
 
     implicit none
 
     integer, intent(in) :: nx, ny
     real(kind=8), intent(in) :: input_mesh(nx, ny, 3), taper, chord(ny)
-    real(kind=8), intent(in) :: sweep, xshear(ny), dihedral, zshear(ny)
-    real(kind=8), intent(in) :: twist(ny), span
+    real(kind=8), intent(in) :: sweep, xshear(ny)
+    real(kind=8), intent(in) :: span, yshear(ny)
+    real(kind=8), intent(in) :: dihedral, zshear(ny)
+    real(kind=8), intent(in) :: twist(ny)
     logical, intent(in) :: symmetry, rotate_x
 
     real(kind=8), intent(out) :: mesh(nx, ny, 3)
 
     call manipulate_mesh_main(nx, ny, input_mesh, taper, chord, sweep, xshear, &
-      dihedral, zshear, twist, span, symmetry, rotate_x, mesh)
+      span, yshear, dihedral, zshear, twist, symmetry, rotate_x, mesh)
 
   end subroutine
 
   subroutine manipulate_mesh_d(nx, ny, input_mesh, taper, taperd, chord, chordd, &
-    sweep, sweepd, xshear, xsheard, dihedral, dihedrald, zshear, zsheard, &
-    twist, twistd, span, spand, symmetry, rotate_x, mesh, meshd)
+    sweep, sweepd, xshear, xsheard, span, spand, yshear, ysheard, &
+    dihedral, dihedrald, zshear, zsheard, twist, twistd, symmetry, rotate_x, mesh, meshd)
 
     use oas_main_d, only: manipulate_mesh_main_d
     implicit none
 
     integer, intent(in) :: nx, ny
-    real(kind=8), intent(in) :: input_mesh(nx, ny, 3), taper, taperd
-    real(kind=8), intent(in) :: chord(ny), chordd(ny), sweep, sweepd
-    real(kind=8), intent(in) :: dihedral, dihedrald, xshear(ny), xsheard(ny)
-    real(kind=8), intent(in) :: zshear(ny), zsheard(ny), twist(ny), twistd(ny)
-    real(kind=8), intent(in) :: span, spand
+    real(kind=8), intent(in) :: input_mesh(nx, ny, 3)
+    real(kind=8), intent(in) :: taper, taperd, chord(ny), chordd(ny)
+    real(kind=8), intent(in) :: sweep, sweepd, xshear(ny), xsheard(ny)
+    real(kind=8), intent(in) :: span, spand, yshear(ny), ysheard(ny)
+    real(kind=8), intent(in) :: dihedral, dihedrald, zshear(ny), zsheard(ny)
+    real(kind=8), intent(in) :: twist(ny), twistd(ny)
     logical, intent(in) :: symmetry, rotate_x
 
     real(kind=8), intent(out) :: mesh(nx, ny, 3), meshd(nx, ny, 3)
 
     call manipulate_mesh_main_d(nx, ny, input_mesh, taper, taperd, chord, chordd, &
-      sweep, sweepd, xshear, xsheard, dihedral, dihedrald, zshear, zsheard, &
-      twist, twistd, span, spand, symmetry, rotate_x, mesh, meshd)
+      sweep, sweepd, xshear, xsheard, span, spand, yshear, ysheard, &
+      dihedral, dihedrald, zshear, zsheard, twist, twistd, symmetry, rotate_x, mesh, meshd)
 
   end subroutine
 
   subroutine manipulate_mesh_b(nx, ny, input_mesh, taper, taperb, chord, chordb, &
-    sweep, sweepb, xshear, xshearb, dihedral, dihedralb, zshear, zshearb, &
-    twist, twistb, span, spanb, symmetry, rotate_x, mesh, meshb)
+    sweep, sweepb, xshear, xshearb, span, spanb, yshear, yshearb, &
+    dihedral, dihedralb, zshear, zshearb, twist, twistb, symmetry, rotate_x, mesh, meshb)
 
     use oas_main_b, only: manipulate_mesh_main_b
     implicit none
 
     integer, intent(in) :: nx, ny
-    real(kind=8), intent(in) :: input_mesh(nx, ny, 3), taper, chord(ny), sweep
-    real(kind=8), intent(in) :: xshear(ny), dihedral, zshear(ny), twist(ny), span
+    real(kind=8), intent(in) :: input_mesh(nx, ny, 3), taper, chord(ny)
+    real(kind=8), intent(in) :: sweep, xshear(ny), span, yshear(ny)
+    real(kind=8), intent(in) :: dihedral, zshear(ny), twist(ny)
     real(kind=8), intent(in) :: meshb(nx, ny, 3)
     logical, intent(in) :: symmetry, rotate_x
 
-    real(kind=8), intent(out) :: taperb, chordb(ny), sweepb, xshearb(ny)
-    real(kind=8), intent(out) :: dihedralb, zshearb(ny), twistb(ny), spanb
+    real(kind=8), intent(out) :: taperb, chordb(ny), sweepb, xshearb(ny), spanb, yshearb(ny)
+    real(kind=8), intent(out) :: dihedralb, zshearb(ny), twistb(ny)
     real(kind=8), intent(out) :: mesh(nx, ny, 3)
 
     call manipulate_mesh_main_b(nx, ny, input_mesh, taper, taperb, chord, chordb, &
-      sweep, sweepb, xshear, xshearb, dihedral, dihedralb, zshear, zshearb, &
-      twist, twistb, span, spanb, symmetry, rotate_x, mesh, meshb)
+      sweep, sweepb, xshear, xshearb, span, spanb, yshear, yshearb, &
+      dihedral, dihedralb, zshear, zshearb, twist, twistb, symmetry, rotate_x, mesh, meshb)
 
   end subroutine
 

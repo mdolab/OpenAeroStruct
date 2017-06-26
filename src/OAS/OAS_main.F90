@@ -5,13 +5,14 @@ module oas_main
 contains
 
   subroutine manipulate_mesh_main(nx, ny, input_mesh, taper, chord, sweep, xshear, &
-    dihedral, zshear, twist, span, symmetry, rotate_x, mesh)
+    span, yshear, dihedral, zshear, twist, symmetry, rotate_x, mesh)
 
     implicit none
 
     integer, intent(in) :: nx, ny
-    real(kind=8), intent(in) :: input_mesh(nx, ny, 3), taper, chord(ny), sweep
-    real(kind=8), intent(in) :: xshear(ny), dihedral, zshear(ny), twist(ny), span
+    real(kind=8), intent(in) :: input_mesh(nx, ny, 3), taper, chord(ny)
+    real(kind=8), intent(in) :: sweep, xshear(ny), span, yshear(ny)
+    real(kind=8), intent(in) :: dihedral, zshear(ny), twist(ny)
     logical, intent(in) :: symmetry, rotate_x
 
     real(kind=8), intent(out) :: mesh(nx, ny, 3)
@@ -86,21 +87,6 @@ contains
         quarter_chord(iy, 1)
     end do
 
-    ! Span
-    le = mesh(1, :, :)
-    te = mesh(nx, :, :)
-    quarter_chord = 0.25 * te + 0.75 * le
-    new_span = span
-
-    if (symmetry) then
-      new_span = span / 2.
-    end if
-
-    s = quarter_chord(:, 2) / (quarter_chord(ny, 2) - quarter_chord(1, 2))
-    do ix=1,nx
-      mesh(ix, :, 2) = s * new_span
-    end do
-
     ! Sweep
     le = mesh(1, :, :)
     tan_theta = tan(p180 * sweep)
@@ -123,6 +109,26 @@ contains
     ! x shear
     do ix=1,nx
       mesh(ix, :, 1) = mesh(ix, :, 1) + xshear
+    end do
+
+    ! Span
+    le = mesh(1, :, :)
+    te = mesh(nx, :, :)
+    quarter_chord = 0.25 * te + 0.75 * le
+    new_span = span
+
+    if (symmetry) then
+      new_span = span / 2.
+    end if
+
+    s = quarter_chord(:, 2) / (quarter_chord(ny, 2) - quarter_chord(1, 2))
+    do ix=1,nx
+      mesh(ix, :, 2) = s * new_span
+    end do
+
+    ! y shear
+    do ix=1,nx
+      mesh(ix, :, 2) = mesh(ix, :, 2) + yshear
     end do
 
     ! Dihedral
