@@ -13,7 +13,7 @@ CC_FLAGS   = -O2 -fPIC
 
 # Define potentially different python, python-config and f2py executables:
 PYTHON = python
-PYTHON-CONFIG = python3.6-config
+PYTHON-CONFIG = python-config
 F2PY = f2py
 
 # Define additional flags for linking
