@@ -10,3 +10,14 @@
 *.so
 *.out
 *.0
+*.o
+*.mod
+doc/_build/
+doc/*.rst
+*.a
+*.msg
+src/adjoint/tempReverse/
+src/adjoint/tempForward/
+
+
+!doc/index.rst

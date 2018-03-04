@@ -1,10 +1,19 @@
-""" Define the transfer components to couple aero and struct analyses. """
+"""
+Define the transfer components to couple aero and struct analyses.
+"""
 
-from __future__ import division
-import numpy
+from __future__ import division, print_function
+import numpy as np
+
+try:
+    import OAS_API
+    fortran_flag = True
+    data_type = float
+except:
+    fortran_flag = False
+    data_type = complex
 
 from openmdao.api import Component
-
 
 class TransferDisplacements(Component):
     """
@@ -15,9 +24,9 @@ class TransferDisplacements(Component):
 
     Parameters
     ----------
-    mesh : array_like
+    mesh[nx, ny, 3] : numpy array
         Flattened array defining the lifting surfaces.
-    disp : array_like
+    disp[ny, 6] : numpy array
         Flattened array containing displacements on the FEM component.
         Contains displacements for all six degrees of freedom, including
         displacements in the x, y, and z directions, and rotations about the
@@ -25,67 +34,87 @@ class TransferDisplacements(Component):
 
     Returns
     -------
-    def_mesh : array_like
+    def_mesh[nx, ny, 3] : numpy array
         Flattened array defining the lifting surfaces after deformation.
-
     """
 
-    def __init__(self, aero_ind, fem_ind, fem_origin=0.35):
+    def __init__(self, surface):
         super(TransferDisplacements, self).__init__()
 
-        tot_n = numpy.sum(aero_ind[:, 2])
-        self.aero_ind = aero_ind
-        self.fem_ind = fem_ind
-        tot_n_fem = numpy.sum(fem_ind[:, 0])
-        self.fem_origin = fem_origin
+        self.surface = surface
 
-        self.add_param('mesh', val=numpy.zeros((tot_n, 3), dtype="complex"))
-        self.add_param('disp', val=numpy.zeros((tot_n_fem, 6),
-                       dtype="complex"))
-        self.add_output('def_mesh', val=numpy.zeros((tot_n, 3),
-                        dtype="complex"))
+        self.ny = surface['num_y']
+        self.nx = surface['num_x']
+        self.fem_origin = surface['fem_origin']
 
-        self.deriv_options['type'] = 'cs'
-        # self.deriv_options['form'] = 'central'
-        #self.deriv_options['extra_check_partials_form'] = "central"
+        self.add_param('mesh', val=np.zeros((self.nx, self.ny, 3), dtype=data_type))
+        self.add_param('disp', val=np.zeros((self.ny, 6), dtype=data_type))
+        self.add_output('def_mesh', val=np.zeros((self.nx, self.ny, 3), dtype=data_type))
+
+        if not fortran_flag:
+            self.deriv_options['type'] = 'cs'
 
     def solve_nonlinear(self, params, unknowns, resids):
+        mesh = params['mesh']
+        disp = params['disp']
 
-        for i_surf, row in enumerate(self.fem_ind):
-            nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = \
-                self.aero_ind[i_surf, :]
-            n_fem, i_fem = row
+        # Get the location of the spar within the wing and save as w
+        w = self.surface['fem_origin']
 
-            mesh = params['mesh'][i:i+n, :].reshape(nx, ny, 3)
-            disp = params['disp'][i_fem:i_fem+n_fem]
+        # Run Fortran if possible
+        if fortran_flag:
+            def_mesh = OAS_API.oas_api.transferdisplacements(mesh, disp, w)
 
-            w = self.fem_origin
+        else:
+
+            # Get the location of the spar
             ref_curve = (1-w) * mesh[0, :, :] + w * mesh[-1, :, :]
 
-            Smesh = numpy.zeros(mesh.shape, dtype="complex")
-            for ind in xrange(nx):
+            # Compute the distance from each mesh point to the nodal spar points
+            Smesh = np.zeros(mesh.shape, dtype=data_type)
+            for ind in range(self.nx):
                 Smesh[ind, :, :] = mesh[ind, :, :] - ref_curve
 
-            def_mesh = numpy.zeros(mesh.shape, dtype="complex")
-            cos, sin = numpy.cos, numpy.sin
-            for ind in xrange(ny):
+            # Set up the mesh displacements array
+            mesh_disp = np.zeros(mesh.shape, dtype=data_type)
+            cos, sin = np.cos, np.sin
+
+            # Loop through each spanwise FEM element
+            for ind in range(self.ny):
                 dx, dy, dz, rx, ry, rz = disp[ind, :]
 
                 # 1 eye from the axis rotation matrices
                 # -3 eye from subtracting Smesh three times
-                T = -2 * numpy.eye(3, dtype="complex")
+                T = -2 * np.eye(3, dtype=data_type)
                 T[ 1:,  1:] += [[cos(rx), -sin(rx)], [ sin(rx), cos(rx)]]
                 T[::2, ::2] += [[cos(ry),  sin(ry)], [-sin(ry), cos(ry)]]
                 T[ :2,  :2] += [[cos(rz), -sin(rz)], [ sin(rz), cos(rz)]]
 
-                def_mesh[:, ind, :] += Smesh[:, ind, :].dot(T)
-                def_mesh[:, ind, 0] += dx
-                def_mesh[:, ind, 1] += dy
-                def_mesh[:, ind, 2] += dz
+                # Obtain the displacements on the mesh based on the spar response
+                mesh_disp[:, ind, :] += Smesh[:, ind, :].dot(T)
+                mesh_disp[:, ind, 0] += dx
+                mesh_disp[:, ind, 1] += dy
+                mesh_disp[:, ind, 2] += dz
 
-            unknowns['def_mesh'][i:i+n, :] = \
-                (def_mesh + mesh).reshape(n, 3).astype("complex")
+            # Apply the displacements to the mesh
+            def_mesh = mesh + mesh_disp
 
+        unknowns['def_mesh'] = def_mesh
+
+    def apply_linear(self, params, unknowns, dparams, dunknowns, dresids, mode):
+        mesh = params['mesh']
+        disp = params['disp']
+
+        w = self.surface['fem_origin']
+
+        if mode == 'fwd':
+            a, b = OAS_API.oas_api.transferdisplacements_d(mesh, dparams['mesh'], disp, dparams['disp'], w)
+            dresids['def_mesh'] += b.real
+
+        if mode == 'rev':
+            a, b = OAS_API.oas_api.transferdisplacements_b(mesh, disp, w, unknowns['def_mesh'], dresids['def_mesh'])
+            dparams['mesh'] += a.real
+            dparams['disp'] += b.real
 
 class TransferLoads(Component):
     """
@@ -96,75 +125,70 @@ class TransferLoads(Component):
 
     Parameters
     ----------
-    def_mesh : array_like
+    def_mesh[nx, ny, 3] : numpy array
         Flattened array defining the lifting surfaces after deformation.
-    sec_forces : array_like
+    sec_forces[nx-1, ny-1, 3] : numpy array
         Flattened array containing the sectional forces acting on each panel.
         Stored in Fortran order (only relevant when more than one chordwise
         panel).
 
     Returns
     -------
-    loads : array_like
+    loads[ny, 6] : numpy array
         Flattened array containing the loads applied on the FEM component,
         computed from the sectional forces.
-
     """
 
-    def __init__(self, aero_ind, fem_ind, fem_origin=0.35):
+    def __init__(self, surface):
         super(TransferLoads, self).__init__()
 
-        tot_n = numpy.sum(aero_ind[:, 2])
-        tot_panels = numpy.sum(aero_ind[:, 4])
-        self.aero_ind = aero_ind
-        self.fem_ind = fem_ind
-        tot_n_fem = numpy.sum(fem_ind[:, 0])
-        self.fem_origin = fem_origin
+        self.surface = surface
 
-        self.add_param('def_mesh', val=numpy.zeros((tot_n, 3)))
-        self.add_param('sec_forces', val=numpy.zeros((tot_panels, 3),
-                       dtype="complex"))
-        self.add_output('loads', val=numpy.zeros((tot_n_fem, 6),
-                        dtype="complex"))
+        self.ny = surface['num_y']
+        self.nx = surface['num_x']
+        self.fem_origin = surface['fem_origin']
+
+        self.add_param('def_mesh', val=np.zeros((self.nx, self.ny, 3), dtype=complex))
+        self.add_param('sec_forces', val=np.zeros((self.nx-1, self.ny-1, 3),
+                       dtype=complex))
+        self.add_output('loads', val=np.zeros((self.ny, 6),
+                        dtype=complex))
 
         self.deriv_options['type'] = 'cs'
         self.deriv_options['form'] = 'central'
-        #self.deriv_options['extra_check_partials_form'] = "central"
 
     def solve_nonlinear(self, params, unknowns, resids):
-        for i_surf, row in enumerate(self.fem_ind):
-            nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = \
-                self.aero_ind[i_surf, :]
-            n_fem, i_fem = row
+        mesh = params['def_mesh']
 
-            mesh = params['def_mesh'][i:i+n, :].reshape(nx, ny, 3)
+        sec_forces = params['sec_forces']
 
-            sec_forces = params['sec_forces'][i_panels:i_panels+n_panels, :]. \
-                reshape(nx-1, ny-1, 3, order='F')
-            sec_forces = numpy.sum(sec_forces, axis=0)
+        # Compute the aerodynamic centers at the quarter-chord point of each panel
+        w = 0.25
+        a_pts = 0.5 * (1-w) * mesh[:-1, :-1, :] + \
+                0.5 *   w   * mesh[1:, :-1, :] + \
+                0.5 * (1-w) * mesh[:-1,  1:, :] + \
+                0.5 *   w   * mesh[1:,  1:, :]
 
-            w = 0.25
-            a_pts = 0.5 * (1-w) * mesh[:-1, :-1, :] + \
-                    0.5 *   w   * mesh[1:, :-1, :] + \
-                    0.5 * (1-w) * mesh[:-1,  1:, :] + \
-                    0.5 *   w   * mesh[1:,  1:, :]
+        # Compute the structural midpoints based on the fem_origin location
+        w = self.fem_origin
+        s_pts = 0.5 * (1-w) * mesh[0, :-1, :] + \
+                0.5 *   w   * mesh[-1, :-1, :] + \
+                0.5 * (1-w) * mesh[0,  1:, :] + \
+                0.5 *   w   * mesh[-1,  1:, :]
 
-            w = self.fem_origin
-            s_pts = 0.5 * (1-w) * mesh[:-1, :-1, :] + \
-                    0.5 *   w   * mesh[1:, :-1, :] + \
-                    0.5 * (1-w) * mesh[:-1,  1:, :] + \
-                    0.5 *   w   * mesh[1:,  1:, :]
+        # Find the moment arm between the aerodynamic centers of each panel
+        # and the FEM elmeents
+        diff = a_pts - s_pts
+        moment = np.zeros((self.ny - 1, 3), dtype=complex)
+        for ind in range(self.nx-1):
+            moment += np.cross(diff[ind, :, :], sec_forces[ind, :, :], axis=1)
 
-            moment = numpy.zeros((ny - 1, 3), dtype="complex")
-            for ind in xrange(ny - 1):
-                r = a_pts[0, ind, :] - s_pts[0, ind, :]
-                F = sec_forces[ind, :]
-                moment[ind, :] = numpy.cross(r, F)
+        # Compute the loads based on the xyz forces and the computed moments
+        loads = np.zeros((self.ny, 6), dtype=complex)
+        sec_forces_sum = np.sum(sec_forces, axis=0)
+        loads[:-1, :3] += 0.5 * sec_forces_sum[:, :]
+        loads[ 1:, :3] += 0.5 * sec_forces_sum[:, :]
+        loads[:-1, 3:] += 0.5 * moment
+        loads[ 1:, 3:] += 0.5 * moment
 
-            loads = numpy.zeros((ny, 6), dtype="complex")
-            loads[:-1, :3] += 0.5 * sec_forces[:, :]
-            loads[ 1:, :3] += 0.5 * sec_forces[:, :]
-            loads[:-1, 3:] += 0.5 * moment
-            loads[ 1:, 3:] += 0.5 * moment
-
-            unknowns['loads'][i_fem:i_fem+n_fem, :] = loads
+        unknowns['loads'] = loads

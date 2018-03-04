@@ -12,6 +12,9 @@ class HybridGSNewton(NonLinearSolver):
         self.newton = Newton()
 
         self.nlgs.options['maxiter'] = 5
+        self.newton.options['maxiter'] = 1
+        self.nlgs.options['atol'] = 1e-10
+        self.newton.options['atol'] = 1e-10
 
     def setup(self, sub):
         """ Initialize sub solvers.
