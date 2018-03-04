@@ -1,26 +1,20 @@
-#      ******************************************************************
-#      *                                                                *
-#      * File:          Makefile                                        *
-#      * Authors: John Jasa          							                      *
-#      * Based on Gaetan Kenway's Makefiles                             *
-#      * Starting date: 07-27-2016                                      *
-#      * Last modified: 07-27-2016                                      *
-#      *                                                                *
-#      ******************************************************************
-#
-HOME_DIR = ..
-COMMON_FILE = $(HOME_DIR)/common.mk
+MAIN_DIR = ..
+COMMON_FILE = $(MAIN_DIR)/common.mk
 include ${COMMON_FILE}
 
-default: all
-
-all: 	liboas
+default: makelib
 
 clean:
 	@echo "        Making clean in lib ... "
 	rm -f lib/*
 
-liboas:
+#      ******************************************************************
+#      *                                                                *
+#      * Rule to make the library.                                      *
+#      *                                                                *
+#      ******************************************************************
+
+makelib:
 	@echo "        creating library ..."
 	@echo
 	$(AR) $(AR_FLAGS) liboas.a $(OBJDIR)/*.o

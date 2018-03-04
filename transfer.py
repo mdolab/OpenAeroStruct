@@ -1,8 +1,9 @@
-""" Define the transfer components to couple aero and struct analyses. """
+"""
+Define the transfer components to couple aero and struct analyses.
+"""
 
 from __future__ import division, print_function
 import numpy as np
-from time import time
 
 try:
     import OAS_API
@@ -11,8 +12,6 @@ try:
 except:
     fortran_flag = False
     data_type = complex
-
-#print('Fortran =', fortran_flag)
 
 from openmdao.api import Component
 
@@ -59,19 +58,28 @@ class TransferDisplacements(Component):
         mesh = params['mesh']
         disp = params['disp']
 
+        # Get the location of the spar within the wing and save as w
         w = self.surface['fem_origin']
 
+        # Run Fortran if possible
         if fortran_flag:
             def_mesh = OAS_API.oas_api.transferdisplacements(mesh, disp, w)
+
         else:
 
+            # Get the location of the spar
             ref_curve = (1-w) * mesh[0, :, :] + w * mesh[-1, :, :]
+
+            # Compute the distance from each mesh point to the nodal spar points
             Smesh = np.zeros(mesh.shape, dtype=data_type)
             for ind in range(self.nx):
                 Smesh[ind, :, :] = mesh[ind, :, :] - ref_curve
 
-            def_mesh = np.zeros(mesh.shape, dtype=data_type)
+            # Set up the mesh displacements array
+            mesh_disp = np.zeros(mesh.shape, dtype=data_type)
             cos, sin = np.cos, np.sin
+
+            # Loop through each spanwise FEM element
             for ind in range(self.ny):
                 dx, dy, dz, rx, ry, rz = disp[ind, :]
 
@@ -82,12 +90,14 @@ class TransferDisplacements(Component):
                 T[::2, ::2] += [[cos(ry),  sin(ry)], [-sin(ry), cos(ry)]]
                 T[ :2,  :2] += [[cos(rz), -sin(rz)], [ sin(rz), cos(rz)]]
 
-                def_mesh[:, ind, :] += Smesh[:, ind, :].dot(T)
-                def_mesh[:, ind, 0] += dx
-                def_mesh[:, ind, 1] += dy
-                def_mesh[:, ind, 2] += dz
+                # Obtain the displacements on the mesh based on the spar response
+                mesh_disp[:, ind, :] += Smesh[:, ind, :].dot(T)
+                mesh_disp[:, ind, 0] += dx
+                mesh_disp[:, ind, 1] += dy
+                mesh_disp[:, ind, 2] += dz
 
-            def_mesh += mesh
+            # Apply the displacements to the mesh
+            def_mesh = mesh + mesh_disp
 
         unknowns['def_mesh'] = def_mesh
 
@@ -152,23 +162,28 @@ class TransferLoads(Component):
 
         sec_forces = params['sec_forces']
 
+        # Compute the aerodynamic centers at the quarter-chord point of each panel
         w = 0.25
         a_pts = 0.5 * (1-w) * mesh[:-1, :-1, :] + \
                 0.5 *   w   * mesh[1:, :-1, :] + \
                 0.5 * (1-w) * mesh[:-1,  1:, :] + \
                 0.5 *   w   * mesh[1:,  1:, :]
 
+        # Compute the structural midpoints based on the fem_origin location
         w = self.fem_origin
         s_pts = 0.5 * (1-w) * mesh[0, :-1, :] + \
                 0.5 *   w   * mesh[-1, :-1, :] + \
                 0.5 * (1-w) * mesh[0,  1:, :] + \
-                0.5 *   w   * mesh[-1:,  1:, :]
+                0.5 *   w   * mesh[-1,  1:, :]
 
+        # Find the moment arm between the aerodynamic centers of each panel
+        # and the FEM elmeents
         diff = a_pts - s_pts
         moment = np.zeros((self.ny - 1, 3), dtype=complex)
         for ind in range(self.nx-1):
             moment += np.cross(diff[ind, :, :], sec_forces[ind, :, :], axis=1)
 
+        # Compute the loads based on the xyz forces and the computed moments
         loads = np.zeros((self.ny, 6), dtype=complex)
         sec_forces_sum = np.sum(sec_forces, axis=0)
         loads[:-1, :3] += 0.5 * sec_forces_sum[:, :]

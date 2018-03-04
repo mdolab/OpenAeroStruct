@@ -16,10 +16,17 @@ Ex: `python plot_all.py aero.db 1` a wider view than `python plot_all.py aero.db
 
 
 from __future__ import division, print_function
-import tkFont
-import Tkinter as Tk
 import sys
+major_python_version = sys.version_info[0]
 
+if major_python_version == 2:
+    import tkFont
+    import Tkinter as Tk
+else:
+    import tkinter as Tk
+    from tkinter import font as tkFont
+
+from six import iteritems
 import numpy as np
 
 try:
@@ -98,7 +105,7 @@ class Display(object):
         self.twist = []
         self.mesh = []
         self.def_mesh = []
-        self.r = []
+        self.radius = []
         self.thickness = []
         sec_forces = []
         normals = []
@@ -113,24 +120,38 @@ class Display(object):
         self.AR = []
         self.S_ref = []
         self.obj = []
+        self.cg = []
 
         meta_db = sqlitedict.SqliteDict(self.db_name, 'metadata')
         self.opt = False
         for item in meta_db['Unknowns']:
             if 'is_objective' in meta_db['Unknowns'][item].keys():
                 self.obj_key = item
-                if len(self.db.keys()) > 2:
+                if major_python_version == 3:
+                    keys_length = sum(1 for _ in self.db.keys())
+                else:
+                    keys_length = len(self.db.keys())
+                if keys_length > 2:
                     self.opt = True
+
+        self.yield_stress_dict = {}
+        self.fem_origin_dict = {}
+        for key, value in iteritems(meta_db['system_metadata']):
+            if 'yield_stress' in key:
+                self.yield_stress_dict.update({key : value})
+            if 'fem_origin' in key:
+                self.fem_origin_dict.update({key : value})
 
         deriv_keys = sqlitedict.SqliteDict(self.db_name, 'derivs').keys()
         deriv_keys = [int(key.split('|')[-1]) for key in deriv_keys]
 
-        for i, (case_name, case_data) in enumerate(self.db.iteritems()):
+        for i, (case_name, case_data) in enumerate(iteritems(self.db)):
 
             if i == 0:
                 pass
             elif i not in deriv_keys:
-                continue # don't plot these cases
+                if deriv_keys:
+                    continue # don't plot these cases
 
             if self.opt:
                 self.obj.append(case_data['Unknowns'][self.obj_key])
@@ -154,6 +175,8 @@ class Display(object):
             self.names = names
             n_names = len(names)
 
+            self.twist_included = False
+
             # Loop through each of the surfaces
             for name in names:
 
@@ -165,7 +188,7 @@ class Display(object):
                     self.mesh.append(case_data['Unknowns'][name+'.mesh'])
 
                     try:
-                        self.r.append(case_data['Unknowns'][name+'.r'])
+                        self.radius.append(case_data['Unknowns'][name+'.radius'])
                         self.thickness.append(case_data['Unknowns'][name+'.thickness'])
                         self.vonmises.append(
                             np.max(case_data['Unknowns'][name+'.vonmises'], axis=1))
@@ -174,13 +197,20 @@ class Display(object):
                         self.show_tube = False
                     try:
                         self.def_mesh.append(case_data['Unknowns'][name+'.def_mesh'])
-                        self.twist.append(case_data['Unknowns'][name+'.twist'])
                         normals.append(case_data['Unknowns'][name+'.normals'])
                         widths.append(case_data['Unknowns'][name+'.widths'])
                         sec_forces.append(case_data['Unknowns']['aero_states.' + name + '_sec_forces'])
                         self.CL.append(case_data['Unknowns'][name+'_perf.CL1'])
                         self.S_ref.append(case_data['Unknowns'][name+'.S_ref'])
                         self.show_wing = True
+
+                        # Not the best solution for now, but this will ensure
+                        # that this plots corectly even if twist isn't a desvar
+                        try:
+                            self.twist.append(case_data['Unknowns'][name+'.twist'])
+                            self.twist_included = True
+                        except:
+                            pass
                     except:
                         self.show_wing = False
                 else:
@@ -188,22 +218,34 @@ class Display(object):
                     short_name = name.split('.')[1:][0]
 
                     self.mesh.append(case_data['Unknowns'][short_name+'.mesh'])
-                    self.r.append(case_data['Unknowns'][short_name+'.r'])
+                    self.radius.append(case_data['Unknowns'][short_name+'.radius'])
                     self.thickness.append(case_data['Unknowns'][short_name+'.thickness'])
                     self.vonmises.append(
                         np.max(case_data['Unknowns'][short_name+'_perf.vonmises'], axis=1))
                     self.def_mesh.append(case_data['Unknowns'][name+'.def_mesh'])
-                    self.twist.append(case_data['Unknowns'][short_name+'.twist'])
                     normals.append(case_data['Unknowns'][name+'.normals'])
                     widths.append(case_data['Unknowns'][name+'.widths'])
                     sec_forces.append(case_data['Unknowns']['coupled.aero_states.' + short_name + '_sec_forces'])
                     self.CL.append(case_data['Unknowns'][short_name+'_perf.CL1'])
                     self.S_ref.append(case_data['Unknowns'][name+'.S_ref'])
 
+                    # Not the best solution for now, but this will ensure
+                    # that this plots corectly even if twist isn't a desvar
+                    try:
+                        self.twist.append(case_data['Unknowns'][short_name+'.twist'])
+                        self.twist_included = True
+                    except:
+                        pass
+
+                if not self.twist_included:
+                    ny = self.mesh[0].shape[1]
+                    self.twist.append(np.zeros(ny))
+
             if self.show_wing:
                 alpha.append(case_data['Unknowns']['alpha'] * np.pi / 180.)
                 rho.append(case_data['Unknowns']['rho'])
                 v.append(case_data['Unknowns']['v'])
+                self.cg.append(case_data['Unknowns']['cg'])
 
         if self.opt:
             self.num_iters = np.max([int(len(self.mesh) / n_names) - 1, 1])
@@ -243,7 +285,7 @@ class Display(object):
                     if self.show_tube:
                         thickness = self.thickness[i*n_names+j]
                         new_thickness.append(np.hstack((thickness, thickness[::-1])))
-                        r = self.r[i*n_names+j]
+                        r = self.radius[i*n_names+j]
                         new_r.append(np.hstack((r, r[::-1])))
                         vonmises = self.vonmises[i*n_names+j]
                         new_vonmises.append(np.hstack((vonmises, vonmises[::-1])))
@@ -269,7 +311,7 @@ class Display(object):
             self.mesh = new_mesh
             if self.show_tube:
                 self.thickness = new_thickness
-                self.r = new_r
+                self.radius = new_r
                 self.vonmises = new_vonmises
             if self.show_wing:
                 self.def_mesh = new_def_mesh
@@ -314,6 +356,7 @@ class Display(object):
                     center += np.mean(self.def_mesh[i*n_names+j], axis=(0,1))
                 for j in range(n_names):
                     self.def_mesh[i*n_names+j] -= center / n_names
+                self.cg[i] -= center / n_names
 
         # recenter mesh points for better viewing
         for i in range(self.num_iters + 1):
@@ -374,15 +417,18 @@ class Display(object):
             self.ax4.set_ylabel('thickness', rotation="horizontal", ha="right")
 
             self.ax5.cla()
+            max_yield_stress = 0.
+            for key, yield_stress in iteritems(self.yield_stress_dict):
+                self.ax5.axhline(yield_stress, c='r', lw=2, ls='--')
+                max_yield_stress = max(max_yield_stress, yield_stress)
+
             self.ax5.locator_params(axis='y',nbins=4)
             self.ax5.locator_params(axis='x',nbins=3)
             self.ax5.set_ylim([self.min_vm, self.max_vm])
-            self.ax5.set_ylim([0, 25e6])
+            self.ax5.set_ylim([0, max_yield_stress*1.1])
             self.ax5.set_xlim([-1, 1])
             self.ax5.set_ylabel('von mises', rotation="horizontal", ha="right")
-            # 20.e6 Pa stress limit hardcoded for aluminum
-            self.ax5.axhline(20.e6, c='r', lw=2, ls='--')
-            self.ax5.text(0.05, 0.85, 'failure limit',
+            self.ax5.text(0.075, 1.1, 'failure limit',
                 transform=self.ax5.transAxes, color='r')
 
         n_names = len(self.names)
@@ -447,32 +493,62 @@ class Display(object):
                 except:
                     self.ax.plot_wireframe(x, y, z, rstride=1, cstride=1, color='k')
 
+                cg = self.cg[self.curr_pos]
+                self.ax.scatter(cg[0], cg[1], cg[2], s=100, color='r')
+
             if self.show_tube:
-                r0 = self.r[self.curr_pos*n_names+j]
+                # Get the array of radii and thickness values for the FEM system
+                r0 = self.radius[self.curr_pos*n_names+j]
                 t0 = self.thickness[self.curr_pos*n_names+j]
+
+                # Create a normalized array of values for the colormap
                 colors = t0
                 colors = colors / np.max(colors)
+
+                # Set the number of rectangular patches on the cylinder
                 num_circ = 12
-                fem_origin = 0.35
+                fem_origin = self.fem_origin_dict[name.split('.')[-1] + '_fem_origin']
+
+                # Get the number of spanwise nodal points
                 n = mesh0.shape[1]
+
+                # Create an array of angles around a circle
                 p = np.linspace(0, 2*np.pi, num_circ)
+
+                # This is just to show the deformed mesh if selected
                 if self.show_wing:
                     if self.show_def_mesh.get():
                         mesh0[:, :, 2] = def_mesh0[:, :, 2]
+
+                # Loop through each element in the FEM system
                 for i, thick in enumerate(t0):
+
+                    # Get the radii describing the circles at each nodal point
                     r = np.array((r0[i], r0[i]))
                     R, P = np.meshgrid(r, p)
+
+                    # Get the X and Z coordinates for all points around the circle
                     X, Z = R*np.cos(P), R*np.sin(P)
+
+                    # Get the chord and center location for the FEM system
                     chords = mesh0[-1, :, 0] - mesh0[0, :, 0]
                     comp = fem_origin * chords + mesh0[0, :, 0]
+
+                    # Add the location of the element centers to the circle coordinates
                     X[:, 0] += comp[i]
                     X[:, 1] += comp[i+1]
                     Z[:, 0] += fem_origin * (mesh0[-1, i, 2] - mesh0[0, i, 2]) + mesh0[0, i, 2]
                     Z[:, 1] += fem_origin * (mesh0[-1, i+1, 2] - mesh0[0, i+1, 2]) + mesh0[0, i+1, 2]
+
+                    # Get the spanwise locations of the spar points
                     Y = np.empty(X.shape)
                     Y[:] = np.linspace(mesh0[0, i, 1], mesh0[0, i+1, 1], 2)
+
+                    # Set the colors of the rectangular surfaces
                     col = np.zeros(X.shape)
                     col[:] = colors[i]
+
+                    # Plot the rectangular surfaces for each individual FEM element
                     try:
                         self.ax.plot_surface(X, Y, Z, rstride=1, cstride=1,
                             facecolors=cm.viridis(col), linewidth=0)

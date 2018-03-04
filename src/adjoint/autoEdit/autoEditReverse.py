@@ -4,6 +4,7 @@ autoEdit - A Python tool to automatically edit a set of files
            according to the specified user rules:
 G. Kenway
 """
+from __future__ import print_function
 
 # Import modules
 import os, sys
@@ -20,15 +21,15 @@ patt_modules = re.compile(r'(\s*use\s*\w*)(_b)\s*')
 patt_module = re.compile(r'\s*module\s\w*')
 patt_subroutine = re.compile(r'\s*subroutine\s\w*')
 patt_comment = re.compile(r'\s*!.*')
-print "Directory of input source files  :", DIR_ORI
-print "Directory of output source files :", DIR_MOD
+print("Directory of input source files  :", DIR_ORI)
+print("Directory of output source files :", DIR_MOD)
 
 useful_modules = ['solve_b']
 for f in os.listdir(DIR_ORI):
     if f.endswith(EXT):
         # open original file in read mode
         file_object_ori = open(os.path.join(DIR_ORI,f),'r')
-        print "\nParsing input file", file_object_ori.name
+        print("\nParsing input file", file_object_ori.name)
 
         # read to whole file to string and reposition the pointer
         # at the first byte for future reading
@@ -96,4 +97,4 @@ for f in os.listdir(DIR_ORI):
         file_object_mod.close()
 
         # success message
-        print " Modified file saved", file_object_mod.name
+        print(" Modified file saved", file_object_mod.name)

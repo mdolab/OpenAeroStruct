@@ -5,7 +5,8 @@ import numpy as np
 from numpy import cos, sin, tan
 
 from openmdao.api import Component
-from b_spline import get_bspline_mtx
+from .b_spline import get_bspline_mtx
+from .spatialbeam import radii
 
 try:
     import OAS_API
@@ -29,6 +30,7 @@ def rotate(mesh, theta_y, symmetry, rotate_x=True):
     rotate_x : boolean
         Flag set to True if the user desires the twist variable to always be
         applied perpendicular to the wing (say, in the case of a winglet).
+
     Returns
     -------
     mesh[nx, ny, 3] : numpy array
@@ -83,7 +85,7 @@ def rotate(mesh, theta_y, symmetry, rotate_x=True):
         row += quarter_chord
 
 def scale_x(mesh, chord_dist):
-    """ Modify the chords along the span of the wing by scaling the x-coord.
+    """ Modify the chords along the span of the wing by scaling only the x-coord.
 
     Parameters
     ----------
@@ -109,7 +111,7 @@ def scale_x(mesh, chord_dist):
             quarter_chord[i, 0]
 
 def shear_x(mesh, xshear):
-    """ Shear the wing in the x direction (distributed sweep)
+    """ Shear the wing in the x direction (distributed sweep).
 
     Parameters
     ----------
@@ -123,11 +125,27 @@ def shear_x(mesh, xshear):
     mesh[nx, ny, 3] : numpy array
         Nodal mesh with the new chord lengths.
     """
-    mesh[0,:,0] += xshear
-    mesh[1,:,0] += xshear
+    mesh[:, :, 0] += xshear
+
+def shear_y(mesh, yshear):
+    """ Shear the wing in the y direction (distributed span).
+
+    Parameters
+    ----------
+    mesh[nx, ny, 3] : numpy array
+        Nodal mesh defining the initial aerodynamic surface.
+    yshear[ny] : numpy array
+        Distance to translate wing in y direction.
+
+    Returns
+    -------
+    mesh[nx, ny, 3] : numpy array
+        Nodal mesh with the new span widths.
+    """
+    mesh[:, :, 1] += yshear
 
 def shear_z(mesh, zshear):
-    """ Shear the wing in the z direction (distributed dihedral)
+    """ Shear the wing in the z direction (distributed dihedral).
 
     Parameters
     ----------
@@ -139,10 +157,9 @@ def shear_z(mesh, zshear):
     Returns
     -------
     mesh[nx, ny, 3] : numpy array
-        Nodal mesh with the new chord lengths.
+        Nodal mesh with the new dihedral heights.
     """
-    mesh[0,:,2] += zshear
-    mesh[1,:,2] += zshear
+    mesh[:, :, 2] += zshear
 
 def sweep(mesh, sweep_angle, symmetry):
     """ Apply shearing sweep. Positive sweeps back.
@@ -277,7 +294,11 @@ def taper(mesh, taper_ratio, symmetry):
     quarter_chord = 0.25 * te + 0.75 * le
 
     if symmetry:
-        taper = np.linspace(1, taper_ratio, num_y)[::-1]
+        x = quarter_chord[:, 1]
+        span = x[-1] - x[0]
+        xp = np.array([-span, 0.])
+        fp = np.array([taper_ratio, 1.])
+        taper = np.interp(x.real, xp.real, fp.real)
 
         for i in range(num_x):
             for ind in range(3):
@@ -285,15 +306,16 @@ def taper(mesh, taper_ratio, symmetry):
                     taper + quarter_chord[:, ind]
 
     else:
-        ny2 = (num_y + 1) // 2
-        taper = np.linspace(1, taper_ratio, ny2)[::-1]
-
-        dx = np.hstack((taper, taper[::-1][1:]))
+        x = quarter_chord[:, 1]
+        span = x[-1] - x[0]
+        xp = np.array([-span/2, 0., span/2])
+        fp = np.array([taper_ratio, 1., taper_ratio])
+        taper = np.interp(x.real, xp.real, fp.real)
 
         for i in range(num_x):
             for ind in range(3):
                 mesh[i, :, ind] = (mesh[i, :, ind] - quarter_chord[:, ind]) * \
-                    dx + quarter_chord[:, ind]
+                    taper + quarter_chord[:, ind]
 
 
 class GeometryMesh(Component):
@@ -301,6 +323,11 @@ class GeometryMesh(Component):
     OpenMDAO component that performs mesh manipulation functions. It reads in
     the initial mesh from the surface dictionary and outputs the altered
     mesh based on the geometric design variables.
+
+    Depending on the design variables selected or the supplied geometry information,
+    only some of the follow parameters will actually be given to this component.
+    If parameters are not active (they do not deform the mesh), then
+    they will not be given to this component.
 
     Parameters
     ----------
@@ -322,18 +349,39 @@ class GeometryMesh(Component):
         the geometric design variables.
     """
 
-    def __init__(self, surface):
+    def __init__(self, surface, desvars={}):
         super(GeometryMesh, self).__init__()
+
+        name = surface['name']
+        self.surface = surface
+
+        # Strip the surface names from the desvars list and save this
+        # modified list as self.desvars
+        desvar_names = []
+        for desvar in desvars.keys():
+
+            # Check to make sure that the surface's name is in the design
+            # variable and only add the desvar to the list if it corresponds
+            # to this surface.
+            if name[:-1] in desvar:
+                desvar_names.append(''.join(desvar.split('.')[1:]))
+
+        self.desvar_names = desvar_names
 
         ny = surface['num_y']
         self.mesh = surface['mesh']
 
         # Variables that should be initialized to one
         ones_list = ['taper', 'chord_cp']
+
         # Variables that should be initialized to zero
-        zeros_list = ['sweep', 'dihedral', 'twist_cp', 'xshear_cp', 'zshear_cp']
+        zeros_list = ['sweep', 'dihedral', 'twist_cp', \
+                      'xshear_cp', 'yshear_cp', 'zshear_cp']
+
         # Variables that should be initialized to given value
         set_list = ['span']
+
+        # Make a list of all geometry variables by adding all individual lists
         all_geo_vars = ones_list + zeros_list + set_list
         self.geo_params = {}
         for var in all_geo_vars:
@@ -354,10 +402,21 @@ class GeometryMesh(Component):
                 else:
                     val = surface[var]
             self.geo_params[param] = val
-            if var in surface['active_geo_vars']:
+
+            # If the user supplied a variable or it's a desvar, we add it as a
+            # parameter.
+            if var in desvar_names or var in surface['initial_geo']:
                 self.add_param(param, val=val)
 
         self.add_output('mesh', val=self.mesh)
+
+        # If the user doesn't provide the radius or it's not a desver, then we must
+        # compute it here.
+        if 'radius_cp' not in desvar_names and 'radius_cp' not in surface['initial_geo']:
+            self.compute_radius = True
+            self.add_output('radius', val=np.zeros((ny - 1)))
+        else:
+            self.compute_radius = False
 
         self.symmetry = surface['symmetry']
 
@@ -374,29 +433,46 @@ class GeometryMesh(Component):
         self.geo_params.update(params)
 
         if fortran_flag:
-            # Does not have span stretching coded yet
-            mesh = OAS_API.oas_api.manipulate_mesh(mesh, self.geo_params['taper'],
-                self.geo_params['chord'], self.geo_params['sweep'], self.geo_params['xshear'],
-                self.geo_params['dihedral'], self.geo_params['zshear'],
-                self.geo_params['twist'], self.geo_params['span'], self.symmetry, self.rotate_x)
+            mesh = OAS_API.oas_api.manipulate_mesh(mesh,
+            self.geo_params['taper'], self.geo_params['chord'],
+            self.geo_params['sweep'], self.geo_params['xshear'],
+            self.geo_params['span'], self.geo_params['yshear'],
+            self.geo_params['dihedral'], self.geo_params['zshear'],
+            self.geo_params['twist'], self.symmetry, self.rotate_x)
 
         else:
             taper(mesh, self.geo_params['taper'], self.symmetry)
             scale_x(mesh, self.geo_params['chord'])
-            stretch(mesh, self.geo_params['span'], self.symmetry)
             sweep(mesh, self.geo_params['sweep'], self.symmetry)
             shear_x(mesh, self.geo_params['xshear'])
+            stretch(mesh, self.geo_params['span'], self.symmetry)
+            shear_y(mesh, self.geo_params['yshear'])
             dihedral(mesh, self.geo_params['dihedral'], self.symmetry)
             shear_z(mesh, self.geo_params['zshear'])
             rotate(mesh, self.geo_params['twist'], self.symmetry, self.rotate_x)
+
+        # Only compute the radius on the first iteration.
+        if self.compute_radius and 'radius_cp' not in self.desvar_names:
+            # Get spar radii and interpolate to radius control points.
+            # Need to refactor this at some point.
+            unknowns['radius'] = radii(mesh, self.surface['t_over_c'])
+            self.compute_radius = False
 
         unknowns['mesh'] = mesh
 
     def apply_linear(self, params, unknowns, dparams, dunknowns, dresids, mode):
         mesh = self.mesh.copy()
+
+        # We actually use the values in self.geo_params to modify the mesh,
+        # but we update self.geo_params using the OpenMDAO params here.
+        # This makes the geometry manipulation process work for any combination
+        # of design variables without having special logic.
         self.geo_params.update(params)
 
         if mode == 'fwd':
+
+            # We don't know which parameters will be used for a given case
+            # so we must check
             if 'sweep' in dparams:
                 sweepd = dparams['sweep']
             else:
@@ -421,6 +497,10 @@ class GeometryMesh(Component):
                 xsheard = dparams['xshear']
             else:
                 xsheard = np.zeros(self.geo_params['xshear'].shape)
+            if 'yshear' in dparams:
+                ysheard = dparams['yshear']
+            else:
+                ysheard = np.zeros(self.geo_params['yshear'].shape)
             if 'zshear' in dparams:
                 zsheard = dparams['zshear']
             else:
@@ -433,17 +513,18 @@ class GeometryMesh(Component):
             mesh, dresids['mesh'] = OAS_API.oas_api.manipulate_mesh_d(mesh,
             self.geo_params['taper'], taperd, self.geo_params['chord'], chordd,
             self.geo_params['sweep'], sweepd, self.geo_params['xshear'], xsheard,
-            self.geo_params['dihedral'], dihedrald, self.geo_params['zshear'],
-            zsheard, self.geo_params['twist'], twistd, self.geo_params['span'],
-            spand, self.symmetry, self.rotate_x)
+            self.geo_params['span'], spand, self.geo_params['yshear'], ysheard,
+            self.geo_params['dihedral'], dihedrald, self.geo_params['zshear'], zsheard,
+            self.geo_params['twist'], twistd, self.symmetry, self.rotate_x)
 
         if mode == 'rev':
-            taperb, chordb, sweepb, xshearb, dihedralb, zshearb, twistb, spanb, mesh = \
-            OAS_API.oas_api.manipulate_mesh_b(mesh, self.geo_params['taper'],
-            self.geo_params['chord'], self.geo_params['sweep'],
-            self.geo_params['xshear'], self.geo_params['dihedral'],
-            self.geo_params['zshear'], self.geo_params['twist'],
-            self.geo_params['span'], self.symmetry, self.rotate_x, dresids['mesh'])
+            taperb, chordb, sweepb, xshearb, spanb, yshearb, dihedralb, zshearb, twistb, mesh = \
+            OAS_API.oas_api.manipulate_mesh_b(mesh,
+            self.geo_params['taper'], self.geo_params['chord'],
+            self.geo_params['sweep'], self.geo_params['xshear'],
+            self.geo_params['span'], self.geo_params['yshear'],
+            self.geo_params['dihedral'], self.geo_params['zshear'],
+            self.geo_params['twist'], self.symmetry, self.rotate_x, dresids['mesh'])
 
             if 'sweep' in dparams:
                 dparams['sweep'] = sweepb
@@ -457,6 +538,8 @@ class GeometryMesh(Component):
                 dparams['taper'] = taperb
             if 'xshear' in dparams:
                 dparams['xshear'] = xshearb
+            if 'yshear' in dparams:
+                dparams['yshear'] = yshearb
             if 'zshear' in dparams:
                 dparams['zshear'] = zshearb
             if 'span' in dparams:
@@ -466,15 +549,10 @@ class MonotonicConstraint(Component):
     """ Produce a constraint that is violated if the chord lengths of the wing
         do not decrease monotonically from the root to the taper.
 
-        Currently only implemented for a symmetric wing.
-
     Parameters
     ----------
     var_name : string
         The variable to which the user would like to apply the monotonic constraint.
-
-    var_size : int
-        The size of the variable vector.
 
     Returns
     -------
@@ -488,7 +566,7 @@ class MonotonicConstraint(Component):
         self.con_name = 'monotonic_' + var_name
         self.symmetry = surface['symmetry']
         self.ny = surface['num_y']
-        self.add_param(self.var_name, val=np.zeros(self.ny), dtype=data_type)
+        self.add_param(self.var_name, val=np.zeros(self.ny))
         self.add_output(self.con_name, val=np.zeros(self.ny-1))
 
     def solve_nonlinear(self, params, unknowns, resids):
@@ -514,7 +592,7 @@ class MonotonicConstraint(Component):
         return jac
 
 def gen_crm_mesh(num_x, num_y, span, chord, span_cos_spacing=0., chord_cos_spacing=0., wing_type="CRM:jig"):
-    """ Generate Common Research MOdel wing mesh.
+    """ Generate Common Research Model wing mesh.
 
     Parameters
     ----------
@@ -548,7 +626,7 @@ def gen_crm_mesh(num_x, num_y, span, chord, span_cos_spacing=0., chord_cos_spaci
         specified parameters.
     eta : numpy array
         Spanwise locations of the airfoil slices. Later used in the
-        interpolation function to obtain correct twist values during at
+        interpolation function to obtain correct twist values at
         points along the span that are not aligned with these slices.
     twist : numpy array
         Twist along the span at the spanwise eta locations. We use these twists
@@ -639,7 +717,7 @@ def gen_crm_mesh(num_x, num_y, span, chord, span_cos_spacing=0., chord_cos_spaci
     # Get the number of points that define this CRM shape and create a mesh
     # array based on this size
     n_raw_points = raw_crm_points.shape[0]
-    mesh = np.empty((2, n_raw_points, 3), dtype=data_type)
+    mesh = np.empty((2, n_raw_points, 3))
 
     # Set the leading and trailing edges of the mesh matrix
     mesh[0, :, :] = le.T
@@ -664,7 +742,7 @@ def gen_crm_mesh(num_x, num_y, span, chord, span_cos_spacing=0., chord_cos_spaci
 
     # Populate a mesh object with the desired num_y dimension based on
     # interpolated values from the raw CRM points.
-    mesh = np.empty((2, ny2, 3), dtype=data_type)
+    mesh = np.empty((2, ny2, 3))
     for j in range(2):
         for i in range(3):
             mesh[j, :, i] = np.interp(lins[::-1], eta, raw_mesh[j, :, i].real)
@@ -684,7 +762,7 @@ def gen_crm_mesh(num_x, num_y, span, chord, span_cos_spacing=0., chord_cos_spaci
 
 
 def add_chordwise_panels(mesh, num_x, chord_cos_spacing):
-    """ Divide the wing into multiple chordwise panels.
+    """ Generate a new mesh with multiple chordwise panels.
 
     Parameters
     ----------
@@ -698,7 +776,6 @@ def add_chordwise_panels(mesh, num_x, chord_cos_spacing):
         A value of 0. corresponds to uniform spacing and a value of 1.
         corresponds to regular cosine spacing. This increases the number of
         chordwise node points near the wingtips.
-
 
     Returns
     -------
@@ -731,7 +808,7 @@ def add_chordwise_panels(mesh, num_x, chord_cos_spacing):
     te = mesh[-1, :, :]
 
     # Create a new mesh with the desired num_x and set the leading and trailing edge values
-    new_mesh = np.zeros((num_x, num_y, 3), dtype=data_type)
+    new_mesh = np.zeros((num_x, num_y, 3))
     new_mesh[ 0, :, :] = le
     new_mesh[-1, :, :] = te
 
@@ -771,19 +848,31 @@ def gen_rect_mesh(num_x, num_y, span, chord, span_cos_spacing=0., chord_cos_spac
     mesh[nx, ny, 3] : numpy array
         Rectangular nodal mesh defining the final aerodynamic surface with the
         specified parameters.
-
     """
 
-    mesh = np.zeros((num_x, num_y, 3), dtype=data_type)
+    mesh = np.zeros((num_x, num_y, 3))
     ny2 = (num_y + 1) // 2
-    beta = np.linspace(0, np.pi/2, ny2)
 
-    # mixed spacing with span_cos_spacing as a weighting factor
-    # this is for the spanwise spacing
-    cosine = .5 * np.cos(beta)  # cosine spacing
-    uniform = np.linspace(0, .5, ny2)[::-1]  # uniform spacing
-    half_wing = cosine * span_cos_spacing + (1 - span_cos_spacing) * uniform
-    full_wing = np.hstack((-half_wing[:-1], half_wing[::-1])) * span
+    # Hotfix a special case for spacing bunched at the root and tips
+    if span_cos_spacing == 2.:
+        beta = np.linspace(0, np.pi, ny2)
+
+        # mixed spacing with span_cos_spacing as a weighting factor
+        # this is for the spanwise spacing
+        cosine = .25 * (1 - np.cos(beta)) # cosine spacing
+        uniform = np.linspace(0, .5, ny2)[::-1]  # uniform spacing
+        half_wing = cosine[::-1] * span_cos_spacing + (1 - span_cos_spacing) * uniform
+        full_wing = np.hstack((-half_wing[:-1], half_wing[::-1])) * span
+
+    else:
+        beta = np.linspace(0, np.pi/2, ny2)
+
+        # mixed spacing with span_cos_spacing as a weighting factor
+        # this is for the spanwise spacing
+        cosine = .5 * np.cos(beta)  # cosine spacing
+        uniform = np.linspace(0, .5, ny2)[::-1]  # uniform spacing
+        half_wing = cosine * span_cos_spacing + (1 - span_cos_spacing) * uniform
+        full_wing = np.hstack((-half_wing[:-1], half_wing[::-1])) * span
 
     nx2 = (num_x + 1) / 2
     beta = np.linspace(0, np.pi/2, nx2)

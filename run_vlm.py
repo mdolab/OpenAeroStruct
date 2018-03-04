@@ -54,23 +54,30 @@ if __name__ == "__main__":
 
     # Instantiate problem and add default surface
     OAS_prob = OASProblem(prob_dict)
-    OAS_prob.add_surface({'name' : 'wing',
-                          'symmetry' : True,
-                          'num_y' : 11,
-                          'num_x' : 2,
-                          'span_cos_spacing' : .5})
+
+    # Create a dictionary to store options about the surface
+    surf_dict = {'num_y' : 7,
+                 'num_x' : 2,
+                 'wing_type' : 'rect',
+                 'CD0' : 0.015,
+                 'symmetry' : True,
+                 'num_twist_cp' : 2,
+                 'num_thickness_cp' : 2}
+
+    # Add the specified wing surface to the problem
+    OAS_prob.add_surface(surf_dict)
 
     # Single lifting surface
     if not sys.argv[1].endswith('m'):
 
         # Setup problem and add design variables, constraint, and objective
-        OAS_prob.setup()
         OAS_prob.add_desvar('wing.twist_cp', lower=-10., upper=15.)
         OAS_prob.add_desvar('wing.sweep', lower=10., upper=30.)
         OAS_prob.add_desvar('wing.dihedral', lower=-10., upper=20.)
         OAS_prob.add_desvar('wing.taper', lower=.5, upper=2.)
         OAS_prob.add_constraint('wing_perf.CL', equals=0.5)
         OAS_prob.add_objective('wing_perf.CD', scaler=1e4)
+        OAS_prob.setup()
 
     # Multiple lifting surfaces
     else:
@@ -82,9 +89,6 @@ if __name__ == "__main__":
                               'span_cos_spacing' : .5,
                               'offset' : np.array([5., 0., .1]),
                               'symmetry' : True})
-
-        # Setup problem and add design variables, constraints, and objective
-        OAS_prob.setup()
 
         # Set up wing variables
         OAS_prob.add_desvar('wing.twist_cp', lower=-10., upper=15.)
@@ -100,6 +104,9 @@ if __name__ == "__main__":
         OAS_prob.add_desvar('tail.dihedral', lower=-10., upper=20.)
         OAS_prob.add_desvar('tail.taper', lower=.5, upper=2.)
         OAS_prob.add_constraint('tail_perf.CL', equals=0.5)
+
+        # Setup problem
+        OAS_prob.setup()
 
     st = time()
 

@@ -21,6 +21,7 @@ def get_bspline_mtx(num_cp, num_pt, order=4):
         points vector.
 
     """
+    
     knots = np.zeros(num_cp + order)
     knots[order-1:num_cp+1] = np.linspace(0, 1, num_cp - order + 2)
     knots[num_cp+1:] = 1.0

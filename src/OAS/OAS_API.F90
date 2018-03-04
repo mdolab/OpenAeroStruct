@@ -26,66 +26,70 @@ contains
   end subroutine
 
   subroutine manipulate_mesh(nx, ny, input_mesh, taper, chord, sweep, xshear, &
-    dihedral, zshear, twist, span, symmetry, rotate_x, mesh)
+    span, yshear, dihedral, zshear, twist, symmetry, rotate_x, mesh)
 
     implicit none
 
     integer, intent(in) :: nx, ny
     real(kind=8), intent(in) :: input_mesh(nx, ny, 3), taper, chord(ny)
-    real(kind=8), intent(in) :: sweep, xshear(ny), dihedral, zshear(ny)
-    real(kind=8), intent(in) :: twist(ny), span
+    real(kind=8), intent(in) :: sweep, xshear(ny)
+    real(kind=8), intent(in) :: span, yshear(ny)
+    real(kind=8), intent(in) :: dihedral, zshear(ny)
+    real(kind=8), intent(in) :: twist(ny)
     logical, intent(in) :: symmetry, rotate_x
 
     real(kind=8), intent(out) :: mesh(nx, ny, 3)
 
     call manipulate_mesh_main(nx, ny, input_mesh, taper, chord, sweep, xshear, &
-      dihedral, zshear, twist, span, symmetry, rotate_x, mesh)
+      span, yshear, dihedral, zshear, twist, symmetry, rotate_x, mesh)
 
   end subroutine
 
   subroutine manipulate_mesh_d(nx, ny, input_mesh, taper, taperd, chord, chordd, &
-    sweep, sweepd, xshear, xsheard, dihedral, dihedrald, zshear, zsheard, &
-    twist, twistd, span, spand, symmetry, rotate_x, mesh, meshd)
+    sweep, sweepd, xshear, xsheard, span, spand, yshear, ysheard, &
+    dihedral, dihedrald, zshear, zsheard, twist, twistd, symmetry, rotate_x, mesh, meshd)
 
     use oas_main_d, only: manipulate_mesh_main_d
     implicit none
 
     integer, intent(in) :: nx, ny
-    real(kind=8), intent(in) :: input_mesh(nx, ny, 3), taper, taperd
-    real(kind=8), intent(in) :: chord(ny), chordd(ny), sweep, sweepd
-    real(kind=8), intent(in) :: dihedral, dihedrald, xshear(ny), xsheard(ny)
-    real(kind=8), intent(in) :: zshear(ny), zsheard(ny), twist(ny), twistd(ny)
-    real(kind=8), intent(in) :: span, spand
+    real(kind=8), intent(in) :: input_mesh(nx, ny, 3)
+    real(kind=8), intent(in) :: taper, taperd, chord(ny), chordd(ny)
+    real(kind=8), intent(in) :: sweep, sweepd, xshear(ny), xsheard(ny)
+    real(kind=8), intent(in) :: span, spand, yshear(ny), ysheard(ny)
+    real(kind=8), intent(in) :: dihedral, dihedrald, zshear(ny), zsheard(ny)
+    real(kind=8), intent(in) :: twist(ny), twistd(ny)
     logical, intent(in) :: symmetry, rotate_x
 
     real(kind=8), intent(out) :: mesh(nx, ny, 3), meshd(nx, ny, 3)
 
     call manipulate_mesh_main_d(nx, ny, input_mesh, taper, taperd, chord, chordd, &
-      sweep, sweepd, xshear, xsheard, dihedral, dihedrald, zshear, zsheard, &
-      twist, twistd, span, spand, symmetry, rotate_x, mesh, meshd)
+      sweep, sweepd, xshear, xsheard, span, spand, yshear, ysheard, &
+      dihedral, dihedrald, zshear, zsheard, twist, twistd, symmetry, rotate_x, mesh, meshd)
 
   end subroutine
 
   subroutine manipulate_mesh_b(nx, ny, input_mesh, taper, taperb, chord, chordb, &
-    sweep, sweepb, xshear, xshearb, dihedral, dihedralb, zshear, zshearb, &
-    twist, twistb, span, spanb, symmetry, rotate_x, mesh, meshb)
+    sweep, sweepb, xshear, xshearb, span, spanb, yshear, yshearb, &
+    dihedral, dihedralb, zshear, zshearb, twist, twistb, symmetry, rotate_x, mesh, meshb)
 
     use oas_main_b, only: manipulate_mesh_main_b
     implicit none
 
     integer, intent(in) :: nx, ny
-    real(kind=8), intent(in) :: input_mesh(nx, ny, 3), taper, chord(ny), sweep
-    real(kind=8), intent(in) :: xshear(ny), dihedral, zshear(ny), twist(ny), span
+    real(kind=8), intent(in) :: input_mesh(nx, ny, 3), taper, chord(ny)
+    real(kind=8), intent(in) :: sweep, xshear(ny), span, yshear(ny)
+    real(kind=8), intent(in) :: dihedral, zshear(ny), twist(ny)
     real(kind=8), intent(in) :: meshb(nx, ny, 3)
     logical, intent(in) :: symmetry, rotate_x
 
-    real(kind=8), intent(out) :: taperb, chordb(ny), sweepb, xshearb(ny)
-    real(kind=8), intent(out) :: dihedralb, zshearb(ny), twistb(ny), spanb
+    real(kind=8), intent(out) :: taperb, chordb(ny), sweepb, xshearb(ny), spanb, yshearb(ny)
+    real(kind=8), intent(out) :: dihedralb, zshearb(ny), twistb(ny)
     real(kind=8), intent(out) :: mesh(nx, ny, 3)
 
     call manipulate_mesh_main_b(nx, ny, input_mesh, taper, taperb, chord, chordb, &
-      sweep, sweepb, xshear, xshearb, dihedral, dihedralb, zshear, zshearb, &
-      twist, twistb, span, spanb, symmetry, rotate_x, mesh, meshb)
+      sweep, sweepb, xshear, xshearb, span, spanb, yshear, yshearb, &
+      dihedral, dihedralb, zshear, zshearb, twist, twistb, symmetry, rotate_x, mesh, meshb)
 
   end subroutine
 
@@ -115,7 +119,7 @@ contains
     real(kind=8), intent(out) :: sec_forces(num_panels, 3), sec_forcesd(num_panels, 3)
 
     call forcecalc_main_d(v, vd, circ, circd, rho, rhod, bpts, bptsd, &
-      nx, ny, num_panels, sec_forces, sec_forcesd)
+    nx, ny, num_panels, sec_forces, sec_forcesd)
 
   end subroutine
 
@@ -133,7 +137,68 @@ contains
     real(kind=8), intent(out) :: vb(num_panels, 3), circb(num_panels), rhob, bptsb(nx-1, ny, 3)
 
     call forcecalc_main_b(v, vb, circ, circb, rho, rhob, bpts, bptsb, &
-      nx, ny, num_panels, sec_forces, sec_forcesb)
+    nx, ny, num_panels, sec_forces, sec_forcesb)
+
+  end subroutine
+
+  subroutine momentcalc(bpts, cg, chords, widths, S_ref, sec_forces, symmetry, nx, ny, M)
+
+    implicit none
+
+    real(kind=8), intent(in) :: bpts(nx-1, ny, 3)
+    integer, intent(in) :: nx, ny
+    real(kind=8), intent(in) :: cg(3), S_ref
+    real(kind=8), intent(in) :: chords(ny), widths(ny-1)
+    logical, intent(in) :: symmetry
+    real(kind=8), intent(in) :: sec_forces(nx-1, ny-1, 3)
+
+    real(kind=8), intent(out) :: M(3)
+
+    real(kind=8) :: panel_chords(ny-1), MAC, moment(ny-1, 3)
+    integer :: i, j, k
+
+    call momentcalc_main(bpts, cg, chords, widths, S_ref, sec_forces, symmetry, nx, ny, M)
+
+  end subroutine
+
+  subroutine momentcalc_d(bpts, bptsd, cg, cgd, chords, chordsd, widths, widthsd, &
+    S_ref, S_refd, sec_forces, sec_forcesd, symmetry, nx, ny, M, Md)
+
+    use oas_main_d, only: momentcalc_main_d
+    implicit none
+
+    real(kind=8), intent(in) :: bpts(nx-1, ny, 3), cg(3), S_ref
+    real(kind=8), intent(in) :: chords(ny), widths(ny-1), sec_forces(nx-1, ny-1, 3)
+    real(kind=8), intent(in) :: bptsd(nx-1, ny, 3), cgd(3), S_refd
+    real(kind=8), intent(in) :: chordsd(ny), widthsd(ny-1), sec_forcesd(nx-1, ny-1, 3)
+    logical, intent(in) :: symmetry
+    integer, intent(in) :: nx, ny
+
+    real(kind=8), intent(out) :: M(3), Md(3)
+
+    call momentcalc_main_d(bpts, bptsd, cg, cgd, chords, chordsd, widths, widthsd, &
+    S_ref, S_refd, sec_forces, sec_forcesd, symmetry, nx, ny, M, Md)
+
+  end subroutine
+
+  subroutine momentcalc_b(bpts, bptsb, cg, cgb, chords, chordsb, widths, widthsb, &
+    S_ref, S_refb, sec_forces, sec_forcesb, symmetry, nx, ny, M, Mb)
+
+    use oas_main_b, only: momentcalc_main_b
+    implicit none
+
+    real(kind=8), intent(in) :: bpts(nx-1, ny, 3), cg(3), S_ref
+    real(kind=8), intent(in) :: chords(ny), widths(ny-1), sec_forces(nx-1, ny-1, 3)
+    real(kind=8), intent(in) :: Mb(3)
+    logical, intent(in) :: symmetry
+    integer, intent(in) :: nx, ny
+
+    real(kind=8), intent(out) :: M(3)
+    real(kind=8), intent(out) :: bptsb(nx-1, ny, 3), cgb(3), S_refb
+    real(kind=8), intent(out) :: chordsb(ny), widthsb(ny-1), sec_forcesb(nx-1, ny-1, 3)
+
+    call momentcalc_main_b(bpts, bptsb, cg, cgb, chords, chordsb, widths, widthsb, &
+    S_ref, S_refb, sec_forces, sec_forcesb, symmetry, nx, ny, M, Mb)
 
   end subroutine
 

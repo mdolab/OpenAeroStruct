@@ -5,13 +5,14 @@ module oas_main
 contains
 
   subroutine manipulate_mesh_main(nx, ny, input_mesh, taper, chord, sweep, xshear, &
-    dihedral, zshear, twist, span, symmetry, rotate_x, mesh)
+    span, yshear, dihedral, zshear, twist, symmetry, rotate_x, mesh)
 
     implicit none
 
     integer, intent(in) :: nx, ny
-    real(kind=8), intent(in) :: input_mesh(nx, ny, 3), taper, chord(ny), sweep
-    real(kind=8), intent(in) :: xshear(ny), dihedral, zshear(ny), twist(ny), span
+    real(kind=8), intent(in) :: input_mesh(nx, ny, 3), taper, chord(ny)
+    real(kind=8), intent(in) :: sweep, xshear(ny), span, yshear(ny)
+    real(kind=8), intent(in) :: dihedral, zshear(ny), twist(ny)
     logical, intent(in) :: symmetry, rotate_x
 
     real(kind=8), intent(out) :: mesh(nx, ny, 3)
@@ -21,6 +22,7 @@ contains
     real(kind=8) :: row(ny, 3), out(3), taper_lins(ny), taper_lins_sym((ny+1)/2)
     real(kind=8) :: rad_theta_x(ny), one, dz_qc(ny-1), dy_qc(ny-1), s(ny), new_span
     real(kind=8) :: dz_qc_l((ny-1)/2), dz_qc_r((ny-1)/2), dy_qc_l((ny-1)/2), dy_qc_r((ny-1)/2)
+    real(kind=8) :: computed_span
     integer :: ny2, ix, iy, ind
 
     p180 = 3.14159265358979323846264338 / 180.
@@ -33,30 +35,42 @@ contains
     quarter_chord = 0.25 * te + 0.75 * le
 
     if (symmetry) then
-      call linspace(one, taper, ny, taper_lins)
+      computed_span = quarter_chord(ny, 2) - quarter_chord(1, 2)
+
+      do iy=1,ny
+        taper_lins(iy) = (quarter_chord(iy, 2) - quarter_chord(1, 2)) / computed_span * (1 - taper) + taper
+      end do
 
       do iy=1,ny
         do ix=1,nx
           do ind=1,3
-            mesh(ix, iy, ind) = (mesh(ix, iy, ind) - quarter_chord(iy, ind)) * taper_lins(ny-iy+1) + &
+            mesh(ix, iy, ind) = (mesh(ix, iy, ind) - quarter_chord(iy, ind)) * taper_lins(iy) + &
               quarter_chord(iy, ind)
           end do
         end do
       end do
 
     else
-      ny2 = (ny + 1) / 2
-      call linspace(one, taper, ny2, taper_lins_sym)
 
-      dx(ny2:) = taper_lins_sym
+      computed_span = quarter_chord(ny, 2) - quarter_chord(1, 2)
+      ny2 = (ny - 1) / 2
+
       do iy=1,ny2
-        dx(iy) = taper_lins_sym(ny2-iy+1)
+        dx(iy) = 1 + quarter_chord(iy, 2) / (computed_span / 2) * taper
+      end do
+
+      do iy=1,ny2
+        dx(iy) = (quarter_chord(iy, 2) - quarter_chord(1, 2)) / (computed_span / 2) * (1 - taper) + taper
+      end do
+
+      do iy=ny,ny2+1,-1
+        dx(iy) = -(quarter_chord(iy, 2) - quarter_chord(ny, 2)) / (computed_span / 2) * (1 - taper) + taper
       end do
 
       do iy=1,ny
         do ix=1,nx
           do ind=1,3
-            mesh(ix, iy, ind) = (mesh(ix, iy, ind) - quarter_chord(iy, ind)) * dx(ny-iy+1) + &
+            mesh(ix, iy, ind) = (mesh(ix, iy, ind) - quarter_chord(iy, ind)) * dx(iy) + &
               quarter_chord(iy, ind)
           end do
         end do
@@ -71,21 +85,6 @@ contains
     do iy=1,ny
       mesh(:, iy, 1) = (mesh(:, iy, 1) - quarter_chord(iy, 1)) * chord(iy) + &
         quarter_chord(iy, 1)
-    end do
-
-    ! Span
-    le = mesh(1, :, :)
-    te = mesh(nx, :, :)
-    quarter_chord = 0.25 * te + 0.75 * le
-    new_span = span
-
-    if (symmetry) then
-      new_span = span / 2.
-    end if
-
-    s = quarter_chord(:, 2) / (quarter_chord(ny, 2) - quarter_chord(1, 2))
-    do ix=1,nx
-      mesh(ix, :, 2) = s * new_span
     end do
 
     ! Sweep
@@ -110,6 +109,26 @@ contains
     ! x shear
     do ix=1,nx
       mesh(ix, :, 1) = mesh(ix, :, 1) + xshear
+    end do
+
+    ! Span
+    le = mesh(1, :, :)
+    te = mesh(nx, :, :)
+    quarter_chord = 0.25 * te + 0.75 * le
+    new_span = span
+
+    if (symmetry) then
+      new_span = span / 2.
+    end if
+
+    s = quarter_chord(:, 2) / (quarter_chord(ny, 2) - quarter_chord(1, 2))
+    do ix=1,nx
+      mesh(ix, :, 2) = s * new_span
+    end do
+
+    ! y shear
+    do ix=1,nx
+      mesh(ix, :, 2) = mesh(ix, :, 2) + yshear
     end do
 
     ! Dihedral
@@ -518,6 +537,8 @@ contains
     pi = 4.d0*atan(1.d0)
 
     ! Trailing vortices in AVL follow the x-axis; no cos or sin
+    ! u(1) = 1.
+    ! u(3) = 0.
     u(1) = cos(alpha * pi / 180.)
     u(2) = 0.
     u(3) = sin(alpha * pi / 180.)
@@ -727,6 +748,51 @@ contains
 
   end subroutine
 
+  subroutine momentcalc_main(bpts, cg, chords, widths, S_ref, sec_forces, symmetry, nx, ny, M)
+
+    implicit none
+
+    real(kind=8), intent(in) :: bpts(nx-1, ny, 3)
+    integer, intent(in) :: nx, ny
+    real(kind=8), intent(in) :: cg(3), S_ref
+    real(kind=8), intent(in) :: chords(ny), widths(ny-1)
+    logical, intent(in) :: symmetry
+    real(kind=8), intent(in) :: sec_forces(nx-1, ny-1, 3)
+
+    real(kind=8), intent(out) :: M(3)
+
+    real(kind=8) :: panel_chords(ny-1), MAC, moment(ny-1, 3), tmp(3)
+    integer :: i, j, k
+
+    panel_chords = (chords(2:) + chords(:ny-1)) / 2.
+    MAC = 1. / S_ref * sum(panel_chords**2 * widths)
+
+    if (symmetry) then
+      MAC = MAC * 2
+    end if
+
+    moment(:, :) = 0.
+    do j=1,ny-1
+      do i=1,nx-1
+        call cross((bpts(i, j+1, :) + bpts(i, j, :)) / 2. - cg, sec_forces(i, j, :), tmp)
+        moment(j, :) = moment(j, :) + tmp
+      end do
+    end do
+    moment = moment / MAC
+
+    if (symmetry) then
+      moment(:, 1) = 0.
+      moment(:, 2) = moment(:, 2) * 2
+      moment(:, 3) = 0.
+    end if
+
+    M = 0.
+    do j=1,ny-1
+      M = M + moment(j, :)
+    end do
+
+  end subroutine
+
   subroutine compute_normals_main(nx, ny, mesh, normals, S_ref)
 
     implicit none
@@ -750,6 +816,7 @@ contains
     S_ref = 0.5 * sum(norms)
 
   end subroutine
+
 
 ! REAL FUNCTIONS
 
