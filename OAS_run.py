@@ -1,7 +1,7 @@
 # python function which runs aerostruct analysis based on dict input
 
-from __future__ import print_function, division
-from six import iteritems   # backwards compatability for python 2
+from __future__ import print_function, division  # Python 2/3 compatability
+from six import iteritems   
 
 from os import sys, path
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
@@ -24,9 +24,11 @@ def OAS_setup(user_prob_dict={}, user_surf_list=[]):
         'with_viscous' : True,
         'cg' : np.array([30., 0., 5.]),
         # default design variables, applied to all surfaces
-        'des_vars' : ['alpha']  
+        'des_vars' : ['alpha','wing.thickness_cp','wing.twist_cp','tail.thickness_cp','tail.twist_cp']
+	]  
     }
-    surf_list = [{
+    surf_list = [
+      {
         'name' : 'wing',
         'num_y' : 7,
         'num_x' : 2,
@@ -35,8 +37,18 @@ def OAS_setup(user_prob_dict={}, user_surf_list=[]):
         'symmetry' : True,
         'num_twist_cp' : 2,
         'num_thickness_cp': 2,
-        'des_vars' : ['thickness_cp','twist_cp']
-    }]   
+       },
+       {
+         'name' : 'tail',
+         'num_y' : 7,
+         'num_x' : 2,
+         'span' : 20.,
+         'root_chord' : 5.,
+         'wing_type' : 'rect',
+         'offset' : np.array([50., 0., 5.]),
+         'twist_cp' : np.array([-9.5])
+       }
+    ]   
     prob_dict.update(user_prob_dict)
 
     # remove 'des_vars' key and value from prob_dict
@@ -87,7 +99,9 @@ def OAS_run(user_des_vars={}, OASprob=None):
     
     print('run OAS')
     OASprob.run()
-    output = {'fuelburn': OASprob.prob['fuelburn']}
+    output = {
+	'fuelburn': OASprob.prob['fuelburn']
+    }
     return output
 
 if __name__ == "__main__":
