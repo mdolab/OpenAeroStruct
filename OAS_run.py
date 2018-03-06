@@ -16,6 +16,10 @@ import numpy as np
 import warnings
 warnings.filterwarnings("ignore")
 
+
+iterable_vars = ['chord_cp','thickness_cp','radius_cp','twist_cp',
+                'xshear_cp','yshear_cp','zshear_cp']
+
 def OAS_setup(user_prob_dict={}, user_surf_list=[]):
     # default prob_dict and surf_dict
     prob_dict = {
@@ -24,30 +28,47 @@ def OAS_setup(user_prob_dict={}, user_surf_list=[]):
         'with_viscous' : True,
         'cg' : np.array([30., 0., 5.]),
         # default design variables, applied to all surfaces
-        'des_vars' : ['alpha','wing.thickness_cp','wing.twist_cp','tail.thickness_cp','tail.twist_cp']
-	]  
+        'des_vars' : [
+            'alpha',
+            'wing.thickness_cp',
+            'wing.twist_cp',
+            'wing.sweep',
+            'wing.dihedral',
+            'wing.taper',
+            'tail.thickness_cp',
+            'tail.twist_cp',
+            'tail.sweep',
+            'tail.dihedral',
+            'tail.taper'
+        ],
+        'output_vars' : [
+            'fuelburn', 
+            'CD', 
+            'CL', 
+            'weight'
+        ]  
     }
     surf_list = [
-      {
-        'name' : 'wing',
-        'num_y' : 7,
-        'num_x' : 2,
-        'wing_type' : 'CRM',
-        'CD0' : 0.015,
-        'symmetry' : True,
-        'num_twist_cp' : 2,
-        'num_thickness_cp': 2,
-       },
-       {
-         'name' : 'tail',
-         'num_y' : 7,
-         'num_x' : 2,
-         'span' : 20.,
-         'root_chord' : 5.,
-         'wing_type' : 'rect',
-         'offset' : np.array([50., 0., 5.]),
-         'twist_cp' : np.array([-9.5])
-       }
+        {
+            'name' : 'wing',
+            'num_y' : 7,
+            'num_x' : 2,
+            'wing_type' : 'CRM',
+            'CD0' : 0.015,
+            'symmetry' : True,
+            'num_twist_cp' : 2,
+            'num_thickness_cp': 2,
+         },
+         {
+             'name' : 'tail',
+             'num_y' : 7,
+             'num_x' : 2,
+             'span' : 20.,
+             'root_chord' : 5.,
+             'wing_type' : 'rect',
+             'offset' : np.array([50., 0., 5.]),
+             'twist_cp' : np.array([-9.5])
+         }
     ]   
     prob_dict.update(user_prob_dict)
 
@@ -55,28 +76,44 @@ def OAS_setup(user_prob_dict={}, user_surf_list=[]):
     des_vars = prob_dict.pop('des_vars')
 
     if user_surf_list:
+       print('user surf')
        surf_list = user_surf_list
 
     # remove surface des_vars key/value from surface dicts
     for surf in surf_list:
-        print(surf)
+        #print(surf)
         if 'des_vars' in surf:
             surf_vars = surf.pop('des_vars', None)
             for var in surf_vars:
                 des_vars.append(surf['name']+'.'+var)
 
-    print('des_vars',des_vars)
+    # check that values in prob_dict and surf_list are the correct ones
+    
+    # when wrapping from Matlab, an array of a single value will always
+    # be converted to a float in Python and not an iterable, which
+    # causes problems.
+
+
+
+    for surf in surf_list:
+    	for key, val in iteritems(surf):
+            if (key in iterable_vars) and (not hasattr(val,'__iter__')):
+		surf[key] = np.array([val])  # make an ndarray from list
+
+    #print('des_vars',des_vars)
     # Create OASProblem object 
     OASprob = OASProblem(prob_dict)
 
-    # Add design variables
-    # problem-specific design vars...
-    prob_des_vars = ['alpha']
-    # surface-specific design vars...
-    surf_des_vars = ['thickness_cp','twist_cp']
+#    # Add design variables
+#    # problem-specific design vars...
+#    prob_des_vars = ['alpha']
+#    # surface-specific design vars...
+#    surf_des_vars = ['thickness_cp','twist_cp']
 
     # Add surfaces and surface design vars to OASProblem
     for surf in surf_list:
+        print(surf)
+	#if 'twist_cp'
         OASprob.add_surface(surf)
     
     for var in des_vars:
@@ -95,18 +132,32 @@ def OAS_run(user_des_vars={}, OASprob=None):
     # set design variables
     if user_des_vars:
         for var, value in iteritems(user_des_vars):
-            OASprob[var] = value
-    
+            print('$$$$$$      var=',var,'  value=',value)
+
+            if not hasattr(value,'flat'):
+		value = np.array([value])  # make an ndarray from list
+            OASprob.prob[var] = value
     print('run OAS')
     OASprob.run()
+    print('after run OAS') 
+    output_var_map = {
+        'fuelburn' : 'fuelburn',
+        'weight' : '<name>.structural_weight',
+        'CD' : '<name>_perf.CD',
+        'CL' : '<name>_perf.CL'
+#        'failure' : '<name>.failure',
+#        'thickness_intersects' : '<name>.thickness_intersects'
+    }
     output = {
-	'fuelburn': OASprob.prob['fuelburn']
+	      'fuelburn': OASprob.prob['fuelburn']
     }
     return output
 
 if __name__ == "__main__":
     print('init')
-    out = OAS_run()
+    OASobj = OAS_setup()
+    desvars = {'alpha':0.25}
+    out = OAS_run(desvars,OASobj)
     print('end')
     print(out)
 
