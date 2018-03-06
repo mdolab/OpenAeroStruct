@@ -112,7 +112,7 @@ def OAS_setup(user_prob_dict={}, user_surf_list=[]):
 
     # Add surfaces and surface design vars to OASProblem
     for surf in surf_list:
-        print(surf)
+        #print(surf)
 	#if 'twist_cp'
         OASprob.add_surface(surf)
     
@@ -124,15 +124,18 @@ def OAS_setup(user_prob_dict={}, user_surf_list=[]):
 
     return OASprob
 
-def OAS_run(user_des_vars={}, OASprob=None):
+def OAS_run(user_des_vars={}, OASprob=None, *args, **kwargs):
     if not OASprob:
         print('setup OAS')
         OASprob = OAS_setup()
 
+    # set print option
+    iprint = kwargs.get('iprint',0)  # set default to only print errors and convergence failures
+
     # set design variables
     if user_des_vars:
         for var, value in iteritems(user_des_vars):
-            print('$$$$$$      var=',var,'  value=',value)
+            #print('$$$$$$      var=',var,'  value=',value)
 
             if not hasattr(value,'flat'):
 		value = np.array([value])  # make an ndarray from list
@@ -140,25 +143,40 @@ def OAS_run(user_des_vars={}, OASprob=None):
     print('run OAS')
     OASprob.run()
     print('after run OAS') 
-    output_var_map = {
-        'fuelburn' : 'fuelburn',
-        'weight' : '<name>.structural_weight',
-        'CD' : '<name>_perf.CD',
-        'CL' : '<name>_perf.CL'
-#        'failure' : '<name>.failure',
-#        'thickness_intersects' : '<name>.thickness_intersects'
+    
+    output = {}
+    # get overall output variables and constraints, return None if not there
+    overall_vars = ['fuelburn','CD','CL','L_equals_W','CM','v','rho','cg','weighted_obj','total_weight']
+    for item in overall_vars:
+        output[item] = OASprob.prob[item] 
+#        print('item=',item)
+#        print('OASprob.prob[item]=',OASprob.prob[item])
+        
+    # get lifting surface specific variables and constraints, return None if not there
+    surface_var_map = {
+        'weight' : 'total_perf.<name>structural_weight',
+        'CD' : 'total_perf.<name>CD',
+        'CL' : 'total_perf.<name>CL'
+        #'failure' : '<name>.failure',
+        #'thickness_intersects' : '<name>.thickness_intersects'
     }
-    output = {
-	      'fuelburn': OASprob.prob['fuelburn']
-    }
+
+    for key, val in iteritems(surface_var_map):
+        for surf in OASprob.surfaces:
+            output.update({surf['name']+key:OASprob.prob[val.replace('<name>',surf['name'])]})
+    
+    # pretty print output
+#    for key, val in iteritems(output):
+#        print(key+' = ',val)
+    
     return output
 
 if __name__ == "__main__":
-    print('init')
+    print('--INIT--')
     OASobj = OAS_setup()
     desvars = {'alpha':0.25}
     out = OAS_run(desvars,OASobj)
-    print('end')
-    print(out)
+    print('--END--')
+    #print(out)
 
 

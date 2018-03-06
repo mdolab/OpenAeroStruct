@@ -57,6 +57,7 @@ wing.CD0 = 0.015;
 wing.symmetry = true;
 wing.num_twist_cp = int32(2);
 wing.num_thickness_cp = int32(2);
+wing.exact_failure_constraint = true;
 
 tail = struct;
 tail.name = 'tail';
@@ -67,35 +68,24 @@ tail.root_chord = 5.0;
 tail.wing_type = 'rect';
 tail.offset = [50, 0, 5];
 tail.twist_cp = [-9.5];
+tail.exact_failure_constraint = true;
 
 surf_list = {wing, tail};
-
-py_surf_list = py.list();
-for i = 1:length(surf_list)
-    py_surf_list.append(surf_list{i});  % append struct (dict) to python list
-end
 
 prob_struct = struct;
 prob_struct.type = 'aerostruct';
 prob_struct.optimize = false;
 prob_struct.with_viscous = true;
 prob_struct.cg = py.numpy.array([30., 0., 5.]);
-prob_struct.desvars = py.list
+prob_struct.desvars = py.list;
 
 
-OASobj = py.OAS_run.OAS_setup(prob_struct, py_surf_list); 
-
+OASobj = OAS_setup(prob_struct, surf_list);  % call matlab wrapper
 
 % design variables for analysis
 desvars ={'alpha',3.2,}; %'tail.twist_cp',[2.3],'wing.thickness_cp',[5,4]};
 
-
-py_desvars = py.dict;
-for i = 1:2:length(desvars)    % desvars must have even length
-    update(py_desvars, py.dict(pyargs( desvars{i}, desvars{i+1} ) ) );
-end
-
-output = py.OAS_run.OAS_run(py_desvars,OASobj);
+output = OAS_run(desvars,OASobj);  % call matlab wrapper
 
 disp(output)
 
