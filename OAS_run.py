@@ -1,7 +1,7 @@
 # python function which runs aerostruct analysis based on dict input
 
 from __future__ import print_function, division  # Python 2/3 compatability
-from six import iteritems   
+from six import iteritems
 
 from os import sys, path
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
@@ -42,11 +42,11 @@ def OAS_setup(user_prob_dict={}, user_surf_list=[]):
             'tail.taper'
         ],
         'output_vars' : [
-            'fuelburn', 
-            'CD', 
-            'CL', 
+            'fuelburn',
+            'CD',
+            'CL',
             'weight'
-        ]  
+        ]
     }
     surf_list = [
         {
@@ -69,7 +69,7 @@ def OAS_setup(user_prob_dict={}, user_surf_list=[]):
              'offset' : np.array([50., 0., 5.]),
              'twist_cp' : np.array([-9.5])
          }
-    ]   
+    ]
     prob_dict.update(user_prob_dict)
 
     # remove 'des_vars' key and value from prob_dict
@@ -88,7 +88,7 @@ def OAS_setup(user_prob_dict={}, user_surf_list=[]):
                 des_vars.append(surf['name']+'.'+var)
 
     # check that values in prob_dict and surf_list are the correct ones
-    
+
     # when wrapping from Matlab, an array of a single value will always
     # be converted to a float in Python and not an iterable, which
     # causes problems.
@@ -101,7 +101,7 @@ def OAS_setup(user_prob_dict={}, user_surf_list=[]):
 		surf[key] = np.array([val])  # make an ndarray from list
 
     #print('des_vars',des_vars)
-    # Create OASProblem object 
+    # Create OASProblem object
     OASprob = OASProblem(prob_dict)
 
 #    # Add design variables
@@ -115,7 +115,7 @@ def OAS_setup(user_prob_dict={}, user_surf_list=[]):
         #print(surf)
 	#if 'twist_cp'
         OASprob.add_surface(surf)
-    
+
     for var in des_vars:
         OASprob.add_desvar(var)
 
@@ -135,30 +135,21 @@ def OAS_run(user_des_vars={}, OASprob=None, *args, **kwargs):
     # set design variables
     if user_des_vars:
         for var, value in iteritems(user_des_vars):
-            #print('$$$$$$      var=',var,'  value=',value)
-
             if not hasattr(value,'flat'):
 		value = np.array([value])  # make an ndarray from list
             OASprob.prob[var] = value
     #print('run OAS')
-    
-    print('INPUT:')
-    print(OASprob.prob.driver.desvars_of_interest())
-    #for key, val in iteritems(OASprob.prob._desvars):
-    #    print(key+'=',val)
-    
-    
     OASprob.run()
-    #print('after run OAS') 
-    
+    #print('after run OAS')
+
     output = {}
     # get overall output variables and constraints, return None if not there
     overall_vars = ['fuelburn','CD','CL','L_equals_W','CM','v','rho','cg','weighted_obj','total_weight']
     for item in overall_vars:
-        output[item] = OASprob.prob[item] 
+        output[item] = OASprob.prob[item]
 #        print('item=',item)
 #        print('OASprob.prob[item]=',OASprob.prob[item])
-        
+
     # get lifting surface specific variables and constraints, return None if not there
     surface_var_map = {
         'weight' : 'total_perf.<name>structural_weight',
@@ -166,35 +157,48 @@ def OAS_run(user_des_vars={}, OASprob=None, *args, **kwargs):
         'CL' : 'total_perf.<name>CL',
         'failure' : '<name>perf.failure',
         'vonmises' : '<name>perf.vonmises',
-        'thickness_intersects' : '<name>perf.thickness_intersects'       
+        'thickness_intersects' : '<name>perf.thickness_intersects',
+        'radius' : '<name>.radius',
+        'A' : '<name>.A',
+        'Iy' : '<name>.Iy',
+        'Iz' : '<name>.Iz',
     }
 
     # lifting surface coupling variables that need trailing "_" removed from surface name
     coupling_var_map = {
         'loads' : 'coupled.<name>.loads',
-        'def_mesh' : 'coupled.<name>.def_mesh' 
+        'def_mesh' : 'coupled.<name>.def_mesh'
     }
-    
+
     for surf in OASprob.surfaces:
         for key, val in iteritems(surface_var_map):
             output.update({surf['name']+key:OASprob.prob[val.replace('<name>',surf['name'])]})
         for key, val in iteritems(coupling_var_map):
             output.update({surf['name']+key:OASprob.prob[val.replace('<name>',surf['name'][:-1])]})
-            
+
     # pretty print output
     #print('OUTPUT:')
     #print(OASprob.prob.driver.outputs_of_interest())
     #for key, val in iteritems(OASoutput):
     #    print(key+' = ',val)
-    
+
     return output
 
 if __name__ == "__main__":
     print('--INIT--')
     OASobj = OAS_setup()
     desvars = {'alpha':0.25}
+
+    # pretty print input
+    print('INPUT:')
+    for key, val in iteritems(desvars):
+        print('{:>14} = {}'.format(key,val))
+
     out = OAS_run(desvars,OASobj)
+
+    # pretty print output
+    print('OUTPUT:')
+    for key, val in iteritems(out):
+        print('{:>28} = {}'.format(key,val))
+
     print('--END--')
-    #print(out)
-
-
