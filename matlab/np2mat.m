@@ -1,5 +1,7 @@
 function mat = np2mat(npary)
 
+% with help from: https://www.mathworks.com/matlabcentral/answers/157347-convert-python-numpy-array-to-double
+
 % convert python (Numpy) ndarray to matlab
 try  
   % if scalar

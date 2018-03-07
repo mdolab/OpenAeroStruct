@@ -76,7 +76,7 @@ def OAS_setup(user_prob_dict={}, user_surf_list=[]):
     des_vars = prob_dict.pop('des_vars')
 
     if user_surf_list:
-       print('user surf')
+       #print('user surf')
        surf_list = user_surf_list
 
     # remove surface des_vars key/value from surface dicts
@@ -126,7 +126,7 @@ def OAS_setup(user_prob_dict={}, user_surf_list=[]):
 
 def OAS_run(user_des_vars={}, OASprob=None, *args, **kwargs):
     if not OASprob:
-        print('setup OAS')
+        #print('setup OAS')
         OASprob = OAS_setup()
 
     # set print option
@@ -140,9 +140,16 @@ def OAS_run(user_des_vars={}, OASprob=None, *args, **kwargs):
             if not hasattr(value,'flat'):
 		value = np.array([value])  # make an ndarray from list
             OASprob.prob[var] = value
-    print('run OAS')
+    #print('run OAS')
+    
+    print('INPUT:')
+    print(OASprob.prob.driver.desvars_of_interest())
+    #for key, val in iteritems(OASprob.prob._desvars):
+    #    print(key+'=',val)
+    
+    
     OASprob.run()
-    print('after run OAS') 
+    #print('after run OAS') 
     
     output = {}
     # get overall output variables and constraints, return None if not there
@@ -156,18 +163,29 @@ def OAS_run(user_des_vars={}, OASprob=None, *args, **kwargs):
     surface_var_map = {
         'weight' : 'total_perf.<name>structural_weight',
         'CD' : 'total_perf.<name>CD',
-        'CL' : 'total_perf.<name>CL'
-        #'failure' : '<name>.failure',
-        #'thickness_intersects' : '<name>.thickness_intersects'
+        'CL' : 'total_perf.<name>CL',
+        'failure' : '<name>perf.failure',
+        'vonmises' : '<name>perf.vonmises',
+        'thickness_intersects' : '<name>perf.thickness_intersects'       
     }
 
-    for key, val in iteritems(surface_var_map):
-        for surf in OASprob.surfaces:
-            output.update({surf['name']+key:OASprob.prob[val.replace('<name>',surf['name'])]})
+    # lifting surface coupling variables that need trailing "_" removed from surface name
+    coupling_var_map = {
+        'loads' : 'coupled.<name>.loads',
+        'def_mesh' : 'coupled.<name>.def_mesh' 
+    }
     
+    for surf in OASprob.surfaces:
+        for key, val in iteritems(surface_var_map):
+            output.update({surf['name']+key:OASprob.prob[val.replace('<name>',surf['name'])]})
+        for key, val in iteritems(coupling_var_map):
+            output.update({surf['name']+key:OASprob.prob[val.replace('<name>',surf['name'][:-1])]})
+            
     # pretty print output
-#    for key, val in iteritems(output):
-#        print(key+' = ',val)
+    #print('OUTPUT:')
+    #print(OASprob.prob.driver.outputs_of_interest())
+    #for key, val in iteritems(OASoutput):
+    #    print(key+' = ',val)
     
     return output
 
