@@ -121,11 +121,11 @@ class OASProblem(object):
         self.objective = {}
 
     def getvar(self, var):
-        ''' Set problem variable '''
+        ''' Get problem variable '''
         return self.prob[var]
 
     def setvar(self, var, val):
-        ''' Get problem variable '''
+        ''' Set problem variable '''
         self.prob[var] = val
 
     def get_default_prob_dict(self):
