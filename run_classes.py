@@ -120,6 +120,14 @@ class OASProblem(object):
         self.constraints = {}
         self.objective = {}
 
+    def getvar(self, var):
+        ''' Set problem variable '''
+        return self.prob[var]
+
+    def setvar(self, var, val):
+        ''' Get problem variable '''
+        self.prob[var] = val
+
     def get_default_prob_dict(self):
         """
         Obtain the default settings for the problem description. Note that
