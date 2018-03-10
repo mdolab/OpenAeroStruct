@@ -182,11 +182,13 @@ def OAS_run(user_des_vars={}, OASprob=None, *args, **kwargs):
     thick = []
     fail = []
     for surf in OASprob.surfaces:
-        thick.append(OASprob.prob[surf['name'][:-1]+'_perf.thickness_intersects']<0)
-        fail.append(OASprob.prob[surf['name'][:-1]+'_perf.failure']<0)
+        thick.append((OASprob.prob[surf['name'][:-1]+'_perf.thickness_intersects']<0).all())
+        fail.append((OASprob.prob[surf['name'][:-1]+'_perf.failure']<0).all())
+    print(thick)
+    print(fail)
     output.update({
-        'thickness_intersects' : all(thick[:]),
-        'failure' : all(fail[:])
+        'thickness_intersects' : all(thick),
+        'failure' : all(fail)
     }) 
 
     return output
@@ -198,7 +200,9 @@ if __name__ == "__main__":
     # Settings to match analysis on multiple surfaces in run_aerostruct.py
     prob_dict = _get_default_prob_dict()
     surf_list = _get_default_surf_list()
-
+    
+    prob_dict['optimize'] = False
+ 
     OASobj = OAS_setup(prob_dict, surf_list)
 
     desvars = {'alpha':0.25}
