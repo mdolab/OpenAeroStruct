@@ -179,6 +179,16 @@ def OAS_run(user_des_vars={}, OASprob=None, *args, **kwargs):
                 surf['name']+key : OASprob.prob[val.replace('<name>',surf['name'][:-1])]
             })
 
+    thick = []
+    fail = []
+    for surf in OASprob.surfaces:
+        thick.append(OASprob.prob[surf['name'][:-1]+'_perf.thickness_intersects']<0)
+        fail.append(OASprob.prob[surf['name'][:-1]+'_perf.failure']<0)
+    output.update({
+        'thickness_intersects' : all(thick[:]),
+        'failure' : all(fail[:])
+    }) 
+
     return output
 
 
