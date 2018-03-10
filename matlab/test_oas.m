@@ -83,6 +83,15 @@ desvars ={'alpha',3.2,}; %'tail.twist_cp',[2.3],'wing.thickness_cp',[5,4]};
 
 output = OAS_run(desvars,OASobj);  % call matlab wrapper
 
+% verify design point satisfies constraints
+tol = 0.1;
+if (abs(output.L_equals_W)< tol) && (output.wing_failure < 0) && (output.wing_thickness_intersects < 0) && (output.tail_failure < 0) && (output.tail_thickness_intersects < 0)
+  meets_constraints = true;
+else
+  meets_constraints = false;
+end
+
+
 disp(output)
 
 
