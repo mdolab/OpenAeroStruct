@@ -34,11 +34,11 @@
 % MUST RUN THIS BEFORE LOADING PYTHON !!!!
 py.sys.setdlopenflags(int32(10));  % Set RTLD_NOW and RTLD_DEEPBIND
 
-OAS_PATH = '/general/home/samfriedman/OpenAeroStruct';
+OAS_PATH = '/general/home/samfriedman/code/OpenAeroStruct';
 %OAS_PATH = 'C:\Users\samfriedman\repos\OpenAeroStruct';
 P = py.sys.path;
 if count(P,OAS_PATH) == 0
-    insert(P,int32(0),OAS_PATH);
+    insert(P,int32(0),'../');
 end
 
 py.importlib.import_module('OAS_run');
@@ -74,25 +74,23 @@ prob_struct.optimize = false;
 prob_struct.with_viscous = true;
 prob_struct.cg = py.numpy.array([30., 0., 5.]);
 prob_struct.desvars = py.list;
-
+prob_struct.print_level = int64(0);
 
 OASobj = OAS_setup(prob_struct, surf_list);  % call matlab wrapper
 
 % design variables for analysis
-desvars ={'alpha',3.2,}; %'tail.twist_cp',[2.3],'wing.thickness_cp',[5,4]};
+desvars ={'alpha'};
+alpha = linspace(-5,5,20)';   %'tail.twist_cp',[2.3],'wing.thickness_cp',[5,4]};
+fuelburn = zeros(length(alpha),1);
+meet_constraint = fuelburn;
+X = alpha;
+[fuelburn, meet_constraint] = OAS_vectorize(X, desvars, OASobj);
+disp([alpha fuelburn/1e5 meet_constraint]);
 
-output = OAS_run(desvars,OASobj);  % call matlab wrapper
-
-% verify design point satisfies constraints
-tol = 0.1;
-if (abs(output.L_equals_W)< tol) && (output.wing_failure < 0) && (output.wing_thickness_intersects < 0) && (output.tail_failure < 0) && (output.tail_thickness_intersects < 0)
-  meets_constraints = true;
-else
-  meets_constraints = false;
-end
+%output = OAS_run(desvars,OASobj);  % call matlab wrapper
 
 
-disp(output)
+%disp(output)
 
 
 

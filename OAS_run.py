@@ -168,9 +168,9 @@ def OAS_run(user_des_vars={}, OASprob=None, *args, **kwargs):
         'radius' : '<name>.radius',
         'A' : '<name>.A',
         'Iy' : '<name>.Iy',
-        'Iz' : '<name>.Iz',
-        'loads' : 'coupled.<name>.loads',
-        'def_mesh' : 'coupled.<name>.def_mesh'
+        'Iz' : '<name>.Iz'
+        #'loads' : 'coupled.<name>.loads',
+        #'def_mesh' : 'coupled.<name>.def_mesh'
     }
 
     for surf in OASprob.surfaces:
@@ -184,8 +184,6 @@ def OAS_run(user_des_vars={}, OASprob=None, *args, **kwargs):
     for surf in OASprob.surfaces:
         thick.append((OASprob.prob[surf['name'][:-1]+'_perf.thickness_intersects']<0).all())
         fail.append((OASprob.prob[surf['name'][:-1]+'_perf.failure']<0).all())
-    print(thick)
-    print(fail)
     output.update({
         'thickness_intersects' : all(thick),
         'failure' : all(fail)
