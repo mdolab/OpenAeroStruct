@@ -18,6 +18,7 @@ from __future__ import division, print_function
 import sys
 from time import time
 import numpy as np
+from collections import OrderedDict
 
 # =============================================================================
 # OpenMDAO modules
@@ -119,6 +120,14 @@ class OASProblem(object):
         self.desvars = {}
         self.constraints = {}
         self.objective = {}
+
+    def getvar(self, var):
+        ''' Get problem variable '''
+        return self.prob[var]
+
+    def setvar(self, var, val):
+        ''' Set problem variable '''
+        self.prob[var] = val
 
     def get_default_prob_dict(self):
         """
@@ -569,11 +578,26 @@ class OASProblem(object):
         """
         self.objective[str(*args)] = dict(**kwargs)
 
-    def run(self):
+    def run(self, **kwargs):
         """
         Method to actually run analysis or optimization. Also saves history in
         a .db file and creates an N2 diagram to view the problem hierarchy.
+
+        When calling run() from Matlab, set matlab=True to configure output
+        dictionary for Matlab struct conversion
         """
+
+        # check if we want Matlab struct style output dictionary, remove from kwargs
+        matlab_config = kwargs.pop('matlab',False)
+
+        # change design variables if user supplies them from remaining keyword
+        # entries or dictionary
+        for var, value in iteritems(kwargs):
+            # ensure that variables are iterable ndarrays. They need to have the
+            # 'flat' or '__iter__' attribute
+            if (not hasattr(value,'flat')) or (not hasattr(value,'__iter__')):
+                value = np.array([value])
+            self.prob[var] = value
 
         # Have more verbose output about optimization convergence
         if self.prob_dict['print_level']:
@@ -624,6 +648,61 @@ class OASProblem(object):
         # Uncomment this to check the partial derivatives of each component
         # self.prob.check_partial_derivatives(compact_print=True)
 
+        # Return dictionary of output values for easy access
+        output = OrderedDict()
+
+        # Note: could also check in self.root._unknowns_dict and self.root._params_dict
+        # in OpenMDAO Group() object
+
+        # Get overall output variables and constraints, return None if not there
+        overall_vars = ['fuelburn','CD','CL','L_equals_W','CM','v','rho','cg',
+                        'weighted_obj','total_weight']
+        for item in overall_vars:
+            try:
+                output[item] = self.prob[item]
+            except:
+                output[item] = None
+
+        # get lifting surface specific variables and constraints, return None if not there
+        surface_var_map = {
+            'weight' : 'total_perf.<name>structural_weight',
+            'CD' : 'total_perf.<name>CD',
+            'CL' : 'total_perf.<name>CL',
+            'failure' : '<name>perf.failure',
+            'vonmises' : '<name>perf.vonmises',
+            'thickness_intersects' : '<name>perf.thickness_intersects'
+        }
+
+        # lifting surface coupling variables that need trailing "_" removed from surface name
+        coupling_var_map = {
+            'loads' : 'coupled.<name>.loads',
+            'def_mesh' : 'coupled.<name>.def_mesh'
+        }
+
+        for surf in self.surfaces:
+            for key, val in iteritems(surface_var_map):
+                try:
+                    var_value = self.prob[val.replace('<name>',surf['name'])]
+                except:
+                    var_value = None
+                output.update({surf['name']+key : var_value})
+            for key, val in iteritems(coupling_var_map):
+                try:
+                    var_value = self.prob[val.replace('<name>',surf['name'][:-1])]
+                except:
+                    var_value = None
+                output.update({surf['name']+key : var_value})
+
+        # Change output dictionary keys to repalce '.' with '_' so that they
+        # will work in Matlab struct object
+        if matlab_config:
+            output_keys = list(output.keys())
+            for key in output_keys:
+                newkey = key.replace('.','_')
+                val = output.pop(key)
+                output[newkey] = val
+
+        return output
 
     def setup_struct(self):
         """
