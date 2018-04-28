@@ -46,7 +46,7 @@ install:
     fi
   fi
 - pip install coveralls
-- pip install openmdao
+- pip install openmdao==1.7.3
 
 script:
 - if [ "$FORTRAN" ]; then
