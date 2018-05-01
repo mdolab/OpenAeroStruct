@@ -121,6 +121,10 @@ class OASProblem(object):
         self.constraints = {}
         self.objective = {}
 
+        # For Bspline input validation
+        self.bsp_vars = ['chord_cp','thickness_cp','radius_cp','twist_cp',
+                        'xshear_cp','yshear_cp','zshear_cp']
+
     def getvar(self, var):
         ''' Get problem variable '''
         return self.prob[var]
@@ -285,6 +289,20 @@ class OASProblem(object):
                     }
         return defaults
 
+    def validate_bsp_var(self, var, val):
+        """
+        Converts input value to Numpy array or returns None if val==None
+        """
+        if isinstance(val, np.ndarray):
+            return val
+        elif val is None:
+            return None
+        elif isinstance(val, list) or isinstance(val, tuple):
+            return np.array(val)
+        else:
+            return np.array([val])
+        # TO DO: Check if length of bsp_var matches existing data, otherwise
+        # return an error
 
     def add_surface(self, input_dict={}):
         """
@@ -302,6 +320,11 @@ class OASProblem(object):
         # Get defaults and update surface with the user-provided input
         surf_dict = self.get_default_surf_dict()
         surf_dict.update(input_dict)
+
+        # Convert Bspline arrays to Numpy arrays
+        for var, val in iteritems(surf_dict):
+            if var in self.bsp_vars:
+                surf_dict[var] = self.validate_bsp_var(var,val)
 
         # Check to see if the user provides the mesh points. If they do,
         # get the chordwise and spanwise number of points
@@ -583,21 +606,23 @@ class OASProblem(object):
         Method to actually run analysis or optimization. Also saves history in
         a .db file and creates an N2 diagram to view the problem hierarchy.
 
+        Can use keyword arguments or dictionary to set design variables at runtime.
+
         When calling run() from Matlab, set matlab=True to configure output
         dictionary for Matlab struct conversion
         """
 
-        # check if we want Matlab struct style output dictionary, remove from kwargs
+        # Check if we want Matlab struct style output dictionary, remove from kwargs
         matlab_config = kwargs.pop('matlab',False)
 
-        # change design variables if user supplies them from remaining keyword
+        # Change design variables if user supplies them from remaining keyword
         # entries or dictionary
-        for var, value in iteritems(kwargs):
-            # ensure that variables are iterable ndarrays. They need to have the
-            # 'flat' or '__iter__' attribute
-            if (not hasattr(value,'flat')) or (not hasattr(value,'__iter__')):
-                value = np.array([value])
-            self.prob[var] = value
+        for var, val in iteritems(kwargs):
+            # Convert Bspline arrays to Numpy arrays
+            if var.split('.')[1] in self.bsp_vars:
+                val = self.validate_bsp_var(var, val)
+            # Set value of design variable
+            self.prob[var] = val
 
         # Have more verbose output about optimization convergence
         if self.prob_dict['print_level']:
