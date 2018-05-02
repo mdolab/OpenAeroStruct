@@ -19,6 +19,7 @@ import sys
 from time import time
 import numpy as np
 from collections import OrderedDict
+import array
 
 # =============================================================================
 # OpenMDAO modules
@@ -102,6 +103,8 @@ class OASProblem(object):
         # Update prob_dict with user-provided values after getting defaults
         self.prob_dict = self.get_default_prob_dict()
         self.prob_dict.update(input_dict)
+
+        # TO DO: add validation step here for array-based inputs, such as 'cg'
 
         # Set the airspeed velocity based on the supplied Mach number
         # and speed of sound
@@ -294,13 +297,13 @@ class OASProblem(object):
         Converts input value to Numpy array or returns None if val==None
         """
         if isinstance(val, np.ndarray):
-            return val
+            return val.astype(data_type)
         elif val is None:
             return None
-        elif isinstance(val, list) or isinstance(val, tuple):
-            return np.array(val)
+        elif isinstance(val, list) or isinstance(val, tuple) or isinstance(val, array.array):
+            return np.array(val, dtype=data_type)
         else:
-            return np.array([val])
+            return np.array([val], dtype=data_type)
         # TO DO: Check if length of bsp_var matches existing data, otherwise
         # return an error
 
