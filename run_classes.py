@@ -104,7 +104,8 @@ class OASProblem(object):
         self.prob_dict = self.get_default_prob_dict()
         self.prob_dict.update(input_dict)
 
-        # TO DO: add validation step here for array-based inputs, such as 'cg'
+        # Validate prob_dict variables
+        self.prob_dict = self.validate_input_vars(self.prob_dict)
 
         # Set the airspeed velocity based on the supplied Mach number
         # and speed of sound
@@ -123,10 +124,6 @@ class OASProblem(object):
         self.desvars = {}
         self.constraints = {}
         self.objective = {}
-
-        # For Bspline input validation
-        self.bsp_vars = ['chord_cp','thickness_cp','radius_cp','twist_cp',
-                        'xshear_cp','yshear_cp','zshear_cp']
 
     def getvar(self, var):
         ''' Get problem variable '''
@@ -292,20 +289,38 @@ class OASProblem(object):
                     }
         return defaults
 
-    def validate_bsp_var(self, var, val):
+    def validate_input_vars(self, input_dict):
         """
-        Converts input value to Numpy array or returns None if val==None
+        Converts input values to appropriate variables type. Helpful when calling functions from Matlab.
         """
-        if isinstance(val, np.ndarray):
-            return val.astype(data_type)
-        elif val is None:
-            return None
-        elif isinstance(val, list) or isinstance(val, tuple) or isinstance(val, array.array):
-            return np.array(val, dtype=data_type)
-        else:
-            return np.array([val], dtype=data_type)
-        # TO DO: Check if length of bsp_var matches existing data, otherwise
-        # return an error
+        bsp_vars = ['chord_cp','thickness_cp','radius_cp','twist_cp','xshear_cp','yshear_cp','zshear_cp']
+        ary_vars = bsp_vars + ['cg']
+        int_vars = ['num_x', 'num_y', 'print_level']
+
+        for key, val in iteritems(input_dict):
+            
+            # Get var from key if prefixed with surface name
+            var = key.split('.')[-1]
+            
+            # If variable requires an array, convert it to a Numpy ndarray
+            if var in ary_vars:
+                if isinstance(val, np.ndarray):
+                    input_dict[key] = val.astype(data_type)
+                elif val is None:
+                    input_dict[key] = None
+                elif isinstance(val, list) or isinstance(val, tuple) or isinstance(val, array.array):
+                    input_dict[key] = np.array(val, dtype=data_type)
+                else:
+                    input_dict[key] = np.array([val], dtype=data_type)
+                # TO DO: Check if length of bsp_var matches existing data, otherwise
+                # return an error
+
+            # If variable requires an integer, convert it to an integer type
+            elif var in int_vars:
+                if not isinstance(val, int) and (val is not None):
+                    input_dict[key] = int(val)
+
+        return input_dict
 
     def add_surface(self, input_dict={}):
         """
@@ -324,10 +339,8 @@ class OASProblem(object):
         surf_dict = self.get_default_surf_dict()
         surf_dict.update(input_dict)
 
-        # Convert Bspline arrays to Numpy arrays
-        for var, val in iteritems(surf_dict):
-            if var in self.bsp_vars:
-                surf_dict[var] = self.validate_bsp_var(var,val)
+        # Convert variables to correct types
+        surf_dict = self.validate_input_vars(surf_dict)
 
         # Check to see if the user provides the mesh points. If they do,
         # get the chordwise and spanwise number of points
@@ -619,12 +632,9 @@ class OASProblem(object):
         matlab_config = kwargs.pop('matlab',False)
 
         # Change design variables if user supplies them from remaining keyword
-        # entries or dictionary
+        # entries or dictionary, validate input
+        kwargs = self.validate_input_vars(kwargs)
         for var, val in iteritems(kwargs):
-            # Convert Bspline arrays to Numpy arrays
-            if var.split('.')[1] in self.bsp_vars:
-                val = self.validate_bsp_var(var, val)
-            # Set value of design variable
             self.prob[var] = val
 
         # Have more verbose output about optimization convergence
