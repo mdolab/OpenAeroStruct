@@ -295,7 +295,7 @@ class OASProblem(object):
         """
         bsp_vars = ['chord_cp','thickness_cp','radius_cp','twist_cp','xshear_cp','yshear_cp','zshear_cp']
         ary_vars = bsp_vars + ['cg']
-        int_vars = ['num_x', 'num_y', 'print_level']
+        int_vars = ['num_x', 'num_y', 'print_level'] + ['num_'+var for var in bsp_vars]
 
         for key, val in iteritems(input_dict):
             
