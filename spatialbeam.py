@@ -727,8 +727,8 @@ class SpatialBeamVonMisesTube(Component):
                 sxx1 = E * (u0x - u1x) / L + E * radius[ielem] / L * tmp
                 sxt = G * radius[ielem] * (r1x - r0x) / L
 
-                vonmises[ielem, 0] = np.sqrt(sxx0**2 + sxt**2)
-                vonmises[ielem, 1] = np.sqrt(sxx1**2 + sxt**2)
+                vonmises[ielem, 0] = np.sqrt(sxx0**2 + 3 * sxt**2)
+                vonmises[ielem, 1] = np.sqrt(sxx1**2 + 3 * sxt**2)
 
     def apply_linear(self, params, unknowns, dparams, dunknowns, dresids, mode):
 

@@ -577,20 +577,20 @@ contains
       sxtd = (g*(r2d(ielem)*r1r0(1)+r2(ielem)*r1r0d(1))*l-g*r2(ielem)*&
 &       r1r0(1)*ld)/l**2
       sxt = g*r2(ielem)*r1r0(1)/l
-      if (sxx0**2 + sxt**2 .gt. 0.0_8) then
-        vonmisesd(ielem, 1) = .5*(sxx0**2+sxt**2)**(-0.5)*(2*sxx0*sxx0d+&
-&         2*sxt*sxtd)
+      if (sxx0**2 + 3*sxt**2 .gt. 0.0_8) then
+        vonmisesd(ielem, 1) = .5*(sxx0**2+3*sxt**2)**(-0.5)*(2*sxx0*&
+&         sxx0d+3*2*sxt*sxtd)
       else
         vonmisesd(ielem, 1) = 0.0_8
       end if
-      vonmises(ielem, 1) = (sxx0**2+sxt**2)**.5
-      if (sxx1**2 + sxt**2 .gt. 0.0_8) then
-        vonmisesd(ielem, 2) = .5*(sxx1**2+sxt**2)**(-0.5)*(2*sxx1*sxx1d+&
-&         2*sxt*sxtd)
+      vonmises(ielem, 1) = (sxx0**2+3*sxt**2)**.5
+      if (sxx1**2 + 3*sxt**2 .gt. 0.0_8) then
+        vonmisesd(ielem, 2) = .5*(sxx1**2+3*sxt**2)**(-0.5)*(2*sxx1*&
+&         sxx1d+3*2*sxt*sxtd)
       else
         vonmisesd(ielem, 2) = 0.0_8
       end if
-      vonmises(ielem, 2) = (sxx1**2+sxt**2)**.5
+      vonmises(ielem, 2) = (sxx1**2+3*sxt**2)**.5
     end do
   end subroutine calc_vonmises_main_d
   subroutine calc_vonmises_main(nodes, r, disp, e, g, x_gl, n, vonmises)
@@ -639,8 +639,8 @@ contains
       sxx0 = e*(u1(1)-u0(1))/l + e*r2(ielem)/l*tmp
       sxx1 = e*(u0(1)-u1(1))/l + e*r2(ielem)/l*tmp
       sxt = g*r2(ielem)*r1r0(1)/l
-      vonmises(ielem, 1) = (sxx0**2+sxt**2)**.5
-      vonmises(ielem, 2) = (sxx1**2+sxt**2)**.5
+      vonmises(ielem, 1) = (sxx0**2+3*sxt**2)**.5
+      vonmises(ielem, 2) = (sxx1**2+3*sxt**2)**.5
     end do
   end subroutine calc_vonmises_main
 !  differentiation of transferdisplacements_main in forward (tangent) mode (with options i4 dr8 r8):

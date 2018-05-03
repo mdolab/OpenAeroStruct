@@ -13,13 +13,15 @@ Please see the [SMO journal paper](https://link.springer.com/article/10.1007%2Fs
 
 ## Installation
 
-To use OpenAeroStruct, you must first install OpenMDAO 1.7.3 by following the instructions here: https://github.com/openmdao/openmdao. If you are unfamiliar with OpenMDAO and wish to modify the internals of OpenAeroStruct, you should examine the OpenMDAO documentation at http://openmdao.readthedocs.io/en/1.7.3/. The tutorials provided with OpenMDAO, especially the Sellar Problem, are helpful to understand the basics of using OpenMDAO to solve an optimization problem. Note that OpenMDAO 1.7.3 is the most recent version that has been tested and confirmed working with OpenAeroStruct.
+To use OpenAeroStruct, you must first install OpenMDAO 1.7.3 by following the instructions here: https://github.com/OpenMDAO/openmdao1. If you are unfamiliar with OpenMDAO and wish to modify the internals of OpenAeroStruct, you should examine the OpenMDAO documentation at http://openmdao.readthedocs.io/en/1.7.3/. The tutorials provided with OpenMDAO, especially the Sellar Problem, are helpful to understand the basics of using OpenMDAO to solve an optimization problem. Note that OpenMDAO 1.7.3 is the most recent version that has been tested and confirmed working with OpenAeroStruct.
 
 Next, clone this repository:
 
     git clone https://github.com/mdolab/OpenAeroStruct.git
 
-Lastly, from within the OpenAeroStruct folder, make the Fortran files:
+If you are using MacOS, move the `config-macOS.mk` file to the `config/` folder and rename it to `config.mk` to replace the existing `config.mk` file. The default `config.mk` file works for Ubuntu users. Unfortunately, there is no documented Windows support for the Fortran code.
+
+If you're on Mac or Ubuntu, run this command from within the OpenAeroStruct folder to make the Fortran files:
 
     make
 

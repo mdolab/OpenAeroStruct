@@ -13,22 +13,23 @@ The analysis and optimization results can be visualized using included tools, pr
 Installation
 -----------------
 
-To use OpenAeroStruct, you must first install OpenMDAO 1.7.3 by following the instructions here: https://github.com/openmdao/openmdao. If you are unfamiliar with OpenMDAO and wish to modify the internals of OpenAeroStruct, you should examine the OpenMDAO documentation at http://openmdao.readthedocs.io/en/1.7.3/. The tutorials provided with OpenMDAO, especially the Sellar Problem, are helpful to understand the basics of using OpenMDAO to solve an optimization problem. Note that OpenMDAO 1.7.3 is the most recent version that has been tested and confirmed working with OpenAeroStruct.
+To use OpenAeroStruct, you must first install OpenMDAO 1.7.3 by following the instructions here: https://github.com/openmdao/openmdao1. If you are unfamiliar with OpenMDAO and wish to modify the internals of OpenAeroStruct, you should examine the OpenMDAO documentation at http://openmdao.readthedocs.io/en/1.7.3/. The tutorials provided with OpenMDAO, especially the Sellar Problem, are helpful to understand the basics of using OpenMDAO to solve an optimization problem. Note that OpenMDAO 1.7.3 is the most recent version that has been tested and confirmed working with OpenAeroStruct.
 
 Next, clone this repository:
 
 .. code-block:: bash
 
     git clone https://github.com/mdolab/OpenAeroStruct.git
+    
+If you are using MacOS, move the `config-macOS.mk` file to the `config/` folder and rename it to `config.mk` to replace the existing `config.mk` file. The default `config.mk` file works for Ubuntu users. Unfortunately, there is no documented Windows support for the Fortran code.
 
-Lastly, from within the OpenAeroStruct folder, compile the Fortran files:
+If you're on Mac or Ubuntu, run this command from within the OpenAeroStruct folder to make the Fortran files:
 
 .. code-block:: bash
 
     make
 
 Note that the code will run without compiling the Fortran library, but it will run significantly faster when using Fortran.
-The Fortran code has been tested extensively on Linux, partially on MacOS, and not at all on Windows.
 
 We include a script that runs a variety of aerodynamic, structural, and aerostructural tests. To check your installation, run:
 

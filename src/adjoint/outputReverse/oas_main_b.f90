@@ -778,12 +778,12 @@ contains
       sxt = g*r2(ielem)*r1r0(1)/l
       tmp = (r1r0(2)**2+r1r0(3)**2)**.5
       sxx1 = e*(u0(1)-u1(1))/l + e*r2(ielem)/l*tmp
-      tempb = .5*(sxx1**2+sxt**2)**(-0.5)*vonmisesb(ielem, 2)
+      tempb = .5*(sxx1**2+3*sxt**2)**(-0.5)*vonmisesb(ielem, 2)
       sxx1b = 2*sxx1*tempb
       vonmisesb(ielem, 2) = 0.0_8
       sxx0 = e*(u1(1)-u0(1))/l + e*r2(ielem)/l*tmp
-      tempb0 = .5*(sxx0**2+sxt**2)**(-0.5)*vonmisesb(ielem, 1)
-      sxtb = 2*sxt*tempb0 + 2*sxt*tempb
+      tempb0 = .5*(sxx0**2+3*sxt**2)**(-0.5)*vonmisesb(ielem, 1)
+      sxtb = 3*2*sxt*tempb0 + 3*2*sxt*tempb
       sxx0b = 2*sxx0*tempb0
       vonmisesb(ielem, 1) = 0.0_8
       r1r0b = 0.0_8
@@ -912,8 +912,8 @@ contains
       sxx0 = e*(u1(1)-u0(1))/l + e*r2(ielem)/l*tmp
       sxx1 = e*(u0(1)-u1(1))/l + e*r2(ielem)/l*tmp
       sxt = g*r2(ielem)*r1r0(1)/l
-      vonmises(ielem, 1) = (sxx0**2+sxt**2)**.5
-      vonmises(ielem, 2) = (sxx1**2+sxt**2)**.5
+      vonmises(ielem, 1) = (sxx0**2+3*sxt**2)**.5
+      vonmises(ielem, 2) = (sxx1**2+3*sxt**2)**.5
     end do
   end subroutine calc_vonmises_main
 !  differentiation of transferdisplacements_main in reverse (adjoint) mode (with options i4 dr8 r8):

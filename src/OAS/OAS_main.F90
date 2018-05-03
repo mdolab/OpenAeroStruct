@@ -281,8 +281,8 @@ contains
       sxx1 = E * (u0(1) - u1(1)) / L + E * r2(ielem) / L * tmp
       sxt = G * r2(ielem) * (r1r0(1)) / L
 
-      vonmises(ielem, 1) = (sxx0**2 + sxt**2)**.5
-      vonmises(ielem, 2) = (sxx1**2 + sxt**2)**.5
+      vonmises(ielem, 1) = (sxx0**2 + 3 * sxt**2)**.5
+      vonmises(ielem, 2) = (sxx1**2 + 3 * sxt**2)**.5
 
     end do
 

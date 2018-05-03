@@ -1,11 +1,8 @@
 """
 
 Provides interactive visualization of optimization results created by
-pyOptSparse and OpenMDAO. Figures produced here can be saved as images
-or pickled for future customization.
-
-Usage is `python OptView.py filename' where filename is often `snopt_hist.hst`
-for pyOptSparse or `aero.db` for OpenMDAO, as examples.
+pyOptSparse. Figures produced here can be saved as images or pickled
+for future customization.
 
 John Jasa 2015-2017
 
@@ -14,7 +11,7 @@ John Jasa 2015-2017
 # ======================================================================
 # Standard Python modules
 # ======================================================================
-from __future__ import division, print_function
+from __future__ import print_function
 import os
 import argparse
 import shelve
@@ -42,10 +39,17 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg,\
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import host_subplot
 import mpl_toolkits.axisartist as AA
-warnings.filterwarnings("ignore",category=matplotlib.cbook.mplDeprecation)
-warnings.filterwarnings("ignore",category=UserWarning)
+try:
+    warnings.filterwarnings("ignore",category=matplotlib.cbook.mplDeprecation)
+    warnings.filterwarnings("ignore",category=UserWarning)
+except:
+    pass
 import numpy as np
-from sqlitedict import SqliteDict
+try:
+    from sqlitedict import SqliteDict
+except:
+    from pyoptsparse import SqliteDict
+import traceback
 
 class Display(object):
 
@@ -54,7 +58,7 @@ class Display(object):
     This includes a canvas for MPL plots and a bottom area with widgets.
     """
 
-    def __init__(self, histList, outputDir):
+    def __init__(self, histList, outputDir, figsize):
 
         # Initialize the Tkinter object, which will contain all graphical
         # elements.
@@ -71,12 +75,7 @@ class Display(object):
         except: # bare except because error is not in standard Python
             pass
 
-        # If the screen is bigger than 1080p, use a large window
-        if self.root.winfo_screenheight() > 1100:
-            figsize = (14, 10)
-        else: # Otherwise, use a slightly smaller window
-              # so everything fits on the screen
-            figsize = (5, 4)
+        figsize = (figsize, figsize)
 
         # Instantiate the MPL figure
         self.f = plt.figure(figsize=figsize, dpi=100, facecolor='white')
@@ -100,6 +99,7 @@ class Display(object):
         self.histList = histList
         self.outputDir = outputDir
         self.bounds = {}
+        self.color_bounds = [0., 0.]
 
         # Actually setup and run the GUI
         self.OptimizationHistory()
@@ -141,8 +141,11 @@ class Display(object):
                 db = SqliteDict(histFileName, 'iterations')
                 OpenMDAO = True
 
+                # Need to do this since in py3 db.keys() is a generator object
+                keys = [i for i in db.keys()]
+
                 # If it has no 'iterations' tag, it's a pyOptSparse db.
-                if db.keys() == []:
+                if keys == []:
                     OpenMDAO = False
                     db = SqliteDict(histFileName)
 
@@ -153,8 +156,7 @@ class Display(object):
                 # in the split string names for each entry in the db
                 if major_python_version == 3:
                     for string in db.keys():
-                        string
-                    string = string.split('|')
+                        string = string.split('|')
                 else:
                     string = db.keys()[-1].split('|')
 
@@ -169,6 +171,9 @@ class Display(object):
                 # info is calculated for gradient-free linesearches.
                 deriv_keys = SqliteDict(histFileName, 'derivs').keys()
                 self.deriv_keys = [int(key.split('|')[-1]) for key in deriv_keys]
+
+                # Save information from the history file for the funcs.
+                self.DetermineMajorIterations(db, OpenMDAO=OpenMDAO)
 
                 # Save information from the history file for the unknowns.
                 self.SaveDBData(db, self.func_data_all, self.func_data_major, OpenMDAO=OpenMDAO, data_str='Unknowns')
@@ -197,18 +202,29 @@ class Display(object):
                 # Check to see if there is bounds information in the db file.
                 # If so, add them to self.bounds to plot later.
                 try:
-                    bounds_dict = dict(db['varBounds'].items() + db['conBounds'].items())
-                    for key in bounds_dict.keys():
+                    bounds_dict = db['varBounds'].copy()
+                    bounds_dict.update(db['conBounds'])
+                    # Got to be a little tricky here since we're modifying
+                    # bounds_dict; if we simply loop over it with the generator
+                    # from Python3, it will contain the new keys and then the
+                    # names will be mangled incorrectly.
+                    for key in [i for i in bounds_dict.keys()]:
                         bounds_dict[key + histIndex] = bounds_dict.pop(key)
                     self.bounds.update(bounds_dict)
                 except KeyError:
                     pass
 
                 # Check to see if there is proper saved info about iter type
-                if 'isMajor' in db['0'].keys():
-                    self.storedIters = True
+                if 'iu0' in db['0'].keys():
+                    if db[db['last']]['iu0'] > 0:
+                        self.storedIters = True
+                    else:
+                        self.storedIters = False
                 else:
                     self.storedIters = False
+
+                # Save information from the history file for the funcs.
+                self.DetermineMajorIterations(db, OpenMDAO=OpenMDAO)
 
                 # Save information from the history file for the funcs.
                 self.SaveDBData(db, self.func_data_all, self.func_data_major, OpenMDAO=OpenMDAO, data_str='funcs')
@@ -229,6 +245,81 @@ class Display(object):
                 if length > self.num_iter:
                     self.num_iter = length
 
+    def DetermineMajorIterations(self, db, OpenMDAO):
+
+        if not OpenMDAO:
+            self.obj_key = db['0']['objKey']
+
+            prev_key = 0
+            # Loop over each optimization iteration
+            for i, iter_type in enumerate(self.iter_type):
+
+                # If this is an OpenMDAO file, the keys are of the format
+                # 'rank0:SNOPT|1', etc
+                key = '%d' % i
+
+                # Only actual optimization iterations have 'funcs' in them.
+                # pyOptSparse saves info for two iterations for every
+                # actual major iteration. In particular, one has funcs
+                # and the next has funcsSens, but they're both part of the
+                # same major iteration.
+                if any('funcs' == s for s in db[key].keys()):
+
+                    # If this iteration has 'funcs' within it, but it's not
+                    # flagged as major, then it's a minor iteration.
+                    if i == 0:
+                        self.iter_type[i] = 1
+                    else:
+                        self.iter_type[i] = 2
+
+                    if not self.storedIters: # Otherwise, use a spotty heuristic to see if the
+                        # iteration is major or not. NOTE: this is often
+                        # inaccurate, especially if the optimization used
+                        # gradient-enhanced line searches.
+                        try:
+                            keyp1 = '%d' % (i + 1)
+                            db[keyp1]['funcsSens']
+                            self.iter_type[i] = 1 # for 'major' iterations
+                        except KeyError:
+                            self.iter_type[i] = 2 # for 'minor' iterations
+
+                else:
+                    self.iter_type[i] = 0 # this is not a real iteration,
+                                          # just the sensitivity evaluation
+
+            min_list = []
+            # Loop over each optimization iteration
+            for i, iter_type in enumerate(self.iter_type):
+
+                if iter_type == 0:
+                    continue
+
+                key = '%d' % i
+
+                # If the proper history is stored coming out of
+                # pyoptsparse, use that for filtering major iterations.
+                if self.storedIters:
+                    if db[key]['iu0'] != db[prev_key]['iu0']:
+                        min_array = np.array(min_list)
+                        argmin = np.argmin(min_array[:, 1])
+                        major_key = min_array[argmin, 0]
+                        self.iter_type[int(major_key)] = 1
+                        min_list = []
+                    min_list.append([int(key), db[key]['funcs'][self.obj_key][0]])
+                    prev_key = i
+
+        else: # this is if it's OpenMDAO
+            for i, iter_type in enumerate(self.iter_type):
+                key = '{}|{}'.format(self.solver_name, i+1) # OpenMDAO uses 1-indexing
+                if i in self.deriv_keys:
+                    self.iter_type[i] = 1.
+
+            # If no derivative info is saved, we don't know which iterations are major.
+            # Treat all iterations as major.
+            if len(self.deriv_keys) < 1:
+                self.iter_type[:] = 1.
+
+
     def SaveDBData(self, db, data_all, data_major, OpenMDAO, data_str):
         """ Method to save the information within the database corresponding
             to a certain key to the relevant dictionaries within the Display
@@ -245,52 +336,12 @@ class Display(object):
             else: # Otherwise the keys are simply a number
                 key = '%d' % i
 
-            # If this is the 'funcs' key, perform some special operations,
-            # such as determining the iteration type
-            if data_str == 'funcs':
-
-                # Only actual optimization iterations have 'funcs' in them.
-                # pyOptSparse saves info for two iterations for every
-                # actual major iteration. In particular, one has funcs
-                # and the next has funcsSens, but they're both part of the
-                # same major iteration.
-                if any('funcs' == s for s in db[key].keys()):
-
-                    # If the proper history is stored coming out of
-                    # pyoptsparse, use that for filtering major iterations.
-                    if self.storedIters:
-                        self.iter_type[i] = int(db[key]['isMajor'])
-
-                        # If this iteration has 'funcs' within it, but it's not
-                        # flagged as major, then it's a minor iteration.
-                        if self.iter_type[i] == 0:
-                            self.iter_type[i] = 2
-
-                    else: # Otherwise, use a spotty heuristic to see if the
-                        # iteration is major or not. NOTE: this is often
-                        # inaccurate, especially if the optimization used
-                        # gradient-enhanced line searches.
-                        try:
-                            keyp1 = '%d' % (i + 1)
-                            db[keyp1]['funcsSens']
-                            self.iter_type[i] = 1 # for 'major' iterations
-                        except KeyError:
-                            self.iter_type[i] = 2 # for 'minor' iterations
-
-                else:
-                    self.iter_type[i] = 0 # this is not a real iteration,
-                                          # just the sensitivity evaluation
-            elif data_str == 'Unknowns':
-                if i in self.deriv_keys:
-                    self.iter_type[i] = 1 # for 'major' iterations
-                else:
-                    self.iter_type[i] = 2 # for 'minor' iterations
-
             # Do this for both major and minor iterations
             if self.iter_type[i]:
 
                 # Get just the info in the dict for this iteration
                 iter_data = db[key][data_str]
+                iter_key = key
 
                 # Loop through each key within this iteration
                 for key in sorted(iter_data):
@@ -304,7 +355,7 @@ class Display(object):
                         data_all[new_key] = []
                         data_major[new_key] = []
 
-                    # Process the data from the key. Convert it to a np
+                    # Process the data from the key. Convert it to a numpy
                     # array, keep only the real part, squeeze any 1-dim
                     # axes out of it, then flatten it.
                     data = np.squeeze(np.array(iter_data[key]).real).flatten()
@@ -313,6 +364,7 @@ class Display(object):
                     data_all[new_key].append(data)
                     if self.iter_type[i] == 1:
                         data_major[new_key].append(data)
+
 
     def SaveOpenMDAOData(self, db):
         """ Examine the OpenMDAO dict and save tags if the variables are
@@ -398,6 +450,17 @@ class Display(object):
             transform=a.transAxes)
         self.canvas.show()
 
+    def note_display(self, string=""):
+        """
+        Display warning message on canvas as necessary.
+        """
+        a = plt.gca()
+        a.text(0.05, 1.04,
+            string,
+            fontsize=20,
+            transform=a.transAxes)
+        self.canvas.show()
+
     def plot_bounds(self, val, a, color):
         """
         Plot the bounds if selected.
@@ -441,9 +504,7 @@ class Display(object):
         """
         Plots the original data values from the history file.
         """
-        cc = (
-            matplotlib.rcParams['axes.color_cycle'] * 10
-        )
+        cc = plt.rcParams['axes.prop_cycle'].by_key()['color'] * 10
         color = cc[i]
 
         try:
@@ -497,6 +558,118 @@ class Display(object):
             else:
                 self.error_display("No bounds information")
 
+    def color_plot(self, dat, labels, a):
+
+        # If the user wants the non-constraint colormap, use viridis
+        if self.var_color.get():
+            cmap = plt.get_cmap('viridis')
+
+        # Otherwise, use a custom red-green colormap that has white in the middle
+        # to showcase which constraints are active or not
+        else:
+            cdict1 = {'red':   ((0.0, 0.06, 0.06),
+                       (0.3, .11, .11),
+                       (0.5, 1.0, 1.0),
+                       (0.8, 0.8, 0.8),
+                       (1.0, 0.6, 0.6)),
+
+             'green': ((0.0, 0.3, 0.3),
+                       (0.3, 0.6, 0.6),
+                       (0.5, 1.0, 1.0),
+                       (0.8, 0.0, 0.0),
+                       (1.0, 0.0, 0.0)),
+
+             'blue':  ((0.0, .15, .15),
+                       (0.3, .25, .25),
+                       (0.5, 1.0, 1.0),
+                       (0.8, 0.0, 0.0),
+                       (1.0, 0.0, 0.0))
+            }
+
+            from matplotlib.colors import LinearSegmentedColormap
+            cmap = LinearSegmentedColormap('RedGreen', cdict1)
+
+        # Get the numbmer of iterations and set up some lists
+        iter_len = len(dat[labels[0]])
+        full_array = np.zeros((0, iter_len))
+        tick_labels = []
+
+        # Loop through the data sets selected by the user
+        for label in labels:
+
+            # Get the subarray for this particular data set and record its size
+            subarray = np.array(dat[label]).T
+            sub_size = subarray.shape[0]
+
+            # Add the subarray to the total array to view later
+            full_array = np.vstack((full_array, subarray))
+
+            # Set the labels for the ticks.
+            # If it's a scalar, simply have the data label.
+            if sub_size == 1:
+                tick_labels.append(label)
+
+            # Otherwise, have the data label and append a number to it.
+            else:
+                tick_labels.append(label + ' 0')
+
+                # However, if there are a large number of data points,
+                # only label 12 of them to space out the labels.
+                n = max(sub_size // 12, 1)
+                for i in range(1, sub_size):
+                    if not i % n:
+                        tick_labels.append(str(i))
+                    else:
+                        tick_labels.append('')
+
+        if len(self.min_bound.get()) or len(self.max_bound.get()):
+            bounds = self.color_bounds
+
+        # If the user wants the color set by the bounds, try to get the bounds
+        # information from the bounds dictionary.
+        elif self.var_color_bounds.get():
+            bounds = [0., 0.]
+
+            # Loop through the labels and extract the smallest lower bound
+            # and the largest upper bound.
+            for label in labels:
+                try:
+                    bounds[0] = min(bounds[0], self.bounds[label]['lower'][0])
+                    bounds[1] = max(bounds[1], self.bounds[label]['upper'][0])
+                except:
+                    pass
+
+            # If we found no bounds data, simply use the smallest and largest
+            # values from the arrays.
+            if bounds[0] == 0. and bounds[1] == 0.:
+                self.warning_display("No bounds information, using min/max array values instead")
+                largest_mag_val = np.max(np.abs(full_array))
+                bounds = [-largest_mag_val, largest_mag_val]
+
+        # Otherwise, simply use the smallest and largest values from the arrays
+        else:
+            largest_mag_val = np.max(np.abs(full_array))
+            bounds = [-largest_mag_val, largest_mag_val]
+
+        # Set up a colorbar and add it to the figure
+        cax = a.imshow(full_array, cmap=cmap, aspect='auto',
+            vmin=bounds[0], vmax=bounds[1])
+        fig = plt.gcf()
+        cbar = fig.colorbar(cax)
+
+        # Some dirty hardcoding in an attempt to get the labels to appear nicely
+        # for different widths of OptView windows.
+        # This is challenging to do correctly because of non-uniform text widths.
+        size = fig.get_size_inches() * fig.dpi
+        width, height = size
+
+        # More dirty harcoding to try to produce a nice layout.
+        max_label_length = np.max([len(label) for label in labels])
+        plt.subplots_adjust(left=(.006 * max_label_length + .02) * (6000 - width) / 4000)
+
+        # Set the y-tick labels for the plot based on the previously saved info
+        plt.yticks(range(full_array.shape[0]), tick_labels)
+
     def plot_selected(self, values, dat):
         """
         Plot data based on selected keys within listboxes.
@@ -505,6 +678,23 @@ class Display(object):
         self.color_error_flag = 0
         self.f.clf()
         self.plots = []
+
+        # Grid the checkbox options that should exist
+        self.c12.grid_forget()
+        self.c13.grid_forget()
+        self.min_label.grid_forget()
+        self.min.grid_forget()
+        self.max_label.grid_forget()
+        self.max.grid_forget()
+        self.c4.grid(row=0, column=1, sticky=Tk.W)
+        self.c5.grid(row=1, column=1, sticky=Tk.W)
+        self.c6.grid(row=2, column=1, sticky=Tk.W)
+        self.c7.grid(row=3, column=1, sticky=Tk.W)
+        self.c8.grid(row=4, column=1, sticky=Tk.W)
+        self.c9.grid(row=5, column=1, sticky=Tk.W)
+
+        plt.subplots_adjust(left=.1)
+
         try:
             if self.var_bounds.get():
                 try:
@@ -594,7 +784,7 @@ class Display(object):
                 # Otherwise plot original data
                 else:
                     for i, val in enumerate(values):
-                        cc = (matplotlib.rcParams['axes.color_cycle'] * 10)
+                        cc = plt.rcParams['axes.prop_cycle'].by_key()['color'] * 10
                         par_list[i].set_color_cycle(cc[i])
                         p_list[i], = par_list[i].plot(
                             dat[val], "o-", label=val, markeredgecolor='none', clip_on=False)
@@ -671,6 +861,38 @@ class Display(object):
 
                 plt.subplots_adjust(right=.95)
                 self.canvas.show()
+
+            # Plot color plots of rectangular pixels showing values,
+            # especially useful for constraints
+            elif self.var.get() == 3 and not fail:
+
+                # Remove options that aren't relevant
+                self.c4.grid_forget()
+                self.c5.grid_forget()
+                self.c6.grid_forget()
+                self.c7.grid_forget()
+                self.c8.grid_forget()
+                self.c9.grid_forget()
+
+                # Add option to change colormap
+                self.c12.grid(row=0, column=1, sticky=Tk.W)
+                self.c13.grid(row=1, column=1, sticky=Tk.W)
+
+                # Add bounds textboxes
+                self.min_label.grid(row=4, column=0, pady=10, sticky=Tk.W)
+                self.min.grid(row=4, column=1, pady=10, sticky=Tk.W)
+                self.max_label.grid(row=5, column=0, pady=10, sticky=Tk.W)
+                self.max.grid(row=5, column=1, pady=10, sticky=Tk.W)
+
+                a = self.f.add_subplot(111)
+
+                self.color_plot(dat, values, a)
+
+                plt.subplots_adjust(right=.95)
+                a.set_xlabel('iteration')
+                a.set_xlim(0, self.num_iter - 1)
+                self.canvas.show()
+
         except ValueError:
             self.error_display()
 
@@ -826,11 +1048,11 @@ class Display(object):
         if len(arr_sel) and self.arr_active:
             for name in self.val_names:
                 dat[name] = self.arr_data[name]
-        elif len(func_sel):
+        if len(func_sel):
             values = [self.lb_func.get(i) for i in func_sel]
             for name in values:
                 dat[name] = self.func_data[name]
-        elif len(var_sel):
+        if len(var_sel):
             values = [self.lb_var.get(i) for i in var_sel]
             for name in values:
                 dat[name] = self.var_data[name]
@@ -873,7 +1095,7 @@ class Display(object):
 
     def var_search(self, _):
         """
-        Remove listbox entries that do not contain user-supplied string,
+        Remove listbox entries that do not contain user-inputted string,
         used to search through outputted data.
         """
         self.lb_func.delete(0, Tk.END)
@@ -985,11 +1207,23 @@ class Display(object):
                 ind = np.where(xdat == iter_count)[0][0]
 
                 label = label + '\niter: {0:d}\nvalue: {1}'.format(int(iter_count), ydat[ind])
+
+                # Get the width of the window so we can scale the label placement
+                size = self.f.get_size_inches() * self.f.dpi
+                width, height = size
+
+                xlim = ax.get_xlim()
+                ylim = ax.get_ylim()
+
+                x_coord = (event.xdata - xlim[0]) / (xlim[1] - xlim[0])
+                y_coord = (event.ydata - ylim[0]) / (ylim[1] - ylim[0])
+
+                # Scale and position the label based on the iteration number.
+                x_coord -= event.xdata/(xlim[1]-xlim[0]) * len(label) * 10 / width
+
                 self.annotation = ax.annotate(label,
-                                              xy=(event.xdata,
-                                                  event.ydata), xycoords='data',
-                                              xytext=(
-                                              event.xdata, event.ydata), textcoords='data',
+                                              xy=(x_coord, y_coord), xycoords='axes fraction',
+                                              xytext=(x_coord, y_coord), textcoords='axes fraction',
                                               horizontalalignment="left",
                                               bbox=dict(
                                               boxstyle="round", facecolor="w",
@@ -1002,6 +1236,16 @@ class Display(object):
                 pass
 
         self.canvas.show()
+
+    def set_bounds(self, bound):
+        try:
+            if self.min_bound == bound:
+                self.color_bounds[0] = float(bound.get())
+            else:
+                self.color_bounds[1] = float(bound.get())
+        except ValueError:
+            pass
+        self.update_graph()
 
     def draw_GUI(self):
         """
@@ -1130,6 +1374,30 @@ class Display(object):
             font=font)
         button5.grid(row=5, column=2, padx=5, sticky=Tk.W)
 
+        self.min_label = Tk.Label(
+            options_frame,
+            text="Min bound for colorbar:",
+            font=font)
+
+        # Input box to select the min bounds for the colorbar when using color plots
+        self.min_bound = Tk.StringVar()
+        self.min_bound.trace("w", lambda name, index, mode, min_bound=self.min_bound: self.set_bounds(self.min_bound))
+        self.min = Tk.Entry(
+            options_frame, text="Search", textvariable=self.min_bound,
+            font=font)
+
+        self.max_label = Tk.Label(
+            options_frame,
+            text="Max bound for colorbar:",
+            font=font)
+
+        # Input box to select the max bounds for the colorbar when using color plots
+        self.max_bound = Tk.StringVar()
+        self.max_bound.trace("w", lambda name, index, mode, max_bound=self.max_bound: self.set_bounds(self.max_bound))
+        self.max = Tk.Entry(
+            options_frame, text="Search", textvariable=self.max_bound,
+            font=font)
+
         # Plot options
         self.var = Tk.IntVar()
         c1 = Tk.Radiobutton(
@@ -1147,85 +1415,108 @@ class Display(object):
             command=self.update_graph, font=font, value=2)
         c3.grid(row=2, column=0, sticky=Tk.W)
 
+        c12 = Tk.Radiobutton(
+            options_frame, text="Color plots", variable=self.var,
+            command=self.update_graph, font=font, value=3)
+        c12.grid(row=3, column=0, sticky=Tk.W)
+
         self.var_del = Tk.IntVar()
-        c4 = Tk.Checkbutton(
+        self.c4 = Tk.Checkbutton(
             options_frame,
             text="Absolute delta values",
             variable=self.var_del,
             command=self.update_graph,
             font=font)
-        c4.grid(row=0, column=1, sticky=Tk.W)
+        self.c4.grid(row=0, column=1, sticky=Tk.W)
 
         self.var_log = Tk.IntVar()
-        c5 = Tk.Checkbutton(
+        self.c5 = Tk.Checkbutton(
             options_frame,
             text="Log scale",
             variable=self.var_log,
             command=self.update_graph,
             font=font)
-        c5.grid(row=1, column=1, sticky=Tk.W)
+        self.c5.grid(row=1, column=1, sticky=Tk.W)
 
         # Option to only show the min and max of array-type variables
         self.var_minmax = Tk.IntVar()
-        c6 = Tk.Checkbutton(
+        self.c6 = Tk.Checkbutton(
             options_frame,
             text="Min/max for arrays",
             variable=self.var_minmax,
             command=self.update_graph,
             font=font)
-        c6.grid(row=2, column=1, sticky=Tk.W)
+        self.c6.grid(row=2, column=1, sticky=Tk.W)
 
         # Option to show all values for array-type variables
         self.var_showall = Tk.IntVar()
-        c7 = Tk.Checkbutton(
+        self.c7 = Tk.Checkbutton(
             options_frame,
             text="Show all for arrays",
             variable=self.var_showall,
             command=self.update_graph,
             font=font)
-        c7.grid(row=3, column=1, sticky=Tk.W)
+        self.c7.grid(row=3, column=1, sticky=Tk.W)
 
             # Option to show legend
         self.var_legend = Tk.IntVar()
-        c8 = Tk.Checkbutton(
+        self.c8 = Tk.Checkbutton(
             options_frame,
             text="Show legend",
             variable=self.var_legend,
             command=self.update_graph,
             font=font)
         self.var_legend.set(1)
-        c8.grid(row=4, column=1, sticky=Tk.W)
+        self.c8.grid(row=4, column=1, sticky=Tk.W)
 
         # Option to show bounds
         self.var_bounds = Tk.IntVar()
-        c9 = Tk.Checkbutton(
+        self.c9 = Tk.Checkbutton(
             options_frame,
             text="Show bounds",
             variable=self.var_bounds,
             command=self.update_graph,
             font=font)
-        c9.grid(row=5, column=1, sticky=Tk.W)
+        self.c9.grid(row=5, column=1, sticky=Tk.W)
 
         # Option to only show major iterations
         self.var_mask = Tk.IntVar()
-        c10 = Tk.Checkbutton(
+        self.c10 = Tk.Checkbutton(
             options_frame,
             text="Show major iterations",
             variable=self.var_mask,
             command=self.set_mask,
             font=font)
-        c10.grid(row=6, column=1, sticky=Tk.W, pady=6)
+        self.c10.grid(row=6, column=1, sticky=Tk.W, pady=6)
 
         # Option to automatically refresh history file
         # especially useful for running optimizations
         self.var_ref = Tk.IntVar()
-        c11 = Tk.Checkbutton(
+        self.c11 = Tk.Checkbutton(
             options_frame,
             text="Automatically refresh",
             variable=self.var_ref,
             command=self.auto_ref,
             font=font)
-        c11.grid(row=7, column=1, sticky=Tk.W, pady=6)
+        self.c11.grid(row=7, column=1, sticky=Tk.W, pady=6)
+
+        # Option to choose colormap for color plots
+        self.var_color = Tk.IntVar()
+        self.c12 = Tk.Checkbutton(
+            options_frame,
+            text="Viridis colormap",
+            variable=self.var_color,
+            command=self.update_graph,
+            font=font)
+
+        # Option to choose limits of colorbar axes
+        self.var_color_bounds = Tk.IntVar()
+        self.c13 = Tk.Checkbutton(
+            options_frame,
+            text="Colorbar set by bounds",
+            variable=self.var_color_bounds,
+            command=self.update_graph,
+            font=font)
 
         lab = Tk.Label(
             options_frame,
@@ -1264,9 +1555,13 @@ if __name__ == '__main__':
         help="Specify the history file to be plotted")
     parser.add_argument('--output', nargs='?', type=str, default='./',
                         help="Specify the output directory")
+    parser.add_argument('--figsize', nargs='?', type=float, default='4',
+                        help="Specify the desired minimum figure canvas size")
+
     args = parser.parse_args()
     histList = args.histFile
     outputDir = args.output
+    figsize = args.figsize
 
     histFileName = histList[0]
 
@@ -1274,8 +1569,9 @@ if __name__ == '__main__':
     if not os.path.isdir(outputDir):
         os.makedirs(outputDir)
     # Initialize display parameters, obtain history, and draw GUI
-    disp = Display(histList, outputDir)
+    disp = Display(histList, outputDir, figsize)
     disp.draw_GUI()
     disp.root.protocol("WM_DELETE_WINDOW", disp.quit)
     on_move_id = disp.f.canvas.mpl_connect('motion_notify_event', disp.on_move)
+    disp.note_display('Select functions or design variables from the listboxes \nbelow to view the optimization history.')
     Tk.mainloop()

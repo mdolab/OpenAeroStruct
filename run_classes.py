@@ -18,6 +18,8 @@ from __future__ import division, print_function
 import sys
 from time import time
 import numpy as np
+from collections import OrderedDict
+import array
 
 # =============================================================================
 # OpenMDAO modules
@@ -101,6 +103,9 @@ class OASProblem(object):
         # Update prob_dict with user-provided values after getting defaults
         self.prob_dict = self.get_default_prob_dict()
         self.prob_dict.update(input_dict)
+
+        # Validate prob_dict variables
+        self.prob_dict = self.validate_input_vars(self.prob_dict)
 
         # Set the airspeed velocity based on the supplied Mach number
         # and speed of sound
@@ -228,7 +233,8 @@ class OASProblem(object):
                     'sweep' : 0.,           # wing sweep angle in degrees
                                             # positive sweeps back
                     'taper' : 1.,           # taper ratio; 1. is uniform chord
-                    'S_ref' : None,         # [m^2] area of the lifting surface
+                    'S_ref' : None,         # [m^2] area of the lifting surface,
+                                            # optional, needed only for planform optimization
 
                     # B-spline Geometric Variables. The number of control points
                     # for each of these variables can be specified in surf_dict
@@ -254,6 +260,9 @@ class OASProblem(object):
                     # obtained from aerodynamic analysis of the surface to get
                     # the total CL and CD.
                     # These CL0 and CD0 values do not vary wrt alpha.
+                    # ** NOTE **: The CD0 value used here is _not_ the CD0 commonly used
+                    # in aircraft design textbooks. The CD0 in OpenAeroStruct is the drag
+                    # at alpha=0, not CL=0.
                     'CL0' : 0.0,            # CL of the surface at alpha=0
                     'CD0' : 0.0,            # CD of the surface at alpha=0
 
@@ -280,6 +289,38 @@ class OASProblem(object):
                     }
         return defaults
 
+    def validate_input_vars(self, input_dict):
+        """
+        Converts input values to appropriate variables type. Helpful when calling functions from Matlab.
+        """
+        bsp_vars = ['chord_cp','thickness_cp','radius_cp','twist_cp','xshear_cp','yshear_cp','zshear_cp']
+        ary_vars = bsp_vars + ['cg']
+        int_vars = ['num_x', 'num_y', 'print_level'] + ['num_'+var for var in bsp_vars]
+
+        for key, val in iteritems(input_dict):
+            
+            # Get var from key if prefixed with surface name
+            var = key.split('.')[-1]
+            
+            # If variable requires an array, convert it to a Numpy ndarray
+            if var in ary_vars:
+                if isinstance(val, np.ndarray):
+                    input_dict[key] = val.astype(data_type)
+                elif val is None:
+                    input_dict[key] = None
+                elif isinstance(val, list) or isinstance(val, tuple) or isinstance(val, array.array):
+                    input_dict[key] = np.array(val, dtype=data_type)
+                else:
+                    input_dict[key] = np.array([val], dtype=data_type)
+                # TO DO: Check if length of bsp_var matches existing data, otherwise
+                # return an error
+
+            # If variable requires an integer, convert it to an integer type
+            elif var in int_vars:
+                if not isinstance(val, int) and (val is not None):
+                    input_dict[key] = int(val)
+
+        return input_dict
 
     def add_surface(self, input_dict={}):
         """
@@ -297,6 +338,9 @@ class OASProblem(object):
         # Get defaults and update surface with the user-provided input
         surf_dict = self.get_default_surf_dict()
         surf_dict.update(input_dict)
+
+        # Convert variables to correct types
+        surf_dict = self.validate_input_vars(surf_dict)
 
         # Check to see if the user provides the mesh points. If they do,
         # get the chordwise and spanwise number of points
@@ -573,11 +617,25 @@ class OASProblem(object):
         """
         self.objective[str(*args)] = dict(**kwargs)
 
-    def run(self):
+    def run(self, **kwargs):
         """
         Method to actually run analysis or optimization. Also saves history in
         a .db file and creates an N2 diagram to view the problem hierarchy.
+
+        Can use keyword arguments or dictionary to set design variables at runtime.
+
+        When calling run() from Matlab, set matlab=True to configure output
+        dictionary for Matlab struct conversion
         """
+
+        # Check if we want Matlab struct style output dictionary, remove from kwargs
+        matlab_config = kwargs.pop('matlab',False)
+
+        # Change design variables if user supplies them from remaining keyword
+        # entries or dictionary, validate input
+        kwargs = self.validate_input_vars(kwargs)
+        for var, val in iteritems(kwargs):
+            self.prob[var] = val
 
         # Have more verbose output about optimization convergence
         if self.prob_dict['print_level']:
@@ -628,6 +686,61 @@ class OASProblem(object):
         # Uncomment this to check the partial derivatives of each component
         # self.prob.check_partial_derivatives(compact_print=True)
 
+        # Return dictionary of output values for easy access
+        output = OrderedDict()
+
+        # Note: could also check in self.root._unknowns_dict and self.root._params_dict
+        # in OpenMDAO Group() object
+
+        # Get overall output variables and constraints, return None if not there
+        overall_vars = ['fuelburn','CD','CL','L_equals_W','CM','v','rho','cg',
+                        'weighted_obj','total_weight']
+        for item in overall_vars:
+            try:
+                output[item] = self.prob[item]
+            except:
+                output[item] = None
+
+        # get lifting surface specific variables and constraints, return None if not there
+        surface_var_map = {
+            'weight' : 'total_perf.<name>structural_weight',
+            'CD' : 'total_perf.<name>CD',
+            'CL' : 'total_perf.<name>CL',
+            'failure' : '<name>perf.failure',
+            'vonmises' : '<name>perf.vonmises',
+            'thickness_intersects' : '<name>perf.thickness_intersects'
+        }
+
+        # lifting surface coupling variables that need trailing "_" removed from surface name
+        coupling_var_map = {
+            'loads' : 'coupled.<name>.loads',
+            'def_mesh' : 'coupled.<name>.def_mesh'
+        }
+
+        for surf in self.surfaces:
+            for key, val in iteritems(surface_var_map):
+                try:
+                    var_value = self.prob[val.replace('<name>',surf['name'])]
+                except:
+                    var_value = None
+                output.update({surf['name']+key : var_value})
+            for key, val in iteritems(coupling_var_map):
+                try:
+                    var_value = self.prob[val.replace('<name>',surf['name'][:-1])]
+                except:
+                    var_value = None
+                output.update({surf['name']+key : var_value})
+
+        # Change output dictionary keys to repalce '.' with '_' so that they
+        # will work in Matlab struct object
+        if matlab_config:
+            output_keys = list(output.keys())
+            for key in output_keys:
+                newkey = key.replace('.','_')
+                val = output.pop(key)
+                output[newkey] = val
+
+        return output
 
     def setup_struct(self):
         """
