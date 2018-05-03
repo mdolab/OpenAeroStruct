@@ -92,11 +92,11 @@ fprintf('Set up the problem... \n');
 OAS_prob.setup()
 
 % Generate samples
-n = 5;
+n = 3;
 wing_twist_cp = linspace(-5,5,n);  	% bounds (-5, 5)  2x desvars
 wing_thickness_cp = linspace(-2,2,n);	% bounds (-5, 5)  2x desvars
 wing_chord_cp = linspace(0.95,1.05,n);	% bounds (0.8, 1.2)
-wing_span = linspace(50,70,n);		% bounds (50, 70)
+wing_span = linspace(60,75,n);		% bounds (50, 70)
 desvars = {'wing.twist_cp','wing.thickness_cp','wing.chord_cp','wing.span'};
 % Get gridded vectors
 [X1, X2, X3, X4, X5, X6] = ndgrid(wing_twist_cp, wing_twist_cp, wing_thickness_cp, wing_thickness_cp, wing_chord_cp, wing_span);
