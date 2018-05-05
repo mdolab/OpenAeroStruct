@@ -692,6 +692,10 @@ class OASProblem(object):
         # Note: could also check in self.root._unknowns_dict and self.root._params_dict
         # in OpenMDAO Group() object
 
+	# Add design variables to output dict
+	for var in self.prob.driver._desvars:
+	    output[var] = self.prob[var]
+
         # Get overall output variables and constraints, return None if not there
         overall_vars = ['fuelburn','CD','CL','L_equals_W','CM','v','rho','cg',
                         'weighted_obj','total_weight']
