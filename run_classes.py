@@ -298,10 +298,10 @@ class OASProblem(object):
         int_vars = ['num_x', 'num_y', 'print_level'] + ['num_'+var for var in bsp_vars]
 
         for key, val in iteritems(input_dict):
-            
+
             # Get var from key if prefixed with surface name
             var = key.split('.')[-1]
-            
+
             # If variable requires an array, convert it to a Numpy ndarray
             if var in ary_vars:
                 if isinstance(val, np.ndarray):
@@ -692,9 +692,9 @@ class OASProblem(object):
         # Note: could also check in self.root._unknowns_dict and self.root._params_dict
         # in OpenMDAO Group() object
 
-	# Add design variables to output dict
-	for var in self.prob.driver._desvars:
-	    output[var] = self.prob[var]
+    	# Add design variables to output dict
+    	for var in self.prob.driver._desvars:
+    	    output[var] = self.prob[var]
 
         # Get overall output variables and constraints, return None if not there
         overall_vars = ['fuelburn','CD','CL','L_equals_W','CM','v','rho','cg',
@@ -703,37 +703,45 @@ class OASProblem(object):
             try:
                 output[item] = self.prob[item]
             except:
-                output[item] = None
+                pass
 
+        var_map = OrderedDict()
         # get lifting surface specific variables and constraints, return None if not there
-        surface_var_map = {
-            'weight' : 'total_perf.<name>structural_weight',
-            'CD' : 'total_perf.<name>CD',
-            'CL' : 'total_perf.<name>CL',
-            'failure' : '<name>perf.failure',
-            'vonmises' : '<name>perf.vonmises',
-            'thickness_intersects' : '<name>perf.thickness_intersects'
-        }
+        if self.prob_dict["type"] == "struct":
+            var_map.update({
+                'structural_weight' : '<name>.structural_weight',
+                'CD' : '<name>.CD',
+                'CL' : '<name>.CL',
+                'failure' : '<name>.failure',
+                'vonmises' : '<name>.vonmises',
+                'thickness_intersects' : '<name>.thickness_intersects',
+                'cg' : '<name>.cg_location'
+            })
+        else:
+            var_map.update({
+                'structural_weight' : 'total_perf.<name>_structural_weight',
+                'CD' : 'total_perf.<name>_CD',
+                'CL' : 'total_perf.<name>_CL',
+                'failure' : '<name>_perf.failure',
+                'vonmises' : '<name>_perf.vonmises',
+                'thickness_intersects' : '<name>_perf.thickness_intersects',
+                'cg' : '<name>_perf.cg_location'
+            })
 
-        # lifting surface coupling variables that need trailing "_" removed from surface name
-        coupling_var_map = {
+        # lifting surface coupling variables
+        var_map.update({
             'loads' : 'coupled.<name>.loads',
             'def_mesh' : 'coupled.<name>.def_mesh'
-        }
+        })
 
         for surf in self.surfaces:
-            for key, val in iteritems(surface_var_map):
+            surf_name = surf["name"][:-1]
+            for key, val in iteritems(var_map):
                 try:
-                    var_value = self.prob[val.replace('<name>',surf['name'])]
+                    var_value = self.prob[val.replace('<name>',surf_name)]
+                    output.update({surf_name+'.'+key : var_value})
                 except:
-                    var_value = None
-                output.update({surf['name']+key : var_value})
-            for key, val in iteritems(coupling_var_map):
-                try:
-                    var_value = self.prob[val.replace('<name>',surf['name'][:-1])]
-                except:
-                    var_value = None
-                output.update({surf['name']+key : var_value})
+                    pass
 
         # Change output dictionary keys to repalce '.' with '_' so that they
         # will work in Matlab struct object
