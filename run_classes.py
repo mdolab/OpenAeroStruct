@@ -707,7 +707,13 @@ class OASProblem(object):
 
         var_map = OrderedDict()
         # get lifting surface specific variables and constraints, return None if not there
-        if self.prob_dict["type"] == "struct":
+        var_map.update({
+            'mesh' : '<name>.mesh',
+            'thickness' : '<name>.thickness',
+            'twist' : '<name>.twist',
+            'chord' : '<name>.chord'
+        })
+        if self.prob_dict["type"] == 'struct':
             var_map.update({
                 'structural_weight' : '<name>.structural_weight',
                 'CD' : '<name>.CD',
@@ -715,17 +721,17 @@ class OASProblem(object):
                 'failure' : '<name>.failure',
                 'vonmises' : '<name>.vonmises',
                 'thickness_intersects' : '<name>.thickness_intersects',
-                'cg' : '<name>.cg_location'
+                'cg' : '<name>.cg_location',
             })
-        else:
+        elif self.prob_dict["type"] in ['aerostruct','aero']:
             var_map.update({
-                'structural_weight' : 'total_perf.<name>_structural_weight',
-                'CD' : 'total_perf.<name>_CD',
-                'CL' : 'total_perf.<name>_CL',
+                'structural_weight' : '<name>_perf.structural_weight',
+                'CD' : '<name>_perf.CD',
+                'CL' : '<name>_perf.CL',
                 'failure' : '<name>_perf.failure',
                 'vonmises' : '<name>_perf.vonmises',
                 'thickness_intersects' : '<name>_perf.thickness_intersects',
-                'cg' : '<name>_perf.cg_location'
+                'cg' : '<name>_perf.cg_location',
             })
 
         # lifting surface coupling variables
