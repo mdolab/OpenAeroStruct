@@ -31,6 +31,51 @@ classdef Test_Aerostruct < matlab.unittest.TestCase
         end
     end
     
+    methods (Test)
+        function test_input_validation(testCase)
+            prob_dict = struct;
+            prob_dict.type = 'aerostruct';
+            prob_dict.optimize = false;
+            prob_dict.record_db = false;
+            prob_dict.with_viscous = true;
+            prob_dict.cg = [30, 0, 5];
+            
+            OAS_prob = py.OpenAeroStruct.run_classes.OASProblem(prob_dict);
+            
+            surf_dict = struct;
+            surf_dict.name = 'wing';
+            surf_dict.num_y = 11;
+            surf_dict.num_x = 3;
+            surf_dict.wing_type = 'CRM';
+            surf_dict.CD0 = 0.015;
+            surf_dict.symmetry = true;
+            surf_dict.num_twist_cp = 2;
+            surf_dict.num_thickness_cp = 2;
+            OAS_prob.add_surface(surf_dict);
+            
+            surf_dict = struct;
+            surf_dict.name = 'tail';
+            surf_dict.num_y = 7;
+            surf_dict.num_x = 2;
+            surf_dict.span = 20;
+            surf_dict.root_chord = 5;
+            surf_dict.wing_type = 'rect';
+            surf_dict.offset = [50, 0, 5];
+            surf_dict.twist_cp = -9.5;
+            OAS_prob.add_surface(surf_dict);
+            
+            
+            OAS_prob.setup();
+            out = struct(OAS_prob.run(pyargs('matlab',true)));
+            CM = np2mat(out.CM);
+            testCase.verifyEqual(out.wing_CL,0.836561056638825,'AbsTol',1e-5);
+            testCase.verifyEqual(out.wing_failure,0.425301457001547,'AbsTol',1e-5);
+            testCase.verifyEqual(out.fuelburn,97377.16195092892,'AbsTol',1e-2);
+            testCase.verifyEqual(CM(2),-0.005158355060936,'AbsTol',1e-2);
+            
+        end
+    end
+    
     methods (Test, TestTags={'Aerostruct'})
         function test_aerostruct_analysis(testCase)
             prob_dict = struct;
@@ -56,8 +101,7 @@ classdef Test_Aerostruct < matlab.unittest.TestCase
             testCase.verifyEqual(out.fuelburn,55565.087226705218,'AbsTol',1e-2);
             testCase.verifyEqual(CM(2),-0.18836163204083048,'AbsTol',1e-2);
         end
-        
-        function test_aerostruct_symmetry(testCase)
+        function test_aerostruct_analysis_symmetry(testCase)
             prob_dict = struct;
             prob_dict.type = 'aerostruct';
             prob_dict.optimize = false;
@@ -81,7 +125,7 @@ classdef Test_Aerostruct < matlab.unittest.TestCase
             testCase.verifyEqual(out.fuelburn,57109.065516474155,'AbsTol',1e-1);
             testCase.verifyEqual(CM(2),-0.19380236992046351,'AbsTol',1e-2);
         end
-        
+    end
 %         function test_aerostruct_symmetry_deriv(testCase)
 %             prob_dict = struct;
 %             prob_dict.type = 'aerostruct';
@@ -138,6 +182,40 @@ classdef Test_Aerostruct < matlab.unittest.TestCase
             testCase.verifyEqual(out.wing_failure, 0., 'AbsTol',1e-4);
             testCase.verifyEqual(CM(2), -0.14194155955058388, 'AbsTol',1e-2);
         end
+        function test_aerostruct_optimization_symmetry(testCase)
+            prob_dict = struct;
+            prob_dict.type = 'aerostruct';
+            prob_dict.optimize = true;
+            prob_dict.with_viscous = true;
+            prob_dict.record_db = false;
+            
+            OAS_prob = py.OpenAeroStruct.run_classes.OASProblem(prob_dict);
+            
+            surf_dict = struct;
+            surf_dict.num_y = int64(7);
+            surf_dict.num_x = int64(3);
+            surf_dict.wing_type = 'CRM';
+            surf_dict.CD0 = 0.015;
+            surf_dict.symmetry = true;
+            surf_dict.num_twist_cp = int64(2);
+            surf_dict.num_thickness_cp = int64(2);
+            
+            OAS_prob.add_surface(surf_dict);
+            
+            OAS_prob.add_desvar('wing.twist_cp',pyargs('lower',-15.,'upper',15.));
+            OAS_prob.add_desvar('wing.thickness_cp',pyargs('lower',0.01,'upper',0.5,'scaler',1e2));
+            OAS_prob.add_constraint('wing_perf.failure',pyargs('upper',0.));
+            OAS_prob.add_constraint('wing_perf.thickness_intersects',pyargs('upper',0.));
+            OAS_prob.add_desvar('alpha',pyargs('lower',-10.,'upper',10.));
+            OAS_prob.add_constraint('L_equals_W',pyargs('equals',0.));
+            OAS_prob.add_objective('fuelburn',pyargs('scaler',1e-4));
+            
+            OAS_prob.setup();
+            out = struct(OAS_prob.run(pyargs('matlab',true)));
+%             CM = np2mat(out.CM);
+            testCase.verifyEqual(out.fuelburn,96077.224922178371,'AbsTol',1e0);
+            testCase.verifyEqual(out.wing_failure, 0., 'AbsTol',1e-5);
+        end
     end
     
     methods (Test, TestTags={'Aero'})
@@ -172,18 +250,18 @@ classdef Test_Aerostruct < matlab.unittest.TestCase
            surf_dict.name = 'wing';
            surf_dict.span = 5.;
            surf_dict.num_y = 3;
-           surf_dict.span_cos_spacing = 0.;
+           surf_dict.span_cos_spacing = 0;
            surf_dict.symmetry = false;
-           surf_dict.offset = [0, -2.5, 0.];
+           surf_dict.offset = [0, -2.5, 0];
            OAS_prob.add_surface(surf_dict);
            
            surf_dict = struct;
            surf_dict.name = 'tail';
            surf_dict.span = 5.;
            surf_dict.num_y = 3;
-           surf_dict.span_cos_spacing = 0.;
+           surf_dict.span_cos_spacing = 0;
            surf_dict.symmetry = false;
-           surf_dict.offset = [0, 2.5, 0.];
+           surf_dict.offset = [0, 2.5, 0];
            OAS_prob.add_surface(surf_dict);
            
            OAS_prob.setup()
@@ -240,6 +318,48 @@ classdef Test_Aerostruct < matlab.unittest.TestCase
             out = struct(OAS_prob.run(pyargs('matlab',true)));
             testCase.verifyEqual(out.wing_structural_weight,988.13495481064024,'AbsTol',1e-3);
         end 
+        function test_struct_analysis_symmetry(testCase)
+            prob_dict = struct;
+            prob_dict.type = 'struct';
+            prob_dict.optimize = false;
+            prob_dict.record_db = false;
+            
+            OAS_prob = py.OpenAeroStruct.run_classes.OASProblem(prob_dict);
+            
+            surf_dict = struct;
+            surf_dict.symmetry = true;
+            surf_dict.t_over_c = 0.15;
+            
+            OAS_prob.add_surface(surf_dict);
+
+            OAS_prob.setup();
+            out = struct(OAS_prob.run(pyargs('matlab',true)));
+            testCase.verifyEqual(out.wing_structural_weight,988.13495481063956,'AbsTol',1e-3);
+        end
+        function test_struct_optimization_symmetry(testCase)
+            prob_dict = struct;
+            prob_dict.type = 'struct';
+            prob_dict.optimize = true;
+            prob_dict.record_db = false;
+            
+            OAS_prob = py.OpenAeroStruct.run_classes.OASProblem(prob_dict);
+            
+            surf_dict = struct;
+            surf_dict.symmetry = true;
+            surf_dict.t_over_c = 0.15;
+            OAS_prob.add_surface(surf_dict);
+
+            OAS_prob.add_desvar('wing.thickness_cp', pyargs('lower',0.001,'upper',0.25,'scaler',1e2));
+            OAS_prob.add_constraint('wing.failure',pyargs('upper',0.));
+            OAS_prob.add_constraint('wing.thickness_intersects',pyargs('upper',0.));
+            OAS_prob.add_objective('wing.structural_weight',pyargs('scaler',1e-3));
+            
+            OAS_prob.setup();
+            out = struct(OAS_prob.run(pyargs('matlab',true)));
+            
+            testCase.verifyEqual(out.wing_structural_weight,1144.8503583047038,'AbsTol',1e-2);
+        end
+        
     end
     
     methods (Test, TestTags={'Struct','Fortran'})
