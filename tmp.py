@@ -82,9 +82,9 @@ def create_OAS_prob(optimize=False):
 
 if __name__ == "__main__":
 
+    print('\nANALYSIS')
     OAS_prob = create_OAS_prob(optimize=False)
     OAS_prob.setup()
-    print('\nANALYSIS')
     input_dict = {
         'wing.thickness_cp': np.array([0.03777685, 0.07183272]),
         'wing.twist_cp': np.array([12.80374032, 14.73784563]),
@@ -106,15 +106,15 @@ if __name__ == "__main__":
     print('mesh =\n',OAS_prob.getvar('wing.mesh'))
     print('fuelburn =',OAS_prob.getvar('fuelburn'))
 
+    print('\nOPTIMIZE')
     OAS_prob = create_OAS_prob(optimize=True)
     OAS_prob.setup()
-    print('\nOPTIMIZE')
     print('initial values:')
     for var in OAS_prob.desvars:
         print('var =',var,'val =',OAS_prob.getvar(var))
     print('mesh =\n',OAS_prob.getvar('wing.mesh'))
     print('Run optimization...')
-    out = OAS_prob.prob.run()
+    out = OAS_prob.run()
     for var in OAS_prob.desvars:
         print('var =',var,'val =',OAS_prob.getvar(var))
     print('mesh =\n',OAS_prob.getvar('wing.mesh'))
