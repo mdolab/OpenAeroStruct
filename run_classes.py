@@ -630,12 +630,12 @@ class OASProblem(object):
         dictionary for Matlab struct conversion
         """
 
-        print('0 prob[''wing.mesh'']=')
-        print(self.prob['wing.mesh'])
-        for var, val in iteritems(kwargs):
-            if var == 'matlab':
-                continue
-            print('var=',var,' val=',self.prob[var])
+        # print('0 prob[''wing.mesh'']=')
+        # print(self.prob['wing.mesh'])
+        # for var, val in iteritems(kwargs):
+        #     if var == 'matlab':
+        #         continue
+        #     print('var=',var,' val=',self.prob[var])
         # print('\n UNKONWNS \n')
         # for var, val in iteritems(self.prob.root._unknowns_dict):
         #     print('var=',var,' val=',val)
@@ -654,12 +654,12 @@ class OASProblem(object):
             # print('var=',var,' val=',val)
             self.prob[var] = val
 
-        print('1 prob[''wing.mesh'']=')
-        print(self.prob['wing.mesh'])
-        for var, val in iteritems(kwargs):
-            print('var=',var,' val=',self.prob[var])
-        for var in geo_vars:
-            print('var=',var,' val=',self.prob[var])
+        # print('1 prob[''wing.mesh'']=')
+        # print(self.prob['wing.mesh'])
+        # for var, val in iteritems(kwargs):
+        #     print('var=',var,' val=',self.prob[var])
+        # for var in geo_vars:
+        #     print('var=',var,' val=',self.prob[var])
 
         # Have more verbose output about optimization convergence
         if self.prob_dict['print_level']:
@@ -679,12 +679,12 @@ class OASProblem(object):
             # Perform optimization
             self.prob.run()
 
-        print('2 prob[''wing.mesh'']=')
-        print(self.prob['wing.mesh'])
-        for var, val in iteritems(kwargs):
-            print('var=',var,' val=',self.prob[var])
-        for var in geo_vars:
-            print('var=',var,' val=',self.prob[var])
+        # print('2 prob[''wing.mesh'']=')
+        # print(self.prob['wing.mesh'])
+        # for var, val in iteritems(kwargs):
+        #     print('var=',var,' val=',self.prob[var])
+        # for var in geo_vars:
+        #     print('var=',var,' val=',self.prob[var])
         # If the problem type is aero or aerostruct, we can compute the static margin.
         # This is a naive tempoerary implementation that currently finite differences
         # over the entire model to obtain the static margin.
