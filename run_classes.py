@@ -100,6 +100,8 @@ class OASProblem(object):
 
         print('Fortran =', fortran_flag)
 
+        self.bsp_vars = ['chord_cp','thickness_cp','radius_cp','twist_cp','xshear_cp','yshear_cp','zshear_cp']
+
         # Update prob_dict with user-provided values after getting defaults
         self.prob_dict = self.get_default_prob_dict()
         self.prob_dict.update(input_dict)
@@ -293,7 +295,7 @@ class OASProblem(object):
         """
         Converts input values to appropriate variables type. Helpful when calling functions from Matlab.
         """
-        bsp_vars = ['chord_cp','thickness_cp','radius_cp','twist_cp','xshear_cp','yshear_cp','zshear_cp']
+        bsp_vars = self.bsp_vars
         ary_vars = bsp_vars + ['cg']
         int_vars = ['num_x', 'num_y', 'print_level'] + ['num_'+var for var in bsp_vars]
 
@@ -628,14 +630,36 @@ class OASProblem(object):
         dictionary for Matlab struct conversion
         """
 
+        print('0 prob[''wing.mesh'']=')
+        print(self.prob['wing.mesh'])
+        for var, val in iteritems(kwargs):
+            if var == 'matlab':
+                continue
+            print('var=',var,' val=',self.prob[var])
+        # print('\n UNKONWNS \n')
+        # for var, val in iteritems(self.prob.root._unknowns_dict):
+        #     print('var=',var,' val=',val)
+        # print('\n PARAMS \n')
+        # for var, val in iteritems(self.prob.root._params_dict):
+        #     print('var=',var,' val=',val)
+
         # Check if we want Matlab struct style output dictionary, remove from kwargs
         matlab_config = kwargs.pop('matlab',False)
 
         # Change design variables if user supplies them from remaining keyword
         # entries or dictionary, validate input
         kwargs = self.validate_input_vars(kwargs)
+        geo_vars = ['wing.A','wing.Iy','wing.Iz','wing.J','fuelburn']
         for var, val in iteritems(kwargs):
+            # print('var=',var,' val=',val)
             self.prob[var] = val
+
+        print('1 prob[''wing.mesh'']=')
+        print(self.prob['wing.mesh'])
+        for var, val in iteritems(kwargs):
+            print('var=',var,' val=',self.prob[var])
+        for var in geo_vars:
+            print('var=',var,' val=',self.prob[var])
 
         # Have more verbose output about optimization convergence
         if self.prob_dict['print_level']:
@@ -655,6 +679,12 @@ class OASProblem(object):
             # Perform optimization
             self.prob.run()
 
+        print('2 prob[''wing.mesh'']=')
+        print(self.prob['wing.mesh'])
+        for var, val in iteritems(kwargs):
+            print('var=',var,' val=',self.prob[var])
+        for var in geo_vars:
+            print('var=',var,' val=',self.prob[var])
         # If the problem type is aero or aerostruct, we can compute the static margin.
         # This is a naive tempoerary implementation that currently finite differences
         # over the entire model to obtain the static margin.
