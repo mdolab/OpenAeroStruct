@@ -16,6 +16,7 @@ from time import time
 import numpy as np
 from six import iteritems
 
+
 # Append the parent directory to the system path so we can call those Python
 # files. If you have OpenAeroStruct in your PYTHONPATH, this is not necessary.
 from os import sys, path
@@ -83,8 +84,8 @@ def create_OAS_prob(optimize=False):
 if __name__ == "__main__":
 
     print('\nANALYSIS')
-    OAS_prob = create_OAS_prob(optimize=False)
-    OAS_prob.setup()
+    OAS_prob_analysis = create_OAS_prob(optimize=False)
+    OAS_prob_analysis.setup()
     input_dict = {
         'wing.thickness_cp': np.array([0.03777685, 0.07183272]),
         'wing.twist_cp': np.array([12.80374032, 14.73784563]),
@@ -92,30 +93,51 @@ if __name__ == "__main__":
         'wing.chord_cp': np.array([0.9])
     }
     for var, val in iteritems(input_dict):
-        OAS_prob.setvar(var, val)
+        OAS_prob_analysis.setvar(var, val)
     print('initial values:')
-    for var in OAS_prob.desvars:
-        print('var =',var,'val =',OAS_prob.getvar(var))
-    print('mesh =\n',OAS_prob.getvar('wing.mesh'))
+    for var in OAS_prob_analysis.desvars:
+        print(var,'=',OAS_prob_analysis.getvar(var))
+    print('mesh =\n',OAS_prob_analysis.getvar('wing.mesh'))
     print('Run analysis...')
-    # print('mesh =\n',OAS_prob.getvar('wing.mesh'))
-    # out = OAS_prob.prob.run_once()
-    out = OAS_prob.run()
+    # print('mesh =\n',OAS_prob_analysis.getvar('wing.mesh'))
+    # out = OAS_prob_analysis.prob.run_once()
+    out = OAS_prob_analysis.run()
     for var, val in iteritems(input_dict):
-        print('var =',var,'val =',OAS_prob.getvar(var))
-    print('mesh =\n',OAS_prob.getvar('wing.mesh'))
-    print('fuelburn =',OAS_prob.getvar('fuelburn'))
+        print(var,'=',OAS_prob_analysis.getvar(var))
+    print('mesh =\n',OAS_prob_analysis.getvar('wing.mesh'))
+    print('fuelburn =',OAS_prob_analysis.getvar('fuelburn'))
 
     print('\nOPTIMIZE')
-    OAS_prob = create_OAS_prob(optimize=True)
-    OAS_prob.setup()
+    OAS_prob_optimize = create_OAS_prob(optimize=True)
+    OAS_prob_optimize.setup()
     print('initial values:')
-    for var in OAS_prob.desvars:
-        print('var =',var,'val =',OAS_prob.getvar(var))
-    print('mesh =\n',OAS_prob.getvar('wing.mesh'))
+    for var in OAS_prob_optimize.desvars:
+        print(var,'=',OAS_prob_optimize.getvar(var))
+    print('mesh =\n',OAS_prob_optimize.getvar('wing.mesh'))
     print('Run optimization...')
-    out = OAS_prob.run()
-    for var in OAS_prob.desvars:
-        print('var =',var,'val =',OAS_prob.getvar(var))
-    print('mesh =\n',OAS_prob.getvar('wing.mesh'))
-    print('fuelburn =',OAS_prob.getvar('fuelburn'))
+    out = OAS_prob_optimize.run()
+    for var in OAS_prob_optimize.desvars:
+        print(var,'=',OAS_prob_optimize.getvar(var))
+    print('mesh =\n',OAS_prob_optimize.getvar('wing.mesh'))
+    print('fuelburn =',OAS_prob_optimize.getvar('fuelburn'))
+
+    # Compare all desvars
+    print('\nCOMPARE DESVARS')
+    params = OAS_prob_analysis.prob.root._params_dict
+    for var, val in iteritems(params):
+        top_var = params[var]['top_promoted_name']
+        dif = OAS_prob_analysis.getvar(top_var)-OAS_prob_optimize.getvar(top_var)
+        err = np.linalg.norm(dif)
+        if np.isclose(err,0.0):
+            print(top_var,' diff=',dif)
+
+
+    # Compare all unknowns
+    print('\nCOMPARE UNKNOWNS')
+    unknowns = OAS_prob_analysis.prob.root._unknowns_dict
+    for var, val in iteritems(unknowns):
+        top_var = unknowns[var]['top_promoted_name']
+        dif = OAS_prob_analysis.getvar(top_var)-OAS_prob_optimize.getvar(top_var)
+        err = np.linalg.norm(dif)
+        if np.isclose(err,0.0):
+            print(top_var,' diff=',dif)
