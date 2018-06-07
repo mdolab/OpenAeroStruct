@@ -123,21 +123,48 @@ if __name__ == "__main__":
 
     # Compare all desvars
     print('\nCOMPARE DESVARS')
+    varsame = []
+    vardiff = []
     params = OAS_prob_analysis.prob.root._params_dict
     for var, val in iteritems(params):
         top_var = params[var]['top_promoted_name']
         dif = OAS_prob_analysis.getvar(top_var)-OAS_prob_optimize.getvar(top_var)
         err = np.linalg.norm(dif)
-        if np.isclose(err,0.0):
-            print(top_var,' diff=',dif)
+        if not np.isclose(err,0.0):
+            if top_var not in vardiff:
+                vardiff.append(top_var)
+            # print(top_var,' diff=',dif)
+        else:
+            if top_var not in varsame:
+                varsame.append(top_var)
+    print('\n----- Same variables ------')
+    for var in varsame:
+        print(var)
+    print('\n----- Different variables: -----')
+    for var in vardiff:
+        print(var)
+
 
 
     # Compare all unknowns
     print('\nCOMPARE UNKNOWNS')
+    varsame = []
+    vardiff = []
     unknowns = OAS_prob_analysis.prob.root._unknowns_dict
     for var, val in iteritems(unknowns):
         top_var = unknowns[var]['top_promoted_name']
         dif = OAS_prob_analysis.getvar(top_var)-OAS_prob_optimize.getvar(top_var)
         err = np.linalg.norm(dif)
-        if np.isclose(err,0.0):
-            print(top_var,' diff=',dif)
+        if not np.isclose(err,0.0):
+            if top_var not in vardiff:
+                vardiff.append(top_var)
+            # print(top_var,' diff=',dif)
+        else:
+            if top_var not in varsame:
+                varsame.append(top_var)
+    print('\n----- Same variables ------')
+    for var in varsame:
+        print(var)
+    print('\n----- Different variables: -----')
+    for var in vardiff:
+        print(var)
