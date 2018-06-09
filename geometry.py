@@ -455,7 +455,7 @@ class GeometryMesh(Component):
         if self.compute_radius and 'radius_cp' not in self.desvar_names:
             # Get spar radii and interpolate to radius control points.
             # Need to refactor this at some point.
-            unknowns['radius'] = radii(mesh, self.surface['t_over_c'])
+            unknowns['radius'] = radii(self.surface['mesh'], self.surface['t_over_c'])
             self.compute_radius = False
 
         unknowns['mesh'] = mesh
