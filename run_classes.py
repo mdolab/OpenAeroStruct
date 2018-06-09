@@ -127,13 +127,24 @@ class OASProblem(object):
         self.constraints = {}
         self.objective = {}
 
-    def getvar(self, var):
+    def getvar(self, name):
         ''' Get problem variable '''
-        return self.prob[var]
+        return self.prob[name]
 
-    def setvar(self, var, val):
+    def setvar(self, name, val):
         ''' Set problem variable '''
-        self.prob[var] = val
+        vardict = self.validate_input_vars({name: val})
+        name = vardict.keys()[0]
+        self.prob[name] = vardict[name]
+        # self.prob.driver.set_desvar(var, val)
+
+    def __setitem__(self, name, val):
+        ''' Set problem variable '''
+        self.prob[name] = val
+
+    def __getitem__(self, name):
+        ''' Get probem variable '''
+        return self.prob[name]
 
     def get_default_prob_dict(self):
         """
@@ -630,36 +641,17 @@ class OASProblem(object):
         dictionary for Matlab struct conversion
         """
 
-        # print('0 prob[''wing.mesh'']=')
-        # print(self.prob['wing.mesh'])
-        # for var, val in iteritems(kwargs):
-        #     if var == 'matlab':
-        #         continue
-        #     print('var=',var,' val=',self.prob[var])
-        # print('\n UNKONWNS \n')
-        # for var, val in iteritems(self.prob.root._unknowns_dict):
-        #     print('var=',var,' val=',val)
-        # print('\n PARAMS \n')
-        # for var, val in iteritems(self.prob.root._params_dict):
-        #     print('var=',var,' val=',val)
-
         # Check if we want Matlab struct style output dictionary, remove from kwargs
         matlab_config = kwargs.pop('matlab',False)
 
         # Change design variables if user supplies them from remaining keyword
         # entries or dictionary, validate input
-        kwargs = self.validate_input_vars(kwargs)
+        # kwargs = self.validate_input_vars(kwargs)
         geo_vars = ['wing.A','wing.Iy','wing.Iz','wing.J','fuelburn']
-        for var, val in iteritems(kwargs):
+        for name, val in iteritems(kwargs):
             # print('var=',var,' val=',val)
-            self.prob[var] = val
-
-        # print('1 prob[''wing.mesh'']=')
-        # print(self.prob['wing.mesh'])
-        # for var, val in iteritems(kwargs):
-        #     print('var=',var,' val=',self.prob[var])
-        # for var in geo_vars:
-        #     print('var=',var,' val=',self.prob[var])
+            self.setvar(name, val)
+            # self.prob[var] = val
 
         # Have more verbose output about optimization convergence
         if self.prob_dict['print_level']:
@@ -679,12 +671,6 @@ class OASProblem(object):
             # Perform optimization
             self.prob.run()
 
-        # print('2 prob[''wing.mesh'']=')
-        # print(self.prob['wing.mesh'])
-        # for var, val in iteritems(kwargs):
-        #     print('var=',var,' val=',self.prob[var])
-        # for var in geo_vars:
-        #     print('var=',var,' val=',self.prob[var])
         # If the problem type is aero or aerostruct, we can compute the static margin.
         # This is a naive tempoerary implementation that currently finite differences
         # over the entire model to obtain the static margin.
@@ -723,15 +709,15 @@ class OASProblem(object):
         # in OpenMDAO Group() object
 
     	# Add design variables to output dict
-    	for var in self.prob.driver._desvars:
-    	    output[var] = self.prob[var]
+    	for name in self.prob.driver._desvars:
+    	    output[name] = self.getvar(name)
 
         # Get overall output variables and constraints, return None if not there
         overall_vars = ['fuelburn','CD','CL','L_equals_W','CM','v','rho','cg',
                         'weighted_obj','total_weight']
         for item in overall_vars:
             try:
-                output[item] = self.prob[item]
+                output[item] = self.getvar(item)
             except:
                 pass
 
