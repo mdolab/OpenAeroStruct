@@ -125,6 +125,60 @@ classdef Test_Aerostruct < matlab.unittest.TestCase
             testCase.verifyEqual(out.fuelburn,57109.065516474155,'AbsTol',1e-1);
             testCase.verifyEqual(CM(2),-0.19380236992046351,'AbsTol',1e-2);
         end
+        function test_aerostruct_analysis_set_variables(testCase)
+            prob_dict = struct;
+            prob_dict.type = 'aerostruct';
+            prob_dict.with_viscous = true;
+            prob_dict.optimize = false;
+            prob_dict.record_db = false;  % using sqlitedict locks a process
+            prob_dict.print_level = 0;
+            prob_dict.alpha = 0.;
+            
+            OAS_prob = py.OpenAeroStruct.run_classes.OASProblem(prob_dict);
+            
+            % Create a dictionary to store options about the surface
+            surf_dict = struct;
+            surf_dict.name = 'wing';
+            surf_dict.num_y = 7;
+            surf_dict.num_x = 2;
+            surf_dict.wing_type = 'CRM';
+            surf_dict.CD0 = 0.015;
+            surf_dict.symmetry = true;
+            surf_dict.num_twist_cp = 2;
+            surf_dict.num_thickness_cp = 2;
+            surf_dict.num_chord_cp = 1;
+            surf_dict.exact_failure_constraint = true;
+            surf_dict.span_cos_spacing = 0.5;
+            % Add the specified wing surface to the problem
+            OAS_prob.add_surface(surf_dict);
+
+            % Multiple lifting surfaces
+            surf_dict = struct;
+            surf_dict.name = 'tail';
+            surf_dict.num_y = 7;
+            surf_dict.num_x = 2;
+            surf_dict.span = 20.;
+            surf_dict.root_chord = 5.;
+            surf_dict.wing_type = 'rect';
+            surf_dict.offset = [50., 0., 5.];
+            surf_dict.twist_cp = -9.5;
+            surf_dict.exact_failure_constraint = true;
+            OAS_prob.add_surface(surf_dict)
+            
+            OAS_prob.add_desvar('wing.twist_cp');
+            OAS_prob.add_desvar('wing.thickness_cp');
+            OAS_prob.add_desvar('wing.taper');
+            OAS_prob.add_desvar('wing.chord_cp');
+
+            OAS_prob.setup()
+            % Actually run the problem
+            input = {'wing.twist_cp',[12.803738284992180 14.737846154728121],...
+                'wing.thickness_cp',[0.037776846454264, 0.071832717954386],...
+                'wing.taper',0.2,'wing.chord_cp',0.9,...
+                'matlab',true};
+            output = struct(OAS_prob.run(pyargs(input{:})));
+            testCase.verifyEqual(output.fuelburn,101898.5636 ,'AbsTol',1e-1); 
+        end
     end
 %         function test_aerostruct_symmetry_deriv(testCase)
 %             prob_dict = struct;
