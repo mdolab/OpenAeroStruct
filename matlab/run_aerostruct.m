@@ -13,22 +13,18 @@ if ~isloaded
    pyversion 'C:\Users\Sam\repos\OpenAeroStruct\venv\Scripts\python.exe'
 end
 
-% import OpenAeroStruct python module
+% add OpenAeroStruct python module to PYTHONPATH
 % OAS_PATH = '/general/home/samfriedman';
 OAS_PATH = py.os.path.abspath('../..');
 P = py.sys.path;
 if count(P,OAS_PATH) == 0
     insert(P,int64(0),OAS_PATH);
 end
-% fprintf('Import OpenAeroStruct module... \n');
-% oas = py.importlib.import_module('OpenAeroStruct');
 
 prob_dict = struct;
 prob_dict.type = 'aerostruct';
 prob_dict.with_viscous = true;
-% prob_dict.cg = mat2np([30., 0., 5.]);
-% prob_dict.cg = mat2np([30., 0., 5.]);
-prob_dict.optimize = true;
+prob_dict.optimize = false;
 prob_dict.record_db = false;  % using sqlitedict locks a process
 prob_dict.print_level = 0;
 prob_dict.alpha = 0.;
@@ -40,13 +36,13 @@ OAS_prob = py.OpenAeroStruct.run_classes.OASProblem(prob_dict);
 % Create a dictionary to store options about the surface
 surf_dict = struct;
 surf_dict.name = 'wing';
-surf_dict.num_y = int32(7);
-surf_dict.num_x = int32(2);
+surf_dict.num_y = 7;
+surf_dict.num_x = 2;
 surf_dict.wing_type = 'CRM';
 surf_dict.CD0 = 0.015;
 surf_dict.symmetry = true;
-surf_dict.num_twist_cp = int64(2);
-surf_dict.num_thickness_cp = int64(2);
+surf_dict.num_twist_cp = 2;
+surf_dict.num_thickness_cp = 2;
 surf_dict.num_chord_cp = 1;
 surf_dict.exact_failure_constraint = true;
 surf_dict.span_cos_spacing = 0.5;
@@ -62,8 +58,8 @@ OAS_prob.add_objective('fuelburn', pyargs('scaler', 1e-5));
 % Multiple lifting surfaces
 surf_dict = struct;
 surf_dict.name = 'tail';
-surf_dict.num_y = int64(7);
-surf_dict.num_x = int64(2);
+surf_dict.num_y = 7;
+surf_dict.num_x = 2;
 surf_dict.span = 20.;
 surf_dict.root_chord = 5.;
 surf_dict.wing_type = 'rect';
@@ -96,17 +92,16 @@ fb = OAS_prob.getvar('fuelburn');
 % Actually run the problem
 fprintf('Run the problem... \n');
 tic;
-input = {'wing.twist_cp',[5.65946593 -3.53034877],'wing.thickness_cp',...
-    [0.03709672 0.04913425],'wing.taper',0.2,'wing.chord_cp',[0.9],...
-    'matlab',true};
-% OAS_prob.setvar('wing.thickness_cp', mat2np([0.03709672 0.04913425]));
-% output = struct(OAS_prob.run(pyargs(input{:})));
-output = struct(OAS_prob.run(pyargs('matlab',true)));
+input = {...
+    'wing.twist_cp',[12.80374032, 14.73784563],...
+    'wing.thickness_cp',[0.03777685, 0.07183272],...
+    'wing.taper',0.2,...
+    'wing.chord_cp',0.9,...
+    'matlab',true
+};
+output = struct(OAS_prob.run(pyargs(input{:})));
 t = toc;
 fuelburn = output.fuelburn;
-OAS_prob.getvar('fuelburn')
-fb
-
 
 fprintf('\nFuelburn: %.4f \n', fuelburn);
 fprintf('Time elapsed: %.4f secs\n', t);
