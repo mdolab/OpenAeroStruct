@@ -1,11 +1,11 @@
-% Similar to run_aerostruct.py example script
+% Similar to run_vlm.py example script
 
 % Script options:
 %   optimize_wing = true  --> perform optimization
 %   optimize_wing = false --> run a single analysis
 %   use_multiple  = true  --> use multiple lifting surfaces
 %   use_multiple  = false --> use a single lifting surface
-optimize_wing = true;
+optimize_wing = false;
 use_multiple = true;
 
 % Load Python
@@ -32,21 +32,19 @@ end
 
 %% Create problem dictionary using Matlab struct object
 prob_dict = struct;
-prob_dict.type = 'aerostruct';
-prob_dict.with_viscous = true;
+prob_dict.type = 'aero';
 prob_dict.optimize = optimize_wing;
 prob_dict.record_db = false;  % using sqlitedict locks a process
-prob_dict.cg = [30., 0. 5.];
 
 % Instantiate OASProblem object with problem dictionary
-fprintf('Create OASProblem object with prob_dict... \n');
+fprintf('Create OASProblem object with prob_dwingict... \n');
 OAS_prob = py.OpenAeroStruct.run_classes.OASProblem(prob_dict);
 
 %% Create a dictionary with Matlab struct to store options about the surface
 surf_dict = struct;
 surf_dict.num_y = 7;
 surf_dict.num_x = 2;
-surf_dict.wing_type = 'CRM';
+surf_dict.wing_type = 'rect';
 surf_dict.CD0 = 0.015;
 surf_dict.symmetry = true;
 surf_dict.num_twist_cp = 2;
@@ -58,32 +56,29 @@ if use_multiple
     % Multiple lifting surfaces
     surf_dict = struct;
     surf_dict.name = 'tail';
+    surf_dict.span = 3.;
     surf_dict.num_y = 7;
-    surf_dict.num_x = 2;
-    surf_dict.span = 20.;
-    surf_dict.root_chord = 5.;
-    surf_dict.wing_type = 'rect';
-    surf_dict.offset = [50., 0., 5.];
-    surf_dict.twist_cp = -9.5;
-    surf_dict.exact_failure_constraint = true;
+    surf_dict.span_cos_spacing = 0.5;
+    surf_dict.offset = [5., 0., .1];
+    surf_dict.symmetry = true;
     fprintf('Add tail surface to problem... \n');
     OAS_prob.add_surface(surf_dict)
 end
 
 %% Add design variables, constraints, and objective for the problem
 fprintf('Add design variables and constraints... \n');
-OAS_prob.add_desvar('alpha', pyargs('lower',-10., 'upper',10.));
-OAS_prob.add_constraint('L_equals_W', pyargs('equals', 0.));
-OAS_prob.add_objective('fuelburn', pyargs('scaler', 1e-5));
-OAS_prob.add_desvar('wing.twist_cp', pyargs('lower',-15.,'upper',15.));
-OAS_prob.add_desvar('wing.thickness_cp', pyargs('lower',0.01, 'upper',0.5, 'scaler',1e2));
-OAS_prob.add_constraint('wing_perf.failure', pyargs('upper',0.));
-OAS_prob.add_constraint('wing_perf.thickness_intersects', pyargs('upper',0.));
+OAS_prob.add_desvar('wing.twist_cp', pyargs('lower',-10., 'upper',15.));
+OAS_prob.add_desvar('wing.sweep', pyargs('lower',10., 'upper',30.));
+OAS_prob.add_desvar('wing.dihedral', pyargs('lower',-10., 'upper',20.));
+OAS_prob.add_desvar('wing.taper', pyargs('lower',.5, 'upper',2.));
+OAS_prob.add_constraint('wing_perf.CL', pyargs('equals',0.5));
+OAS_prob.add_objective('wing_perf.CD', pyargs('scaler', 1e4));
 if use_multiple
-    OAS_prob.add_desvar('tail.twist_cp', pyargs('lower',-15., 'upper',15.));
-    OAS_prob.add_desvar('tail.thickness_cp', pyargs('lower',0.01,'upper',0.5,'scaler',1e2));
-    OAS_prob.add_constraint('tail_perf.failure', pyargs('upper',0.));
-    OAS_prob.add_constraint('tail_perf.thickness_intersects', pyargs('upper',0.)); 
+    OAS_prob.add_desvar('tail.twist_cp', pyargs('lower',-10., 'upper',15.));
+    OAS_prob.add_desvar('tail.sweep', pyargs('lower',10., 'upper',30.));
+    OAS_prob.add_desvar('tail.dihedral', pyargs('lower',-10., 'upper',20.));
+    OAS_prob.add_desvar('tail.taper', pyargs('lower',.5, 'upper',2.));
+    OAS_prob.add_constraint('tail_perf.CL', pyargs('equals',0.5));
 end
 
 %% Setup problem
@@ -96,6 +91,6 @@ tic;
 OAS_prob.run();
 t = toc;
 
-fuelburn = OAS_prob.getvar('fuelburn');
-fprintf('\nFuelburn: %f \n', fuelburn);
-fprintf('Time elapsed: %.4f secs\n', t);
+fprintf('\nWing CL = %.13f \n', OAS_prob.getvar('wing_perf.CL'));
+fprintf(  'Wing CD = %.13f \n', OAS_prob.getvar('wing_perf.CD'));
+fprintf('Time elapsed: %.6f secs\n', t);
