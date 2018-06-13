@@ -37,7 +37,7 @@ prob_dict.optimize = optimize_wing;
 prob_dict.record_db = false;  % using sqlitedict locks a process
 
 % Instantiate OASProblem object with problem dictionary
-fprintf('Create OASProblem object with prob_dwingict... \n');
+fprintf('Create OASProblem object with prob_dict... \n');
 OAS_prob = py.OpenAeroStruct.run_classes.OASProblem(prob_dict);
 
 %% Create a dictionary with Matlab struct to store options about the surface
