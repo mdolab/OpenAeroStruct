@@ -2,7 +2,7 @@ classdef Test_OpenAeroStruct < matlab.unittest.TestCase
     %UNTITLED Summary of this class goes here
     %   Detailed explanation goes here
     
-    methods (Test)
+    methods (Test, TestTags={'Other','Misc'})
         function test_input_validation(testCase)
             prob_dict = struct;
             prob_dict.type = 'aerostruct';
@@ -42,7 +42,97 @@ classdef Test_OpenAeroStruct < matlab.unittest.TestCase
             testCase.verifyEqual(out.wing_failure,0.425301457001547,'AbsTol',1e-5);
             testCase.verifyEqual(out.fuelburn,97377.16195092892,'AbsTol',1e-2);
             testCase.verifyEqual(CM(2),-0.005158355060936,'AbsTol',1e-2);
+        end
+        function test_mat2np_np2mat_scalar(testCase)
+            % test functions that convert arrays from Matlab-->Numpy and Numpy-->Matlab
+            a1 = 20;
+            a2 = 5.5385;
+            % convert to 1D numpy arrays
+            a1np = mat2np(a1);
+            a2np = mat2np(a2);
+            a3np = py.numpy.dot(a1np,a2np);
             
+            % convert back to Matlab and check result
+            testCase.verifyEqual(a1*a2, np2mat(a1np*a2np), 'AbsTol', 1e-9);
+            testCase.verifyEqual(a1*a2, a3np, 'AbsTol', 1e-9);
+            testCase.verifyEqual(a1*a2, np2mat(a3np), 'AbsTol', 1e-9);
+        end
+        function test_mat2np_np2mat_1d(testCase)
+            % test functions that convert arrays from Matlab-->Numpy and Numpy-->Matlab
+            a1 = [     20,     20,     17,     19];
+            a2 = [ 5.5385,16.4692,19.0044, 0.9234];
+            % convert to 1D numpy arrays
+            a1np = mat2np(a1);
+            a2np = mat2np(a2);
+            a3np = py.numpy.dot(a1np,a2np);
+            a3np2 = py.numpy.add(a1np,a2np);
+            % convert back to Matlab and check result
+            testCase.verifyEqual(a1*a2', a3np, 'AbsTol', 1e-9);
+            testCase.verifyEqual(a1+a2, np2mat(a3np2), 'AbsTol', 1e-9);
+            
+            % convert to 1D numpy arrays
+            a1np = mat2np(a1);
+            a2np = mat2np(a2');
+            a3np = py.numpy.dot(a1np,a2np);
+            a3np2 = py.numpy.add(a1np,a2np);
+            % convert back to Matlab and check result
+            testCase.verifyEqual(a1*a2', a3np, 'AbsTol', 1e-9);
+            testCase.verifyEqual(a1+a2, np2mat(a3np2), 'AbsTol', 1e-9);
+        end
+        function test_mat2np_np2mat_2d(testCase)
+            % test functions that convert arrays from Matlab-->Numpy and Numpy-->Matlab
+            a1 = [20, 20, 17, 19;
+                  20, 20,  3, 16;
+                   4, 10,  9, 20];
+            a2 = [ 5.5385,16.4692,19.0044;
+                   0.9234,13.8966, 0.6889;
+                   1.9426, 6.3420, 8.7749;
+                   7.6312,15.9040,15.3103];
+            % convert to 2D numpy arrays
+            a1np = mat2np(a1);
+            a2np = mat2np(a2);
+            a3np = py.numpy.dot(a1np,a2np);
+            
+            % convert back to Matlab and check result
+            testCase.verifyEqual(a1*a2, np2mat(a3np), 'AbsTol', 1e-9);
+        end
+        
+        function test_mat2np_np2mat_mixed(testCase)
+            % test functions that convert arrays from Matlab-->Numpy and Numpy-->Matlab
+            a1 = 20;
+            a2 = [ 5.5385,16.4692,19.0044, 0.9234];
+            % convert to 1D numpy arrays
+            a1np = mat2np(a1);
+            a2np = mat2np(a2);
+            a3np = py.numpy.multiply(a1np,a2np);
+            
+            % convert back to Matlab and check result
+            testCase.verifyEqual(a1*a2, np2mat(a1np*a2np), 'AbsTol', 1e-9);
+            testCase.verifyEqual(a1*a2, np2mat(a3np), 'AbsTol', 1e-9);
+        end
+        function test_mat2np_np2mat_nd(testCase)
+            % test functions that convert arrays from Matlab-->Numpy and Numpy-->Matlab
+            a1 = zeros(3,4,2);
+            a1(:,:,1) = [20, 20, 17, 19;
+                20, 20,  3, 16;
+                4, 10,  9, 20];
+            a1(:,:,2) = [14, 19, 15,  4;
+                1, 14,  8, 15;
+                17, 16, 14,  1];
+            a2 = zeros(3,4,2);
+           a2(:,:,1) = [ 5.5385,16.4692,19.0044, 7.6312;
+                         0.9234,13.8966, 0.6889,15.3103;
+                         1.9426, 6.3420, 8.7749,15.9040];
+           a2(:,:,2) = [ 3.7375,12.9263, 5.5205, 3.2522;
+                         9.7953,14.1873,13.5941, 2.3800;
+                         8.9117,15.0937,13.1020, 9.9673];
+           % convert to 3D numpy arrays
+           a1np = mat2np(a1);
+           a2np = mat2np(a2);
+           a3np = py.numpy.add(a1np,a2np);        
+
+           % convert back to Matlab and check result
+           testCase.verifyEqual(a1+a2, np2mat(a3np));
         end
     end
     

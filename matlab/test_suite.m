@@ -22,6 +22,12 @@ if nargin > 0
     if any(strcmpi(varargin,'struct'))
         tags{end+1} = 'Struct';
     end
+    if any(strcmpi(varargin,'misc'))
+        tags{end+1} = 'Misc';
+    end
+    if any(strcmpi(varargin,'other'))
+        tags{end+1} = 'Other';
+    end
 end
 
 % Load Python
