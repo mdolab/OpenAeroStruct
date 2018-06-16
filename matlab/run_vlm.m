@@ -5,7 +5,7 @@
 %   optimize_wing = false --> run a single analysis
 %   use_multiple  = true  --> use multiple lifting surfaces
 %   use_multiple  = false --> use a single lifting surface
-optimize_wing = false;
+optimize_wing = true;
 use_multiple = true;
 
 % Load Python
@@ -91,6 +91,6 @@ tic;
 OAS_prob.run();
 t = toc;
 
-fprintf('\nWing CL = %.13f \n', OAS_prob.getvar('wing_perf.CL'));
-fprintf(  'Wing CD = %.13f \n', OAS_prob.getvar('wing_perf.CD'));
+fprintf('\nWing CL = %.13f \n', OAS_prob.get_var('wing_perf.CL'));
+fprintf(  'Wing CD = %.13f \n', OAS_prob.get_var('wing_perf.CD'));
 fprintf('Time elapsed: %.6f secs\n', t);

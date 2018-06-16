@@ -84,6 +84,6 @@ tic;
 OAS_prob.run();
 t = toc;
 
-weight = OAS_prob.getvar('wing.structural_weight');
+weight = OAS_prob.get_var('wing.structural_weight');
 fprintf('\nWing structural weight: %.9f \n', weight);
 fprintf('Time elapsed: %.6f secs\n', t);

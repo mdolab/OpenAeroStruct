@@ -83,7 +83,7 @@ if use_multiple
     OAS_prob.add_desvar('tail.twist_cp', pyargs('lower',-15., 'upper',15.));
     OAS_prob.add_desvar('tail.thickness_cp', pyargs('lower',0.01,'upper',0.5,'scaler',1e2));
     OAS_prob.add_constraint('tail_perf.failure', pyargs('upper',0.));
-    OAS_prob.add_constraint('tail_perf.thickness_intersects', pyargs('upper',0.)); 
+    OAS_prob.add_constraint('tail_perf.thickness_intersects', pyargs('upper',0.));
 end
 
 %% Setup problem
@@ -96,6 +96,6 @@ tic;
 OAS_prob.run();
 t = toc;
 
-fuelburn = OAS_prob.getvar('fuelburn');
+fuelburn = OAS_prob.get_var('fuelburn');
 fprintf('\nFuelburn: %f \n', fuelburn);
 fprintf('Time elapsed: %.4f secs\n', t);
