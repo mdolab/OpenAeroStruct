@@ -127,11 +127,11 @@ class OASProblem(object):
         self.constraints = {}
         self.objective = {}
 
-    def getvar(self, name):
+    def get_var(self, name):
         ''' Get problem variable '''
         return self.prob[name]
 
-    def setvar(self, name, val):
+    def set_var(self, name, val):
         ''' Set problem variable '''
         vardict = self.validate_input_vars({name: val})
         name = vardict.keys()[0]
@@ -140,11 +140,11 @@ class OASProblem(object):
 
     def __setitem__(self, name, val):
         ''' Set problem variable '''
-        self.prob[name] = val
+        self.prob[name] = self.set_var(name, val)
 
     def __getitem__(self, name):
         ''' Get probem variable '''
-        return self.prob[name]
+        return self.get_var(name)
 
     def get_default_prob_dict(self):
         """
@@ -650,7 +650,7 @@ class OASProblem(object):
         geo_vars = ['wing.A','wing.Iy','wing.Iz','wing.J','fuelburn']
         for name, val in iteritems(kwargs):
             # print('var=',var,' val=',val)
-            self.setvar(name, val)
+            self.set_var(name, val)
             # self.prob[var] = val
 
         # Have more verbose output about optimization convergence
@@ -710,14 +710,14 @@ class OASProblem(object):
 
     	# Add design variables to output dict
     	for name in self.prob.driver._desvars:
-    	    output[name] = self.getvar(name)
+    	    output[name] = self.get_var(name)
 
         # Get overall output variables and constraints, return None if not there
         overall_vars = ['fuelburn','CD','CL','L_equals_W','CM','v','rho','cg',
                         'weighted_obj','total_weight']
         for item in overall_vars:
             try:
-                output[item] = self.getvar(item)
+                output[item] = self.get_var(item)
             except:
                 pass
 
