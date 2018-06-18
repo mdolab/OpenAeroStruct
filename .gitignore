@@ -21,6 +21,3 @@ src/adjoint/tempForward/
 
 
 !doc/index.rst
-
-# ignore html files
-*.html
