@@ -1,17 +1,25 @@
 function mat = np2mat(npary)
-
-% with help from: https://www.mathworks.com/matlabcentral/answers/157347-convert-python-numpy-array-to-double
-
-% convert python (Numpy) ndarray to matlab
+% NP2MAT Convert a Numpy ndarray to a native Matlab double array
+%    MAT = NP2MAT(NPARY) returns the equivalent Matlab array MAT from the
+%    Python Numpy ndarray NPARY.
+%
+%    NPARY can be a Python scalar, Numpy ndarray scaler, flattened Numpy
+%    1-dimensional ndarray, or a Numpy n-dimensional ndarray.
+%
+%    Complex variables are not supported.
+%
+%    Based on help from:
+%    https://www.mathworks.com/matlabcentral/answers/157347-convert-python-numpy-array-to-double
+%
+%    See also MAT2NP
 try
-    % if scalar
+    % if scalar float or int value
     mat = double(npary);
-    % disp('A');
 catch
-    % if array
+    % Otherwise assume it is a ndarray
     sh = cellfun(@int64,cell(npary.shape));
-    if length(sh) == 1
-        % if a numpy 1D flattened array
+    if any(numel(sh) == [0,1])
+        % if a scalar or numpy 1D flattened array
         mat = double(py.array.array('d',py.numpy.nditer(npary)));
     elseif length(sh) == 2
         % if a numpy 2D array
@@ -20,9 +28,8 @@ catch
     elseif length(sh) > 2
         % if a numpy 3D or higher dimension array
         npary3 = double(py.array.array('d',py.numpy.nditer(npary, pyargs('order','C'))));
-        % fprintf('sh=%f\n',sh);
         mat = reshape(npary3, fliplr(sh));
-        mat = permute(mat, [length(sh):-1:1]);  % matlab Nd array, N >= 3
+        mat = permute(mat, length(sh):-1:1);  % matlab Nd array, N >= 3
     end
 end
 end

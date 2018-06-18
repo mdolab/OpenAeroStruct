@@ -703,7 +703,10 @@ class OASProblem(object):
         # self.prob.check_partial_derivatives(compact_print=True)
 
         # Return dictionary of output values for easy access
-        output = OrderedDict()
+        if matlab_config:
+            output = {}    # Return standard dict for Matlab output
+        else:
+            output = OrderedDict()
 
         # Note: could also check in self.root._unknowns_dict and self.root._params_dict
         # in OpenMDAO Group() object

@@ -1,9 +1,10 @@
 function result = test_suite(varargin)
 % Run test suite for OpenAeroStruct implementation in Matlab.
 % Use optional arguments to only run certain tests. Can use multiple tags.
-%   'aerostruct' = run aerostructural tests
-%   'aero'       = run aero tests
-%   'struct'     = run structural tests
+%   'aerostruct'   = run aerostructural tests
+%   'aero'         = run aero tests
+%   'struct'       = run structural tests
+%   'misc'/'other' = run utility function tests
 %
 % Example: test_suite('aerostruct','aero')
 
