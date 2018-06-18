@@ -10,8 +10,8 @@ Calling OpenAeroStruct from a Matlab script or function requires a few steps in 
 1. If you are using a Unix or Linux system, then you must additionally set a library variable before loading the Python interpreter into Matlab. This variable affects how Python opens shared object libraries in Unix. This step can be made environment-agnostic with a `try/catch/end` statement.
 ```matlab
 try
-	% On Unix/Linux systems this setting is required otherwise Matlab crashes
-	py.sys.setdlopenflags(int32(10));  % Set RTLD_NOW and RTLD_DEEPBIND
+  % On Unix/Linux systems this setting is required otherwise Matlab crashes
+  py.sys.setdlopenflags(int32(10));  % Set RTLD_NOW and RTLD_DEEPBIND
 catch
 end
 ```
@@ -21,7 +21,7 @@ You can add a check if OpenAeroStruct is on your PYTHONPATH and add it if it isn
 ```matlab
 OAS_PATH = full/path/to/OpenAeroStruct/directory;
 if count(py.sys.path,OAS_PATH) == 0
-	insert(py.sys.path,int32(0),OAS_PATH);
+  insert(py.sys.path,int32(0),OAS_PATH);
 end
 ```
 
@@ -95,13 +95,13 @@ OAS_prob.run();
 You can also use a cell array to set the design variable values when the model is run. Use the pattern `{name1, value1, name2, value2, ...}`.
 ```matlab
 OAS_prob.run(pyargs(...
-	'alpha', 2.5,...
-	'wing.twist_cp', [-12.0, -3.0],...
-	'wing.thickness_cp', [0.03, 0.07]));
+  'alpha', 2.5,...
+  'wing.twist_cp', [-12.0, -3.0],...
+  'wing.thickness_cp', [0.03, 0.07]));
 % alternatively
 input = {'alpha', 2.5,...
-	'wing.twist_cp', [-12.0, -3.0],...
-	'wing.thickness_cp', [0.03, 0.07]};
+  'wing.twist_cp', [-12.0, -3.0],...
+  'wing.thickness_cp', [0.03, 0.07]};
 OAS_prob.run(pyargs(input{:}));
 ```
 To return a struct variable with values for design variables, constraints, and objectives. Include the keyword input `{'matlab', true}` to format the output dictionary to be converted to a Matlab struct. This converts the periods in variable names to underscores. See below for information on using `pyargs()` for keyword arguments.
