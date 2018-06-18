@@ -3,7 +3,7 @@ function mat = np2mat(npary)
 %    MAT = NP2MAT(NPARY) returns the equivalent Matlab array MAT from the
 %    Python Numpy ndarray NPARY.
 %
-%    NPARY can be a Python scalar, Numpy ndarray scaler, flattened Numpy
+%    NPARY can be a Python scalar, Numpy ndarray scalar, flattened Numpy
 %    1-dimensional ndarray, or a Numpy n-dimensional ndarray.
 %
 %    Complex variables are not supported.

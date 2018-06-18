@@ -1,6 +1,8 @@
 classdef Test_OpenAeroStruct < matlab.unittest.TestCase
-    %UNTITLED Summary of this class goes here
-    %   Detailed explanation goes here
+    % TEST_OPENAEROSTRUCT Test suite for Matlab implementation of
+    % OpenAeroStruct model.
+    %   
+    %    See also TEST_SUITE.
     
     methods (Test, TestTags={'Other','Misc'})
         function test_input_validation(testCase)
@@ -50,6 +52,20 @@ classdef Test_OpenAeroStruct < matlab.unittest.TestCase
             % convert to 1D numpy arrays
             a1np = mat2np(a1);
             a2np = mat2np(a2);
+            a3np = py.numpy.dot(a1np,a2np);
+            
+            % convert back to Matlab and check result
+            testCase.verifyEqual(a1*a2, np2mat(a1np*a2np), 'AbsTol', 1e-9);
+            testCase.verifyEqual(a1*a2, a3np, 'AbsTol', 1e-9);
+            testCase.verifyEqual(a1*a2, np2mat(a3np), 'AbsTol', 1e-9);
+        end
+        function test_mat2np_np2mat_ndarray_scalar(testCase)
+            % test functions that convert arrays from Matlab-->Numpy and Numpy-->Matlab
+            a1 = 20;
+            a2 = 5.5385;
+            % convert to 0-dim numpy arrays
+            a1np = py.numpy.array(a1);
+            a2np = py.numpy.array(a2);
             a3np = py.numpy.dot(a1np,a2np);
             
             % convert back to Matlab and check result

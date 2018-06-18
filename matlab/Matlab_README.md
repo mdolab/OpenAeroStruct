@@ -10,8 +10,8 @@ Calling OpenAeroStruct from a Matlab script or function requires a few steps in 
 1. If you are using a Unix or Linux system, then you must additionally set a library variable before loading the Python interpreter into Matlab. This variable affects how Python opens shared object libraries in Unix. This step can be made environment-agnostic with a `try/catch/end` statement.
 ```matlab
 try
-	  % On Unix/Linux systems this setting is required otherwise Matlab crashes
-	  py.sys.setdlopenflags(int32(10));  % Set RTLD_NOW and RTLD_DEEPBIND
+	% On Unix/Linux systems this setting is required otherwise Matlab crashes
+	py.sys.setdlopenflags(int32(10));  % Set RTLD_NOW and RTLD_DEEPBIND
 catch
 end
 ```
@@ -21,11 +21,9 @@ You can add a check if OpenAeroStruct is on your PYTHONPATH and add it if it isn
 ```matlab
 OAS_PATH = full/path/to/OpenAeroStruct/directory;
 if count(py.sys.path,OAS_PATH) == 0
-	  insert(py.sys.path,int32(0),OAS_PATH);
+	insert(py.sys.path,int32(0),OAS_PATH);
 end
 ```
-
-Test the OpenAeroStruct setup in Matlab by running the `test_suite.m` script in the `matlab` directory.
 
 #### References
 - [System requirements for calling Python functions from Matlab](https://www.mathworks.com/help/matlab/matlab_external/system-and-configuration-requirements.html)
@@ -35,6 +33,9 @@ Test the OpenAeroStruct setup in Matlab by running the `test_suite.m` script in 
 - [virtualenv](http://docs.python-guide.org/en/latest/dev/virtualenvs/#lower-level-virtualenv)
 - [PYTHONPATH](https://docs.python.org/2/using/cmdline.html#envvar-PYTHONPATH)
 <!-- Import the OpenAeroStruct module. Help for this step can be found on the Mathworks documentation [Call User Defined Custom Module](https://www.mathworks.com/help/matlab/matlab_external/call-user-defined-custom-module.html). Use the import command `py.importlib.import_module('OpenAeroStruct');`.  -->
+
+## Test
+Test the OpenAeroStruct setup in Matlab by running the `test_suite.m` script in the `matlab` directory.
 
 ## Usage
 There are several ways to run the OpenAeroStruct models from Matlab and there are several ways to retrieve data after the model is run. See `run_vlm.m`, `run_spatialbeam.m`, and `run_aerostruct.m` for the equivalent Matlab scripts to the Python examples in the parent directory.
@@ -122,16 +123,6 @@ twist_cp = output.wing_twist_cp;
 thickness_cp = output.wing_thickness_cp;
 ```
 
-<!-- To run the model
-1. Run optimization
-2. Set design variables manually and run analysis
-
-Python commands
-
-To get the data
-1. Use the `OASProblem` object to retrieve data
-2. -->
-
 ## Passing variable data between Matlab and Python
 Matlab automatically converts some native Matlab variable classes to native Python types, and some Python variables can be converted to Matlab variables with built-in Matlab functions. Matlab supports passing 1-dimensional arrays to Python and OpenAeroStruct has built-in input validation that will automatically convert the appropriate parameters from floats to integers, so no additional effort is required in Matlab for to submit variables that are  1-dimensional arrays, scalar floats, or scalar integers.
 
@@ -151,14 +142,14 @@ wing_twist_cp = np2mat(wing_twist_cp);      % Now it is a Matlab double array
 ```
 
 #### Python keyword arguments
-The OpenAeroStruct functions `add_desvar()`, `add_constraint()`, `add_objective()`, and `run()` can accept optional Python keyword arguments. Matlab scripts can pass these keyword arguments to Python functions with the Matlab `pyargs()` function, which groups these keyword arguments together. The function accepts pairs of inputs in the style `(key1, value1, key2, value2, ...)`. The order of the keyword pairs does not matter. 
+The OpenAeroStruct functions `add_desvar()`, `add_constraint()`, `add_objective()`, and `run()` can accept optional Python keyword arguments. Matlab scripts can pass these keyword arguments to Python functions with the Matlab `pyargs()` function, which groups these keyword arguments together. The function accepts pairs of inputs in the style `(key1, value1, key2, value2, ...)`. The order of the keyword pairs does not matter.
 
 For example, to add `wing.thickness_cp` as a design variable with bounds `[0.001, 0.5]` and scaling `1e2`, the keyword arguments to `OASProblem.add_desvar()` are
-
-		lower = 0.001
-		upper = 0.5
-		scaler = 1e2
-
+```python
+lower = 0.001
+upper = 0.5
+scaler = 1e2
+```
 and entered in Python with the command
 ```Python
 OASProblem.add_desvar('wing.thickness_cp', lower=0.001, upper=0.5, scaler=1e2)
