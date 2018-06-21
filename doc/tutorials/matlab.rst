@@ -120,7 +120,13 @@ For analysis only:
   OAS_prob.add_desvar('wing.twist_cp');
   OAS_prob.add_desvar('wing.thickness_cp');
 
-| **5. Set initial points for design variables or inputs for analysis**
+| **5. Set up the model**
+
+  .. code-block:: matlab
+
+    OAS_prob.setup();
+
+| **6. Set initial points for design variables or inputs for analysis**
 | Use the *OASProblem.set_var()* function to do this in Matlab.
 
 .. code-block:: matlab
@@ -128,12 +134,6 @@ For analysis only:
   OAS_prob.set_var('alpha', 2.5);
   OAS_prob.set_var('wing.twist_cp', [-12.0, -3.0]);
   OAS_prob.set_var('wing.thickness_cp', [0.03, 0.07]);
-
-| **6. Set up the model**
-
-.. code-block:: matlab
-
-  OAS_prob.setup();
 
 | **7. Run the model**
 
