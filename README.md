@@ -51,7 +51,7 @@ If you wish to examine the code in more depth, see `run_classes.py` and the meth
 
 ## Notes
 
-This current version of this repository has grown past the previous Matlab implementation. If you are looking for a Matlab-capable version, please see https://github.com/samtx/OpenAeroStruct for the latest version.
+A tutorial on how to implement OpenAeroStruct in Matlab is available in the [documentation](https://openaerostruct.readthedocs.io/en/latest/tutorials/matlab.html).
 
 ## Known Issues
 

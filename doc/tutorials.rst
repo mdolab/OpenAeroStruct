@@ -13,3 +13,4 @@ Tutorials
    tutorials/struct.rst
    tutorials/aerostruct.rst
    tutorials/common_pitfalls.rst
+   tutorials/matlab.rst

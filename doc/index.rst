@@ -20,7 +20,7 @@ Next, clone this repository:
 .. code-block:: bash
 
     git clone https://github.com/mdolab/OpenAeroStruct.git
-    
+
 If you are using MacOS, move the `config-macOS.mk` file to the `config/` folder and rename it to `config.mk` to replace the existing `config.mk` file. The default `config.mk` file works for Ubuntu users. Unfortunately, there is no documented Windows support for the Fortran code.
 
 If you're on Mac or Ubuntu, run this command from within the OpenAeroStruct folder to make the Fortran files:
@@ -65,7 +65,8 @@ If you wish to examine the code in more depth, see `run_classes.py` and the meth
 Notes
 -----
 
-This current version of this repository has grown past the previous Matlab implementation. If you are looking for a Matlab-capable version, please see https://github.com/samtx/OpenAeroStruct for the latest version.
+A tutorial on how to implement OpenAeroStruct in :ref:`Matlab <Matlab>` is available in the
+Tutorials menu.
 
 Known Issues
 ------------
