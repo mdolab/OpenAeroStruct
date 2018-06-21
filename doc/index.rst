@@ -10,6 +10,8 @@ The analysis and optimization results can be visualized using included tools, pr
 
 .. image:: ../example.png
 
+.. _installation:
+
 Installation
 -----------------
 

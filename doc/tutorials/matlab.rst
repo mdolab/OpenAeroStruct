@@ -9,7 +9,14 @@ Requirements
 
 Setup
 ------------
-Calling OpenAeroStruct from a Matlab script or function requires a few steps in succession:
+Calling OpenAeroStruct from a Matlab script or function requires a few steps in succession.
+The OpenAeroStruct modules must first be downloaded and configured as
+described :ref:`here <installation>`.
+Then add the directory ``OpenAeroStruct/matlab`` to the Matlab path to access the
+example scripts, test scripts, and utility functions *mat2np()* and *np2mat()*.
+After that the following steps will set up your Matlab console to call the Python-based
+OpenAeroStruct modules. You can include these steps at the beginning of a script
+to execute each time the script is run.
 
 | **1. Set DL open flags (Unix only).**
 | If you are using a Unix or Linux system, then you must additionally set a library variable
@@ -34,10 +41,8 @@ Calling OpenAeroStruct from a Matlab script or function requires a few steps in 
 
   pyversion <path-to-code>/OpenAeroStruct/venv/bin/python
 
-**3. Add the OpenAeroStruct directory to the PYTHONPATH.**
-
-You can add a check if OpenAeroStruct is on your PYTHONPATH and add it if it
-isn't with the statements:
+| **3. Add the OpenAeroStruct directory to the PYTHONPATH.**
+| Check if OpenAeroStruct is on your PYTHONPATH and add it if it isn't with the statements:
 
 .. code-block:: matlab
 
@@ -45,6 +50,8 @@ isn't with the statements:
   if count(py.sys.path,OAS_PATH) == 0
     insert(py.sys.path,int32(0),OAS_PATH);
   end
+
+
 
 **References**
 
