@@ -3,4 +3,4 @@ Then do:
 
 `pip install -e .`
 
-Please see the [documentation](https://johnjasa.github.io/OpenAeroStruct/) for more installation details, walkthroughs, and examples.
+Please see the [documentation](https://mdolab.github.io/OpenAeroStruct/) for more installation details, walkthroughs, and examples.
