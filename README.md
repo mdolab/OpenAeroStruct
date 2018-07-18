@@ -16,4 +16,13 @@ Then do:
 
 `pip install -e .`
 
+Documentation
+=============
+
 Please see the [documentation](https://mdolab.github.io/OpenAeroStruct/) for more installation details, walkthroughs, and examples.
+
+Citing OpenAeroStruct
+=====================
+
+For more background, theory, and figures, see the [OpenAeroStruct journal article](http://mdolab.engin.umich.edu/sites/default/files/OAS_SMO_preprint_0.pdf).
+Please cite this article when using OpenAeroStruct in your research or curricula.
