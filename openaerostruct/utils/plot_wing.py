@@ -128,23 +128,6 @@ class Display(object):
         self.obj = []
         self.cg = []
 
-        # Using system metadata, pull out options so we know the stress limits and FEM origin
-        # self.yield_stress_dict = {}
-        # self.fem_origin_dict = {}
-        # for key, value in iteritems(meta_db['system_options']):
-        #     if 'yield_stress' in key:
-        #         self.yield_stress_dict.update({key : value})
-        #     if 'fem_origin' in key:
-        #         self.fem_origin_dict.update({key : value})
-
-        # Code that looked for derivatives solves in order to pull identify major iterations
-        # deriv_keys = sqlitedict.SqliteDict(self.db_name, 'derivs').keys()
-        # deriv_keys = [int(key.split('|')[-1]) for key in deriv_keys]
-
-        self.fem_origin_dict = {'wing_fem_origin' : .35}
-        self.yield_stress_dict = {'wing_yield_stress' : 200e6}
-
-
         # figure out if twist is a desvar
         self.twist_included = False
         for dv_name in last_case.get_desvars():
@@ -175,6 +158,13 @@ class Display(object):
 
             if 'CL' in key:
                 pt_names.append(key.split('.')[0])
+
+        self.fem_origin_dict = {}
+        self.yield_stress_dict = {}
+        for name in names:
+            surface = cr.system_metadata[name]['component_options']['surface']
+            self.yield_stress_dict[name + '_yield_stress'] = surface['yield']
+            self.fem_origin_dict[name + '_fem_origin'] = surface['fem_origin']
 
         if pt_names:
             self.pt_names = pt_names = list(set(pt_names))
@@ -583,7 +573,7 @@ class Display(object):
                 lim = ma
         lim /= float(self.zoom_scale)
         self.ax.auto_scale_xyz([-lim, lim], [-lim, lim], [-lim, lim])
-        self.ax.set_title("Major Iteration: {}".format(self.curr_pos))
+        self.ax.set_title("Iteration: {}".format(self.curr_pos))
 
         # round_to_n = lambda x, n: round(x, -int(np.floor(np.log10(abs(x)))) + (n - 1))
         if self.opt:
