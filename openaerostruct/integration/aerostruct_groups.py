@@ -159,6 +159,7 @@ class AerostructPoint(Group):
             self.connect(name + '_perf.CL', 'total_perf.' + name + '_CL')
             self.connect(name + '_perf.CD', 'total_perf.' + name + '_CD')
             self.connect('coupled.aero_states.' + name + '_sec_forces', 'total_perf.' + name + '_sec_forces')
+            self.connect('coupled.' + name + '.chords', name + '_perf.aero_funcs.chords')
 
             # Connect parameters from the 'coupled' group to the performance
             # groups for the individual surfaces.
