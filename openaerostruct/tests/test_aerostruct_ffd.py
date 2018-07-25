@@ -18,7 +18,7 @@ class Test(unittest.TestCase):
 
         from openaerostruct.integration.aerostruct_groups import Aerostruct, AerostructPoint
 
-        from openmdao.api import IndepVarComp, Problem, Group, NewtonSolver, ScipyIterativeSolver, LinearBlockGS, NonlinearBlockGS, DirectSolver, LinearBlockGS, PetscKSP, ScipyOptimizeDriver
+        from openmdao.api import IndepVarComp, Problem, Group, SqliteRecorder
         from pygeo import DVGeometry
 
 
@@ -160,11 +160,14 @@ class Test(unittest.TestCase):
                 prob.model.connect(name + '.structural_weight', point_name + '.' + 'total_perf.' + name + '_structural_weight')
 
 
-        from openmdao.api import pyOptSparseDriver
-        prob.driver = pyOptSparseDriver()
-        prob.driver.options['optimizer'] = "SNOPT"
-        prob.driver.opt_settings = {'Major optimality tolerance': 1.0e-8,
-                                    'Major feasibility tolerance': 1.0e-8}
+        # Import the Scipy Optimizer and set the driver of the problem to use
+        # it, which defaults to an SLSQP optimization method
+        from openmdao.api import ScipyOptimizeDriver
+        prob.driver = ScipyOptimizeDriver()
+
+        recorder = SqliteRecorder("aerostruct.db")
+        prob.driver.add_recorder(recorder)
+        prob.driver.recording_options['record_derivatives'] = True
 
         # Setup problem and add design variables, constraint, and objective
         prob.model.add_design_var('wing.shape', lower=-3, upper=2)
@@ -204,7 +207,7 @@ class Test(unittest.TestCase):
         # filename += '_' + str(surf_dict['mx']) + '_' + str(surf_dict['my']) + '.mesh'
         # np.save(filename, mesh)
 
-        assert_rel_error(self, prob['AS_point_0.fuelburn'][0], 104675.0989232741, 1e-5)
+        assert_rel_error(self, prob['AS_point_0.fuelburn'][0], 104675.0989232741, 1e-4)
 
 
 if __name__ == '__main__':

@@ -159,13 +159,6 @@ class Display(object):
             if 'CL' in key:
                 pt_names.append(key.split('.')[0])
 
-        self.fem_origin_dict = {}
-        self.yield_stress_dict = {}
-        for name in names:
-            surface = cr.system_metadata[name]['component_options']['surface']
-            self.yield_stress_dict[name + '_yield_stress'] = surface['yield']
-            self.fem_origin_dict[name + '_fem_origin'] = surface['fem_origin']
-
         if pt_names:
             self.pt_names = pt_names = list(set(pt_names))
             pt_name = pt_names[0]
@@ -256,6 +249,15 @@ class Display(object):
                     self.cg.append(case.outputs['{pt_name}.cg'.format(pt_name=pt_name)])
                 else:
                     self.cg.append(case.outputs['cg'])
+
+        self.fem_origin_dict = {}
+        self.yield_stress_dict = {}
+
+        if self.show_tube:
+            for name in names:
+                surface = cr.system_metadata[name]['component_options']['surface']
+                self.yield_stress_dict[name + '_yield_stress'] = surface['yield']
+                self.fem_origin_dict[name + '_fem_origin'] = surface['fem_origin']
 
         if self.opt:
             self.num_iters = np.max([int(len(self.mesh) / n_names) - 1, 1])
@@ -578,7 +580,7 @@ class Display(object):
         # round_to_n = lambda x, n: round(x, -int(np.floor(np.log10(abs(x)))) + (n - 1))
         if self.opt:
             obj_val = self.obj[self.curr_pos]
-            self.ax.text2D(.55, .05, self.obj_key + ': {}'.format(obj_val),
+            self.ax.text2D(.15, .05, self.obj_key + ': {}'.format(obj_val),
                 transform=self.ax.transAxes, color='k')
 
         self.ax.view_init(elev=el, azim=az)  # Reproduce view
