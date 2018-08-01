@@ -142,7 +142,7 @@ class Test(unittest.TestCase):
         prob.model.add_objective('AS_point_0.fuelburn', scaler=1e-5)
 
         # Set up the problem
-        prob.setup()
+        prob.setup(check=True)
 
         prob.run_driver()
 

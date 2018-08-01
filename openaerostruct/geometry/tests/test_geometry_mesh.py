@@ -26,11 +26,11 @@ class Test(unittest.TestCase):
         surface['num_y'] = ny
 
         # The way this is currently set up, we don't actually use the values here
-        surface['twist_cp'] = np.random.random_sample((5))
-        surface['chord_cp'] = np.random.random_sample((5))
-        surface['xshear_cp'] = np.random.random_sample((5))
-        surface['yshear_cp'] = np.random.random_sample((5))
-        surface['zshear_cp'] = np.random.random_sample((5))
+        surface['twist_cp'] = np.zeros((5))
+        surface['chord_cp'] = np.zeros((5))
+        surface['xshear_cp'] = np.zeros((5))
+        surface['yshear_cp'] = np.zeros((5))
+        surface['zshear_cp'] = np.zeros((5))
 
         surface['span'] = span
         surface['t_over_c'] = .12

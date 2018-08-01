@@ -122,8 +122,8 @@ class Bsplines(ExplicitComponent):
         else:
             units = 'm'
 
-        self.add_input(meta['in_name'], val=np.random.random(meta['num_cp']), units=units)
-        self.add_output(meta['out_name'], val=np.random.random(meta['num_pt']), units=units)
+        self.add_input(meta['in_name'], val=np.zeros(meta['num_cp']), units=units)
+        self.add_output(meta['out_name'], val=np.zeros(meta['num_pt']), units=units)
 
         meta = self.options
 

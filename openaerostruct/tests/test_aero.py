@@ -117,9 +117,9 @@ class Test(unittest.TestCase):
         prob.setup()
         prob.run_driver()
 
-        assert_rel_error(self, prob['aero_point_0.wing_perf.CD'][0], 0.033389699871650073, 1e-8)
-        assert_rel_error(self, prob['aero_point_0.wing_perf.CL'][0], 0.5, 1e-8)
-        assert_rel_error(self, prob['aero_point_0.CM'][1], -0.18451822790794759, 1e-8)
+        assert_rel_error(self, prob['aero_point_0.wing_perf.CD'][0], 0.033389699871650073, 1e-6)
+        assert_rel_error(self, prob['aero_point_0.wing_perf.CL'][0], 0.5, 1e-6)
+        assert_rel_error(self, prob['aero_point_0.CM'][1], -0.18451822790794759, 1e-6)
 
 
 if __name__ == '__main__':

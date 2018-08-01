@@ -36,8 +36,8 @@ class SectionPropertiesTube(ExplicitComponent):
 
         self.ny = surface['num_y']
 
-        self.add_input('radius', val=np.random.rand((self.ny - 1)), units='m')
-        self.add_input('thickness', val=np.random.rand((self.ny - 1)), units='m')
+        self.add_input('radius', val=np.ones((self.ny - 1)), units='m')
+        self.add_input('thickness', val=np.ones((self.ny - 1)) * .1, units='m')
         self.add_output('A', val=np.zeros((self.ny - 1)), units='m**2')
         self.add_output('Iy', val=np.zeros((self.ny - 1)), units='m**4')
         self.add_output('Iz', val=np.zeros((self.ny - 1)), units='m**4')

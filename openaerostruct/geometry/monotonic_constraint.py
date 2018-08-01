@@ -34,7 +34,7 @@ class MonotonicConstraint(ExplicitComponent):
         self.symmetry = surface['symmetry']
         self.ny = surface['num_y']
 
-        self.add_input(self.var_name, val=np.random.rand(self.ny))
+        self.add_input(self.var_name, val=np.zeros(self.ny))
         self.add_output(self.con_name, val=np.zeros(self.ny-1))
 
         self.declare_partials('*', '*')

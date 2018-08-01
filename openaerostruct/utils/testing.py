@@ -2,6 +2,8 @@ from openmdao.api import Problem, Group, IndepVarComp, view_model
 
 from six import iteritems
 from numpy.testing import assert_almost_equal
+import numpy as np
+from openaerostruct.geometry.utils import generate_mesh
 
 
 def run_test(obj, comp, decimal=3, complex=False):
@@ -19,13 +21,24 @@ def run_test(obj, comp, decimal=3, complex=False):
                 subjac['rel error'].reverse, 0., decimal=decimal, err_msg='deriv of %s wrt %s' % key)
 
 def get_default_surfaces():
+    # Create a dictionary to store options about the mesh
+    mesh_dict = {'num_y' : 7,
+                 'num_x' : 2,
+                 'wing_type' : 'CRM',
+                 'symmetry' : True,
+                 'num_twist_cp' : 5}
+
+    # Generate the aerodynamic mesh based on the previous dictionary
+    mesh, twist_cp = generate_mesh(mesh_dict)
+
     wing_dict = {'name' : 'wing',
-                 'num_y' : 7,
+                 'num_y' : 4,
                  'num_x' : 2,
                  'symmetry' : True,
                  'S_ref_type' : 'wetted',
                  'CL0' : 0.1,
                  'CD0' : 0.1,
+                 'mesh' : mesh,
 
                  # Airfoil properties for viscous drag calculation
                  'k_lam' : 0.05,         # percentage of chord with laminar
@@ -47,10 +60,20 @@ def get_default_surfaces():
 
                  }
 
+    # Create a dictionary to store options about the mesh
+    mesh_dict = {'num_y' : 5,
+                 'num_x' : 3,
+                 'wing_type' : 'rect',
+                 'symmetry' : False}
+
+    # Generate the aerodynamic mesh based on the previous dictionary
+    mesh = generate_mesh(mesh_dict)
+
     tail_dict = {'name' : 'tail',
                  'num_y' : 5,
                  'num_x' : 3,
-                 'symmetry' : False}
+                 'symmetry' : False,
+                 'mesh' : mesh}
 
     surfaces = [wing_dict, tail_dict]
 

@@ -71,15 +71,15 @@ class Forces(ExplicitComponent):
             nx = surface['num_x']
             tot_panels += (nx - 1) * (ny - 1)
 
-            self.add_input(name + '_def_mesh', val=np.random.random_sample((nx, ny, 3)), units='m')#, dtype=data_type))
-            self.add_input(name + '_b_pts', val=np.random.random_sample((nx-1, ny, 3)), units='m')#, dtype=data_type))
+            self.add_input(name + '_def_mesh', val=np.zeros((nx, ny, 3)), units='m')#, dtype=data_type))
+            self.add_input(name + '_b_pts', val=np.zeros((nx-1, ny, 3)), units='m')#, dtype=data_type))
             self.add_input(name + '_cos_sweep', val=np.zeros((ny-1)), units='m')#, dtype=data_type))
             self.add_input(name + '_widths', val=np.ones((ny-1)), units='m')#, dtype=data_type))
             self.add_output(name + '_sec_forces', val=np.zeros((nx-1, ny-1, 3)), units='N')#, dtype=data_type))
 
         self.tot_panels = tot_panels
 
-        self.add_input('circulations', val=np.random.rand((tot_panels)), units='m**2/s')
+        self.add_input('circulations', val=np.zeros((tot_panels)), units='m**2/s')
         self.add_input('alpha', val=3.)
         self.add_input('M', val=0.1)
         self.add_input('v', val=10., units='m/s')

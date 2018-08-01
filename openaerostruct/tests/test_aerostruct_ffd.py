@@ -165,7 +165,7 @@ class Test(unittest.TestCase):
         from openmdao.api import ScipyOptimizeDriver
         prob.driver = ScipyOptimizeDriver()
 
-        recorder = SqliteRecorder("aerostruct.db")
+        recorder = SqliteRecorder("aerostruct_ffd.db")
         prob.driver.add_recorder(recorder)
         prob.driver.recording_options['record_derivatives'] = True
 

@@ -38,9 +38,9 @@ class StructuralCG(ExplicitComponent):
 
         self.ny = surface['num_y']
 
-        self.add_input('nodes', val=np.random.random_sample((self.ny, 3)), units='m')#, dtype=data_type))
+        self.add_input('nodes', val=np.zeros((self.ny, 3)), units='m')#, dtype=data_type))
         self.add_input('structural_weight', val=0., units='N')
-        self.add_input('element_weights', val=np.random.random_sample((self.ny-1)), units='N')
+        self.add_input('element_weights', val=np.zeros((self.ny-1)), units='N')
         self.add_output('cg_location', val=np.zeros((3)), units='m')#, dtype=data_type))
 
         self.declare_partials('*', '*')

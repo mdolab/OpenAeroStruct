@@ -60,7 +60,7 @@ class LoadTransfer(ExplicitComponent):
 
         # Well, technically the units of this load array are mixed.
         # The first 3 indices are N and the last 3 are N*m.
-        self.add_output('loads', val=np.ones((self.ny, 6)), units='N')
+        self.add_output('loads', val=np.zeros((self.ny, 6)), units='N')
 
         self.declare_partials('*', '*')
 

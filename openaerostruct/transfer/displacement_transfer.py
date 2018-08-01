@@ -55,9 +55,9 @@ class DisplacementTransfer(ExplicitComponent):
                                x_upper[-1] * (y_upper[-1] - y_lower[-1])) / \
                              ((y_upper[0]  -  y_lower[0]) + (y_upper[-1] - y_lower[-1]))
 
-        self.add_input('mesh', val=np.random.rand(self.nx, self.ny, 3), units='m')
-        self.add_input('disp', val=np.random.rand(self.ny, 6), units='m')
-        self.add_output('def_mesh', val=np.random.rand(self.nx, self.ny, 3), units='m')
+        self.add_input('mesh', val=np.zeros((self.nx, self.ny, 3)), units='m')
+        self.add_input('disp', val=np.zeros((self.ny, 6)), units='m')
+        self.add_output('def_mesh', val=np.zeros((self.nx, self.ny, 3)), units='m')
 
         self.declare_partials('*', '*')
 
