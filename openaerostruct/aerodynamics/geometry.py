@@ -10,7 +10,7 @@ except:
     fortran_flag = False
 
 data_type = float
-
+np.random.seed(314)
 
 class VLMGeometry(ExplicitComponent):
     """ Compute various geometric properties for VLM analysis.
@@ -51,7 +51,7 @@ class VLMGeometry(ExplicitComponent):
 
         self.add_input('def_mesh', val=np.zeros((self.nx, self.ny, 3)), units='m')
 
-        self.add_output('b_pts', val=np.zeros((self.nx-1, self.ny, 3)), units='m')
+        self.add_output('b_pts', val=np.random.random((self.nx-1, self.ny, 3)), units='m')
         self.add_output('c_pts', val=np.zeros((self.nx-1, self.ny-1, 3)), units='m')
         self.add_output('widths', val=np.ones((self.ny-1)), units='m')
         self.add_output('cos_sweep', val=np.zeros((self.ny-1)), units='m')

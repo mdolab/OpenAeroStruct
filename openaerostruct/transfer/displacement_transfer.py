@@ -11,6 +11,7 @@ except:
     fortran_flag = False
     data_type = complex
 
+np.random.seed(314)
 
 class DisplacementTransfer(ExplicitComponent):
     """
@@ -57,7 +58,8 @@ class DisplacementTransfer(ExplicitComponent):
 
         self.add_input('mesh', val=np.zeros((self.nx, self.ny, 3)), units='m')
         self.add_input('disp', val=np.zeros((self.ny, 6)), units='m')
-        self.add_output('def_mesh', val=np.zeros((self.nx, self.ny, 3)), units='m')
+
+        self.add_output('def_mesh', val=np.random.random_sample((self.nx, self.ny, 3)), units='m')
 
         self.declare_partials('*', '*')
 

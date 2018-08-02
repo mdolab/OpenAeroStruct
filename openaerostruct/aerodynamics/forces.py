@@ -75,6 +75,7 @@ class Forces(ExplicitComponent):
             self.add_input(name + '_b_pts', val=np.zeros((nx-1, ny, 3)), units='m')#, dtype=data_type))
             self.add_input(name + '_cos_sweep', val=np.zeros((ny-1)), units='m')#, dtype=data_type))
             self.add_input(name + '_widths', val=np.ones((ny-1)), units='m')#, dtype=data_type))
+
             self.add_output(name + '_sec_forces', val=np.zeros((nx-1, ny-1, 3)), units='N')#, dtype=data_type))
 
         self.tot_panels = tot_panels
