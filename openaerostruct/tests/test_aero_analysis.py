@@ -118,7 +118,7 @@ class Test(unittest.TestCase):
         # Set up the problem
         prob.setup()
 
-        prob.run_model()
+        prob.run_driver()
 
         assert_rel_error(self, prob['aero_point_0.wing_perf.CD'][0], 0.03721668954472605, 1e-6)
         assert_rel_error(self, prob['aero_point_0.wing_perf.CL'][0], 0.51232315219856261, 1e-6)

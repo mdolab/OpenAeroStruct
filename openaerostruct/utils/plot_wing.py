@@ -33,7 +33,7 @@ try:
     matplotlib.rcParams['axes.edgecolor'] = 'gray'
     matplotlib.rcParams['axes.linewidth'] = 0.5
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg,\
-        NavigationToolbar2TkAgg
+        NavigationToolbar2Tk
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
     from matplotlib import cm
@@ -68,7 +68,7 @@ class Display(object):
         self.options_frame = Tk.Frame(self.root)
         self.options_frame.pack()
 
-        toolbar = NavigationToolbar2TkAgg(self.canvas, self.root)
+        toolbar = NavigationToolbar2Tk(self.canvas, self.root)
         toolbar.update()
         self.canvas._tkcanvas.pack(side=Tk.TOP, fill=Tk.BOTH, expand=1)
         self.ax = plt.subplot2grid((4, 8), (0, 0), rowspan=4,
@@ -102,10 +102,10 @@ class Display(object):
 
         # figure out if this is an optimization and what the objective is
         obj_keys = last_case.get_objectives()
-        if obj_keys: # if its not an empty list
-            self.opt = True
+        try: # if its not an empty list
             self.obj_key = obj_keys.keys[0]
-        else:
+            self.opt = True
+        except IndexError:
             self.opt = False
 
         self.twist = []
@@ -318,7 +318,7 @@ class Display(object):
 
                         new_widths.append(np.hstack((widths[i*n_names+j], widths[i*n_names+j][::-1])))
                         twist = self.twist[i*n_names+j]
-                        new_twist.append(np.hstack((twist, twist[::-1][1:])))
+                        new_twist.append(np.hstack((twist[0], twist[0][::-1][1:])))
 
             self.mesh = new_mesh
             if self.show_tube:
@@ -460,7 +460,7 @@ class Display(object):
                 self.ax3.plot(span_diff, l_vals, lw=2, c='b')
 
             if self.show_tube:
-                thick_vals = self.thickness[self.curr_pos*n_names+j]
+                thick_vals = self.thickness[self.curr_pos*n_names+j][0]
                 vm_vals = self.vonmises[self.curr_pos*n_names+j]
 
                 self.ax4.plot(span_diff, thick_vals, lw=2, c='b')
@@ -511,7 +511,7 @@ class Display(object):
             if self.show_tube:
                 # Get the array of radii and thickness values for the FEM system
                 r0 = self.radius[self.curr_pos*n_names+j]
-                t0 = self.thickness[self.curr_pos*n_names+j]
+                t0 = self.thickness[self.curr_pos*n_names+j][0]
 
                 # Create a normalized array of values for the colormap
                 colors = t0
@@ -620,7 +620,7 @@ class Display(object):
 
         self.plot_wing()
         self.plot_sides()
-        self.canvas.show()
+        self.canvas.draw()
 
     def check_length(self):
         # Load the current sqlitedict
