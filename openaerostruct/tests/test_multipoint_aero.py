@@ -3,7 +3,15 @@ from openmdao.utils.assert_utils import assert_rel_error
 import numpy as np
 import unittest
 
+try:
+    from openaerostruct.fortran import OAS_API
+    fortran_flag = True
+    data_type = float
+except:
+    fortran_flag = False
+    data_type = complex
 
+@unittest.skipUnless(fortran_flag, "Fortran is required.")
 class Test(unittest.TestCase):
 
     def test(self):

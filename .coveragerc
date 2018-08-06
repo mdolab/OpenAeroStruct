@@ -1,12 +1,3 @@
 [report]
 omit =
-    run_spatialbeam.py
-    run_vlm.py
-    run_aerostruct.py
-    OptView.py
     plot_wing.py
-    gs_newton.py
-    test_suite.py
-    view_geometry.py
-    analysis.py
-    CRM_definitions.py

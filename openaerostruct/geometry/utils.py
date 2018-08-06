@@ -651,7 +651,11 @@ def generate_mesh(input_dict):
 
     # Check to make sure that an odd number of spanwise points (num_y) was provided
     if not num_y % 2:
-        Error('num_y must be an odd number.')
+        raise ValueError('num_y must be an odd number.')
+
+    # Check to make sure that an odd number of chordwise points (num_x) was provided
+    if not num_x % 2:
+        raise ValueError('num_x must be an odd number.')
 
     # Generate rectangular mesh
     if surf_dict['wing_type'] == 'rect':
@@ -667,7 +671,7 @@ def generate_mesh(input_dict):
         surf_dict['crm_twist'] = twist
 
     else:
-        Error('wing_type option not understood. Must be either a type of ' +
+        raise NameError('wing_type option not understood. Must be either a type of ' +
               '"CRM" or "rect".')
 
     # Chop the mesh in half if using symmetry during analysis.
