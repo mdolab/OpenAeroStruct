@@ -7,7 +7,7 @@ from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.geometry.geometry_group import Geometry
 from openaerostruct.aerodynamics.aero_groups import AeroPoint
 
-from openmdao.api import IndepVarComp, Problem, Group, NewtonSolver, ScipyIterativeSolver, LinearBlockGS, NonlinearBlockGS, DirectSolver, LinearBlockGS, PetscKSP, ScipyOptimizeDriver
+from openmdao.api import IndepVarComp, Problem, Group, NewtonSolver, ScipyIterativeSolver, LinearBlockGS, NonlinearBlockGS, DirectSolver, LinearBlockGS, PetscKSP, ScipyOptimizeDriver, SqliteRecorder
 
 
 class Test(unittest.TestCase):
@@ -110,6 +110,10 @@ class Test(unittest.TestCase):
                 # Perform the connections with the modified names within the
                 # 'aero_states' group.
                 prob.model.connect(name + '.mesh', point_name + '.aero_states.' + name + '_def_mesh')
+
+        recorder = SqliteRecorder("aero_analysis.db")
+        prob.driver.add_recorder(recorder)
+        prob.driver.recording_options['record_derivatives'] = True
 
         # Set up the problem
         prob.setup()

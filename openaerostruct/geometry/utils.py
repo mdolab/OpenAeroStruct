@@ -654,7 +654,7 @@ def generate_mesh(input_dict):
         raise ValueError('num_y must be an odd number.')
 
     # Check to make sure that an odd number of chordwise points (num_x) was provided
-    if not num_x % 2:
+    if not num_x % 2 and not num_x==2:
         raise ValueError('num_x must be an odd number.')
 
     # Generate rectangular mesh
