@@ -1,6 +1,5 @@
 from openaerostruct.geometry.geometry_mesh import GeometryMesh
 from openaerostruct.aerodynamics.geometry import VLMGeometry
-from openaerostruct.geometry.bsplines import Bsplines
 from openaerostruct.geometry.geometry_group import Geometry
 from openaerostruct.transfer.displacement_transfer import DisplacementTransfer
 from openaerostruct.structures.section_properties_tube import SectionPropertiesTube
