@@ -128,13 +128,6 @@ class Display(object):
         self.obj = []
         self.cg = []
 
-        # figure out if twist is a desvar
-        self.twist_included = False
-        for dv_name in last_case.get_desvars():
-            if 'twist' in dv_name:
-                self.twist_included = True
-                break
-
         # find the names of all surfaces
         names = []
         pt_names = []
@@ -228,11 +221,14 @@ class Display(object):
 
                 # Not the best solution for now, but this will ensure
                 # that this plots correctly even if twist isn't a desvar
-                if self.twist_included:
-                    self.twist.append(case.outputs[name+'.geometry.twist'])
-                else:
+                try:
+                    if self.aerostruct: # twist is handled differently for aero and aerostruct
+                        self.twist.append(case.outputs[name+'.geometry.twist'])
+                    else:
+                        self.twist.append(case.outputs[name+'.twist'])
+                except:
                     ny = self.mesh[0].shape[1]
-                    self.twist.append(np.zeros(ny))
+                    self.twist.append(np.atleast_2d(np.zeros(ny)))
 
             if self.show_wing:
                 alpha.append(case.outputs['alpha'] * np.pi / 180.)
@@ -255,7 +251,7 @@ class Display(object):
         if self.opt:
             self.num_iters = np.max([int(len(self.mesh) / n_names) - 1, 1])
         else:
-            self.num_iters = 0
+            self.num_iters = 1
 
         symm_count = 0
         for mesh in self.mesh:
@@ -279,8 +275,7 @@ class Display(object):
                 new_def_mesh = []
                 new_widths = []
                 new_normals = []
-
-            for i in range(self.num_iters + 1):
+            for i in range(self.num_iters):
                 for j, name in enumerate(names):
                     mirror_mesh = self.mesh[i*n_names+j].copy()
                     mirror_mesh[:, :, 1] *= -1.
@@ -289,7 +284,7 @@ class Display(object):
 
                     if self.show_tube:
                         thickness = self.thickness[i*n_names+j]
-                        new_thickness.append(np.hstack((thickness, thickness[::-1])))
+                        new_thickness.append(np.hstack((thickness[0], thickness[0][::-1])))
                         r = self.radius[i*n_names+j]
                         new_r.append(np.hstack((r, r[::-1])))
                         vonmises = self.vonmises[i*n_names+j]
@@ -326,7 +321,7 @@ class Display(object):
                 sec_forces = new_sec_forces
 
         if self.show_wing:
-            for i in range(self.num_iters + 1):
+            for i in range(self.num_iters):
                 for j, name in enumerate(names):
                     m_vals = self.mesh[i*n_names+j].copy()
                     cvec = m_vals[0, :, :] - m_vals[-1, :, :]
@@ -355,7 +350,7 @@ class Display(object):
                     self.AR.append(wingspan**2 / self.S_ref[i*n_names+j])
 
             # recenter def_mesh points for better viewing
-            for i in range(self.num_iters + 1):
+            for i in range(self.num_iters):
                 center = np.zeros((3))
                 for j in range(n_names):
                     center += np.mean(self.def_mesh[i*n_names+j], axis=(0,1))
@@ -364,7 +359,7 @@ class Display(object):
                 self.cg[i] -= center / n_names
 
         # recenter mesh points for better viewing
-        for i in range(self.num_iters + 1):
+        for i in range(self.num_iters):
             center = np.zeros((3))
             for j in range(n_names):
                 center += np.mean(self.mesh[i*n_names+j], axis=(0,1))
@@ -447,15 +442,13 @@ class Display(object):
                 t_vals = self.twist[self.curr_pos*n_names+j]
                 l_vals = self.lift[self.curr_pos*n_names+j]
                 le_vals = self.lift_ell[self.curr_pos*n_names+j]
-
                 self.ax2.plot(rel_span, t_vals, lw=2, c='b')
                 self.ax3.plot(rel_span, le_vals, '--', lw=2, c='g')
                 self.ax3.plot(span_diff, l_vals, lw=2, c='b')
 
             if self.show_tube:
-                thick_vals = self.thickness[self.curr_pos*n_names+j][0]
+                thick_vals = self.thickness[self.curr_pos*n_names+j]
                 vm_vals = self.vonmises[self.curr_pos*n_names+j]
-
                 self.ax4.plot(span_diff, thick_vals, lw=2, c='b')
                 self.ax5.plot(span_diff, vm_vals, lw=2, c='b')
 
@@ -504,7 +497,7 @@ class Display(object):
             if self.show_tube:
                 # Get the array of radii and thickness values for the FEM system
                 r0 = self.radius[self.curr_pos*n_names+j]
-                t0 = self.thickness[self.curr_pos*n_names+j][0]
+                t0 = self.thickness[self.curr_pos*n_names+j]
 
                 # Create a normalized array of values for the colormap
                 colors = t0
@@ -609,7 +602,7 @@ class Display(object):
     def update_graphs(self, e=None):
         if e is not None:
             self.curr_pos = int(e)
-            self.curr_pos = self.curr_pos % (self.num_iters + 1)
+            self.curr_pos = self.curr_pos % (self.num_iters)
 
         self.plot_wing()
         self.plot_sides()
@@ -669,7 +662,7 @@ class Display(object):
         # scale to choose iteration to view
         self.w = Tk.Scale(
             self.options_frame,
-            from_=0, to=self.num_iters,
+            from_=0, to=self.num_iters - 1,
             orient=Tk.HORIZONTAL,
             resolution=1,
             font=tkFont.Font(family="Helvetica", size=10),
@@ -677,7 +670,7 @@ class Display(object):
             length=200)
 
         if self.curr_pos == self.num_iters - 1 or self.curr_pos == 0 or self.var_ref.get():
-            self.curr_pos = self.num_iters
+            self.curr_pos = self.num_iters - 1
         self.w.set(self.curr_pos)
         self.w.grid(row=0, column=1, padx=5, sticky=Tk.W)
 

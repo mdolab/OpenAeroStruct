@@ -120,7 +120,7 @@ class GeometryMesh(ExplicitComponent):
 
     def compute(self, inputs, outputs):
         mesh = self.mesh.copy()
-
+        #print(inputs['twist'].shape);exit()
         # Dirty hack for now; TODO: fix this
         for key in self.geo_params:
             try:
