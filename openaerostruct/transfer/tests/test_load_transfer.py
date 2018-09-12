@@ -10,8 +10,8 @@ class Test(unittest.TestCase):
 
     def test(self):
         surface = get_default_surfaces()[0]
-        #surface['num_x'] = 15
-        #surface['num_y'] = 10
+        ##surface['num_x'] = 7
+        #surface['num_y'] = 2
         group = Group()
         
         comp = LoadTransfer(surface=surface)
@@ -25,9 +25,10 @@ class Test(unittest.TestCase):
         indep_var_comp.add_output('def_mesh', val=np.random.random((nx, ny, 3)), units='m')
         indep_var_comp.add_output('sec_forces', val=np.random.random((nx-1, ny-1, 3)), units='N')
         
-        indep_var_comp.add_output('loadA', val=np.random.random((ny,3)), units='N')
-        indep_var_comp.add_output('loadB', val=np.random.random((ny,3)), units='m')
-
+        #indep_var_comp.add_output('loadA', val=np.random.random((ny,3)), units='N')
+        #indep_var_comp.add_output('loadB', val=np.random.random((ny,3)), units='m')
+        indep_var_comp.add_output('load', val=np.random.random((ny,6)), units='N')
+        
         group.add_subsystem('indep_var_comp', indep_var_comp, promotes=['*'])
         group.add_subsystem('load_transfer', comp, promotes=['*'])
         

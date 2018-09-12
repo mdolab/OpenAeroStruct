@@ -65,8 +65,8 @@ class LoadTransfer(ExplicitComponent):
         self.add_input('def_mesh', val=np.random.random((nx, ny, 3)), units='m')
         self.add_input('sec_forces', val=np.random.random((nx-1, ny-1, 3)), units='N')
 
-        self.add_output('loadsA', val=np.zeros((ny, 3)), units='N')
-        self.add_output('loadsB', val=np.zeros((ny, 3)), units='N*m')
+        #self.add_output('loadsA', val=np.zeros((ny, 3)), units='N')
+        #self.add_output('loadsB', val=np.zeros((ny, 3)), units='N*m')
         self.add_output('loads', val=np.zeros((self.ny,6)), units='N') ## WARNING!!! UNITS ARE A MIXTURE OF N & N*m
         # Well, technically the units of this load array are mixed.
         # The first 3 indices are N and the last 3 are N*m.
@@ -86,7 +86,7 @@ class LoadTransfer(ExplicitComponent):
                 colsA[2*offset+col_idx*2] = offset+col_idx
                 colsA[2*offset+col_idx*2+1] = offset+col_idx
         dloadsA__dsec_forces = coo_matrix((0.5*np.ones(len(rowsA)), (rowsA, colsA)), shape=(3*(ny), 3*(ny-1)*(nx-1)))   
-        self.declare_partials(of='loadsA', wrt='sec_forces', rows=rowsA, cols=colsA, val=0.5)
+        #self.declare_partials(of='loadsA', wrt='sec_forces', rows=rowsA, cols=colsA, val=0.5)
         
         # --------------------------------dloadsB__dsec_forces-------------------------------------
         #dloadsB__dmoment
@@ -119,7 +119,7 @@ class LoadTransfer(ExplicitComponent):
         # dloadsB__dsec_forces
         dloadsB__dsec_forces = self.dloadsB__dmoment * dmoment__dsec_forces
         dloadsB__dsec_forces = dloadsB__dsec_forces.tocoo() # force the system to be a coo_matrix     
-        self.declare_partials(of='loadsB', wrt='sec_forces', rows=dloadsB__dsec_forces.row, cols=dloadsB__dsec_forces.col)
+        #self.declare_partials(of='loadsB', wrt='sec_forces', rows=dloadsB__dsec_forces.row, cols=dloadsB__dsec_forces.col)
 
         # --------------------------------dloadsB__ddef_mesh-------------------------------------
         # setup sparce partials for dloadsB__ddef_mesh where:
@@ -193,7 +193,7 @@ class LoadTransfer(ExplicitComponent):
         dloadsB__ddef_mesh = dloadsB__ddef_mesh.tocoo()
         rows = dloadsB__ddef_mesh.row
         cols = dloadsB__ddef_mesh.col
-        self.declare_partials(of='loadsB', wrt='def_mesh', rows=rows, cols=cols)
+        #self.declare_partials(of='loadsB', wrt='def_mesh', rows=rows, cols=cols)
         
         #---------------------------------dloads__ddef_mesh
         #dloads__dloadsA
@@ -256,17 +256,21 @@ class LoadTransfer(ExplicitComponent):
             moment = moment + np.cross(diff[ind, :, :], sec_forces[ind, :, :], axis=1)
 
         # Compute the loads based on the xyz forces and the computed moments
-        loadsA = outputs['loadsA']
+        #loadsA = outputs['loadsA']
+        loadsA = np.zeros((self.ny,3), dtype=np.complex128)
+        #loadsA[:] = 0. # apparently sometimes these don't get zero'd out so we'll do it explicitly
         sec_forces_sum = np.sum(sec_forces, axis=0)
         loadsA[:-1, :] = 0.5 * sec_forces_sum[:, :]
         loadsA[ 1:, :] = loadsA[ 1:, :] + 0.5 * sec_forces_sum[:, :]
         
-        loadsB = outputs['loadsB']
+        #loadsB = outputs['loadsB']
+        loadsB = np.zeros((self.ny,3), dtype=np.complex128)
+        #loadsB[:] = 0. # apparently sometimes these don't get zero'd out so we'll do it explicitly
         loadsB[:-1, :] = 0.5 * moment
         loadsB[ 1:, :] = loadsB[ 1:, :] + 0.5 * moment
 
-        outputs['loadsA'] = loadsA
-        outputs['loadsB'] = loadsB
+        #outputs['loadsA'] = loadsA
+        #outputs['loadsB'] = loadsB
         
         outputs['loads'][:,:3] = loadsA # everything on the first 3 columns  
         outputs['loads'][:,3:] = loadsB # everything on the last 3 columns
@@ -308,7 +312,7 @@ class LoadTransfer(ExplicitComponent):
         
         dloadsB__dsec_forces = self.dloadsB__dmoment * dmoment__dsec_forces
         dloadsB__dsec_forces = dloadsB__dsec_forces.tocoo()
-        J['loadsB','sec_forces'] = dloadsB__dsec_forces.data
+        #J['loadsB','sec_forces'] = dloadsB__dsec_forces.data
         
         # --------------------------------dloadsB__ddef_mesh-------------------------------------
         # dmoment__ddiff must to be calulated each time b/c it's a function of sec_forces
@@ -330,11 +334,12 @@ class LoadTransfer(ExplicitComponent):
         # multiply the matrix with those previous calculated in setup
         dloadsB__ddef_mesh = self.dloadsB__dmoment * dmoment__ddiff * self.ddiff__ddef_mesh
         dloadsB__ddef_mesh = dloadsB__ddef_mesh.tocoo()
-        J['loadsB','def_mesh'] = dloadsB__ddef_mesh.data 
+        #J['loadsB','def_mesh'] = dloadsB__ddef_mesh.data 
         
         dloads__ddef_mesh = self.dloads__dloadsB * dloadsB__ddef_mesh
         dloads__ddef_mesh = dloads__ddef_mesh.tocoo()
         J['loads','def_mesh'] = dloads__ddef_mesh.data
+        
         
         dloads__dsec_forces = self.dloads__dloadsA__dsec_forces + self.dloads__dloadsB * dloadsB__dsec_forces
         dloads__dsec_forces = dloads__dsec_forces.tocoo()
