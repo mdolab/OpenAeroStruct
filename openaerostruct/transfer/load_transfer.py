@@ -157,7 +157,8 @@ class LoadTransfer(ExplicitComponent):
         tmp_ddiff__ds_pts = np.zeros((3*(ny-1)*(nx-1),3*(ny-1)))
         for xiter in range(nx-1):
             tmp_ddiff__ds_pts[xiter*3*(ny-1):(1+xiter)*3*(ny-1),0:3*(ny-1)] = np.eye((3*(ny-1)))
-        ddiff__ds_pts = coo_matrix(tmp_ddiff__ds_pts)
+        tmp = coo_matrix(tmp_ddiff__ds_pts)
+        ddiff__ds_pts = coo_matrix((tmp.data, (tmp.row, tmp.col)), shape=(3*(ny-1)*(nx-1),3*(ny-1)))
 
         # ds_pts__ddef_mesh
         tmp_ds_pts__ddef_mesh = np.zeros((3*(ny-1),3*(ny)*(nx)))
@@ -166,7 +167,8 @@ class LoadTransfer(ExplicitComponent):
         block[:,3:] = block[:,3:] + np.eye((3*(ny-1)))
         tmp_ds_pts__ddef_mesh[:,0:3*ny] = 0.5*(1-w2)*block
         tmp_ds_pts__ddef_mesh[:,3*ny*(nx-1):] = tmp_ds_pts__ddef_mesh[:,3*ny*(nx-1):] + 0.5 * w2 * block
-        ds_pts__ddef_mesh = coo_matrix(tmp_ds_pts__ddef_mesh)
+        tmp2 = coo_matrix(tmp_ds_pts__ddef_mesh)
+        ds_pts__ddef_mesh = coo_matrix((tmp2.data, (tmp2.row, tmp2.col)), shape=(3*(ny-1), 3*ny*nx))
 
         # ddiff__da_pts
         ddiff__da_pts = identity((3*(ny-1)*(nx-1)))
@@ -180,7 +182,8 @@ class LoadTransfer(ExplicitComponent):
         over = 3*ny
         for xiter in range(nx-1):
             tmp_da_pts__ddef_mesh[xiter*down:xiter*down+3*(ny-1),over*xiter:over*xiter+6*ny] = block2
-        da_pts__ddef_mesh = coo_matrix(tmp_da_pts__ddef_mesh)
+        tmp3 = coo_matrix(tmp_da_pts__ddef_mesh)
+        da_pts__ddef_mesh = coo_matrix((tmp3.data, (tmp3.row, tmp3.col)), shape=(3*(ny-1)*(nx-1),3*ny*nx))
 
         # to shorten future calculation times we calculate two other partials
         # ddiff__ddef_mesh
