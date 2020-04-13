@@ -1,12 +1,12 @@
 from __future__ import print_function, division
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 from openaerostruct.structures.utils import norm, unit
 
 
-class VonMisesWingbox(ExplicitComponent):
+class VonMisesWingbox(om.ExplicitComponent):
     """ Compute the von Mises stresses for each element.
     See Chauhan et al. (https://doi.org/10.1007/978-3-319-97773-7_38) for more.
 

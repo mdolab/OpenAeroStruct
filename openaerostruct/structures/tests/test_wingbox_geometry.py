@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from openmdao.api import Group, IndepVarComp
+import openmdao.api as om
 from openaerostruct.structures.wingbox_geometry import WingboxGeometry
 from openaerostruct.utils.testing import run_test, get_default_surfaces
 
@@ -19,9 +19,9 @@ class Test(unittest.TestCase):
 
         comp = WingboxGeometry(surface=surface)
 
-        group = Group()
+        group = om.Group()
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
 
         indep_var_comp.add_output('mesh', val=surface['mesh'])
 

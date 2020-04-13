@@ -1,8 +1,8 @@
 from __future__ import print_function, division
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
-class TotalDrag(ExplicitComponent):
+class TotalDrag(om.ExplicitComponent):
     """ Calculate total drag in force units.
 
     parameters

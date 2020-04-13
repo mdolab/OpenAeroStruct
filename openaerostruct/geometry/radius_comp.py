@@ -3,11 +3,11 @@
 from __future__ import division, print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 from openaerostruct.structures.utils import radii
 
 
-class RadiusComp(ExplicitComponent):
+class RadiusComp(om.ExplicitComponent):
     """
     Compute the radius of a structural spar based on the mesh and thickness over
     chord ratio.

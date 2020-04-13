@@ -1,7 +1,7 @@
 from __future__ import print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 from openaerostruct.utils.vector_algebra import add_ones_axis
 from openaerostruct.utils.vector_algebra import compute_dot, compute_dot_deriv
@@ -105,7 +105,7 @@ def _compute_semi_infinite_vortex_deriv(u, r, r_deriv):
     return (num_deriv * den - num * den_deriv) / den ** 2 / 4 / np.pi
 
 
-class EvalVelMtx(ExplicitComponent):
+class EvalVelMtx(om.ExplicitComponent):
     """
     Computes the aerodynamic influence coefficient (AIC) matrix for the VLM
     analysis.

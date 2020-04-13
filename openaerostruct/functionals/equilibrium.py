@@ -1,9 +1,9 @@
 from __future__ import division, print_function
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 from openaerostruct.utils.constants import grav_constant
 
 
-class Equilibrium(ExplicitComponent):
+class Equilibrium(om.ExplicitComponent):
     """
     Computes L_equals_W, which is a normalized measure of the weight of the
     aircraft minus the total generated lift. So if L_equals_W is positive,

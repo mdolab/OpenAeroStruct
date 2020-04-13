@@ -1,11 +1,9 @@
-from openmdao.api import Group, BsplinesComp
+import openmdao.api as om
 from openaerostruct.structures.section_properties_tube import SectionPropertiesTube
 from openaerostruct.geometry.radius_comp import RadiusComp
 
-from openmdao.api import IndepVarComp, Group
 
-
-class TubeGroup(Group):
+class TubeGroup(om.Group):
     """ Group that contains everything needed for a structural-only problem. """
 
     def initialize(self):
@@ -20,7 +18,7 @@ class TubeGroup(Group):
 
         if connect_geom_DVs:
             # Add independent variables that do not belong to a specific component
-            indep_var_comp = IndepVarComp()
+            indep_var_comp = om.IndepVarComp()
 
             # Add structural components to the surface-specific group
             self.add_subsystem('indep_vars',
@@ -30,7 +28,7 @@ class TubeGroup(Group):
         if 'thickness_cp' in surface.keys():
             n_cp = len(surface['thickness_cp'])
             # Add bspline components for active bspline geometric variables.
-            self.add_subsystem('thickness_bsp', BsplinesComp(
+            self.add_subsystem('thickness_bsp', om.BsplinesComp(
                 in_name='thickness_cp', out_name='thickness', units='m',
                 num_control_points=n_cp, num_points=int(ny-1),
                 bspline_order=min(n_cp, 4), distribution='uniform'),
@@ -41,7 +39,7 @@ class TubeGroup(Group):
         if 'radius_cp' in surface.keys():
             n_cp = len(surface['radius_cp'])
             # Add bspline components for active bspline geometric variables.
-            self.add_subsystem('radius_bsp', BsplinesComp(
+            self.add_subsystem('radius_bsp', om.BsplinesComp(
                 in_name='radius_cp', out_name='radius', units='m',
                 num_control_points=n_cp, num_points=int(ny-1),
                 bspline_order=min(n_cp, 4), distribution='uniform'),

@@ -1,10 +1,10 @@
 from __future__ import print_function, division
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class GetVectors(ExplicitComponent):
+class GetVectors(om.ExplicitComponent):
     """
     Compute the vectors going from the vortex mesh points to the evaluation
     points, where the evluation points are either the colloation points

@@ -1,9 +1,9 @@
 import numpy as np
 
-from openmdao.api import IndepVarComp, Group, BsplinesComp
+import openmdao.api as om
 
 
-class Geometry(Group):
+class Geometry(om.Group):
     """
     Group that contains all components needed for any type of OAS problem.
 
@@ -39,7 +39,7 @@ class Geometry(Group):
 
         if make_ivc or self.options['DVGeo']:
             # Add independent variables that do not belong to a specific component
-            indep_var_comp = IndepVarComp()
+            indep_var_comp = om.IndepVarComp()
 
             # If connect_geom_DVs is true, then we promote all of the geometric
             # design variables to their appropriate manipulation functions.
@@ -63,7 +63,7 @@ class Geometry(Group):
             if 't_over_c_cp' in surface.keys():
                 n_cp = len(surface['t_over_c_cp'])
                 # Add bspline components for active bspline geometric variables.
-                self.add_subsystem('t_over_c_bsp', BsplinesComp(
+                self.add_subsystem('t_over_c_bsp', om.BsplinesComp(
                     in_name='t_over_c_cp', out_name='t_over_c',
                     num_control_points=n_cp, num_points=int(ny-1),
                     bspline_order=min(n_cp, 4), distribution='uniform'),
@@ -84,7 +84,7 @@ class Geometry(Group):
             if 'twist_cp' in surface.keys():
                 n_cp = len(surface['twist_cp'])
                 # Add bspline components for active bspline geometric variables.
-                self.add_subsystem('twist_bsp', BsplinesComp(
+                self.add_subsystem('twist_bsp', om.BsplinesComp(
                     in_name='twist_cp', out_name='twist', units='deg',
                     num_control_points=n_cp, num_points=int(ny),
                     bspline_order=min(n_cp, 4), distribution='uniform'),
@@ -98,7 +98,7 @@ class Geometry(Group):
             if 'chord_cp' in surface.keys():
                 n_cp = len(surface['chord_cp'])
                 # Add bspline components for active bspline geometric variables.
-                self.add_subsystem('chord_bsp', BsplinesComp(
+                self.add_subsystem('chord_bsp', om.BsplinesComp(
                     in_name='chord_cp', out_name='chord', units='m',
                     num_control_points=n_cp, num_points=int(ny),
                     bspline_order=min(n_cp, 4), distribution='uniform'),
@@ -110,7 +110,7 @@ class Geometry(Group):
             if 't_over_c_cp' in surface.keys():
                 n_cp = len(surface['t_over_c_cp'])
                 # Add bspline components for active bspline geometric variables.
-                self.add_subsystem('t_over_c_bsp', BsplinesComp(
+                self.add_subsystem('t_over_c_bsp', om.BsplinesComp(
                     in_name='t_over_c_cp', out_name='t_over_c',
                     num_control_points=n_cp, num_points=int(ny-1),
                     bspline_order=min(n_cp, 4), distribution='uniform'),
@@ -121,7 +121,7 @@ class Geometry(Group):
             if 'xshear_cp' in surface.keys():
                 n_cp = len(surface['xshear_cp'])
                 # Add bspline components for active bspline geometric variables.
-                self.add_subsystem('xshear_bsp', BsplinesComp(
+                self.add_subsystem('xshear_bsp', om.BsplinesComp(
                     in_name='xshear_cp', out_name='xshear', units='m',
                     num_control_points=n_cp, num_points=int(ny),
                     bspline_order=min(n_cp, 4), distribution='uniform'),
@@ -133,7 +133,7 @@ class Geometry(Group):
             if 'yshear_cp' in surface.keys():
                 n_cp = len(surface['yshear_cp'])
                 # Add bspline components for active bspline geometric variables.
-                self.add_subsystem('yshear_bsp', BsplinesComp(
+                self.add_subsystem('yshear_bsp', om.BsplinesComp(
                     in_name='yshear_cp', out_name='yshear', units='m',
                     num_control_points=n_cp, num_points=int(ny),
                     bspline_order=min(n_cp, 4), distribution='uniform'),
@@ -145,7 +145,7 @@ class Geometry(Group):
             if 'zshear_cp' in surface.keys():
                 n_cp = len(surface['zshear_cp'])
                 # Add bspline components for active bspline geometric variables.
-                self.add_subsystem('zshear_bsp', BsplinesComp(
+                self.add_subsystem('zshear_bsp', om.BsplinesComp(
                     in_name='zshear_cp', out_name='zshear', units='m',
                     num_control_points=n_cp, num_points=int(ny),
                     bspline_order=min(n_cp, 4), distribution='uniform'),

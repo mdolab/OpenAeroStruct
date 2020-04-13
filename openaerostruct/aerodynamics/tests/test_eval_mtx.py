@@ -1,5 +1,5 @@
 import unittest
-from openmdao.api import Problem
+import openmdao.api as om
 from openmdao.utils.assert_utils import assert_check_partials
 
 from openaerostruct.aerodynamics.eval_mtx import EvalVelMtx
@@ -20,11 +20,10 @@ class Test(unittest.TestCase):
 
         comp = EvalVelMtx(surfaces=surfaces, num_eval_points=2, eval_name='test_name')
 
-        prob = Problem()
+        prob = om.Problem()
         prob.model.add_subsystem('comp', comp)
 
-        from openmdao.api import DirectSolver
-        prob.model.linear_solver = DirectSolver(assemble_jac=True)
+        prob.model.linear_solver = om.DirectSolver(assemble_jac=True)
         prob.model.options['assembled_jac_type'] = 'csc'
 
         prob.setup(force_alloc_complex=True)

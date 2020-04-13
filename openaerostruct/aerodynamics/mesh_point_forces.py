@@ -6,10 +6,10 @@ from __future__ import print_function
 import numpy as np
 from scipy.sparse import csr_matrix
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class MeshPointForces(ExplicitComponent):
+class MeshPointForces(om.ExplicitComponent):
     """
     Component that simply converts the forces on the panel to an equivalent set of forces at the
     mesh points.

@@ -1,10 +1,10 @@
 from __future__ import print_function, division
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class NonIntersectingThickness(ExplicitComponent):
+class NonIntersectingThickness(om.ExplicitComponent):
     """
     Create a constraint so the thickness of the spar does not intersect
     itself in the center of the spar. Basically, the thickness must be less

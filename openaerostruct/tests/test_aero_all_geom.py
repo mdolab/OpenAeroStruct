@@ -7,9 +7,7 @@ class Test(unittest.TestCase):
     def test(self):
         import numpy as np
 
-        from openmdao.api import IndepVarComp, Problem, Group, NewtonSolver, \
-            ScipyIterativeSolver, LinearBlockGS, NonlinearBlockGS, \
-            DirectSolver, LinearBlockGS, PetscKSP, SqliteRecorder
+        import openmdao.api as om
 
         from openaerostruct.geometry.utils import generate_mesh
         from openaerostruct.geometry.geometry_group import Geometry
@@ -64,11 +62,11 @@ class Test(unittest.TestCase):
                     }
 
         # Create the OpenMDAO problem
-        prob = Problem()
+        prob = om.Problem()
 
         # Create an independent variable component that will supply the flow
         # conditions to the problem.
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('v', val=248.136, units='m/s')
         indep_var_comp.add_output('alpha', val=5., units='deg')
         indep_var_comp.add_output('Mach_number', val=0.84)
@@ -106,8 +104,7 @@ class Test(unittest.TestCase):
 
         # Import the Scipy Optimizer and set the driver of the problem to use
         # it, which defaults to an SLSQP optimization method
-        from openmdao.api import ScipyOptimizeDriver
-        prob.driver = ScipyOptimizeDriver()
+        prob.driver = om.ScipyOptimizeDriver()
         prob.driver.options['tol'] = 1e-9
 
         # Setup problem and add design variables, constraint, and objective

@@ -1,12 +1,12 @@
 from __future__ import division, print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 from openaerostruct.structures.utils import norm
 from openaerostruct.utils.constants import grav_constant
 
 
-class ComputeThrustLoads(ExplicitComponent):
+class ComputeThrustLoads(om.ExplicitComponent):
     """
     Compute the loads on the structure due to the thrust of engines.
     The current method adds loads and moments to all of the structural nodes, but

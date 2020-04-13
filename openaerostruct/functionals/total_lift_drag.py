@@ -1,9 +1,9 @@
 from __future__ import division, print_function
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class TotalLiftDrag(ExplicitComponent):
+class TotalLiftDrag(om.ExplicitComponent):
     """
     Compute the coefficients of lift (CL) and drag (CD) for the entire aircraft,
     based on the area-weighted sum of individual surfaces' CLs and CDs.

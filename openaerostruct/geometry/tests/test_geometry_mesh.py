@@ -3,7 +3,7 @@ import numpy as np
 
 import unittest
 
-from openmdao.api import Problem, Group
+import openmdao.api as om
 
 from openaerostruct.geometry.geometry_mesh import GeometryMesh
 

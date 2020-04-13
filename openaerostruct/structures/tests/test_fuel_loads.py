@@ -1,6 +1,6 @@
 import unittest
 
-from openmdao.api import Group, IndepVarComp, Problem
+import openmdao.api as om
 from openaerostruct.structures.fuel_loads import FuelLoads
 from openaerostruct.utils.testing import run_test, get_default_surfaces
 import numpy as np
@@ -12,9 +12,9 @@ class Test(unittest.TestCase):
 
         comp = FuelLoads(surface=surface)
 
-        group = Group()
+        group = om.Group()
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
 
         ny = surface['mesh'].shape[1]
 

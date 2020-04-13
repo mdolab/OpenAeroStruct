@@ -3,7 +3,7 @@ import unittest
 
 import numpy as np
 
-from openmdao.api import IndepVarComp, Problem
+import openmdao.api as om
 from openmdao.utils.assert_utils import assert_rel_error
 
 from openaerostruct.geometry.utils import generate_mesh
@@ -58,9 +58,9 @@ class Test(unittest.TestCase):
         surfaces = [surf_dict]
 
         # Create the problem and the model group
-        prob = Problem()
+        prob = om.Problem()
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('v', val=248.136, units='m/s')
         indep_var_comp.add_output('alpha', val=5., units='deg')
         indep_var_comp.add_output('beta', val=-5, units='deg')

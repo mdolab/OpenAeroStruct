@@ -3,12 +3,12 @@ import numpy as np
 
 from scipy.sparse import coo_matrix, diags
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 from openaerostruct.structures.utils import norm
 from openaerostruct.utils.constants import grav_constant
 
 
-class StructureWeightLoads(ExplicitComponent):
+class StructureWeightLoads(om.ExplicitComponent):
     """
     Compute the nodal loads from the weight of the wing structure to be applied to the wing
     structure.

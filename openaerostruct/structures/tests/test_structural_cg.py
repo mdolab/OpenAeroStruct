@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from openmdao.api import Group, IndepVarComp
+import openmdao.api as om
 from openaerostruct.structures.structural_cg import StructuralCG
 from openaerostruct.utils.testing import run_test, get_default_surfaces
 
@@ -12,11 +12,11 @@ class Test(unittest.TestCase):
     def test(self):
         surface = get_default_surfaces()[0]
 
-        group = Group()
+        group = om.Group()
 
         comp = StructuralCG(surface=surface)
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
 
         ny = surface['mesh'].shape[1]
 

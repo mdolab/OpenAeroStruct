@@ -1,10 +1,10 @@
 from __future__ import print_function, division
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class FailureKS(ExplicitComponent):
+class FailureKS(om.ExplicitComponent):
     """
     Aggregate failure constraints from the structure.
 

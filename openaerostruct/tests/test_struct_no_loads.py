@@ -8,7 +8,7 @@ from openaerostruct.geometry.geometry_group import Geometry
 from openaerostruct.transfer.displacement_transfer import DisplacementTransfer
 from openaerostruct.structures.struct_groups import SpatialBeamAlone
 
-from openmdao.api import IndepVarComp, Problem, Group, NewtonSolver, ScipyIterativeSolver, LinearBlockGS, NonlinearBlockGS, DirectSolver, LinearBlockGS, PetscKSP, ScipyOptimizeDriver
+import openmdao.api as om
 
 
 class Test(unittest.TestCase):
@@ -47,11 +47,11 @@ class Test(unittest.TestCase):
                     }
 
         # Create the problem and assign the model group
-        prob = Problem()
+        prob = om.Problem()
 
         ny = surf_dict['mesh'].shape[1]
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('loads', val=np.zeros((ny, 6)), units='N')
         indep_var_comp.add_output('load_factor', val=1.)
 
@@ -64,8 +64,7 @@ class Test(unittest.TestCase):
 
         prob.model.add_subsystem(surf_dict['name'], struct_group, promotes=['*'])
 
-        from openmdao.api import ScipyOptimizeDriver
-        prob.driver = ScipyOptimizeDriver()
+        prob.driver = om.ScipyOptimizeDriver()
 
         # Setup problem and add design variables, constraint, and objective
         prob.model.add_design_var('thickness_cp', lower=0.01, upper=0.5, scaler=1e2)
@@ -77,8 +76,6 @@ class Test(unittest.TestCase):
 
         # Set up the problem
         prob.setup()
-
-        from openmdao.api import view_model
 
         prob.run_driver()
 

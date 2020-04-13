@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from openmdao.api import Group, IndepVarComp, Problem
+import openmdao.api as om
 from openmdao.utils.assert_utils import assert_check_partials, assert_rel_error
 
 from openaerostruct.aerodynamics.geometry import VLMGeometry
@@ -14,11 +14,11 @@ class Test(unittest.TestCase):
     def test(self):
         surfaces = get_default_surfaces()
 
-        group = Group()
+        group = om.Group()
 
         comp = VLMGeometry(surface=surfaces[0])
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
 
         indep_var_comp.add_output('def_mesh', val=surfaces[0]['mesh'], units='m')
 
@@ -83,12 +83,12 @@ class Test(unittest.TestCase):
         #surfaces = get_default_surfaces()
         surfaces = [surface]
 
-        prob = Problem()
+        prob = om.Problem()
         group = prob.model
 
         comp = VLMGeometry(surface=surfaces[0])
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('def_mesh', val=surfaces[0]['mesh'], units='m')
 
         group.add_subsystem('geom', comp)
@@ -160,12 +160,12 @@ class Test(unittest.TestCase):
         #surfaces = get_default_surfaces()
         surfaces = [surface]
 
-        prob = Problem()
+        prob = om.Problem()
         group = prob.model
 
         comp = VLMGeometry(surface=surfaces[0])
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('def_mesh', val=surfaces[0]['mesh'], units='m')
 
         group.add_subsystem('geom', comp)
@@ -186,18 +186,18 @@ class Test(unittest.TestCase):
     def test_outputs(self):
         surfaces = get_default_surfaces()
 
-        group = Group()
+        group = om.Group()
 
         comp = VLMGeometry(surface=surfaces[0])
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
 
         indep_var_comp.add_output('def_mesh', val=surfaces[0]['mesh'], units='m')
 
         group.add_subsystem('geom', comp, promotes=['*'])
         group.add_subsystem('indep_var_comp', indep_var_comp, promotes=['*'])
 
-        prob = Problem()
+        prob = om.Problem()
         prob.model.add_subsystem('group', group, promotes=['*'])
         prob.setup()
         prob.run_model()

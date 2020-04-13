@@ -1,8 +1,8 @@
 from __future__ import print_function, division
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
-class TotalLift(ExplicitComponent):
+class TotalLift(om.ExplicitComponent):
     """
     Calculate total lift in force units by summing the induced CL
     with the CL0.

@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 from openaerostruct.aerodynamics.wave_drag import WaveDrag
 from openaerostruct.utils.testing import run_test, get_default_surfaces
-from openmdao.api import Group, IndepVarComp, BsplinesComp
+import openmdao.api as om
 import numpy as np
 
 class Test(unittest.TestCase):
@@ -16,9 +16,9 @@ class Test(unittest.TestCase):
         ny = surface['mesh'].shape[1]
         n_cp = len(surface['t_over_c_cp'])
 
-        group = Group()
+        group = om.Group()
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('t_over_c_cp', val=surface['t_over_c_cp'])
         indep_var_comp.add_output('Mach_number', val=.95)
         indep_var_comp.add_output('CL', val=0.7)
@@ -27,7 +27,7 @@ class Test(unittest.TestCase):
         indep_var_comp.add_output('chords', val = np.array([ 2.72835132,  5.12528179,  7.88916016, 13.6189974]),units='m')
         group.add_subsystem('indep_var_comp', indep_var_comp, promotes=['*'])
 
-        group.add_subsystem('t_over_c_bsp', BsplinesComp(
+        group.add_subsystem('t_over_c_bsp', om.BsplinesComp(
             in_name='t_over_c_cp', out_name='t_over_c',
             num_control_points=n_cp, num_points=int(ny-1),
             bspline_order=min(n_cp, 4), distribution='uniform'),

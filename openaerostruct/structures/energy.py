@@ -1,10 +1,10 @@
 from __future__ import print_function, division
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class Energy(ExplicitComponent):
+class Energy(om.ExplicitComponent):
     """ Compute strain energy.
 
     Parameters

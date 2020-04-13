@@ -1,9 +1,9 @@
 from __future__ import print_function, division
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
-class ViscousDrag(ExplicitComponent):
+class ViscousDrag(om.ExplicitComponent):
     """
     Compute the skin friction drag if the with_viscous option is True.
     If not, the CDv is 0.

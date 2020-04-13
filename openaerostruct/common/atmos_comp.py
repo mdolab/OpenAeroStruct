@@ -5,7 +5,7 @@ from collections import namedtuple
 import numpy as np
 from  scipy.interpolate import Akima1DInterpolator as Akima
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
 """United States standard atmosphere 1976 tables, data obtained from http://www.digitaldutch.com/atmoscalc/index.htm"""
@@ -80,7 +80,7 @@ a_interp_deriv = a_interp.derivative(1)
 viscosity_interp_deriv = viscosity_interp.derivative(1)
 
 
-class AtmosComp(ExplicitComponent):
+class AtmosComp(om.ExplicitComponent):
 
     def setup(self):
         self.add_input('altitude', val=1., units='ft')

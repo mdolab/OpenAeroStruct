@@ -1,4 +1,4 @@
-from openmdao.api import Problem, Group, IndepVarComp, view_model
+import openmdao.api as om
 
 from six import iteritems
 from numpy.testing import assert_almost_equal
@@ -72,7 +72,7 @@ def view_mat(mat1, mat2=None, key='Title', tol=1e-10):  # pragma: no cover
     plt.show()
 
 def run_test(test_obj, comp, complex_flag=False, compact_print=True, method='fd', step=1e-6, atol=1e-5, rtol=1e-5, view=False):
-    prob = Problem()
+    prob = om.Problem()
     prob.model.add_subsystem('comp', comp)
     prob.setup(force_alloc_complex=complex_flag)
 

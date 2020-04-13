@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from openmdao.api import Group, IndepVarComp
+import openmdao.api as om
 from openaerostruct.structures.vonmises_wingbox import VonMisesWingbox
 from openaerostruct.utils.testing import run_test, get_default_surfaces
 
@@ -19,9 +19,9 @@ class Test(unittest.TestCase):
 
         comp = VonMisesWingbox(surface=surface)
 
-        group = Group()
+        group = om.Group()
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
 
         ny = surface['mesh'].shape[1]
 

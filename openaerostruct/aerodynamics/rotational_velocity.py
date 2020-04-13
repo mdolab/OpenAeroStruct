@@ -2,10 +2,10 @@ from __future__ import print_function
 
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class RotationalVelocity(ExplicitComponent):
+class RotationalVelocity(om.ExplicitComponent):
     """
     Compute the velocity due to rigid body rotation.
 

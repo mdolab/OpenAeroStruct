@@ -3,14 +3,14 @@
 from __future__ import division, print_function
 import numpy as np
 
-from openmdao.api import Group
+import openmdao.api as om
 
 from openaerostruct.geometry.geometry_mesh_transformations import \
      Taper, ScaleX, Sweep, ShearX, Stretch, ShearY, Dihedral, \
      ShearZ, Rotate
 
 
-class GeometryMesh(Group):
+class GeometryMesh(om.Group):
     """
     OpenMDAO group that performs mesh manipulation functions. It reads in
     the initial mesh from the surface dictionary and outputs the altered

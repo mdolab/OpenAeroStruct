@@ -1,6 +1,6 @@
 import unittest
 
-from openmdao.api import Group, IndepVarComp
+import openmdao.api as om
 
 from openaerostruct.functionals.total_lift_drag import TotalLiftDrag
 from openaerostruct.utils.testing import run_test, get_default_surfaces
@@ -28,11 +28,11 @@ class Test(unittest.TestCase):
     def test2(self):
         surfaces = get_default_surfaces()
 
-        group = Group()
+        group = om.Group()
 
         comp = TotalLiftDrag(surfaces=surfaces)
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
 
         indep_var_comp.add_output('S_ref_total', val=10., units='m**2')
 

@@ -1,10 +1,10 @@
 from __future__ import division, print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class TotalLoads(ExplicitComponent):
+class TotalLoads(om.ExplicitComponent):
     """
     Add the loads from the aerodynamics, structural weight, and fuel weight.
 

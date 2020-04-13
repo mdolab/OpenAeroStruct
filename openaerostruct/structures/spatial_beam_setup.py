@@ -1,4 +1,4 @@
-from openmdao.api import Group
+import openmdao.api as om
 from openaerostruct.structures.compute_nodes import ComputeNodes
 from openaerostruct.structures.assemble_k_group import AssembleKGroup
 from openaerostruct.structures.weight import Weight
@@ -6,7 +6,7 @@ from openaerostruct.structures.structural_cg import StructuralCG
 from openaerostruct.structures.fuel_vol import WingboxFuelVol
 
 
-class SpatialBeamSetup(Group):
+class SpatialBeamSetup(om.Group):
     """ Group that sets up the spatial beam components and assembles the
         stiffness matrix."""
 

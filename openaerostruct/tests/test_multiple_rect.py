@@ -7,7 +7,7 @@ from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.geometry.geometry_group import Geometry
 from openaerostruct.aerodynamics.aero_groups import AeroPoint
 
-from openmdao.api import IndepVarComp, Problem, Group, NewtonSolver, ScipyIterativeSolver, LinearBlockGS, NonlinearBlockGS, DirectSolver, LinearBlockGS, PetscKSP, ScipyOptimizeDriver
+import openmdao.api as om
 
 
 class Test(unittest.TestCase):
@@ -95,9 +95,9 @@ class Test(unittest.TestCase):
         surfaces = [surf_dict, surf_dict2]
 
         # Create the problem and the model group
-        prob = Problem()
+        prob = om.Problem()
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('v', val=248.136, units='m/s')
         indep_var_comp.add_output('alpha', val=5., units='deg')
         indep_var_comp.add_output('Mach_number', val=0.84)

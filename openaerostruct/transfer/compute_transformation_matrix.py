@@ -1,12 +1,12 @@
 from __future__ import print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 from openaerostruct.utils.vector_algebra import get_array_indices
 
 
-class ComputeTransformationMatrix(ExplicitComponent):
+class ComputeTransformationMatrix(om.ExplicitComponent):
     """
     Compute the transformation matrix used to apply the rotations obtained
     from the FEM system to the aerodynamic mesh.

@@ -1,10 +1,10 @@
 from __future__ import division, print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class MomentCoefficient(ExplicitComponent):
+class MomentCoefficient(om.ExplicitComponent):
     """
     Compute the coefficient of moment (CM) for the entire aircraft.
 

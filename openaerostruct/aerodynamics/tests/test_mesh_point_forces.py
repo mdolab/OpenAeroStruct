@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from openmdao.api import Problem
+import openmdao.api as om
 from openmdao.utils.assert_utils import assert_check_partials
 
 from openaerostruct.aerodynamics.mesh_point_forces import MeshPointForces
@@ -45,7 +45,7 @@ class Test(unittest.TestCase):
         #surfaces = get_default_surfaces()
         surfaces = [surface]
 
-        prob = Problem()
+        prob = om.Problem()
         group = prob.model
 
         comp = MeshPointForces(surfaces=surfaces)

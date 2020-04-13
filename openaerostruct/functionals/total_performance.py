@@ -1,6 +1,6 @@
 from __future__ import division, print_function
 
-from openmdao.api import Group
+import openmdao.api as om
 
 from openaerostruct.functionals.breguet_range import BreguetRange
 from openaerostruct.functionals.equilibrium import Equilibrium
@@ -10,7 +10,7 @@ from openaerostruct.functionals.total_lift_drag import TotalLiftDrag
 from openaerostruct.functionals.sum_areas import SumAreas
 
 
-class TotalPerformance(Group):
+class TotalPerformance(om.Group):
     """
     Group to contain the total aerostructural performance components.
     """

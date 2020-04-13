@@ -12,12 +12,12 @@ class Test(unittest.TestCase):
         from openaerostruct.geometry.geometry_group import Geometry
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
 
-        from openmdao.api import IndepVarComp, Problem, Group
+        import openmdao.api as om
 
         # Instantiate the problem and the model group
-        prob = Problem()
+        prob = om.Problem()
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('v', val=248.136, units='m/s')
         indep_var_comp.add_output('alpha', val=5., units='deg')
         indep_var_comp.add_output('Mach_number', val=0.84)
@@ -104,8 +104,7 @@ class Test(unittest.TestCase):
 
         prob.model.connect(name + '.t_over_c', point_name + '.' + name + '_perf.' + 't_over_c')
 
-        from openmdao.api import ScipyOptimizeDriver
-        prob.driver = ScipyOptimizeDriver()
+        prob.driver = om.ScipyOptimizeDriver()
 
         # # Setup problem and add design variables, constraint, and objective
         prob.model.add_design_var('wing.twist_cp', lower=-10., upper=15.)

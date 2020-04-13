@@ -1,13 +1,13 @@
 from __future__ import print_function, division
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
 def norm(vec):
     return np.sqrt(np.sum(vec**2))
 
-class WingboxFuelVol(ExplicitComponent):
+class WingboxFuelVol(om.ExplicitComponent):
     """
     Computes the internal volumes of the wingbox segments.
 

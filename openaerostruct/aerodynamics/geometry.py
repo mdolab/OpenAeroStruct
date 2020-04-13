@@ -1,12 +1,12 @@
 from __future__ import print_function, division
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
 np.random.seed(314)
 
-class VLMGeometry(ExplicitComponent):
+class VLMGeometry(om.ExplicitComponent):
     """
     Compute various geometric properties for VLM analysis.
     These are used primarily to help compute postprocessing quantities,

@@ -1,10 +1,10 @@
 from __future__ import print_function, division
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class ScaleToPrandtlGlauert(ExplicitComponent):
+class ScaleToPrandtlGlauert(om.ExplicitComponent):
     """
     Scale the wind frame coordinates to get the Prandtl-Glauert transformed
     geometry.
@@ -232,7 +232,7 @@ class ScaleToPrandtlGlauert(ExplicitComponent):
             partials[of_name, wrt_name] = np.tile(fact_norm, nn)
 
 
-class ScaleFromPrandtlGlauert(ExplicitComponent):
+class ScaleFromPrandtlGlauert(om.ExplicitComponent):
     """
     Scale the Prandtl-Glauert transformed forces to get the physical forces
     Prandtl-Glauert transformed geometry.

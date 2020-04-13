@@ -1,14 +1,14 @@
 from __future__ import print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 from openaerostruct.utils.vector_algebra import add_ones_axis
 from openaerostruct.utils.vector_algebra import compute_norm, compute_norm_deriv
 from openaerostruct.utils.vector_algebra import compute_cross, compute_cross_deriv1, compute_cross_deriv2
 
 
-class Transform(ExplicitComponent):
+class Transform(om.ExplicitComponent):
 
     def initialize(self):
         self.options.declare('surface', types=dict)

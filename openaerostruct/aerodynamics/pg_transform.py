@@ -1,10 +1,10 @@
-from openmdao.api import Group
+import openmdao.api as om
 
 from openaerostruct.aerodynamics.pg_wind_rotation import RotateToWindFrame, RotateFromWindFrame
 from openaerostruct.aerodynamics.pg_scale import ScaleToPrandtlGlauert, ScaleFromPrandtlGlauert
 
 
-class PGTransform(Group):
+class PGTransform(om.Group):
     """
     This group is responsible for transforming the VLM geometries from
     physical coordinates to Prandtl-Glauert coordinates. This allows the
@@ -41,7 +41,7 @@ class PGTransform(Group):
                            promotes_outputs=['*'])
 
 
-class InversePGTransform(Group):
+class InversePGTransform(om.Group):
     """
     This group is responsible for transforming the solved incompressible
     forces in the Prandtl-Glauert domain to the compressible forces in the

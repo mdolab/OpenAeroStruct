@@ -20,7 +20,7 @@ class Test(unittest.TestCase):
         from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
         from openaerostruct.utils.constants import grav_constant
 
-        from openmdao.api import IndepVarComp, Problem, Group, SqliteRecorder
+        import openmdao.api as om
 
         # Create a dictionary to store options about the surface
         mesh_dict = {'num_y' : 11,
@@ -77,10 +77,10 @@ class Test(unittest.TestCase):
                     }
 
         # Create the problem and assign the model group
-        prob = Problem()
+        prob = om.Problem()
 
         # Add problem information as an independent variables component
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('v', val=[248.136, 0.5 * 340.], units='m/s')
         indep_var_comp.add_output('alpha', val=[5., 10.], units='deg')
         indep_var_comp.add_output('Mach_number', val=[0.84, 0.5])
@@ -98,7 +98,7 @@ class Test(unittest.TestCase):
              promotes=['*'])
 
         # Add morphing variables as an independent variables component
-        morphing_vars = IndepVarComp()
+        morphing_vars = om.IndepVarComp()
         morphing_vars.add_output('t_over_c_cp', val=np.array([0.15]))
         morphing_vars.add_output('thickness_cp', val=np.array([0.01, 0.01, 0.01]), units='m')
         morphing_vars.add_output('twist_cp_0', val=np.array([2., 3., 4., 4., 4.]), units='deg')
@@ -161,12 +161,11 @@ class Test(unittest.TestCase):
             AS_point.connect(name + '.geometry.t_over_c', name + '_perf' + '.t_over_c')
             AS_point.connect(name + '.geometry.t_over_c', name + '.t_over_c')
 
-        from openmdao.api import ScipyOptimizeDriver
-        prob.driver = ScipyOptimizeDriver()
+        prob.driver = om.ScipyOptimizeDriver()
         prob.driver.options['tol'] = 1e-9
         prob.driver.options['maxiter'] = 2
 
-        recorder = SqliteRecorder("morphing_aerostruct.db")
+        recorder = om.SqliteRecorder("morphing_aerostruct.db")
         prob.driver.add_recorder(recorder)
         prob.driver.recording_options['record_derivatives'] = True
         prob.driver.recording_options['includes'] = ['*']
@@ -189,8 +188,7 @@ class Test(unittest.TestCase):
         # Set up the problem
         prob.setup(check=True)
 
-        # from openmdao.api import view_model
-        # view_model(prob)
+        # om.view_model(prob)
 
         prob.run_model()
 

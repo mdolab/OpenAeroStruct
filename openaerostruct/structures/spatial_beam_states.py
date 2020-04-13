@@ -1,4 +1,4 @@
-from openmdao.api import Group
+import openmdao.api as om
 from openaerostruct.structures.create_rhs import CreateRHS
 from openaerostruct.structures.fem import FEM
 from openaerostruct.structures.disp import Disp
@@ -8,7 +8,7 @@ from openaerostruct.structures.total_loads import TotalLoads
 from openaerostruct.structures.compute_point_mass_loads import ComputePointMassLoads
 from openaerostruct.structures.compute_thrust_loads import ComputeThrustLoads
 
-class SpatialBeamStates(Group):
+class SpatialBeamStates(om.Group):
     """ Group that contains the spatial beam states. """
 
     def initialize(self):

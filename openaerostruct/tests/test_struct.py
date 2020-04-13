@@ -14,7 +14,7 @@ class Test(unittest.TestCase):
         from openaerostruct.transfer.displacement_transfer import DisplacementTransfer
         from openaerostruct.structures.struct_groups import SpatialBeamAlone
 
-        from openmdao.api import IndepVarComp, Problem, Group, SqliteRecorder
+        import openmdao.api as om
 
         # Create a dictionary to store options about the surface
         mesh_dict = {'num_y' : 7,
@@ -48,11 +48,11 @@ class Test(unittest.TestCase):
                     }
 
         # Create the problem and assign the model group
-        prob = Problem()
+        prob = om.Problem()
 
         ny = surf_dict['mesh'].shape[1]
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('loads', val=np.ones((ny, 6)) * 2e5, units='N')
         indep_var_comp.add_output('load_factor', val=1.)
 
@@ -65,12 +65,11 @@ class Test(unittest.TestCase):
 
         prob.model.add_subsystem(surf_dict['name'], struct_group)
 
-        from openmdao.api import ScipyOptimizeDriver
-        prob.driver = ScipyOptimizeDriver()
+        prob.driver = om.ScipyOptimizeDriver()
         prob.driver.options['disp'] = True
         prob.driver.options['tol'] = 1e-9
 
-        recorder = SqliteRecorder('struct.db')
+        recorder = om.SqliteRecorder('struct.db')
         prob.driver.add_recorder(recorder)
         prob.driver.recording_options['record_derivatives'] = True
         prob.driver.recording_options['includes'] = ['*']

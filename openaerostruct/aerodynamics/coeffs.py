@@ -1,9 +1,9 @@
 from __future__ import print_function, division
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class Coeffs(ExplicitComponent):
+class Coeffs(om.ExplicitComponent):
     """ Compute lift and drag coefficients for each individual lifting surface.
 
     Parameters

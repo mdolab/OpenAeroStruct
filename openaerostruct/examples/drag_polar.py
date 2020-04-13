@@ -4,7 +4,7 @@ from __future__ import division, print_function
 import numpy as np
 import matplotlib.pylab as plt
 
-from openmdao.api import IndepVarComp, Problem, NewtonSolver, BroydenSolver, \
+import openmdao.api as om
             DirectSolver, BalanceComp, ArmijoGoldsteinLS, BoundsEnforceLS, \
             NonlinearBlockGS
 from openaerostruct.geometry.utils import generate_mesh
@@ -18,10 +18,10 @@ def compute_drag_polar(Mach, alphas, surfaces, trimmed=False):
         surfaces = [surfaces,]
 
     # Create the OpenMDAO problem
-    prob = Problem()
+    prob = om.Problem()
     # Create an independent variable component that will supply the flow
     # conditions to the problem.
-    indep_var_comp = IndepVarComp()
+    indep_var_comp = om.IndepVarComp()
     indep_var_comp.add_output('v', val=248.136, units='m/s')
     indep_var_comp.add_output('alpha', val=0., units = 'deg')
     indep_var_comp.add_output('Mach_number', val=Mach)
@@ -63,11 +63,11 @@ def compute_drag_polar(Mach, alphas, surfaces, trimmed=False):
         prob.model.connect('aero.CM', 'balance.lhs:tail_rotation', src_indices = [1])
         prob.model.connect('tail_rotation', 'tail.twist_cp')
 
-        prob.model.nonlinear_solver = NonlinearBlockGS(use_aitken=True)
+        prob.model.nonlinear_solver = om.NonlinearBlockGS(use_aitken=True)
 
         prob.model.nonlinear_solver.options['iprint'] = 2
         prob.model.nonlinear_solver.options['maxiter'] = 100
-        prob.model.linear_solver = DirectSolver()
+        prob.model.linear_solver = om.DirectSolver()
 
 
     prob.setup()

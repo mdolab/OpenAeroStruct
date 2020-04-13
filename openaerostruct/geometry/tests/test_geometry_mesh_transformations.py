@@ -4,7 +4,7 @@ import numpy as np
 
 import unittest
 
-from openmdao.api import Problem, Group
+import openmdao.api as om
 from openmdao.utils.assert_utils import assert_rel_error, assert_check_partials
 
 from openaerostruct.geometry.geometry_mesh_transformations import \
@@ -51,7 +51,7 @@ class Test(unittest.TestCase):
         symmetry = False
         mesh = get_mesh(symmetry)
 
-        prob = Problem()
+        prob = om.Problem()
         group = prob.model
 
         val = np.random.random(1)
@@ -69,7 +69,7 @@ class Test(unittest.TestCase):
         symmetry = True
         mesh = get_mesh(symmetry)
 
-        prob = Problem()
+        prob = om.Problem()
         group = prob.model
 
         val = np.random.random(1)
@@ -87,7 +87,7 @@ class Test(unittest.TestCase):
         symmetry = False
         mesh = get_mesh(symmetry)
 
-        prob = Problem()
+        prob = om.Problem()
         group = prob.model
 
         val = np.random.random(NY)
@@ -108,7 +108,7 @@ class Test(unittest.TestCase):
         symmetry = True
         mesh = get_mesh(symmetry)
 
-        prob = Problem()
+        prob = om.Problem()
         group = prob.model
 
         val = np.random.random(NY)
@@ -129,7 +129,7 @@ class Test(unittest.TestCase):
         symmetry = False
         mesh = get_mesh(symmetry)
 
-        prob = Problem()
+        prob = om.Problem()
         group = prob.model
 
         val = np.random.random(1)
@@ -150,7 +150,7 @@ class Test(unittest.TestCase):
         symmetry = True
         mesh = get_mesh(symmetry)
 
-        prob = Problem()
+        prob = om.Problem()
         group = prob.model
 
         val = np.random.random(1)
@@ -171,7 +171,7 @@ class Test(unittest.TestCase):
         symmetry = False
         mesh = get_mesh(symmetry)
 
-        prob = Problem()
+        prob = om.Problem()
         group = prob.model
 
         val = np.random.random(NY)
@@ -192,7 +192,7 @@ class Test(unittest.TestCase):
         symmetry = False
         mesh = get_mesh(symmetry)
 
-        prob = Problem()
+        prob = om.Problem()
         group = prob.model
 
         val = np.random.random(1)
@@ -213,7 +213,7 @@ class Test(unittest.TestCase):
         symmetry = True
         mesh = get_mesh(symmetry)
 
-        prob = Problem()
+        prob = om.Problem()
         group = prob.model
 
         val = np.random.random(1)
@@ -234,7 +234,7 @@ class Test(unittest.TestCase):
         symmetry = False
         mesh = get_mesh(symmetry)
 
-        prob = Problem()
+        prob = om.Problem()
         group = prob.model
 
         val = np.random.random(NY)
@@ -255,7 +255,7 @@ class Test(unittest.TestCase):
         symmetry = False
         mesh = get_mesh(symmetry)
 
-        prob = Problem()
+        prob = om.Problem()
         group = prob.model
 
         val = 15.0*np.random.random(1)
@@ -276,7 +276,7 @@ class Test(unittest.TestCase):
         symmetry = True
         mesh = get_mesh(symmetry)
 
-        prob = Problem()
+        prob = om.Problem()
         group = prob.model
 
         val = np.random.random(1)
@@ -297,7 +297,7 @@ class Test(unittest.TestCase):
         symmetry = False
         mesh = get_mesh(symmetry)
 
-        prob = Problem()
+        prob = om.Problem()
         group = prob.model
 
         val = np.random.random(NY)
@@ -318,7 +318,7 @@ class Test(unittest.TestCase):
         symmetry = False
         mesh = get_mesh(symmetry)
 
-        prob = Problem()
+        prob = om.Problem()
         group = prob.model
 
         val = np.random.random(NY)
@@ -339,7 +339,7 @@ class Test(unittest.TestCase):
         symmetry = True
         mesh = get_mesh(symmetry)
 
-        prob = Problem()
+        prob = om.Problem()
         group = prob.model
 
         val = np.random.random(NY)

@@ -1,10 +1,10 @@
 from __future__ import division, print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class SectionPropertiesWingbox(ExplicitComponent):
+class SectionPropertiesWingbox(om.ExplicitComponent):
     """
     Compute geometric cross-section properties for the wingbox elements.
     See Chauhan et al. (https://doi.org/10.1007/978-3-319-97773-7_38) for more.

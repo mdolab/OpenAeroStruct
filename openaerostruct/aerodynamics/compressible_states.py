@@ -1,7 +1,7 @@
 """
 Class definition for CompressibleVLMStates.
 """
-from openmdao.api import Group, IndepVarComp
+import openmdao.api as om
 
 from openaerostruct.aerodynamics.get_vectors import GetVectors
 from openaerostruct.aerodynamics.collocation_points import CollocationPoints
@@ -20,7 +20,7 @@ from openaerostruct.aerodynamics.vortex_mesh import VortexMesh
 from openaerostruct.aerodynamics.pg_transform import PGTransform, InversePGTransform
 
 
-class CompressibleVLMStates(Group):
+class CompressibleVLMStates(om.Group):
     """
     Group that contains the states for a compressible aerodynamic analysis.
 
@@ -118,7 +118,7 @@ class CompressibleVLMStates(Group):
              promotes_outputs=['*'])
 
         # In the PG domain, alpha and beta are zero.
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('alpha_pg', val=0., units='deg')
         indep_var_comp.add_output('beta_pg', val=0., units='deg')
         self.add_subsystem('pg_frame', indep_var_comp)

@@ -1,9 +1,9 @@
-from openmdao.api import Group
+import openmdao.api as om
 from openaerostruct.common.reynolds_comp import ReynoldsComp
 from openaerostruct.common.atmos_comp import AtmosComp
 
 
-class AtmosGroup(Group):
+class AtmosGroup(om.Group):
 
     def setup(self):
         self.add_subsystem('atmos',

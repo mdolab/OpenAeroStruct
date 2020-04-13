@@ -2,10 +2,10 @@ from __future__ import print_function
 import numpy as np
 from scipy.linalg import lu_factor, lu_solve
 
-from openmdao.api import ImplicitComponent
+import openmdao.api as om
 
 
-class SolveMatrix(ImplicitComponent):
+class SolveMatrix(om.ImplicitComponent):
     """
     Solve the AIC linear system to obtain the vortex ring circulations.
 

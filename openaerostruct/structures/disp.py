@@ -1,10 +1,10 @@
 from __future__ import print_function, division
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class Disp(ExplicitComponent):
+class Disp(om.ExplicitComponent):
     """
     Reshape the flattened displacements from the linear system solution into
     a 2D array so we can more easily use the results.

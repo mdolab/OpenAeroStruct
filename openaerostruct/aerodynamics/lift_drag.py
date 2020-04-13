@@ -1,10 +1,10 @@
 from __future__ import print_function, division
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class LiftDrag(ExplicitComponent):
+class LiftDrag(om.ExplicitComponent):
     """
     Calculate total lift and drag in force units based on section forces.
     This is for one given lifting surface.

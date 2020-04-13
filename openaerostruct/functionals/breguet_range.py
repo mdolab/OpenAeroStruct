@@ -1,10 +1,10 @@
 from __future__ import division, print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class BreguetRange(ExplicitComponent):
+class BreguetRange(om.ExplicitComponent):
     """
     Computes the fuel burn using the Breguet range equation using
     the computed CL, CD, weight, and provided specific fuel consumption, speed of sound,

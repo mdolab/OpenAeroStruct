@@ -2,10 +2,10 @@ from __future__ import print_function
 import numpy as np
 from scipy.sparse import csc_matrix
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class HorseshoeCirculations(ExplicitComponent):
+class HorseshoeCirculations(om.ExplicitComponent):
     """
     Convert the previously-computed vortex ring circulations into horseshoe
     circulations. Vortex rings and horseshoe vortices produce the same linear

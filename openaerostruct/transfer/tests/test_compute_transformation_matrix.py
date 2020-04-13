@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from openmdao.api import IndepVarComp, Group
+import openmdao.api as om
 
 from openaerostruct.transfer.compute_transformation_matrix import ComputeTransformationMatrix
 from openaerostruct.utils.testing import run_test, get_default_surfaces
@@ -15,9 +15,9 @@ class Test(unittest.TestCase):
 
         comp = ComputeTransformationMatrix(surface=surface)
 
-        group = Group()
+        group = om.Group()
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
 
         ny = surface['mesh'].shape[1]
         disp = np.random.random_sample((ny, 6)) * 100.

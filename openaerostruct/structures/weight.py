@@ -1,11 +1,11 @@
 from __future__ import print_function, division
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 from openaerostruct.structures.utils import norm
 
 
-class Weight(ExplicitComponent):
+class Weight(om.ExplicitComponent):
     """ Compute total weight and center-of-gravity location of the spar elements.
 
     parameters

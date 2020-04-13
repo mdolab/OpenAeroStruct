@@ -1,4 +1,4 @@
-from openmdao.api import Group, LinearRunOnce
+import openmdao.api as om
 from openaerostruct.aerodynamics.compressible_states import CompressibleVLMStates
 from openaerostruct.aerodynamics.geometry import VLMGeometry
 from openaerostruct.aerodynamics.states import VLMStates
@@ -6,7 +6,7 @@ from openaerostruct.aerodynamics.functionals import VLMFunctionals
 from openaerostruct.functionals.total_aero_performance import TotalAeroPerformance
 
 
-class AeroPoint(Group):
+class AeroPoint(om.Group):
     """
     This group contains all the components needed for a single-point aerodynamic
     analysis. You would have one instance of `AeroPoint` for each flight
@@ -67,7 +67,7 @@ class AeroPoint(Group):
             aero_states = VLMStates(surfaces=surfaces, rotational=rotational)
             prom_in = ['v', 'alpha', 'beta', 'rho']
 
-        aero_states.linear_solver = LinearRunOnce()
+        aero_states.linear_solver = om.LinearRunOnce()
 
         if rotational:
             prom_in.extend(['omega', 'cg'])

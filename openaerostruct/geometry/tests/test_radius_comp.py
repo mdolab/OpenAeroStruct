@@ -3,7 +3,7 @@ from numpy.testing import assert_almost_equal, assert_equal
 
 import unittest
 
-from openmdao.api import Problem, Group, IndepVarComp
+import openmdao.api as om
 
 from openaerostruct.geometry.radius_comp import RadiusComp
 from openaerostruct.utils.testing import run_test, get_default_surfaces
@@ -15,12 +15,12 @@ class Test(unittest.TestCase):
     def test(self):
         surfaces = get_default_surfaces()
 
-        group = Group()
+        group = om.Group()
 
         comp = RadiusComp(surface=surfaces[0])
         ny = surfaces[0]['mesh'].shape[1]
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('mesh', val=surfaces[0]['mesh'], units='m')
         indep_var_comp.add_output('t_over_c', val=np.linspace(0.1,0.5,num=ny-1))
 

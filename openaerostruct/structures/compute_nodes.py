@@ -1,10 +1,10 @@
 from __future__ import print_function, division
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class ComputeNodes(ExplicitComponent):
+class ComputeNodes(om.ExplicitComponent):
     """
     Compute FEM nodes based on aerodynamic mesh.
 

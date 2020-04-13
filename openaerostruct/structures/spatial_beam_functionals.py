@@ -1,4 +1,4 @@
-from openmdao.api import Group
+import openmdao.api as om
 # from openaerostruct.structures.energy import Energy
 # from openaerostruct.structures.weight import Weight
 # from openaerostruct.structures.spar_within_wing import SparWithinWing
@@ -8,7 +8,7 @@ from openaerostruct.structures.non_intersecting_thickness import NonIntersecting
 from openaerostruct.structures.failure_exact import FailureExact
 from openaerostruct.structures.failure_ks import FailureKS
 
-class SpatialBeamFunctionals(Group):
+class SpatialBeamFunctionals(om.Group):
     """ Group that contains the spatial beam functionals used to evaluate
     performance. """
 

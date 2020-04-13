@@ -3,7 +3,7 @@ import numpy as np
 from openaerostruct.structures.section_properties_wingbox import SectionPropertiesWingbox
 from openaerostruct.utils.testing import run_test, get_default_surfaces
 from openmdao.utils.assert_utils import assert_rel_error
-from openmdao.api import Problem, IndepVarComp, BsplinesComp
+import openmdao.api as om
 
 class Test(unittest.TestCase):
 
@@ -54,9 +54,9 @@ class Test(unittest.TestCase):
         nx = mesh.shape[0]
         n_cp = len(surface['t_over_c_cp'])
 
-        prob = Problem()
+        prob = om.Problem()
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('t_over_c_cp', val=surface['t_over_c_cp'])
         indep_var_comp.add_output('spar_thickness_cp', val=surface['spar_thickness_cp'])
         indep_var_comp.add_output('skin_thickness_cp', val=surface['skin_thickness_cp'])
@@ -65,37 +65,37 @@ class Test(unittest.TestCase):
         indep_var_comp.add_output('fem_twists_cp', val=surface['fem_twists_cp'])
         prob.model.add_subsystem('indep_var_comp', indep_var_comp, promotes=['*'])
 
-        prob.model.add_subsystem('t_over_c_bsp', BsplinesComp(
+        prob.model.add_subsystem('t_over_c_bsp', om.BsplinesComp(
             in_name='t_over_c_cp', out_name='t_over_c',
             num_control_points=n_cp, num_points=int(ny-1),
             bspline_order=min(n_cp, 4), distribution='uniform'),
             promotes_inputs=['t_over_c_cp'], promotes_outputs=['t_over_c'])
 
-        prob.model.add_subsystem('skin_thickness_bsp', BsplinesComp(
+        prob.model.add_subsystem('skin_thickness_bsp', om.BsplinesComp(
             in_name='skin_thickness_cp', out_name='skin_thickness',
             num_control_points=n_cp, num_points=int(ny-1),
             bspline_order=min(n_cp, 4), distribution='uniform'),
             promotes_inputs=['skin_thickness_cp'], promotes_outputs=['skin_thickness'])
 
-        prob.model.add_subsystem('spar_thickness_bsp', BsplinesComp(
+        prob.model.add_subsystem('spar_thickness_bsp', om.BsplinesComp(
             in_name='spar_thickness_cp', out_name='spar_thickness',
             num_control_points=n_cp, num_points=int(ny-1),
             bspline_order=min(n_cp, 4), distribution='uniform'),
             promotes_inputs=['spar_thickness_cp'], promotes_outputs=['spar_thickness'])
 
-        prob.model.add_subsystem('fem_chords_bsp', BsplinesComp(
+        prob.model.add_subsystem('fem_chords_bsp', om.BsplinesComp(
             in_name='fem_chords_cp', out_name='fem_chords',
             num_control_points=n_cp, num_points=int(ny-1),
             bspline_order=min(n_cp, 4), distribution='uniform'),
             promotes_inputs=['fem_chords_cp'], promotes_outputs=['fem_chords'])
 
-        prob.model.add_subsystem('streamwise_chords_bsp', BsplinesComp(
+        prob.model.add_subsystem('streamwise_chords_bsp', om.BsplinesComp(
             in_name='streamwise_chords_cp', out_name='streamwise_chords',
             num_control_points=n_cp, num_points=int(ny-1),
             bspline_order=min(n_cp, 4), distribution='uniform'),
             promotes_inputs=['streamwise_chords_cp'], promotes_outputs=['streamwise_chords'])
 
-        prob.model.add_subsystem('fem_twists_bsp', BsplinesComp(
+        prob.model.add_subsystem('fem_twists_bsp', om.BsplinesComp(
             in_name='fem_twists_cp', out_name='fem_twists',
             num_control_points=n_cp, num_points=int(ny-1),
             bspline_order=min(n_cp, 4), distribution='uniform'),
@@ -106,9 +106,7 @@ class Test(unittest.TestCase):
 
 
         prob.setup()
-        #
-        # from openmdao.api import view_model
-        # view_model(prob)
+        # om.view_model(prob)
 
         prob.run_model()
 
@@ -162,9 +160,9 @@ class Test(unittest.TestCase):
         nx = mesh.shape[0]
         n_cp = len(surface['t_over_c_cp'])
 
-        prob = Problem()
+        prob = om.Problem()
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('t_over_c_cp', val=surface['t_over_c_cp'])
         indep_var_comp.add_output('spar_thickness_cp', val=surface['spar_thickness_cp'])
         indep_var_comp.add_output('skin_thickness_cp', val=surface['skin_thickness_cp'])
@@ -173,37 +171,37 @@ class Test(unittest.TestCase):
         indep_var_comp.add_output('fem_twists_cp', val=surface['fem_twists_cp'])
         prob.model.add_subsystem('indep_var_comp', indep_var_comp, promotes=['*'])
 
-        prob.model.add_subsystem('t_over_c_bsp', BsplinesComp(
+        prob.model.add_subsystem('t_over_c_bsp', om.BsplinesComp(
             in_name='t_over_c_cp', out_name='t_over_c',
             num_control_points=n_cp, num_points=int(ny-1),
             bspline_order=min(n_cp, 4), distribution='uniform'),
             promotes_inputs=['t_over_c_cp'], promotes_outputs=['t_over_c'])
 
-        prob.model.add_subsystem('skin_thickness_bsp', BsplinesComp(
+        prob.model.add_subsystem('skin_thickness_bsp', om.BsplinesComp(
             in_name='skin_thickness_cp', out_name='skin_thickness',
             num_control_points=n_cp, num_points=int(ny-1), units='m',
             bspline_order=min(n_cp, 4), distribution='uniform'),
             promotes_inputs=['skin_thickness_cp'], promotes_outputs=['skin_thickness'])
 
-        prob.model.add_subsystem('spar_thickness_bsp', BsplinesComp(
+        prob.model.add_subsystem('spar_thickness_bsp', om.BsplinesComp(
             in_name='spar_thickness_cp', out_name='spar_thickness',
             num_control_points=n_cp, num_points=int(ny-1), units='m',
             bspline_order=min(n_cp, 4), distribution='uniform'),
             promotes_inputs=['spar_thickness_cp'], promotes_outputs=['spar_thickness'])
 
-        prob.model.add_subsystem('fem_chords_bsp', BsplinesComp(
+        prob.model.add_subsystem('fem_chords_bsp', om.BsplinesComp(
             in_name='fem_chords_cp', out_name='fem_chords',
             num_control_points=n_cp, num_points=int(ny-1), units='m',
             bspline_order=min(n_cp, 4), distribution='uniform'),
             promotes_inputs=['fem_chords_cp'], promotes_outputs=['fem_chords'])
 
-        prob.model.add_subsystem('streamwise_chords_bsp', BsplinesComp(
+        prob.model.add_subsystem('streamwise_chords_bsp', om.BsplinesComp(
             in_name='streamwise_chords_cp', out_name='streamwise_chords',
             num_control_points=n_cp, num_points=int(ny-1), units='m',
             bspline_order=min(n_cp, 4), distribution='uniform'),
             promotes_inputs=['streamwise_chords_cp'], promotes_outputs=['streamwise_chords'])
 
-        prob.model.add_subsystem('fem_twists_bsp', BsplinesComp(
+        prob.model.add_subsystem('fem_twists_bsp', om.BsplinesComp(
             in_name='fem_twists_cp', out_name='fem_twists', units='deg',
             num_control_points=n_cp, num_points=int(ny-1),
             bspline_order=min(n_cp, 4), distribution='uniform'),
@@ -214,9 +212,7 @@ class Test(unittest.TestCase):
 
 
         prob.setup()
-        #
-        # from openmdao.api import view_model
-        # view_model(prob)
+        # om.view_model(prob)
 
         prob.run_model()
 

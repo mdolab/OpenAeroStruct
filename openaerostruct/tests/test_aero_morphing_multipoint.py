@@ -12,7 +12,7 @@ from openaerostruct.transfer.displacement_transfer import DisplacementTransfer
 from openaerostruct.aerodynamics.aero_groups import AeroPoint
 from openaerostruct.integration.multipoint_comps import MultiCD
 
-from openmdao.api import IndepVarComp, Problem, Group, NewtonSolver, ScipyIterativeSolver, LinearBlockGS, NonlinearBlockGS, DirectSolver, LinearBlockGS, PetscKSP, ScipyOptimizeDriver, ExplicitComponent, ExecComp# TODO, SqliteRecorder, CaseReader, profile
+import openmdao.api as om
 
 
 class Test(unittest.TestCase):
@@ -67,9 +67,9 @@ class Test(unittest.TestCase):
         n_points = 2
 
         # Create the problem and the model group
-        prob = Problem()
+        prob = om.Problem()
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('v', val=248.136, units='m/s')
         indep_var_comp.add_output('alpha', val=6.64, units='deg')
         indep_var_comp.add_output('Mach_number', val=0.84)
@@ -81,7 +81,7 @@ class Test(unittest.TestCase):
             indep_var_comp,
             promotes=['*'])
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('t_over_c_cp', val=np.array([0.15]))
         indep_var_comp.add_output('span', val=12., units='m')
         indep_var_comp.add_output('twist_cp_0', val=np.zeros((5)), units='deg')
@@ -144,8 +144,7 @@ class Test(unittest.TestCase):
 
         prob.model.add_subsystem('multi_CD', MultiCD(n_points=n_points), promotes_outputs=['CD'])
 
-        from openmdao.api import ScipyOptimizeDriver
-        prob.driver = ScipyOptimizeDriver()
+        prob.driver = om.ScipyOptimizeDriver()
         prob.driver.options['tol'] = 1e-9
 
 

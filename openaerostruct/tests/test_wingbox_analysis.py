@@ -6,7 +6,7 @@ from openaerostruct.transfer.displacement_transfer import DisplacementTransfer
 from openaerostruct.structures.struct_groups import SpatialBeamAlone
 from openmdao.utils.assert_utils import assert_check_partials
 from openmdao.utils.assert_utils import assert_rel_error
-from openmdao.api import IndepVarComp, Problem, Group, SqliteRecorder
+import openmdao.api as om
 
 upper_x = np.array([0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.3, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.4, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.5, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.6], dtype = 'complex128')
 lower_x = np.array([0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.3, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.4, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.5, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.6], dtype = 'complex128')
@@ -79,11 +79,11 @@ class Test(unittest.TestCase):
                     }
 
         # Create the problem and assign the model group
-        prob = Problem()
+        prob = om.Problem()
 
         ny = surf_dict['mesh'].shape[1]
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('loads', val=np.ones((ny, 6)) * 2e5, units='N')
         indep_var_comp.add_output('load_factor', val=1.)
         indep_var_comp.add_output('fuel_mass', val=10000., units='kg')
@@ -97,8 +97,7 @@ class Test(unittest.TestCase):
             prob.model.connect('wing.fuel_mass', 'wing.struct_states.fuel_mass')
             prob.model.connect('wing.struct_setup.fuel_vols', 'wing.struct_states.fuel_vols')
 
-        from openmdao.api import ScipyOptimizeDriver
-        prob.driver = ScipyOptimizeDriver()
+        prob.driver = om.ScipyOptimizeDriver()
         prob.driver.options['tol'] = 1e-9
 
         # Setup problem and add design variables, constraint, and objective

@@ -1,9 +1,9 @@
 # Create the OpenMDAO problem
-prob = Problem()
+prob = om.Problem()
 
 # Create an independent variable component that will supply the flow
 # conditions to the problem.
-indep_var_comp = IndepVarComp()
+indep_var_comp = om.IndepVarComp()
 indep_var_comp.add_output('v', val=248.136, units='m/s')
 indep_var_comp.add_output('alpha', val=5., units='deg')
 indep_var_comp.add_output('Mach_number', val=0.84)

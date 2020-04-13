@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from openmdao.api import Problem
+import openmdao.api as om
 from openmdao.utils.assert_utils import assert_check_partials
 
 from openaerostruct.aerodynamics.lift_drag import LiftDrag
@@ -25,7 +25,7 @@ class Test(unittest.TestCase):
         # Use Tail since it is not symmetric.
         comp = LiftDrag(surface=surfaces[1])
 
-        prob = Problem()
+        prob = om.Problem()
         prob.model.add_subsystem('comp', comp)
         prob.setup(force_alloc_complex=True)
 

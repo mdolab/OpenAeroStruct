@@ -21,9 +21,8 @@ class Test(unittest.TestCase):
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
         from openaerostruct.integration.multipoint_comps import MultiCD
 
-        from openmdao.api import IndepVarComp, Problem, Group, NewtonSolver, ScipyIterativeSolver, LinearBlockGS, NonlinearBlockGS, DirectSolver, LinearBlockGS, PetscKSP, ScipyOptimizeDriver, ExplicitComponent# TODO, SqliteRecorder, CaseReader, profile
+        import openmdao.api as om
         from openmdao.devtools import iprofile
-        from openmdao.api import view_model
         from openmdao.utils.assert_utils import assert_check_partials
         from pygeo import DVGeometry
 
@@ -75,9 +74,9 @@ class Test(unittest.TestCase):
         n_points = 2
 
         # Create the problem and the model group
-        prob = Problem()
+        prob = om.Problem()
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('v', val=248.136, units='m/s')
         indep_var_comp.add_output('alpha', val=np.ones(n_points)*6.64, units='deg')
         indep_var_comp.add_output('Mach_number', val=0.84)
@@ -132,8 +131,7 @@ class Test(unittest.TestCase):
 
         prob.model.add_subsystem('multi_CD', MultiCD(n_points=n_points), promotes_outputs=['CD'])
 
-        from openmdao.api import pyOptSparseDriver
-        prob.driver = pyOptSparseDriver()
+        prob.driver = om.pyOptSparseDriver()
         prob.driver.options['optimizer'] = "SNOPT"
         prob.driver.opt_settings = {'Major optimality tolerance': 1.0e-5,
                                     'Major feasibility tolerance': 1.0e-5}

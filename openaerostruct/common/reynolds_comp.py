@@ -1,8 +1,8 @@
 from __future__ import print_function
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class ReynoldsComp(ExplicitComponent):
+class ReynoldsComp(om.ExplicitComponent):
 
     def setup(self):
         self.add_input('rho', val=1., units='slug/ft**3')

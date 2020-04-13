@@ -1,13 +1,13 @@
 from __future__ import division, print_function
 import numpy as np
 
-from openmdao.api import Group
+import openmdao.api as om
 
 from openaerostruct.functionals.moment_coefficient import MomentCoefficient
 from openaerostruct.functionals.total_lift_drag import TotalLiftDrag
 from openaerostruct.functionals.sum_areas import SumAreas
 
-class TotalAeroPerformance(Group):
+class TotalAeroPerformance(om.Group):
     """
     Group to contain the total aerodynamic performance components.
     """

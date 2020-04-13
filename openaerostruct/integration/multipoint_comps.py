@@ -1,7 +1,7 @@
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class MultiCD(ExplicitComponent):
+class MultiCD(om.ExplicitComponent):
 
     def initialize(self):
         self.options.declare('n_points', types=int)

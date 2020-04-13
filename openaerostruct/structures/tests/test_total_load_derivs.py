@@ -3,7 +3,7 @@ import unittest
 from openaerostruct.structures.wing_weight_loads import StructureWeightLoads
 from openaerostruct.structures.total_loads import TotalLoads
 from openaerostruct.utils.testing import run_test, get_default_surfaces
-from openmdao.api import Group, IndepVarComp
+import openmdao.api as om
 import numpy as np
 
 class Test(unittest.TestCase):
@@ -36,9 +36,9 @@ class Test(unittest.TestCase):
 
         comp = StructureWeightLoads(surface=surface)
 
-        group = Group()
+        group = om.Group()
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
 
         ny = surface['mesh'].shape[1]
 

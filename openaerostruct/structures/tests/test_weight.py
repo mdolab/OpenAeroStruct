@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from openmdao.api import Group, IndepVarComp
+import openmdao.api as om
 from openaerostruct.structures.weight import Weight
 from openaerostruct.utils.testing import run_test, get_default_surfaces
 
@@ -14,9 +14,9 @@ class Test(unittest.TestCase):
         surface = get_default_surfaces()[0]
         ny = surface['mesh'].shape[1]
 
-        group = Group()
+        group = om.Group()
 
-        ivc = IndepVarComp()
+        ivc = om.IndepVarComp()
         ivc.add_output('nodes', val=np.random.random_sample((ny, 3)))
 
         comp = Weight(surface=surface)

@@ -1,10 +1,10 @@
 from __future__ import print_function, division
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class RotateToWindFrame(ExplicitComponent):
+class RotateToWindFrame(om.ExplicitComponent):
     """
     Rotate the VLM Geometry from the standard aerodynamic to the wind frame.
     In the wind frame the freestream will be along the x-axis.
@@ -237,7 +237,7 @@ class RotateToWindFrame(ExplicitComponent):
             partials[of_name, wrt_name] = np.tile(Tw, nn)
 
 
-class RotateFromWindFrame(ExplicitComponent):
+class RotateFromWindFrame(om.ExplicitComponent):
     """
     Rotate the aerodynamic sectional and nodal force vectors from the wind to
     the standard aerodynamic frame. This is the reverse operation of the

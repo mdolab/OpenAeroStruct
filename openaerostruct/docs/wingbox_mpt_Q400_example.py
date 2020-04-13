@@ -17,7 +17,7 @@ import numpy as np
 
 from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
-from openmdao.api import IndepVarComp, Problem, ScipyOptimizeDriver, SqliteRecorder, ExecComp, SqliteRecorder
+import openmdao.api as om
 from openaerostruct.structures.wingbox_fuel_vol_delta import WingboxFuelVolDelta
 from openaerostruct.utils.constants import grav_constant
 
@@ -119,10 +119,10 @@ surf_dict = {
 surfaces = [surf_dict]
 
 # Create the problem and assign the model group
-prob = Problem()
+prob = om.Problem()
 
 # Add problem information as an independent variables component
-indep_var_comp = IndepVarComp()
+indep_var_comp = om.IndepVarComp()
 indep_var_comp.add_output('v', val=np.array([.5 * 310.95, .3 * 340.294]), units='m/s')
 indep_var_comp.add_output('alpha', val=0., units='deg')
 indep_var_comp.add_output('alpha_maneuver', val=0., units='deg')
@@ -227,7 +227,7 @@ if surf_dict['distributed_fuel_weight']:
     prob.model.connect('wing.struct_setup.fuel_vols', 'AS_point_1.coupled.wing.struct_states.fuel_vols')
     prob.model.connect('fuel_mass', 'AS_point_1.coupled.wing.struct_states.fuel_mass')
 
-comp = ExecComp('fuel_diff = (fuel_mass - fuelburn) / fuelburn', units='kg')
+comp = om.ExecComp('fuel_diff = (fuel_mass - fuelburn) / fuelburn', units='kg')
 prob.model.add_subsystem('fuel_diff', comp,
     promotes_inputs=['fuel_mass'],
     promotes_outputs=['fuel_diff'])
@@ -235,20 +235,19 @@ prob.model.connect('AS_point_0.fuelburn', 'fuel_diff.fuelburn')
 
 
 ## Use these settings if you do not have pyOptSparse or SNOPT
-prob.driver = ScipyOptimizeDriver()
+prob.driver = om.ScipyOptimizeDriver()
 prob.driver.options['optimizer'] = 'SLSQP'
 prob.driver.options['tol'] = 1e-5
 
 # # The following are the optimizer settings used for the EngOpt conference paper
 # # Uncomment them if you can use SNOPT
-# from openmdao.api import pyOptSparseDriver
-# prob.driver = pyOptSparseDriver()
+# prob.driver = om.pyOptSparseDriver()
 # prob.driver.options['optimizer'] = "SNOPT"
 # prob.driver.opt_settings['Major optimality tolerance'] = 5e-6
 # prob.driver.opt_settings['Major feasibility tolerance'] = 1e-8
 # prob.driver.opt_settings['Major iterations limit'] = 200
 
-recorder = SqliteRecorder("aerostruct.db")
+recorder = om.SqliteRecorder("aerostruct.db")
 prob.driver.add_recorder(recorder)
 
 # We could also just use prob.driver.recording_options['includes']=['*'] here, but for large meshes the database file becomes extremely large. So we just select the variables we need.
@@ -303,8 +302,7 @@ prob.model.add_constraint('fuel_diff', equals=0.)
 # Set up the problem
 prob.setup()
 
-# from openmdao.api import view_model
-# view_model(prob)
+# om.view_model(prob)
 
 # prob.check_partials(form='central', compact_print=True)
 

@@ -1,11 +1,11 @@
 from __future__ import division, print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 from openaerostruct.utils.constants import grav_constant
 
 
-class CenterOfGravity(ExplicitComponent):
+class CenterOfGravity(om.ExplicitComponent):
     """
     Compute the center of gravity of the entire aircraft based on the inputted W0
     and its corresponding cg and the weighted sum of each surface's structural

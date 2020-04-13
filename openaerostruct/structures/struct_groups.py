@@ -1,4 +1,4 @@
-from openmdao.api import Group
+import openmdao.api as om
 from openaerostruct.geometry.geometry_group import Geometry
 from openaerostruct.structures.spatial_beam_states import SpatialBeamStates
 from openaerostruct.structures.spatial_beam_functionals import SpatialBeamFunctionals
@@ -7,7 +7,7 @@ from openaerostruct.structures.tube_group import TubeGroup
 from openaerostruct.structures.wingbox_group import WingboxGroup
 
 
-class SpatialBeamAlone(Group):
+class SpatialBeamAlone(om.Group):
     """ Group that contains everything needed for a structural-only problem. """
 
     def initialize(self):

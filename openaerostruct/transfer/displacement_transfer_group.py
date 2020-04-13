@@ -1,9 +1,9 @@
-from openmdao.api import Group
+import openmdao.api as om
 from openaerostruct.transfer.displacement_transfer import DisplacementTransfer
 from openaerostruct.transfer.compute_transformation_matrix import ComputeTransformationMatrix
 
 
-class DisplacementTransferGroup(Group):
+class DisplacementTransferGroup(om.Group):
     """
     These components take the displacements and rotations obtained by
     solving the FEM problem and applies them to the aerodynamic mesh

@@ -1,10 +1,10 @@
 from __future__ import division, print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 from openaerostruct.structures.utils import norm
 
-class WingboxGeometry(ExplicitComponent):
+class WingboxGeometry(om.ExplicitComponent):
     """
     Compute effective chord lengths and twists normal to the wingbox elements.
 

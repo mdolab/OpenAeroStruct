@@ -1,4 +1,4 @@
-from openmdao.api import Group
+import openmdao.api as om
 from openaerostruct.aerodynamics.get_vectors import GetVectors
 from openaerostruct.aerodynamics.collocation_points import CollocationPoints
 from openaerostruct.aerodynamics.eval_mtx import EvalVelMtx
@@ -14,7 +14,7 @@ from openaerostruct.aerodynamics.panel_forces_surf import PanelForcesSurf
 from openaerostruct.aerodynamics.vortex_mesh import VortexMesh
 
 
-class VLMStates(Group):
+class VLMStates(om.Group):
     """
     Group that houses all components to compute the aerodynamic states.
     """

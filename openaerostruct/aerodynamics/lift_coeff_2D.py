@@ -2,10 +2,10 @@ from __future__ import print_function, division
 import numpy as np
 from numpy import matlib
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class LiftCoeff2D(ExplicitComponent):
+class LiftCoeff2D(om.ExplicitComponent):
     """
     Calculate 2D lift coefficient distribution based on section forces.
     This is for one given lifting surface. These are the sectional Cls.

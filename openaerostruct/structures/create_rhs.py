@@ -1,10 +1,10 @@
 from __future__ import print_function, division
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class CreateRHS(ExplicitComponent):
+class CreateRHS(om.ExplicitComponent):
     """
     Compute the right-hand-side of the K * u = f linear system to solve for the displacements.
     The RHS is based on the loads. For the aerostructural case, these are

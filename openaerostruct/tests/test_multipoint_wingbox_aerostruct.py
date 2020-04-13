@@ -7,7 +7,7 @@ from openaerostruct.geometry.utils import generate_mesh
 
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
 
-from openmdao.api import IndepVarComp, Problem, Group, ScipyOptimizeDriver, SqliteRecorder, ExecComp
+import openmdao.api as om
 from openaerostruct.structures.wingbox_fuel_vol_delta import WingboxFuelVolDelta
 
 
@@ -98,10 +98,10 @@ class Test(unittest.TestCase):
         surfaces = [surf_dict]
 
         # Create the problem and assign the model group
-        prob = Problem()
+        prob = om.Problem()
 
         # Add problem information as an independent variables component
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('v', val=.85 * 295.07, units='m/s')
         indep_var_comp.add_output('alpha', val=0., units='deg')
         indep_var_comp.add_output('alpha_maneuver', val=0., units='deg')
@@ -202,13 +202,13 @@ class Test(unittest.TestCase):
         prob.model.connect('wing.struct_setup.fuel_vols', 'AS_point_1.coupled.wing.struct_states.fuel_vols')
         prob.model.connect('fuel_mass', 'AS_point_1.coupled.wing.struct_states.fuel_mass')
 
-        comp = ExecComp('fuel_diff = (fuel_mass - fuelburn) / fuelburn', units='kg')
+        comp = om.ExecComp('fuel_diff = (fuel_mass - fuelburn) / fuelburn', units='kg')
         prob.model.add_subsystem('fuel_diff', comp,
             promotes_inputs=['fuel_mass'],
             promotes_outputs=['fuel_diff'])
         prob.model.connect('AS_point_0.fuelburn', 'fuel_diff.fuelburn')
 
-        comp = ExecComp('fuel_diff_25 = (fuel_mass - fuelburn) / fuelburn')
+        comp = om.ExecComp('fuel_diff_25 = (fuel_mass - fuelburn) / fuelburn')
         prob.model.add_subsystem('fuel_diff_25', comp,
             promotes_inputs=['fuel_mass'],
             promotes_outputs=['fuel_diff_25'])
@@ -216,13 +216,11 @@ class Test(unittest.TestCase):
         #=======================================================================================
         #=======================================================================================
 
-        from openmdao.api import ScipyOptimizeDriver
-        prob.driver = ScipyOptimizeDriver()
+        prob.driver = om.ScipyOptimizeDriver()
         prob.driver.options['tol'] = 1e-9
 
-        # from openmdao.api import pyOptSparseDriver
-        # prob.driver = pyOptSparseDriver()
-        # prob.driver.add_recorder(SqliteRecorder("cases.sql"))
+        # prob.driver = om.pyOptSparseDriver()
+        # prob.driver.add_recorder(om.SqliteRecorder("cases.sql"))
         # prob.driver.options['optimizer'] = "SNOPT"
         # prob.driver.opt_settings['Major optimality tolerance'] = 5e-6
         # prob.driver.opt_settings['Major feasibility tolerance'] = 1e-8
@@ -254,8 +252,7 @@ class Test(unittest.TestCase):
         # Set up the problem
         prob.setup()
 
-        # from openmdao.api import view_model
-        # view_model(prob)
+        # om.view_model(prob)
 
         prob.run_driver()
 

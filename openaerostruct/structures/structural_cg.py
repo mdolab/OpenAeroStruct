@@ -1,10 +1,10 @@
 from __future__ import print_function, division
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class StructuralCG(ExplicitComponent):
+class StructuralCG(om.ExplicitComponent):
     """ Compute center-of-gravity location of the spar elements.
 
     parameters

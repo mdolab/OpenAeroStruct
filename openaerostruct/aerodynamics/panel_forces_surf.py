@@ -1,10 +1,10 @@
 from __future__ import print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class PanelForcesSurf(ExplicitComponent):
+class PanelForcesSurf(om.ExplicitComponent):
     """
     Take in the computed panel forces and convert them to sectional forces
     for each surface. Basically just takes the long array that has info

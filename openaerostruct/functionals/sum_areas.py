@@ -1,8 +1,8 @@
 from __future__ import division, print_function
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
-class SumAreas(ExplicitComponent):
+class SumAreas(om.ExplicitComponent):
     """
     Compute the total surface area of the entire aircraft as a sum of its
     individual surfaces' surface areas.

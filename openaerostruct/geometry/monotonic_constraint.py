@@ -1,10 +1,10 @@
 from __future__ import print_function, division
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class MonotonicConstraint(ExplicitComponent):
+class MonotonicConstraint(om.ExplicitComponent):
     """
     Produce a constraint that is violated if a user-chosen measure on the
     wing does not decrease monotonically from the root to the tip.

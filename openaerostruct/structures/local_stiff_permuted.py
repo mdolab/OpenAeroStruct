@@ -1,7 +1,7 @@
 from __future__ import print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
 row_indices = np.arange(12)
@@ -15,7 +15,7 @@ mtx = np.zeros((12, 12))
 mtx[row_indices, col_indices] = 1.
 
 
-class LocalStiffPermuted(ExplicitComponent):
+class LocalStiffPermuted(om.ExplicitComponent):
 
     def initialize(self):
         self.options.declare('surface', types=dict)

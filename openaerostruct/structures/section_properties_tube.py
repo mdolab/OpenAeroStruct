@@ -1,9 +1,9 @@
 from __future__ import division, print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
-class SectionPropertiesTube(ExplicitComponent):
+class SectionPropertiesTube(om.ExplicitComponent):
     """
     Compute geometric properties for a tube element.
     The thicknesses are added to the interior of the element, so the

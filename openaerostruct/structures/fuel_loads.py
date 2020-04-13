@@ -1,14 +1,14 @@
 from __future__ import division, print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 from openaerostruct.utils.constants import grav_constant
 
 
 def norm(vec):
     return np.sqrt(np.sum(vec**2))
 
-class FuelLoads(ExplicitComponent):
+class FuelLoads(om.ExplicitComponent):
     """
     Compute the nodal loads from the distributed fuel within the wing
     to be applied to the wing structure.

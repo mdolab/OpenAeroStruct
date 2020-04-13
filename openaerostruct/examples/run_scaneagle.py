@@ -16,7 +16,7 @@ from openaerostruct.geometry.utils import generate_mesh
 
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
 
-from openmdao.api import IndepVarComp, Problem, SqliteRecorder
+import openmdao.api as om
 from openaerostruct.utils.constants import grav_constant
 
 # Total number of nodes to use in the spanwise (num_y) and
@@ -113,10 +113,10 @@ surface = {
             }
 
 # Create the problem and assign the model group
-prob = Problem()
+prob = om.Problem()
 
 # Add problem information as an independent variables component
-indep_var_comp = IndepVarComp()
+indep_var_comp = om.IndepVarComp()
 indep_var_comp.add_output('v', val=22.876, units='m/s')
 indep_var_comp.add_output('alpha', val=5., units='deg')
 indep_var_comp.add_output('Mach_number', val=0.071)
@@ -171,12 +171,11 @@ prob.model.connect(name + '.structural_mass', point_name + '.' + 'total_perf.' +
 prob.model.connect(name + '.t_over_c', com_name + '.t_over_c')
 
 # Set the optimizer type
-from openmdao.api import ScipyOptimizeDriver
-prob.driver = ScipyOptimizeDriver()
+prob.driver = om.ScipyOptimizeDriver()
 prob.driver.options['tol'] = 1e-7
 
 # Record data from this problem so we can visualize it using plot_wing
-recorder = SqliteRecorder("aerostruct.db")
+recorder = om.SqliteRecorder("aerostruct.db")
 prob.driver.add_recorder(recorder)
 prob.driver.recording_options['record_derivatives'] = True
 prob.driver.recording_options['includes'] = ['*']

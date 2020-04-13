@@ -7,7 +7,7 @@ Tecplot solution files.
 
 import numpy as np
 
-from openmdao.api import IndepVarComp, Problem
+import openmdao.api as om
 
 from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.geometry.geometry_group import Geometry
@@ -15,10 +15,10 @@ from openaerostruct.aerodynamics.aero_groups import AeroPoint
 
 
 # Instantiate the problem and the model group
-prob = Problem()
+prob = om.Problem()
 
 # Define flight variables as independent variables of the model
-indep_var_comp = IndepVarComp()
+indep_var_comp = om.IndepVarComp()
 indep_var_comp.add_output('v', val=248.136, units='m/s') # Freestream Velocity
 indep_var_comp.add_output('alpha', val=5., units='deg') # Angle of Attack
 indep_var_comp.add_output('beta', val=0., units='deg') # Sideslip angle
@@ -99,8 +99,7 @@ prob.model.connect(name + '.mesh', point_name + '.' + name + '.def_mesh')
 prob.model.connect(name + '.mesh', point_name + '.aero_states.' + name + '_def_mesh')
 
 # Set optimizer as model driver
-from openmdao.api import ScipyOptimizeDriver
-prob.driver = ScipyOptimizeDriver()
+prob.driver = om.ScipyOptimizeDriver()
 prob.driver.options['debug_print'] = ['nl_cons','objs', 'desvars']
 
 # Setup problem and add design variables, constraint, and objective

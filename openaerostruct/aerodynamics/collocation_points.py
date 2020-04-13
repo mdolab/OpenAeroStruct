@@ -1,10 +1,10 @@
 from __future__ import print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class CollocationPoints(ExplicitComponent):
+class CollocationPoints(om.ExplicitComponent):
     """
     Compute the Cartesian locations of the collocation points, the force
     analysis points, and the bound vortex vectors for the VLM analysis.

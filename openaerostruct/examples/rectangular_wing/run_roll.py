@@ -6,7 +6,7 @@ for Tecplot solution files.
 
 import numpy as np
 
-from openmdao.api import IndepVarComp, Problem
+import openmdao.api as om
 
 from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.geometry.geometry_group import Geometry
@@ -14,10 +14,10 @@ from openaerostruct.aerodynamics.aero_groups import AeroPoint
 
 
 # Instantiate the problem and the model group
-prob = Problem()
+prob = om.Problem()
 
 # Define flight variables as independent variables of the model
-indep_var_comp = IndepVarComp()
+indep_var_comp = om.IndepVarComp()
 indep_var_comp.add_output('v', val=50.0, units='m/s') # Freestream Velocity
 indep_var_comp.add_output('alpha', val=5., units='deg') # Angle of Attack
 indep_var_comp.add_output('beta', val=0., units='deg') # Sideslip angle

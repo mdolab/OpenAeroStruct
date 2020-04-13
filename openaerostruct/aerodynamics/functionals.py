@@ -1,4 +1,4 @@
-from openmdao.api import Group
+import openmdao.api as om
 from openaerostruct.aerodynamics.lift_drag import LiftDrag
 from openaerostruct.aerodynamics.coeffs import Coeffs
 from openaerostruct.aerodynamics.total_lift import TotalLift
@@ -8,7 +8,7 @@ from openaerostruct.aerodynamics.wave_drag import WaveDrag
 from openaerostruct.aerodynamics.lift_coeff_2D import LiftCoeff2D
 
 
-class VLMFunctionals(Group):
+class VLMFunctionals(om.Group):
     """
     Group that contains the aerodynamic functionals used to evaluate
     performance. These are not included in the coupled aerostructural group,

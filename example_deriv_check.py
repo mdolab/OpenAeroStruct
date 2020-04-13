@@ -3,7 +3,7 @@ import numpy as np
 
 import unittest
 
-from openmdao.api import Problem, Group, IndepVarComp, view_model
+import openmdao.api as om
 
 from six import iteritems
 from numpy.testing import assert_almost_equal
@@ -36,7 +36,7 @@ class Test(unittest.TestCase):
 
         # Instantiate an OpenMDAO problem and add the component we want to test
         # as asubsystem, giving that component a default lifting surface
-        prob = Problem()
+        prob = om.Problem()
         prob.model.add_subsystem('tube', SectionPropertiesTube(surface=surfaces[0]))
 
         # Set up the problem and ensure it uses complex arrays so we can check

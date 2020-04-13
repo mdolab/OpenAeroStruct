@@ -1,9 +1,9 @@
 from __future__ import print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
-class VortexMesh(ExplicitComponent):
+class VortexMesh(om.ExplicitComponent):
     """
     Compute the vortex mesh based on the deformed aerodynamic mesh.
 

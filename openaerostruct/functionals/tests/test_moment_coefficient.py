@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from openmdao.api import Group, IndepVarComp
+import openmdao.api as om
 
 from openaerostruct.functionals.moment_coefficient import MomentCoefficient
 from openaerostruct.utils.testing import run_test, get_default_surfaces
@@ -29,11 +29,11 @@ class Test(unittest.TestCase):
     def test2(self):
         surfaces = get_default_surfaces()
 
-        group = Group()
+        group = om.Group()
 
         comp = MomentCoefficient(surfaces=surfaces)
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
 
         indep_var_comp.add_output('S_ref_total', val=1e4, units='m**2')
 

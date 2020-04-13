@@ -1,12 +1,12 @@
 from __future__ import print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 from openaerostruct.utils.vector_algebra import compute_norm
 
 
-class Length(ExplicitComponent):
+class Length(om.ExplicitComponent):
 
     def initialize(self):
         self.options.declare('surface', types=dict)

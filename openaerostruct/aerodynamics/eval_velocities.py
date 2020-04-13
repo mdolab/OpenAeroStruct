@@ -1,10 +1,10 @@
 from __future__ import print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class EvalVelocities(ExplicitComponent):
+class EvalVelocities(om.ExplicitComponent):
     """
     Compute the total velocities at each of the evaluation points for every
     panel in the entire system. This is the sum of the freestream and induced

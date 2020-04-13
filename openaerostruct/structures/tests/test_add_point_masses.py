@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 
 from openmdao.utils.assert_utils import assert_rel_error
-from openmdao.api import Group, IndepVarComp
+import openmdao.api as om
 from openaerostruct.structures.compute_point_mass_loads import ComputePointMassLoads
 from openaerostruct.utils.testing import run_test, get_default_surfaces
 
@@ -19,9 +19,9 @@ class Test(unittest.TestCase):
 
         comp = ComputePointMassLoads(surface=surface)
 
-        group = Group()
+        group = om.Group()
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
 
         ny = surface['mesh'].shape[1]
 
@@ -52,9 +52,9 @@ class Test(unittest.TestCase):
 
         comp = ComputePointMassLoads(surface=surface)
 
-        group = Group()
+        group = om.Group()
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
 
         ny = surface['mesh'].shape[1]
 

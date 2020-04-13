@@ -1,10 +1,10 @@
 # Import the Scipy Optimizer and set the driver of the problem to use
 # it, which defaults to an SLSQP optimization method
-from openmdao.api import ScipyOptimizeDriver
-prob.driver = ScipyOptimizeDriver()
+import openmdao.api as om
+prob.driver = om.ScipyOptimizeDriver()
 prob.driver.options['tol'] = 1e-9
 
-recorder = SqliteRecorder("aero_analysis_test.db")
+recorder = om.SqliteRecorder("aero_analysis_test.db")
 prob.driver.add_recorder(recorder)
 prob.driver.recording_options['record_derivatives'] = True
 prob.driver.recording_options['includes'] = ['*']

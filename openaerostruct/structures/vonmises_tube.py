@@ -1,11 +1,11 @@
 from __future__ import print_function, division
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 from openaerostruct.structures.utils import norm, unit, norm_d, unit_d, cross_d
 
-class VonMisesTube(ExplicitComponent):
+class VonMisesTube(om.ExplicitComponent):
     """ Compute the von Mises stress in each element.
 
     parameters

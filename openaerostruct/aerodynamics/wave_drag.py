@@ -1,10 +1,10 @@
 from __future__ import print_function, division
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class WaveDrag(ExplicitComponent):
+class WaveDrag(om.ExplicitComponent):
     """
     Compute the wave drag if the with_wave option is True. If not, the CDw is 0.
     This component exists for each lifting surface.

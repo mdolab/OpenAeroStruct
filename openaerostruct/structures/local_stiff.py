@@ -1,7 +1,7 @@
 from __future__ import print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
 coeffs_2 = np.array([
@@ -24,7 +24,7 @@ coeffs_z = np.array([
 ])
 
 
-class LocalStiff(ExplicitComponent):
+class LocalStiff(om.ExplicitComponent):
 
     def initialize(self):
         self.options.declare('surface', types=dict)

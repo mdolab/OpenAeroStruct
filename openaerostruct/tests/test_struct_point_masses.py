@@ -8,7 +8,7 @@ from openaerostruct.geometry.geometry_group import Geometry
 from openaerostruct.transfer.displacement_transfer import DisplacementTransfer
 from openaerostruct.structures.struct_groups import SpatialBeamAlone
 
-from openmdao.api import IndepVarComp, Problem, Group, NewtonSolver, ScipyIterativeSolver, LinearBlockGS, NonlinearBlockGS, DirectSolver, LinearBlockGS, PetscKSP, ScipyOptimizeDriver
+import openmdao.api as om
 
 
 class Test(unittest.TestCase):
@@ -47,12 +47,12 @@ class Test(unittest.TestCase):
                     }
 
         # Create the problem and assign the model group
-        prob = Problem()
+        prob = om.Problem()
 
         ny = surface['mesh'].shape[1]
         surface['n_point_masses'] = 1
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('loads', val=np.zeros((ny, 6)), units='N')
         indep_var_comp.add_output('load_factor', val=1.)
 
@@ -113,12 +113,12 @@ class Test(unittest.TestCase):
                     }
 
         # Create the problem and assign the model group
-        prob = Problem()
+        prob = om.Problem()
 
         ny = surface['mesh'].shape[1]
         surface['n_point_masses'] = 2
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('loads', val=np.zeros((ny, 6)), units='N')
         indep_var_comp.add_output('load_factor', val=1.)
 

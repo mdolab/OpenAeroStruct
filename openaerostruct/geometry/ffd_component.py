@@ -3,14 +3,14 @@
 from __future__ import division, print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 try:
     from pygeo import DVGeometry
 except:
     pass
 
 
-class GeometryMesh(ExplicitComponent):
+class GeometryMesh(om.ExplicitComponent):
     """
     OpenMDAO component that performs mesh manipulation functions. It reads in
     the initial mesh from the surface dictionary and outputs the altered

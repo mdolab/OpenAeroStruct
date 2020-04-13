@@ -1,11 +1,11 @@
 from __future__ import print_function, division
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 from openaerostruct.structures.utils import radii
 
 
-class SparWithinWing(ExplicitComponent):
+class SparWithinWing(om.ExplicitComponent):
     """
     Create a constraint to see if the spar is within the wing.
     This is based on the wing's t/c and the spar radius.

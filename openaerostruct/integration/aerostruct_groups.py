@@ -12,10 +12,10 @@ from openaerostruct.aerodynamics.compressible_states import CompressibleVLMState
 from openaerostruct.structures.tube_group import TubeGroup
 from openaerostruct.structures.wingbox_group import WingboxGroup
 
-from openmdao.api import Group, NonlinearBlockGS, DirectSolver, LinearBlockGS, LinearRunOnce, NewtonSolver, ScipyKrylov
+import openmdao.api as om
 
 
-class AerostructGeometry(Group):
+class AerostructGeometry(om.Group):
 
     def initialize(self):
         self.options.declare('surface', types=dict)
@@ -85,7 +85,7 @@ class AerostructGeometry(Group):
             promotes_outputs=['nodes', 'local_stiff_transformed', 'structural_mass', 'cg_location', 'element_mass'])
 
 
-class CoupledAS(Group):
+class CoupledAS(om.Group):
 
     def initialize(self):
         self.options.declare('surface', types=dict)
@@ -114,10 +114,10 @@ class CoupledAS(Group):
             VLMGeometry(surface=surface),
             promotes_inputs=['def_mesh'], promotes_outputs=['b_pts', 'widths', 'cos_sweep', 'lengths', 'chords', 'normals', 'S_ref'])
 
-        self.linear_solver = LinearRunOnce()
+        self.linear_solver = om.LinearRunOnce()
 
 
-class CoupledPerformance(Group):
+class CoupledPerformance(om.Group):
 
     def initialize(self):
         self.options.declare('surface', types=dict)
@@ -142,7 +142,7 @@ class CoupledPerformance(Group):
             raise NameError('Please select a valid `fem_model_type` from either `tube` or `wingbox`.')
 
 
-class AerostructPoint(Group):
+class AerostructPoint(om.Group):
 
     def initialize(self):
         self.options.declare('surfaces', types=list)
@@ -158,7 +158,7 @@ class AerostructPoint(Group):
         surfaces = self.options['surfaces']
         rotational = self.options['rotational']
 
-        coupled = Group()
+        coupled = om.Group()
 
         for surface in surfaces:
 
@@ -240,21 +240,21 @@ class AerostructPoint(Group):
 
         # Set solver properties for the coupled group
         # coupled.linear_solver = ScipyKrylov()
-        # coupled.linear_solver.precon = LinearRunOnce()
+        # coupled.linear_solver.precon = om.LinearRunOnce()
 
-        coupled.nonlinear_solver = NonlinearBlockGS(use_aitken=True)
+        coupled.nonlinear_solver = om.NonlinearBlockGS(use_aitken=True)
         coupled.nonlinear_solver.options['maxiter'] = 100
         coupled.nonlinear_solver.options['atol'] = 1e-7
         coupled.nonlinear_solver.options['rtol'] = 1e-30
         coupled.nonlinear_solver.options['iprint'] = 2
         coupled.nonlinear_solver.options['err_on_maxiter'] = True
 
-        # coupled.linear_solver = DirectSolver()
+        # coupled.linear_solver = om.DirectSolver()
 
-        coupled.linear_solver = DirectSolver(assemble_jac=True)
+        coupled.linear_solver = om.DirectSolver(assemble_jac=True)
         coupled.options['assembled_jac_type'] = 'csc'
 
-        # coupled.nonlinear_solver = NewtonSolver(solve_subsystems=True)
+        # coupled.nonlinear_solver = om.NewtonSolver(solve_subsystems=True)
         # coupled.nonlinear_solver.options['maxiter'] = 50
 
         """

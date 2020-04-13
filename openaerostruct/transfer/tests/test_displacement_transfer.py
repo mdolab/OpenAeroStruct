@@ -1,5 +1,5 @@
 import unittest
-from openmdao.api import IndepVarComp, Group
+import openmdao.api as om
 
 from openaerostruct.transfer.displacement_transfer import DisplacementTransfer
 from openaerostruct.utils.testing import run_test, get_default_surfaces
@@ -12,9 +12,9 @@ class Test(unittest.TestCase):
 
         comp = DisplacementTransfer(surface=surface)
 
-        group = Group()
+        group = om.Group()
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
 
         ny = surface['mesh'].shape[1]
 

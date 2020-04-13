@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from openmdao.api import Group, IndepVarComp
+import openmdao.api as om
 
 from openaerostruct.aerodynamics.solve_matrix import SolveMatrix
 from openaerostruct.utils.testing import run_test, get_default_surfaces
@@ -12,10 +12,10 @@ class Test(unittest.TestCase):
     def test(self):
         surfaces = get_default_surfaces()
 
-        group = Group()
+        group = om.Group()
         comp = SolveMatrix(surfaces=surfaces)
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
 
         system_size = 0
         for surface in surfaces:

@@ -1,14 +1,14 @@
 from __future__ import division, print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 from openaerostruct.utils.vector_algebra import get_array_indices
 
 
 np.random.seed(314)
 
-class DisplacementTransfer(ExplicitComponent):
+class DisplacementTransfer(om.ExplicitComponent):
     """
     Apply the computed FEM displacements and rotations on the aerodynamic mesh
     to obtain the deformed mesh.

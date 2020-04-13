@@ -6,7 +6,7 @@ from __future__ import division, print_function
 import numpy as np
 from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
-from openmdao.api import IndepVarComp, Problem, ScipyOptimizeDriver, SqliteRecorder, ExecComp
+import openmdao.api as om
 from openaerostruct.structures.wingbox_fuel_vol_delta import WingboxFuelVolDelta
 from openaerostruct.utils.constants import grav_constant
 
@@ -111,10 +111,10 @@ surfaces = [surf_dict]
 #docs checkpoint 9
 
 # Create the problem and assign the model group
-prob = Problem()
+prob = om.Problem()
 
 # Add problem information as an independent variables component
-indep_var_comp = IndepVarComp()
+indep_var_comp = om.IndepVarComp()
 indep_var_comp.add_output('Mach_number', val=np.array([0.85, 0.64]))
 indep_var_comp.add_output('v', val=np.array([.85 * 295.07, .64 * 340.294]), units='m/s')
 indep_var_comp.add_output('re',val=np.array([0.348*295.07*.85*1./(1.43*1e-5), \
@@ -155,7 +155,7 @@ indep_var_comp.add_output('point_mass_locations', val=point_mass_locations, unit
 
 # Compute the actual W0 to be used within OAS based on the sum of the point mass and other W0 weight
 prob.model.add_subsystem('W0_comp',
-    ExecComp('W0 = W0_without_point_masses + sum(point_masses)', units='kg'),
+    om.ExecComp('W0 = W0_without_point_masses + sum(point_masses)', units='kg'),
     promotes=['*'])
 
 #docs checkpoint 13
@@ -262,7 +262,7 @@ if surf_dict['distributed_fuel_weight']:
 
 #docs checkpoint 19
 
-comp = ExecComp('fuel_diff = (fuel_mass - fuelburn) / fuelburn', units='kg')
+comp = om.ExecComp('fuel_diff = (fuel_mass - fuelburn) / fuelburn', units='kg')
 prob.model.add_subsystem('fuel_diff', comp,
     promotes_inputs=['fuel_mass'],
     promotes_outputs=['fuel_diff'])
@@ -298,13 +298,13 @@ prob.model.add_constraint('fuel_diff', equals=0.)
 
 #docs checkpoint 25
 
-prob.driver = ScipyOptimizeDriver()
+prob.driver = om.ScipyOptimizeDriver()
 prob.driver.options['optimizer'] = 'SLSQP'
 prob.driver.options['tol'] = 1e-2
 
 #docs checkpoint 26
 
-recorder = SqliteRecorder("aerostruct.db")
+recorder = om.SqliteRecorder("aerostruct.db")
 prob.driver.add_recorder(recorder)
 
 # We could also just use prob.driver.recording_options['includes']=['*'] here, but for large meshes the database file becomes extremely large. So we just select the variables we need.
@@ -345,8 +345,7 @@ prob.driver.recording_options['record_inputs'] = True
 # Set up the problem
 prob.setup()
 
-# from openmdao.api import view_model
-# view_model(prob)
+# om.view_model(prob)
 
 # prob.check_partials(form='central', compact_print=True)
 

@@ -1,6 +1,6 @@
 import numpy as np
 
-from openmdao.api import IndepVarComp, Problem, Group, SqliteRecorder
+import openmdao.api as om
 
 from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.geometry.geometry_group import Geometry

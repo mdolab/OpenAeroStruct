@@ -1,13 +1,13 @@
 from __future__ import print_function, division
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
 def norm(vec):
     return np.sqrt(np.sum(vec**2))
 
-class WingboxFuelVolDelta(ExplicitComponent):
+class WingboxFuelVolDelta(om.ExplicitComponent):
     """
     Create a constraint to ensure the wingbox has enough internal volume to 
     store the required fuel.

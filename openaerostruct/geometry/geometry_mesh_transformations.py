@@ -5,10 +5,10 @@ from __future__ import division, print_function
 
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class Taper(ExplicitComponent):
+class Taper(om.ExplicitComponent):
     """
     OpenMDAO component that manipulates the mesh by altering the spanwise chord linearly to produce
     a tapered wing. Note that we apply taper around the quarter-chord line.
@@ -110,7 +110,7 @@ class Taper(ExplicitComponent):
         partials['mesh', 'taper'] = np.einsum('ijk, j->ijk', mesh - quarter_chord, dtaper)
 
 
-class ScaleX(ExplicitComponent):
+class ScaleX(om.ExplicitComponent):
     """
     OpenMDAO component that manipulates the mesh by modifying the chords along the span of the
     wing by scaling only the x-coord.
@@ -198,7 +198,7 @@ class ScaleX(ExplicitComponent):
         partials['mesh', 'in_mesh'][:nnq] += 0.75 * d_qc
 
 
-class Sweep(ExplicitComponent):
+class Sweep(om.ExplicitComponent):
     """
     OpenMDAO component that manipulates the mesh applying shearing sweep. Positive sweeps back.
 
@@ -339,7 +339,7 @@ class Sweep(ExplicitComponent):
         partials['mesh', 'in_mesh'][nn + nn2:] = -tan_theta
 
 
-class ShearX(ExplicitComponent):
+class ShearX(om.ExplicitComponent):
     """
     OpenMDAO component that manipulates the mesh by shearing the wing in the x direction
     (distributed sweep).
@@ -394,7 +394,7 @@ class ShearX(ExplicitComponent):
         outputs['mesh'][:, :, 0] += inputs['xshear']
 
 
-class Stretch(ExplicitComponent):
+class Stretch(om.ExplicitComponent):
     """
     OpenMDAO component that manipulates the mesh by stretching the mesh in spanwise direction to
     reach specified span
@@ -539,7 +539,7 @@ class Stretch(ExplicitComponent):
         partials['mesh', 'in_mesh'][nn6:] = 0.25 * span / prev_span
 
 
-class ShearY(ExplicitComponent):
+class ShearY(om.ExplicitComponent):
     """
     OpenMDAO component that manipulates the mesh by shearing the wing in the y direction
     (distributed sweep).
@@ -594,7 +594,7 @@ class ShearY(ExplicitComponent):
         outputs['mesh'][:, :, 1] += inputs['yshear']
 
 
-class Dihedral(ExplicitComponent):
+class Dihedral(om.ExplicitComponent):
     """
     OpenMDAO component that manipulates the mesh by applying dihedral angle. Positive angles up.
 
@@ -733,7 +733,7 @@ class Dihedral(ExplicitComponent):
         partials['mesh', 'in_mesh'][nn + nn2:] = -tan_theta
 
 
-class ShearZ(ExplicitComponent):
+class ShearZ(om.ExplicitComponent):
     """
     OpenMDAO component that manipulates the mesh by shearing the wing in the z direction
     (distributed sweep).
@@ -788,7 +788,7 @@ class ShearZ(ExplicitComponent):
         outputs['mesh'][:, :, 2] += inputs['zshear']
 
 
-class Rotate(ExplicitComponent):
+class Rotate(om.ExplicitComponent):
     """
     OpenMDAO component that manipulates the mesh by compute rotation matrices given mesh and
     rotation angles in degrees.

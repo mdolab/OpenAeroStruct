@@ -2,10 +2,10 @@ from __future__ import print_function
 
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class ConvertVelocity(ExplicitComponent):
+class ConvertVelocity(om.ExplicitComponent):
     """
     Convert the freestream velocity magnitude into a velocity vector at each
     evaluation point. In this case, each of the panels sees the same velocity.

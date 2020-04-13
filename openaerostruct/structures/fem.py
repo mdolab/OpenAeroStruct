@@ -7,10 +7,10 @@ import numpy as np
 from scipy.sparse import coo_matrix
 from scipy.sparse.linalg import splu
 
-from openmdao.core.implicitcomponent import ImplicitComponent
+import openmdao.api as om
 
 
-class FEM(ImplicitComponent):
+class FEM(om.ImplicitComponent):
     """
     Component that solves a linear system, Ax=b.
 

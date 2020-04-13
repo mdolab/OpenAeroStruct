@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from openmdao.api import Problem
+import openmdao.api as om
 from openmdao.utils.assert_utils import assert_check_partials
 
 from openaerostruct.aerodynamics.pg_transform import PGTransform
@@ -18,7 +18,7 @@ class Test(unittest.TestCase):
 
         comp = RotateToWindFrame(surfaces=surfaces, rotational=True)
 
-        prob = Problem()
+        prob = om.Problem()
         prob.model.add_subsystem('comp', comp)
         prob.setup(force_alloc_complex=True)
 
@@ -43,7 +43,7 @@ class Test(unittest.TestCase):
 
         comp = RotateFromWindFrame(surfaces=surfaces)
 
-        prob = Problem()
+        prob = om.Problem()
         prob.model.add_subsystem('comp', comp)
         prob.setup(force_alloc_complex=True)
 
@@ -63,7 +63,7 @@ class Test(unittest.TestCase):
 
         comp = ScaleToPrandtlGlauert(surfaces=surfaces, rotational=True)
 
-        prob = Problem()
+        prob = om.Problem()
         prob.model.add_subsystem('comp', comp)
         prob.setup(force_alloc_complex=True)
 
@@ -87,7 +87,7 @@ class Test(unittest.TestCase):
 
         comp = ScaleFromPrandtlGlauert(surfaces=surfaces)
 
-        prob = Problem()
+        prob = om.Problem()
         prob.model.add_subsystem('comp', comp)
         prob.setup(force_alloc_complex=True)
 

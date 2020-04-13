@@ -1,10 +1,10 @@
 from __future__ import print_function
 import numpy as np
 
-from openmdao.api import ExplicitComponent
+import openmdao.api as om
 
 
-class LocalStiffTransformed(ExplicitComponent):
+class LocalStiffTransformed(om.ExplicitComponent):
 
     def initialize(self):
         self.options.declare('surface', types=dict)

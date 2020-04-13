@@ -2,7 +2,7 @@ import unittest
 
 from openaerostruct.aerodynamics.viscous_drag import ViscousDrag
 from openaerostruct.utils.testing import run_test, get_default_surfaces
-from openmdao.api import Group, IndepVarComp, BsplinesComp
+import openmdao.api as om
 import numpy as np
 
 class Test(unittest.TestCase):
@@ -15,13 +15,13 @@ class Test(unittest.TestCase):
         ny = surface['mesh'].shape[1]
         n_cp = len(surface['t_over_c_cp'])
 
-        group = Group()
+        group = om.Group()
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('t_over_c_cp', val=surface['t_over_c_cp'])
         group.add_subsystem('indep_var_comp', indep_var_comp, promotes=['*'])
 
-        group.add_subsystem('t_over_c_bsp', BsplinesComp(
+        group.add_subsystem('t_over_c_bsp', om.BsplinesComp(
             in_name='t_over_c_cp', out_name='t_over_c',
             num_control_points=n_cp, num_points=int(ny-1),
             bspline_order=min(n_cp, 4), distribution='uniform'),
@@ -40,13 +40,13 @@ class Test(unittest.TestCase):
         ny = surface['mesh'].shape[1]
         n_cp = len(surface['t_over_c_cp'])
 
-        group = Group()
+        group = om.Group()
 
-        indep_var_comp = IndepVarComp()
+        indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('t_over_c_cp', val=surface['t_over_c_cp'])
         group.add_subsystem('indep_var_comp', indep_var_comp, promotes=['*'])
 
-        group.add_subsystem('t_over_c_bsp', BsplinesComp(
+        group.add_subsystem('t_over_c_bsp', om.BsplinesComp(
             in_name='t_over_c_cp', out_name='t_over_c',
             num_control_points=n_cp, num_points=int(ny-1),
             bspline_order=min(n_cp, 4), distribution='uniform'),
