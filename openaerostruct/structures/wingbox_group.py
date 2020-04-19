@@ -1,3 +1,4 @@
+import numpy as np
 import openmdao.api as om
 from openaerostruct.structures.section_properties_wingbox import SectionPropertiesWingbox
 from openaerostruct.structures.wingbox_geometry import WingboxGeometry
@@ -25,21 +26,25 @@ class WingboxGroup(om.Group):
         if 'spar_thickness_cp' in surface.keys():
             n_cp = len(surface['spar_thickness_cp'])
             # Add bspline components for active bspline geometric variables.
-            self.add_subsystem('spar_thickness_bsp', om.BsplinesComp(
-                in_name='spar_thickness_cp', out_name='spar_thickness',
-                num_control_points=n_cp, num_points=int(ny-1), units='m',
-                bspline_order=min(n_cp, 4), distribution='uniform'),
+            x_interp = np.linspace(0., 1., int(ny-1))
+            comp = self.add_subsystem('spar_thickness_bsp', om.SplineComp(
+                method='bsplines', x_interp_val=x_interp,
+                num_cp=n_cp,
+                interp_options={'order' : min(n_cp, 4)}),
                 promotes_inputs=['spar_thickness_cp'], promotes_outputs=['spar_thickness'])
+            comp.add_spline(y_cp_name='spar_thickness_cp', y_interp_name='spar_thickness')
             indep_var_comp.add_output('spar_thickness_cp', val=surface['spar_thickness_cp'], units='m')
 
         if 'skin_thickness_cp' in surface.keys():
             n_cp = len(surface['skin_thickness_cp'])
             # Add bspline components for active bspline geometric variables.
-            self.add_subsystem('skin_thickness_bsp', om.BsplinesComp(
-                in_name='skin_thickness_cp', out_name='skin_thickness',
-                num_control_points=n_cp, num_points=int(ny-1), units='m',
-                bspline_order=min(n_cp, 4), distribution='uniform'),
+            x_interp = np.linspace(0., 1., int(ny-1))
+            comp = self.add_subsystem('skin_thickness_bsp', om.SplineComp(
+                method='bsplines', x_interp_val=x_interp,
+                num_cp=n_cp,
+                interp_options={'order' : min(n_cp, 4)}),
                 promotes_inputs=['skin_thickness_cp'], promotes_outputs=['skin_thickness'])
+            comp.add_spline(y_cp_name='skin_thickness_cp', y_interp_name='skin_thickness')
             indep_var_comp.add_output('skin_thickness_cp', val=surface['skin_thickness_cp'], units='m')
 
         self.add_subsystem('wingbox_geometry',

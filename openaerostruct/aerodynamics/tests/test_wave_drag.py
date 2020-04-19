@@ -26,12 +26,14 @@ class Test(unittest.TestCase):
         indep_var_comp.add_output('cos_sweep', val = np.array([10.01555924,  9.80832351,  9.79003729]),units='m')
         indep_var_comp.add_output('chords', val = np.array([ 2.72835132,  5.12528179,  7.88916016, 13.6189974]),units='m')
         group.add_subsystem('indep_var_comp', indep_var_comp, promotes=['*'])
-
-        group.add_subsystem('t_over_c_bsp', om.BsplinesComp(
-            in_name='t_over_c_cp', out_name='t_over_c',
-            num_control_points=n_cp, num_points=int(ny-1),
-            bspline_order=min(n_cp, 4), distribution='uniform'),
+        
+        x_interp = np.linspace(0., 1., int(ny-1))
+        comp = group.add_subsystem('t_over_c_bsp', om.SplineComp(
+            method='bsplines', x_interp_val=x_interp,
+            num_cp=n_cp,
+            interp_options={'order' : min(n_cp, 4)}),
             promotes_inputs=['t_over_c_cp'], promotes_outputs=['t_over_c'])
+        comp.add_spline(y_cp_name='t_over_c_cp', y_interp_name='t_over_c')
 
         comp = WaveDrag(surface=surface)
         group.add_subsystem('wavedrag', comp, promotes=['*'])

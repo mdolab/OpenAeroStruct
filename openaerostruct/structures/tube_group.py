@@ -1,3 +1,4 @@
+import numpy as np
 import openmdao.api as om
 from openaerostruct.structures.section_properties_tube import SectionPropertiesTube
 from openaerostruct.geometry.radius_comp import RadiusComp
@@ -28,22 +29,26 @@ class TubeGroup(om.Group):
         if 'thickness_cp' in surface.keys():
             n_cp = len(surface['thickness_cp'])
             # Add bspline components for active bspline geometric variables.
-            self.add_subsystem('thickness_bsp', om.BsplinesComp(
-                in_name='thickness_cp', out_name='thickness', units='m',
-                num_control_points=n_cp, num_points=int(ny-1),
-                bspline_order=min(n_cp, 4), distribution='uniform'),
+            x_interp = np.linspace(0., 1., int(ny-1))
+            comp = self.add_subsystem('thickness_bsp', om.SplineComp(
+                method='bsplines', x_interp_val=x_interp,
+                num_cp=n_cp,
+                interp_options={'order' : min(n_cp, 4)}),
                 promotes_inputs=['thickness_cp'], promotes_outputs=['thickness'])
+            comp.add_spline(y_cp_name='thickness_cp', y_interp_name='thickness')
             if connect_geom_DVs:
                 indep_var_comp.add_output('thickness_cp', val=surface['thickness_cp'], units='m')
 
         if 'radius_cp' in surface.keys():
             n_cp = len(surface['radius_cp'])
             # Add bspline components for active bspline geometric variables.
-            self.add_subsystem('radius_bsp', om.BsplinesComp(
-                in_name='radius_cp', out_name='radius', units='m',
-                num_control_points=n_cp, num_points=int(ny-1),
-                bspline_order=min(n_cp, 4), distribution='uniform'),
+            x_interp = np.linspace(0., 1., int(ny-1))
+            comp = self.add_subsystem('radius_bsp', om.SplineComp(
+                method='bsplines', x_interp_val=x_interp,
+                num_cp=n_cp,
+                interp_options={'order' : min(n_cp, 4)}),
                 promotes_inputs=['radius_cp'], promotes_outputs=['radius'])
+            comp.add_spline(y_cp_name='radius_cp', y_interp_name='radius')
             if connect_geom_DVs:
                 indep_var_comp.add_output('radius_cp', val=surface['radius_cp'], units='m')
         else:

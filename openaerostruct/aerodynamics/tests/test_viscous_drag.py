@@ -20,12 +20,14 @@ class Test(unittest.TestCase):
         indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('t_over_c_cp', val=surface['t_over_c_cp'])
         group.add_subsystem('indep_var_comp', indep_var_comp, promotes=['*'])
-
-        group.add_subsystem('t_over_c_bsp', om.BsplinesComp(
-            in_name='t_over_c_cp', out_name='t_over_c',
-            num_control_points=n_cp, num_points=int(ny-1),
-            bspline_order=min(n_cp, 4), distribution='uniform'),
+        
+        x_interp = np.linspace(0., 1., int(ny-1))
+        comp = group.add_subsystem('t_over_c_bsp', om.SplineComp(
+            method='bsplines', x_interp_val=x_interp,
+            num_cp=n_cp,
+            interp_options={'order' : min(n_cp, 4)}),
             promotes_inputs=['t_over_c_cp'], promotes_outputs=['t_over_c'])
+        comp.add_spline(y_cp_name='t_over_c_cp', y_interp_name='t_over_c', y_cp_val=np.zeros(n_cp))
 
         comp = ViscousDrag(surface=surface, with_viscous=True)
         group.add_subsystem('viscousdrag', comp, promotes=['*'])
@@ -45,12 +47,14 @@ class Test(unittest.TestCase):
         indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('t_over_c_cp', val=surface['t_over_c_cp'])
         group.add_subsystem('indep_var_comp', indep_var_comp, promotes=['*'])
-
-        group.add_subsystem('t_over_c_bsp', om.BsplinesComp(
-            in_name='t_over_c_cp', out_name='t_over_c',
-            num_control_points=n_cp, num_points=int(ny-1),
-            bspline_order=min(n_cp, 4), distribution='uniform'),
+        
+        x_interp = np.linspace(0., 1., int(ny-1))
+        comp = group.add_subsystem('t_over_c_bsp', om.SplineComp(
+            method='bsplines', x_interp_val=x_interp,
+            num_cp=n_cp,
+            interp_options={'order' : min(n_cp, 4)}),
             promotes_inputs=['t_over_c_cp'], promotes_outputs=['t_over_c'])
+        comp.add_spline(y_cp_name='t_over_c_cp', y_interp_name='t_over_c')
 
         comp = ViscousDrag(surface=surface, with_viscous=True)
         group.add_subsystem('viscousdrag', comp, promotes=['*'])

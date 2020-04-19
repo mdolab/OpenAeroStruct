@@ -62,12 +62,14 @@ class Geometry(om.Group):
 
             if 't_over_c_cp' in surface.keys():
                 n_cp = len(surface['t_over_c_cp'])
-                # Add bspline components for active bspline geometric variables.
-                self.add_subsystem('t_over_c_bsp', om.BsplinesComp(
-                    in_name='t_over_c_cp', out_name='t_over_c',
-                    num_control_points=n_cp, num_points=int(ny-1),
-                    bspline_order=min(n_cp, 4), distribution='uniform'),
+                # Add bspline components for active bspline geometric variables.        
+                x_interp = np.linspace(0., 1., int(ny-1))
+                comp = self.add_subsystem('t_over_c_bsp', om.SplineComp(
+                    method='bsplines', x_interp_val=x_interp,
+                    num_cp=n_cp,
+                    interp_options={'order' : min(n_cp, 4)}),
                     promotes_inputs=['t_over_c_cp'], promotes_outputs=['t_over_c'])
+                comp.add_spline(y_cp_name='t_over_c_cp', y_interp_name='t_over_c')
                 if surface.get('t_over_c_cp_dv', True):
                     indep_var_comp.add_output('t_over_c_cp', val=surface['t_over_c_cp'])
 
@@ -84,11 +86,13 @@ class Geometry(om.Group):
             if 'twist_cp' in surface.keys():
                 n_cp = len(surface['twist_cp'])
                 # Add bspline components for active bspline geometric variables.
-                self.add_subsystem('twist_bsp', om.BsplinesComp(
-                    in_name='twist_cp', out_name='twist', units='deg',
-                    num_control_points=n_cp, num_points=int(ny),
-                    bspline_order=min(n_cp, 4), distribution='uniform'),
+                x_interp = np.linspace(0., 1., int(ny))
+                comp = self.add_subsystem('twist_bsp', om.SplineComp(
+                    method='bsplines', x_interp_val=x_interp,
+                    num_cp=n_cp,
+                    interp_options={'order' : min(n_cp, 4)}),
                     promotes_inputs=['twist_cp'], promotes_outputs=['twist'])
+                comp.add_spline(y_cp_name='twist_cp', y_interp_name='twist')
                 bsp_inputs.append('twist')
 
                 # Since default assumption is that we want tail rotation as a design variable, add this to allow for trimmed drag polar where the tail rotation should not be a design variable
@@ -98,11 +102,13 @@ class Geometry(om.Group):
             if 'chord_cp' in surface.keys():
                 n_cp = len(surface['chord_cp'])
                 # Add bspline components for active bspline geometric variables.
-                self.add_subsystem('chord_bsp', om.BsplinesComp(
-                    in_name='chord_cp', out_name='chord', units='m',
-                    num_control_points=n_cp, num_points=int(ny),
-                    bspline_order=min(n_cp, 4), distribution='uniform'),
+                x_interp = np.linspace(0., 1., int(ny))
+                comp = self.add_subsystem('chord_bsp', om.SplineComp(
+                    method='bsplines', x_interp_val=x_interp,
+                    num_cp=n_cp,
+                    interp_options={'order' : min(n_cp, 4)}),
                     promotes_inputs=['chord_cp'], promotes_outputs=['chord'])
+                comp.add_spline(y_cp_name='chord_cp', y_interp_name='chord')
                 bsp_inputs.append('chord')
                 if surface.get('chord_cp_dv', True):
                     indep_var_comp.add_output('chord_cp', val=surface['chord_cp'], units='m')
@@ -110,22 +116,26 @@ class Geometry(om.Group):
             if 't_over_c_cp' in surface.keys():
                 n_cp = len(surface['t_over_c_cp'])
                 # Add bspline components for active bspline geometric variables.
-                self.add_subsystem('t_over_c_bsp', om.BsplinesComp(
-                    in_name='t_over_c_cp', out_name='t_over_c',
-                    num_control_points=n_cp, num_points=int(ny-1),
-                    bspline_order=min(n_cp, 4), distribution='uniform'),
+                x_interp = np.linspace(0., 1., int(ny-1))
+                comp = self.add_subsystem('t_over_c_bsp', om.SplineComp(
+                    method='bsplines', x_interp_val=x_interp,
+                    num_cp=n_cp,
+                    interp_options={'order' : min(n_cp, 4)}),
                     promotes_inputs=['t_over_c_cp'], promotes_outputs=['t_over_c'])
+                comp.add_spline(y_cp_name='t_over_c_cp', y_interp_name='t_over_c')
                 if surface.get('t_over_c_cp_dv', True):
                     indep_var_comp.add_output('t_over_c_cp', val=surface['t_over_c_cp'])
 
             if 'xshear_cp' in surface.keys():
                 n_cp = len(surface['xshear_cp'])
                 # Add bspline components for active bspline geometric variables.
-                self.add_subsystem('xshear_bsp', om.BsplinesComp(
-                    in_name='xshear_cp', out_name='xshear', units='m',
-                    num_control_points=n_cp, num_points=int(ny),
-                    bspline_order=min(n_cp, 4), distribution='uniform'),
+                x_interp = np.linspace(0., 1., int(ny))
+                comp = self.add_subsystem('xshear_bsp', om.SplineComp(
+                    method='bsplines', x_interp_val=x_interp,
+                    num_cp=n_cp,
+                    interp_options={'order' : min(n_cp, 4)}),
                     promotes_inputs=['xshear_cp'], promotes_outputs=['xshear'])
+                comp.add_spline(y_cp_name='xshear_cp', y_interp_name='xshear')
                 bsp_inputs.append('xshear')
                 if surface.get('xshear_cp_dv', True):
                     indep_var_comp.add_output('xshear_cp', val=surface['xshear_cp'], units='m')
@@ -133,11 +143,13 @@ class Geometry(om.Group):
             if 'yshear_cp' in surface.keys():
                 n_cp = len(surface['yshear_cp'])
                 # Add bspline components for active bspline geometric variables.
-                self.add_subsystem('yshear_bsp', om.BsplinesComp(
-                    in_name='yshear_cp', out_name='yshear', units='m',
-                    num_control_points=n_cp, num_points=int(ny),
-                    bspline_order=min(n_cp, 4), distribution='uniform'),
+                x_interp = np.linspace(0., 1., int(ny))
+                comp = self.add_subsystem('yshear_bsp', om.SplineComp(
+                    method='bsplines', x_interp_val=x_interp,
+                    num_cp=n_cp,
+                    interp_options={'order' : min(n_cp, 4)}),
                     promotes_inputs=['yshear_cp'], promotes_outputs=['yshear'])
+                comp.add_spline(y_cp_name='yshear_cp', y_interp_name='yshear')
                 bsp_inputs.append('yshear')
                 if surface.get('yshear_cp_dv', True):
                     indep_var_comp.add_output('yshear_cp', val=surface['yshear_cp'], units='m')
@@ -145,11 +157,13 @@ class Geometry(om.Group):
             if 'zshear_cp' in surface.keys():
                 n_cp = len(surface['zshear_cp'])
                 # Add bspline components for active bspline geometric variables.
-                self.add_subsystem('zshear_bsp', om.BsplinesComp(
-                    in_name='zshear_cp', out_name='zshear', units='m',
-                    num_control_points=n_cp, num_points=int(ny),
-                    bspline_order=min(n_cp, 4), distribution='uniform'),
+                x_interp = np.linspace(0., 1., int(ny))
+                comp = self.add_subsystem('zshear_bsp', om.SplineComp(
+                    method='bsplines', x_interp_val=x_interp,
+                    num_cp=n_cp,
+                    interp_options={'order' : min(n_cp, 4)}),
                     promotes_inputs=['zshear_cp'], promotes_outputs=['zshear'])
+                comp.add_spline(y_cp_name='zshear_cp', y_interp_name='zshear')
                 bsp_inputs.append('zshear')
                 if surface.get('zshear_cp_dv', True):
                     indep_var_comp.add_output('zshear_cp', val=surface['zshear_cp'], units='m')

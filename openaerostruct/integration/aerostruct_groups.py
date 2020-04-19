@@ -247,7 +247,7 @@ class AerostructPoint(om.Group):
         coupled.nonlinear_solver.options['atol'] = 1e-7
         coupled.nonlinear_solver.options['rtol'] = 1e-30
         coupled.nonlinear_solver.options['iprint'] = 2
-        coupled.nonlinear_solver.options['err_on_maxiter'] = True
+        coupled.nonlinear_solver.options['err_on_non_converge'] = True
 
         # coupled.linear_solver = om.DirectSolver()
 
