@@ -4,8 +4,6 @@ os:
 language: generic
 
 env:
-- PY=2.7
-- PY=3.6
 - PY=3.7
 
 addons:
@@ -20,11 +18,7 @@ addons:
     - openmpi-bin
 
 before_install:
-- if [ "$PY" == "2.7" ];  then
-    wget "https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh" -O miniconda.sh;
-  else
-    wget "https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh" -O miniconda.sh;
-  fi
+  wget "https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh" -O miniconda.sh;
 - chmod +x miniconda.sh;
 - ./miniconda.sh -b  -p /home/travis/miniconda;
 - export PATH=/home/travis/miniconda/bin:$PATH;
@@ -49,13 +43,8 @@ install:
 # we only install docs dependencies on py3
 - git clone https://github.com/openmdao/openmdao.git;
 - cd openmdao;
-- if [ "$PY" == "3.7" ];  then
-    pip install --user travis-sphinx;
-    pip install ".[docs]";
-  else
-    pip install ".";
-  fi
-  
+- pip install --user travis-sphinx;
+- pip install ".[docs]";
   - cd ..;
 
 # install openaerostruct itself
@@ -64,12 +53,8 @@ install:
 script:
 - export PYTHONPATH=$PYTHONPATH:$PWD
 - testflo -n 1 openaerostruct --coverage --coverpkg openaerostruct --cover-omit \*tests/\* --cover-omit \*docs/\*;
-- if [ "$PY" == "3.7" ];  then
-    travis-sphinx build --source=openaerostruct/docs;
-  fi
+- travis-sphinx build --source=openaerostruct/docs;
 
 after_success:
-- if [ "$PY" == "3.7" ];  then
-    travis-sphinx deploy;
-    coveralls;
-  fi
+- travis-sphinx deploy;
+- coveralls;
