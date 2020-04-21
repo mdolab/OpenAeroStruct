@@ -52,9 +52,9 @@ install:
 - cd openmdao;
 - if [ "$PY" == "3.7" ];  then
     pip install --user travis-sphinx;
-    pip install .[docs];
+    pip install -e .[docs];
   else
-    pip install .;
+    pip install -e .;
   fi
   - cd ..;
 
