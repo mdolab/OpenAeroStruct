@@ -1,15 +1,27 @@
 import unittest
-
+import numpy as np
+import openmdao.api as om
+from openmdao.utils.assert_utils import assert_check_partials
 from openaerostruct.common.reynolds_comp import ReynoldsComp
-from openaerostruct.utils.testing import run_test
 
 
 class Test(unittest.TestCase):
 
-    def test(self):
+    def test_reynolds_derivs(self):
         comp = ReynoldsComp()
 
-        run_test(self, comp, method='cs', complex_flag=True)
+        prob = om.Problem()
+        prob.model.add_subsystem('comp', comp, promotes=['*'])
+        prob.setup(force_alloc_complex=True)
+
+        prob['rho'] = np.random.random()
+        prob['mu'] = np.random.random()
+        prob['v'] = np.random.random()
+        prob.run_model()
+
+        check = prob.check_partials(compact_print=True, method='cs', step=1e-40)
+
+        assert_check_partials(check)
 
 
 if __name__ == '__main__':
