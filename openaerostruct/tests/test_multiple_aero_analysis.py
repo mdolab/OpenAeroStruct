@@ -7,14 +7,14 @@ from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.geometry.geometry_group import Geometry
 from openaerostruct.aerodynamics.aero_groups import AeroPoint
 
-import openmdao.api as om
-
 
 class Test(unittest.TestCase):
 
     def test(self):
 
         import numpy as np
+        
+        import openmdao.api as om
 
         from openaerostruct.geometry.utils import generate_mesh
         from openaerostruct.geometry.geometry_group import Geometry
