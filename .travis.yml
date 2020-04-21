@@ -49,9 +49,9 @@ install:
 # we only install docs dependencies on py3
 - if [ "$PY" == "3.7" ];  then
     pip install --user travis-sphinx;
-    pip install "openmdao[docs]<3";
+    pip install "openmdao[docs]";
   else
-    pip install "openmdao<3";
+    pip install "openmdao";
   fi
 
 # install openaerostruct itself
