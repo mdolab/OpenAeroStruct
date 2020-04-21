@@ -3,7 +3,8 @@
 Installation
 ============
 
-To use OpenAeroStruct, you must first install OpenMDAO 2.3+ by installing via pip using:
+This version of OpenAeroStruct is only compatible with Python3.
+To use OpenAeroStruct, you must first install OpenMDAO 3.0+ by installing via pip using:
 
 .. code-block:: bash
 
