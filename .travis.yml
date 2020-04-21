@@ -47,12 +47,16 @@ install:
 
 # install openmdao and sphinx-travis
 # we only install docs dependencies on py3
+# install pyoptsparse
+- git clone https://github.com/openmdao/openmdao.git;
+- cd openmdao;
 - if [ "$PY" == "3.7" ];  then
     pip install --user travis-sphinx;
-    pip install "openmdao[docs]";
+    pip install .[docs];
   else
-    pip install "openmdao";
+    pip install .;
   fi
+  - cd ..;
 
 # install openaerostruct itself
 - pip install -e .;
