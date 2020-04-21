@@ -40,7 +40,6 @@ install:
 - export PATH=$HOME/.local/bin:$PATH;
 
 # install openmdao and sphinx-travis
-# we only install docs dependencies on py3
 - git clone https://github.com/openmdao/openmdao.git;
 - cd openmdao;
 - pip install --user travis-sphinx;
