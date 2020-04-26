@@ -1,8 +1,13 @@
 from numpy.distutils.core import setup
 
+import re
 
+__version__ = re.findall(
+    r"""__version__ = ["']+([0-9\.]*)["']+""",
+    open('openaerostruct/__init__.py').read(),
+)[0]
 setup(name='openaerostruct',
-    version='2.1.0',
+    version=__version__,
     description='OpenAeroStruct',
     author='John Jasa',
     author_email='johnjasa@umich.edu',

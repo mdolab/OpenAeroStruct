@@ -75,11 +75,17 @@ author = u'John Jasa, Dr. John Hwang, Justin S. Gray'
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
-#
+
+import re
+
+__version__ = re.findall(
+    r"""__version__ = ["']+([0-9\.]*)["']+""",
+    open('../__init__.py').read(),
+)[0]
 # The short X.Y version.
-version = '2.1.0'
+version = __version__
 # The full version, including alpha/beta/rc tags.
-release = '2.1.0'
+release = __version__
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
