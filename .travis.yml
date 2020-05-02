@@ -40,7 +40,7 @@ install:
 - export PATH=$HOME/.local/bin:$PATH;
 
 # install openmdao and sphinx-travis
-- pip install `openmdao==3.1.0`
+- pip install openmdao
 - pip install --user travis-sphinx;
 
 # install openaerostruct itself
