@@ -24,7 +24,7 @@ before_install:
 - export PATH=/home/travis/miniconda/bin:$PATH;
 
 install:
-- conda install --yes python=$PY numpy scipy nose sphinx mock swig pip;
+- conda install --yes python=$PY numpy scipy nose sphinx mock swig pip matplotlib numpydoc redbaron;
 - pip install --upgrade pip;
 - pip install mpi4py;
 
