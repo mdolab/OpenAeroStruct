@@ -15,21 +15,15 @@ class LoadTransfer(om.ExplicitComponent):
     Parameters
     ----------
     def_mesh[nx, ny, 3] : numpy array
-        Flattened array defining the lifting surfaces after deformation.
+        Array defining the lifting surfaces after deformation.
     sec_forces[nx-1, ny-1, 3] : numpy array
-        Flattened array containing the sectional forces acting on each panel.
-        Stored in Fortran order (only relevant when more than one chordwise
-        panel).
+        Array containing the sectional forces acting on each panel.
 
     Returns
     -------
-    LoadsA[ny,3] : numpy array  = loads[:,:3]
-    LoadsB[ny,3] : numpy array  = loads[:,3:]
-        Flattened array containing the loads applied on the FEM component,
-        computed from the sectional forces.
-
-    Loads[ny, 6] : numpy array = [LoadsA,LoadsB]
-
+    loads[ny, 6] : numpy array 
+        Array containing the loads applied on the FEM component at each node,
+        computed from the sectional forces. The first 3 columns are N, and the last 3 are N*m.
     """
 
     def initialize(self):
@@ -126,6 +120,16 @@ class LoadTransfer(om.ExplicitComponent):
         mesh = inputs['def_mesh']  # [nx, ny, 3]
         sec_forces = inputs['sec_forces']
 
+        # ----- 1. Forces transfer -----
+        # Only need to zero out the part that is assigned via +=
+        outputs['loads'][-1, :] = 0.0
+
+        # The aero force acting on each panel is evenly transferred to the adjacent FEM nodes.
+        sec_forces_sum = 0.5 * np.sum(sec_forces, axis=0)
+        outputs['loads'][:-1, :3] = sec_forces_sum
+        outputs['loads'][1:, :3] += sec_forces_sum
+
+        # ----- 2. Moments transfer -----
         # Compute the aerodynamic centers at the quarter-chord point of each panel
         # a_pts [nx-1, ny-1, 3]
         a_pts = (
@@ -135,30 +139,18 @@ class LoadTransfer(om.ExplicitComponent):
             + 0.5 * self.w1 * mesh[1:, 1:, :]
         )
 
-        # Compute the structural midpoints based on the fem_origin location
-        # s_pts [ny-1, 3]
-        s_pts = (
-            0.5 * (1 - self.w2) * mesh[0, :-1, :]
-            + 0.5 * self.w2 * mesh[-1, :-1, :]
-            + 0.5 * (1 - self.w2) * mesh[0, 1:, :]
-            + 0.5 * self.w2 * mesh[-1, 1:, :]
-        )
+        # Compute the structural nodes based on the fem_origin location (weighted sum of the LE and TE mesh vertices)
+        # s_pts [ny, 3]
+        s_pts = (1 - self.w2) * mesh[0, :, :] + self.w2 * mesh[-1, :, :]
 
-        # Find the moment arm between the aerodynamic centers of each panel
-        # and the FEM elements
-        # diff [nx-1, ny-1, 3]
-        moment = 0.5 * np.sum(np.cross(a_pts - s_pts, sec_forces), axis=0)
+        # The moment arm is between the aerodynamic centers of each panel and the FEM nodes.
+        # Moment contribution of sec_forces (acting on aero center) to the inner/outer adjacent node
+        moment_in = np.sum(np.cross(a_pts - s_pts[:-1, :], 0.5 * sec_forces), axis=0)  # [ny-1, 3]
+        moment_out = np.sum(np.cross(a_pts - s_pts[1:, :], 0.5 * sec_forces), axis=0)
 
-        # Only need to zero out the part that is assigned via +=
-        outputs['loads'][-1, :] = 0.0
-
-        # Compute the loads based on the xyz forces and the computed moments
-        sec_forces_sum = 0.5 * np.sum(sec_forces, axis=0)
-        outputs['loads'][:-1, :3] = sec_forces_sum
-        outputs['loads'][1:, :3] += sec_forces_sum
-
-        outputs['loads'][:-1, 3:] = moment
-        outputs['loads'][1:, 3:] += moment
+        # Total moment at each node = sum of moment_in and moment_out, except the edge nodes.s
+        outputs['loads'][:-1, 3:] = moment_in
+        outputs['loads'][1:, 3:] += moment_out
 
     def compute_partials(self, inputs, partials):
         mesh = inputs['def_mesh']
