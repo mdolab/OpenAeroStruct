@@ -203,7 +203,7 @@ class Test(unittest.TestCase):
         # filename += '_' + str(surf_dict['mx']) + '_' + str(surf_dict['my']) + '.mesh'
         # np.save(filename, mesh)
 
-        assert_rel_error(self, prob['AS_point_0.fuelburn'][0], 104675.0989232741, 1e-3)
+        assert_rel_error(self, prob['AS_point_0.fuelburn'][0], 97680.8964568375, 1e-3)
 
 
 if __name__ == '__main__':

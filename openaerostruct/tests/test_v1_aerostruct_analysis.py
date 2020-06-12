@@ -153,10 +153,10 @@ class Test(unittest.TestCase):
 
         prob.run_model()
 
-        assert_rel_error(self, prob['AS_point_0.wing_perf.CL'][0], 0.501212803372, 1e-6)
-        assert_rel_error(self, prob['AS_point_0.wing_perf.failure'][0], -0.434049851068, 1e-6)
-        assert_rel_error(self, prob['AS_point_0.fuelburn'][0], 70365.875285, 1e-4)
-        assert_rel_error(self, prob['AS_point_0.CM'][1], -1.27266001707, 1e-5)
+        assert_rel_error(self, prob['AS_point_0.wing_perf.CL'][0], 0.510849206378, 1e-6)
+        assert_rel_error(self, prob['AS_point_0.wing_perf.failure'][0], -0.483587598753, 1e-6)
+        assert_rel_error(self, prob['AS_point_0.fuelburn'][0], 68894.2100988, 1e-4)
+        assert_rel_error(self, prob['AS_point_0.CM'][1], -1.301925362641, 1e-5)
 
 
 if __name__ == '__main__':

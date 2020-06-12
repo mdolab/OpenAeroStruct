@@ -163,7 +163,7 @@ class Test(unittest.TestCase):
 
         prob.run_driver()
 
-        assert_rel_error(self, prob['AS_point_0.fuelburn'][0], 70754.19144483653, 1e-5)
+        assert_rel_error(self, prob['AS_point_0.fuelburn'][0], 68345.6633812, 1e-5)
 
 
 if __name__ == '__main__':

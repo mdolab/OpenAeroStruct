@@ -258,11 +258,11 @@ class Test(unittest.TestCase):
 
         # prob.check_partials(form='central', compact_print=True)
 
-        # print(prob['AS_point_0.fuelburn'][0])
-        # print(prob['wing.structural_mass'][0]/1.25)
+        print(prob['AS_point_0.fuelburn'][0])
+        print(prob['wing.structural_mass'][0]/1.25)
 
-        assert_rel_error(self, prob['AS_point_0.fuelburn'][0], 94552.8697703, 1e-5)
-        assert_rel_error(self, prob['wing.structural_mass'][0]/1.25, 28295.9737159, 1e-5)
+        assert_rel_error(self, prob['AS_point_0.fuelburn'][0], 93177.833744, 1e-5)
+        assert_rel_error(self, prob['wing.structural_mass'][0]/1.25, 26640.125856, 1e-5)
 
 
 if __name__ == '__main__':

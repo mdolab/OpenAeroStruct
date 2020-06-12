@@ -168,8 +168,8 @@ class Test(unittest.TestCase):
         print(prob['AS_point_0.fuelburn'][0])
         print(prob['AS_point_0.CM'][1])
 
-        assert_rel_error(self, prob['AS_point_0.fuelburn'][0], 277112.600118, 1e-4)
-        assert_rel_error(self, prob['AS_point_0.CM'][1], -0.565647440276, 1e-5)
+        assert_rel_error(self, prob['AS_point_0.fuelburn'][0], 267385.8819288796, 1e-4)
+        assert_rel_error(self, prob['AS_point_0.CM'][1], -0.590064260544, 1e-5)
 
 
 
