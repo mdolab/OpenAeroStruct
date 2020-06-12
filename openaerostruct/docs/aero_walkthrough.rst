@@ -165,8 +165,8 @@ To create this diagram for any OpenMDAO problem, add these two lines after you c
 
 .. code-block:: python
 
-  from openmdao.api import view_model
-  view_model(prob)
+  from openmdao.api import n2
+  n2(prob)
 
 Use any web browser to open the `.html` file and you can examine your problem layout.
 This diagram shows groups in dark blue, components in light blue, as organized by your actual problem hierarchy.
