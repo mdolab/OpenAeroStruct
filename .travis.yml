@@ -55,5 +55,6 @@ script:
 - cd ../..;
 
 after_success:
+- cd openaerostruct/docs;
 - travis-sphinx deploy;
 - coveralls;
