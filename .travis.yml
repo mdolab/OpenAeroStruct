@@ -52,6 +52,7 @@ script:
 - testflo -n 1 openaerostruct --coverage --coverpkg openaerostruct --cover-omit \*tests/\* --cover-omit \*docs/\*;
 - cd openaerostruct/docs;
 - travis-sphinx build --source=.;
+- cd ../..;
 
 after_success:
 - travis-sphinx deploy;
