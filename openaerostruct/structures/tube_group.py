@@ -35,7 +35,8 @@ class TubeGroup(om.Group):
                 num_cp=n_cp,
                 interp_options={'order' : min(n_cp, 4)}),
                 promotes_inputs=['thickness_cp'], promotes_outputs=['thickness'])
-            comp.add_spline(y_cp_name='thickness_cp', y_interp_name='thickness')
+            comp.add_spline(y_cp_name='thickness_cp', y_interp_name='thickness',
+                y_units='m')
             if connect_geom_DVs:
                 indep_var_comp.add_output('thickness_cp', val=surface['thickness_cp'], units='m')
 
@@ -48,7 +49,8 @@ class TubeGroup(om.Group):
                 num_cp=n_cp,
                 interp_options={'order' : min(n_cp, 4)}),
                 promotes_inputs=['radius_cp'], promotes_outputs=['radius'])
-            comp.add_spline(y_cp_name='radius_cp', y_interp_name='radius')
+            comp.add_spline(y_cp_name='radius_cp', y_interp_name='radius',
+                y_units='m')
             if connect_geom_DVs:
                 indep_var_comp.add_output('radius_cp', val=surface['radius_cp'], units='m')
         else:

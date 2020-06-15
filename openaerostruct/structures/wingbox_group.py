@@ -32,7 +32,8 @@ class WingboxGroup(om.Group):
                 num_cp=n_cp,
                 interp_options={'order' : min(n_cp, 4)}),
                 promotes_inputs=['spar_thickness_cp'], promotes_outputs=['spar_thickness'])
-            comp.add_spline(y_cp_name='spar_thickness_cp', y_interp_name='spar_thickness')
+            comp.add_spline(y_cp_name='spar_thickness_cp', y_interp_name='spar_thickness',
+                y_units='m')
             indep_var_comp.add_output('spar_thickness_cp', val=surface['spar_thickness_cp'], units='m')
 
         if 'skin_thickness_cp' in surface.keys():
@@ -44,7 +45,8 @@ class WingboxGroup(om.Group):
                 num_cp=n_cp,
                 interp_options={'order' : min(n_cp, 4)}),
                 promotes_inputs=['skin_thickness_cp'], promotes_outputs=['skin_thickness'])
-            comp.add_spline(y_cp_name='skin_thickness_cp', y_interp_name='skin_thickness')
+            comp.add_spline(y_cp_name='skin_thickness_cp', y_interp_name='skin_thickness',
+                y_units='m')
             indep_var_comp.add_output('skin_thickness_cp', val=surface['skin_thickness_cp'], units='m')
 
         self.add_subsystem('wingbox_geometry',

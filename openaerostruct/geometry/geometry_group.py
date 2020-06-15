@@ -92,7 +92,8 @@ class Geometry(om.Group):
                     num_cp=n_cp,
                     interp_options={'order' : min(n_cp, 4)}),
                     promotes_inputs=['twist_cp'], promotes_outputs=['twist'])
-                comp.add_spline(y_cp_name='twist_cp', y_interp_name='twist')
+                comp.add_spline(y_cp_name='twist_cp', y_interp_name='twist',
+                    y_units='deg')
                 bsp_inputs.append('twist')
 
                 # Since default assumption is that we want tail rotation as a design variable, add this to allow for trimmed drag polar where the tail rotation should not be a design variable
@@ -108,7 +109,8 @@ class Geometry(om.Group):
                     num_cp=n_cp,
                     interp_options={'order' : min(n_cp, 4)}),
                     promotes_inputs=['chord_cp'], promotes_outputs=['chord'])
-                comp.add_spline(y_cp_name='chord_cp', y_interp_name='chord')
+                comp.add_spline(y_cp_name='chord_cp', y_interp_name='chord',
+                    y_units='m')
                 bsp_inputs.append('chord')
                 if surface.get('chord_cp_dv', True):
                     indep_var_comp.add_output('chord_cp', val=surface['chord_cp'], units='m')
@@ -135,7 +137,8 @@ class Geometry(om.Group):
                     num_cp=n_cp,
                     interp_options={'order' : min(n_cp, 4)}),
                     promotes_inputs=['xshear_cp'], promotes_outputs=['xshear'])
-                comp.add_spline(y_cp_name='xshear_cp', y_interp_name='xshear')
+                comp.add_spline(y_cp_name='xshear_cp', y_interp_name='xshear',
+                    y_units='m')
                 bsp_inputs.append('xshear')
                 if surface.get('xshear_cp_dv', True):
                     indep_var_comp.add_output('xshear_cp', val=surface['xshear_cp'], units='m')
@@ -149,7 +152,8 @@ class Geometry(om.Group):
                     num_cp=n_cp,
                     interp_options={'order' : min(n_cp, 4)}),
                     promotes_inputs=['yshear_cp'], promotes_outputs=['yshear'])
-                comp.add_spline(y_cp_name='yshear_cp', y_interp_name='yshear')
+                comp.add_spline(y_cp_name='yshear_cp', y_interp_name='yshear',
+                    y_units='m')
                 bsp_inputs.append('yshear')
                 if surface.get('yshear_cp_dv', True):
                     indep_var_comp.add_output('yshear_cp', val=surface['yshear_cp'], units='m')
@@ -163,7 +167,8 @@ class Geometry(om.Group):
                     num_cp=n_cp,
                     interp_options={'order' : min(n_cp, 4)}),
                     promotes_inputs=['zshear_cp'], promotes_outputs=['zshear'])
-                comp.add_spline(y_cp_name='zshear_cp', y_interp_name='zshear')
+                comp.add_spline(y_cp_name='zshear_cp', y_interp_name='zshear',
+                    y_units='m')
                 bsp_inputs.append('zshear')
                 if surface.get('zshear_cp_dv', True):
                     indep_var_comp.add_output('zshear_cp', val=surface['zshear_cp'], units='m')
