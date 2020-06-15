@@ -7,8 +7,8 @@ import openmdao
 import importlib
 from mock import Mock
 from openmdao.docs.config_params import MOCK_MODULES
-
 from openmdao.docutils import do_monkeypatch, embed_code, embed_options, embed_compare
+from openmdao.docs._exts import embed_n2
 from openaerostruct.docs._utils.generate_sourcedocs import generate_docs
 
 openmdao_path = os.path.split(os.path.abspath(openmdao.__file__))[0]
@@ -43,7 +43,8 @@ extensions = ['sphinx.ext.autodoc',
               'numpydoc',
               'embed_code',
               'embed_compare',
-              'embed_options']
+              'embed_options',
+              'embed_n2']
 
 # directories for which to generate sourcedocs
 packages = [
@@ -122,6 +123,8 @@ htmlhelp_basename = 'OpenAeroStructdoc'
 html_sidebars = {
    '**': ['globaltoc.html', 'searchbox.html']
 }
+
+html_extra_path = ['_n2html']
 
 # The master toctree document.
 master_doc = 'index'

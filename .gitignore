@@ -12,8 +12,9 @@
 *.0
 *.o
 *.mod
-docs/_build/
-docs/*.rst
+openaerostruct/docs/_build/
+openaerostruct/docs/*.rst
+openaerostruct/docs/_srcdocs/
 *.a
 *.msg
 src/adjoint/tempReverse/
