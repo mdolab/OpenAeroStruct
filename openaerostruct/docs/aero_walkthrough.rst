@@ -50,7 +50,7 @@ To use OpenAeroStruct's helper function, you need to give it the number of spanw
 In the code block shown below, we call the helper function to define a mesh and get a starting twist distribution.
 
 .. embed-code::
-    ./aero_walkthrough/part_1.py
+    openaerostruct/docs/aero_walkthrough/part_1.py
 
 There are many options for each surface, and they are loosely organized into the following categories:
 
@@ -62,7 +62,7 @@ There are many options for each surface, and they are loosely organized into the
 - Options for constraints (KS aggregation, monotonic design variables)
 
 .. embed-code::
-    ./aero_walkthrough/part_2.py
+    openaerostruct/docs/aero_walkthrough/part_2.py
 
 2. Initialize your problem and add problem conditions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -72,7 +72,7 @@ Set the values for these parameters that you want to use here.
 We then add this component to the OpenMDAO model.
 
 .. embed-code::
-    ./aero_walkthrough/part_3.py
+    openaerostruct/docs/aero_walkthrough/part_3.py
 
 We now need to provide the geometry and analysis groups to the OpenMDAO problem.
 
@@ -87,7 +87,7 @@ We need to connect some of the variables from the `Geometry` group into the `Aer
 These connections allow information about the mesh to flow through the model correctly.
 
 .. embed-code::
-    ./aero_walkthrough/part_4.py
+    openaerostruct/docs/aero_walkthrough/part_4.py
 
 3. Add your design variables, constraints, and objective
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -129,7 +129,7 @@ We also tell the OpenMDAO problem to record information about each optimization 
 This will allow us to visualize the history during and after the optimization.
 
 .. embed-code::
-    ./aero_walkthrough/part_5.py
+    openaerostruct/docs/aero_walkthrough/part_5.py
 
 4. Set up and run the optimization problem
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -140,7 +140,7 @@ If you only wanted to perform analysis, not optimization, you could use `prob.ru
 The code below find the lowest `CD` value while providing a certain amount of lift by constraining `CL`.
 
 .. embed-code::
-    ./aero_walkthrough/part_6.py
+    openaerostruct/docs/aero_walkthrough/part_6.py
 
 .. embed-code::
     openaerostruct.tests.test_aero.Test.test
@@ -154,7 +154,7 @@ Investigation of the problem structure -- N2 diagram
 We'll now take a moment to explain the organization of the aerodynamic model.
 
 .. embed-n2::
-    ./aero_walkthrough/generate_n2.py
+    openaerostruct/docs/aero_walkthrough/generate_n2.py
 
 Mouse over components and parameters to see the data-passing connections between them.
 You can expand this view, click on boxes to zoom in, or right-click to collapse boxes.
