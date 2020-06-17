@@ -311,6 +311,18 @@ div.offgrid {
     margin-top: -15px;
     pointer-events: none;
 }
+
+rect.diagHighlight {
+    fill: black !important;
+}
+
+rect.inputHighlight {
+    fill: salmon !important;
+}
+
+rect.outputHighlight {
+    fill: seagreen !important;
+}
 </style>
 
 
@@ -1014,12 +1026,16 @@ Instructions on editing the icons used for the toolbar.
 <style type="text/css">
 /******************* Node Data styling *******************/
 #node-info-container {
-	position: absolute;
+    position: absolute;
+    z-index: 10;
+    height: auto;
+}
+
+#node-info-table {
 	overflow: hidden;
 	background-color: white;
 	border-radius: 10px;
 	border: 1px solid #a0a0a0;
-	z-index: 10;
     transition: opacity 0.25s;
     box-shadow: 3px 3px 3px 1px rgba(0, 0, 0, 0.2);
     min-width: 200px;
@@ -1035,14 +1051,14 @@ Instructions on editing the icons used for the toolbar.
     visibility: visible;
 }
 
-#node-info-container thead th {
+#node-info-table thead th {
     background-color: #42926b;
     color: black;
     padding: 5px;
     font-size: 11pt;
 }
 
-#node-info-container tbody th {
+#node-info-table tbody th {
     text-align: right;
     font-size: 9pt;
     margin-top: 0;
@@ -1053,7 +1069,7 @@ Instructions on editing the icons used for the toolbar.
     white-space: nowrap;
 }
 
-#node-info-container tbody td {
+#node-info-table tbody td {
     text-align: left;
     font-size: 9pt;
     margin-top: 0;
@@ -1065,7 +1081,7 @@ Instructions on editing the icons used for the toolbar.
     white-space: nowrap;
 }
 
-#node-info-container tfoot th {
+#node-info-table tfoot th {
     background-color: #42926b;
     padding: 2px;
     font-size: 11pt;
@@ -1084,29 +1100,32 @@ Instructions on editing the icons used for the toolbar.
 	text-align: center;
 }
 
-.node-data-container {
-	width: 100%;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-}
-
-.node-data {
-	display: flex;
-	justify-content: space-between;
-	font-size: 13px;
-	align-self: center;
-}
-
-.node-data p:first-child {
-	font-weight: 600;
-}
-
 .node-data-cursor {
     cursor: context-menu;
 }
 
+#node-info-pin {
+    position: absolute;
+    top: 5px;
+    right: 8px;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    font-size: 12px;
+    background: #ccc;
+    width: 18px;
+    height: 18px;
+    padding: 0 2px 0 2px;
+    /* box-shadow: 1px 1px 1px 1px rgba(0, 0, 0, 0.2); */
+    border-radius: 3px;
+}
 
+#node-info-pin:hover {
+    top: 4px;
+    right: 9px;
+    box-shadow: 1px 1px 1px 1px rgba(0, 0, 0, 0.2);
+}
 </style>
 
 
@@ -3000,15 +3019,24 @@ Jiv+B8Agvd5HrQZBAAAAAElFTkSuQmCC
                         <clipPath id="solverTreeClip">
                             <rect id="solver-clip-rect" x="0" y="0" width="1200" height="600" />
                         </clipPath>
+                        <g id='matrix-connector-arrow' width='10' height='10'>
+                            <path d='M0,3 h2 q5,0 5,5 h1 l-3,2 l-3,-2 h1 q0,-1 -1,-1 h-2 z'></path>
+                        </g>
+                        <g id='matrix-connector-square' width='10' height='10'>
+                            <rect x='2' y='2' width='6' height='6'></rect>
+                        </g>
                     </defs>
+                    <g id='tree' clip-path='url(#partitionTreeClip)'></g>
+                    <g id='highlight-bar'></g>
+                    <g id='solver_tree' clip-path='url(#solverTreeClip)'></g>
                     <g id='n2outer'>
                         <g id='n2inner'>
                             <rect id='backgroundRect' class='background'></rect>
-                            <g id='n2elements' clip-path='url(#n2MatrixClip)'></g>
+                            <g id='n2background' clip-path='url(#n2MatrixClip)'></g>
                             <g id='n2gridlines' clip-path='url(#n2MatrixClip)'></g>
+                            <g id='n2elements' clip-path='url(#n2MatrixClip)'></g>
                             <g id='n2componentBoxes' clip-path='url(#n2MatrixClip)'></g>
                             <g id='n2dots' clip-path='url(#n2MatrixClip)'></g>
-                            <g id='n2highlights'></g>
                             <g id='n2arrows'></g>
                         </g>
                         <g id='n2top' class='offgridLabel'></g>
@@ -3016,8 +3044,9 @@ Jiv+B8Agvd5HrQZBAAAAAElFTkSuQmCC
                         <g id='n2right' class='offgridLabel'></g>
                         <g id='n2bottom' class='offgridLabel'></g>
                     </g>
-                    <g id='tree' clip-path='url(#partitionTreeClip)'></g>
-                    <g id='solver_tree' clip-path='url(#solverTreeClip)'></g>
+                    <g id='text-width-renderer' class='partition_group'>
+                        <text x='-200'></text>
+                    </g>
                 </svg>
                 <div id='n2-resizer-box' class='inactive-resizer-box'>
                     <p id='n2-resizer-handle' class='inactive-resizer-handle'></p>
@@ -3081,7 +3110,8 @@ Jiv+B8Agvd5HrQZBAAAAAElFTkSuQmCC
     </div>
 </div>
 
-<table id="node-info-container" class='info-hidden' cellpadding='0' cellspacing='0'>
+<div id="node-info-container" class='info-hidden'>
+<table id="node-info-table" cellpadding='0' cellspacing='0'>
     <thead>
         <tr>
             <th scope='col' colspan='2'>Name</th>
@@ -3094,6 +3124,8 @@ Jiv+B8Agvd5HrQZBAAAAAElFTkSuQmCC
         </tr>
     </tfoot>
 </table>
+<p id='node-info-pin' class='info-hidden'>&#x1F4CC;</p>
+</div>
 
 <div class="tool-tip" style="position: absolute; visibility: hidden;"></div>
 <div id="top" class="offgrid" style="visibility: hidden;"></div>
@@ -3693,7 +3725,7 @@ return _;
 })();
 </script>
      <script type="text/javascript">
-var modelData = {"tree": {"name": "root", "type": "root", "class": "Group", "expressions": null, "component_type": null, "subsystem_type": "group", "is_parallel": false, "linear_solver": "LN: RUNONCE", "nonlinear_solver": "NL: RUNONCE", "children": [{"name": "_auto_ivc", "type": "subsystem", "class": "_AutoIndepVarComp", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "indep", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "v0", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "v1", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "v2", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "v3", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "v4", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "v5", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "v6", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "v7", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "v8", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "prob_vars", "type": "subsystem", "class": "IndepVarComp", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "indep", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "v", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "alpha", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "Mach_number", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "re", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "rho", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "cg", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "wing", "type": "subsystem", "class": "Geometry", "expressions": null, "component_type": null, "subsystem_type": "group", "is_parallel": false, "linear_solver": "LN: RUNONCE", "nonlinear_solver": "NL: RUNONCE", "children": [{"name": "indep_vars", "type": "subsystem", "class": "IndepVarComp", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "indep", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "twist_cp", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "t_over_c_cp", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "twist_bsp", "type": "subsystem", "class": "SplineComp", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "twist_cp", "type": "param", "dtype": "ndarray"}, {"name": "twist", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "t_over_c_bsp", "type": "subsystem", "class": "SplineComp", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "t_over_c_cp", "type": "param", "dtype": "ndarray"}, {"name": "t_over_c", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "mesh", "type": "subsystem", "class": "GeometryMesh", "expressions": null, "component_type": null, "subsystem_type": "group", "is_parallel": false, "linear_solver": "LN: RUNONCE", "nonlinear_solver": "NL: RUNONCE", "children": [{"name": "taper", "type": "subsystem", "class": "Taper", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "taper", "type": "param", "dtype": "ndarray"}, {"name": "mesh", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "scale_x", "type": "subsystem", "class": "ScaleX", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "chord", "type": "param", "dtype": "ndarray"}, {"name": "in_mesh", "type": "param", "dtype": "ndarray"}, {"name": "mesh", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "sweep", "type": "subsystem", "class": "Sweep", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "sweep", "type": "param", "dtype": "ndarray"}, {"name": "in_mesh", "type": "param", "dtype": "ndarray"}, {"name": "mesh", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "shear_x", "type": "subsystem", "class": "ShearX", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "xshear", "type": "param", "dtype": "ndarray"}, {"name": "in_mesh", "type": "param", "dtype": "ndarray"}, {"name": "mesh", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "stretch", "type": "subsystem", "class": "Stretch", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "span", "type": "param", "dtype": "ndarray"}, {"name": "in_mesh", "type": "param", "dtype": "ndarray"}, {"name": "mesh", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "shear_y", "type": "subsystem", "class": "ShearY", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "yshear", "type": "param", "dtype": "ndarray"}, {"name": "in_mesh", "type": "param", "dtype": "ndarray"}, {"name": "mesh", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "dihedral", "type": "subsystem", "class": "Dihedral", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "dihedral", "type": "param", "dtype": "ndarray"}, {"name": "in_mesh", "type": "param", "dtype": "ndarray"}, {"name": "mesh", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "shear_z", "type": "subsystem", "class": "ShearZ", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "zshear", "type": "param", "dtype": "ndarray"}, {"name": "in_mesh", "type": "param", "dtype": "ndarray"}, {"name": "mesh", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "rotate", "type": "subsystem", "class": "Rotate", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "twist", "type": "param", "dtype": "ndarray"}, {"name": "in_mesh", "type": "param", "dtype": "ndarray"}, {"name": "mesh", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}]}]}, {"name": "aero_point_0", "type": "subsystem", "class": "AeroPoint", "expressions": null, "component_type": null, "subsystem_type": "group", "is_parallel": false, "linear_solver": "LN: RUNONCE", "nonlinear_solver": "NL: RUNONCE", "children": [{"name": "wing", "type": "subsystem", "class": "VLMGeometry", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "def_mesh", "type": "param", "dtype": "ndarray"}, {"name": "b_pts", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "widths", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "cos_sweep", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "lengths", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "chords", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "normals", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "S_ref", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "aero_states", "type": "subsystem", "class": "VLMStates", "expressions": null, "component_type": null, "subsystem_type": "group", "is_parallel": false, "linear_solver": "LN: RUNONCE", "nonlinear_solver": "NL: RUNONCE", "children": [{"name": "collocation_points", "type": "subsystem", "class": "CollocationPoints", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "wing_def_mesh", "type": "param", "dtype": "ndarray"}, {"name": "coll_pts", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "force_pts", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "bound_vecs", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "vortex_mesh", "type": "subsystem", "class": "VortexMesh", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "wing_def_mesh", "type": "param", "dtype": "ndarray"}, {"name": "wing_vortex_mesh", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "get_vectors", "type": "subsystem", "class": "GetVectors", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "coll_pts", "type": "param", "dtype": "ndarray"}, {"name": "wing_vortex_mesh", "type": "param", "dtype": "ndarray"}, {"name": "wing_coll_pts_vectors", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "mtx_assy", "type": "subsystem", "class": "EvalVelMtx", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "alpha", "type": "param", "dtype": "ndarray"}, {"name": "wing_coll_pts_vectors", "type": "param", "dtype": "ndarray"}, {"name": "wing_coll_pts_vel_mtx", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "convert_velocity", "type": "subsystem", "class": "ConvertVelocity", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "alpha", "type": "param", "dtype": "ndarray"}, {"name": "beta", "type": "param", "dtype": "ndarray"}, {"name": "v", "type": "param", "dtype": "ndarray"}, {"name": "freestream_velocities", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "mtx_rhs", "type": "subsystem", "class": "VLMMtxRHSComp", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "freestream_velocities", "type": "param", "dtype": "ndarray"}, {"name": "wing_coll_pts_vel_mtx", "type": "param", "dtype": "ndarray"}, {"name": "wing_normals", "type": "param", "dtype": "ndarray"}, {"name": "mtx", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "rhs", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "solve_matrix", "type": "subsystem", "class": "SolveMatrix", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "implicit", "linear_solver": "solve_linear", "nonlinear_solver": "solve_nonlinear", "children": [{"name": "mtx", "type": "param", "dtype": "ndarray"}, {"name": "rhs", "type": "param", "dtype": "ndarray"}, {"name": "circulations", "type": "unknown", "implicit": true, "dtype": "ndarray"}]}, {"name": "horseshoe_circulations", "type": "subsystem", "class": "HorseshoeCirculations", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "circulations", "type": "param", "dtype": "ndarray"}, {"name": "horseshoe_circulations", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "get_vectors_force", "type": "subsystem", "class": "GetVectors", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "force_pts", "type": "param", "dtype": "ndarray"}, {"name": "wing_vortex_mesh", "type": "param", "dtype": "ndarray"}, {"name": "wing_force_pts_vectors", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "mtx_assy_forces", "type": "subsystem", "class": "EvalVelMtx", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "alpha", "type": "param", "dtype": "ndarray"}, {"name": "wing_force_pts_vectors", "type": "param", "dtype": "ndarray"}, {"name": "wing_force_pts_vel_mtx", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "eval_velocities", "type": "subsystem", "class": "EvalVelocities", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "freestream_velocities", "type": "param", "dtype": "ndarray"}, {"name": "circulations", "type": "param", "dtype": "ndarray"}, {"name": "wing_force_pts_vel_mtx", "type": "param", "dtype": "ndarray"}, {"name": "force_pts_velocities", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "panel_forces", "type": "subsystem", "class": "PanelForces", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "rho", "type": "param", "dtype": "ndarray"}, {"name": "horseshoe_circulations", "type": "param", "dtype": "ndarray"}, {"name": "force_pts_velocities", "type": "param", "dtype": "ndarray"}, {"name": "bound_vecs", "type": "param", "dtype": "ndarray"}, {"name": "panel_forces", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "panel_forces_surf", "type": "subsystem", "class": "PanelForcesSurf", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "panel_forces", "type": "param", "dtype": "ndarray"}, {"name": "wing_sec_forces", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "mesh_point_forces_surf", "type": "subsystem", "class": "MeshPointForces", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "wing_sec_forces", "type": "param", "dtype": "ndarray"}, {"name": "wing_mesh_point_forces", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}]}, {"name": "wing_perf", "type": "subsystem", "class": "VLMFunctionals", "expressions": null, "component_type": null, "subsystem_type": "group", "is_parallel": false, "linear_solver": "LN: RUNONCE", "nonlinear_solver": "NL: RUNONCE", "children": [{"name": "liftcoeff", "type": "subsystem", "class": "LiftCoeff2D", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "alpha", "type": "param", "dtype": "ndarray"}, {"name": "sec_forces", "type": "param", "dtype": "ndarray"}, {"name": "widths", "type": "param", "dtype": "ndarray"}, {"name": "chords", "type": "param", "dtype": "ndarray"}, {"name": "v", "type": "param", "dtype": "ndarray"}, {"name": "rho", "type": "param", "dtype": "ndarray"}, {"name": "Cl", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "liftdrag", "type": "subsystem", "class": "LiftDrag", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "sec_forces", "type": "param", "dtype": "ndarray"}, {"name": "alpha", "type": "param", "dtype": "ndarray"}, {"name": "beta", "type": "param", "dtype": "ndarray"}, {"name": "L", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "D", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "coeffs", "type": "subsystem", "class": "Coeffs", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "S_ref", "type": "param", "dtype": "ndarray"}, {"name": "L", "type": "param", "dtype": "ndarray"}, {"name": "D", "type": "param", "dtype": "ndarray"}, {"name": "v", "type": "param", "dtype": "ndarray"}, {"name": "rho", "type": "param", "dtype": "ndarray"}, {"name": "CL1", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "CDi", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "CL", "type": "subsystem", "class": "TotalLift", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "CL1", "type": "param", "dtype": "ndarray"}, {"name": "CL", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "viscousdrag", "type": "subsystem", "class": "ViscousDrag", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "re", "type": "param", "dtype": "ndarray"}, {"name": "Mach_number", "type": "param", "dtype": "ndarray"}, {"name": "S_ref", "type": "param", "dtype": "ndarray"}, {"name": "cos_sweep", "type": "param", "dtype": "ndarray"}, {"name": "widths", "type": "param", "dtype": "ndarray"}, {"name": "lengths", "type": "param", "dtype": "ndarray"}, {"name": "t_over_c", "type": "param", "dtype": "ndarray"}, {"name": "CDv", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "wavedrag", "type": "subsystem", "class": "WaveDrag", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "Mach_number", "type": "param", "dtype": "ndarray"}, {"name": "cos_sweep", "type": "param", "dtype": "ndarray"}, {"name": "widths", "type": "param", "dtype": "ndarray"}, {"name": "CL", "type": "param", "dtype": "ndarray"}, {"name": "chords", "type": "param", "dtype": "ndarray"}, {"name": "t_over_c", "type": "param", "dtype": "ndarray"}, {"name": "CDw", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "CD", "type": "subsystem", "class": "TotalDrag", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "CDi", "type": "param", "dtype": "ndarray"}, {"name": "CDv", "type": "param", "dtype": "ndarray"}, {"name": "CDw", "type": "param", "dtype": "ndarray"}, {"name": "CD", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}]}, {"name": "total_perf", "type": "subsystem", "class": "TotalAeroPerformance", "expressions": null, "component_type": null, "subsystem_type": "group", "is_parallel": false, "linear_solver": "LN: RUNONCE", "nonlinear_solver": "NL: RUNONCE", "children": [{"name": "sum_areas", "type": "subsystem", "class": "SumAreas", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "wing_S_ref", "type": "param", "dtype": "ndarray"}, {"name": "S_ref_total", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "CL_CD", "type": "subsystem", "class": "TotalLiftDrag", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "wing_CL", "type": "param", "dtype": "ndarray"}, {"name": "wing_CD", "type": "param", "dtype": "ndarray"}, {"name": "wing_S_ref", "type": "param", "dtype": "ndarray"}, {"name": "S_ref_total", "type": "param", "dtype": "ndarray"}, {"name": "CL", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "CD", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "moment", "type": "subsystem", "class": "MomentCoefficient", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "wing_b_pts", "type": "param", "dtype": "ndarray"}, {"name": "wing_widths", "type": "param", "dtype": "ndarray"}, {"name": "wing_chords", "type": "param", "dtype": "ndarray"}, {"name": "wing_S_ref", "type": "param", "dtype": "ndarray"}, {"name": "wing_sec_forces", "type": "param", "dtype": "ndarray"}, {"name": "cg", "type": "param", "dtype": "ndarray"}, {"name": "v", "type": "param", "dtype": "ndarray"}, {"name": "rho", "type": "param", "dtype": "ndarray"}, {"name": "S_ref_total", "type": "param", "dtype": "ndarray"}, {"name": "CM", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}]}]}]}, "sys_pathnames_list": [], "connections_list": [{"src": "aero_point_0.wing_perf.CD.CD", "tgt": "aero_point_0.total_perf.CL_CD.wing_CD"}, {"src": "aero_point_0.wing_perf.wavedrag.CDw", "tgt": "aero_point_0.wing_perf.CD.CDw"}, {"src": "aero_point_0.wing_perf.CL.CL", "tgt": "aero_point_0.total_perf.CL_CD.wing_CL"}, {"src": "aero_point_0.wing_perf.CL.CL", "tgt": "aero_point_0.wing_perf.wavedrag.CL"}, {"src": "aero_point_0.wing_perf.coeffs.CL1", "tgt": "aero_point_0.wing_perf.CL.CL1"}, {"src": "aero_point_0.wing_perf.coeffs.CDi", "tgt": "aero_point_0.wing_perf.CD.CDi"}, {"src": "aero_point_0.wing_perf.liftdrag.L", "tgt": "aero_point_0.wing_perf.coeffs.L"}, {"src": "aero_point_0.wing_perf.liftdrag.D", "tgt": "aero_point_0.wing_perf.coeffs.D"}, {"src": "aero_point_0.aero_states.panel_forces_surf.wing_sec_forces", "tgt": "aero_point_0.wing_perf.liftcoeff.sec_forces"}, {"src": "aero_point_0.aero_states.panel_forces_surf.wing_sec_forces", "tgt": "aero_point_0.wing_perf.liftdrag.sec_forces"}, {"src": "aero_point_0.aero_states.panel_forces_surf.wing_sec_forces", "tgt": "aero_point_0.total_perf.moment.wing_sec_forces"}, {"src": "aero_point_0.aero_states.panel_forces_surf.wing_sec_forces", "tgt": "aero_point_0.aero_states.mesh_point_forces_surf.wing_sec_forces"}, {"src": "aero_point_0.aero_states.panel_forces.panel_forces", "tgt": "aero_point_0.aero_states.panel_forces_surf.panel_forces"}, {"src": "aero_point_0.aero_states.horseshoe_circulations.horseshoe_circulations", "tgt": "aero_point_0.aero_states.panel_forces.horseshoe_circulations"}, {"src": "aero_point_0.aero_states.eval_velocities.force_pts_velocities", "tgt": "aero_point_0.aero_states.panel_forces.force_pts_velocities"}, {"src": "aero_point_0.aero_states.solve_matrix.circulations", "tgt": "aero_point_0.aero_states.horseshoe_circulations.circulations"}, {"src": "aero_point_0.aero_states.solve_matrix.circulations", "tgt": "aero_point_0.aero_states.eval_velocities.circulations"}, {"src": "aero_point_0.aero_states.mtx_rhs.mtx", "tgt": "aero_point_0.aero_states.solve_matrix.mtx"}, {"src": "aero_point_0.aero_states.mtx_rhs.rhs", "tgt": "aero_point_0.aero_states.solve_matrix.rhs"}, {"src": "aero_point_0.wing_perf.viscousdrag.CDv", "tgt": "aero_point_0.wing_perf.CD.CDv"}, {"src": "aero_point_0.total_perf.sum_areas.S_ref_total", "tgt": "aero_point_0.total_perf.CL_CD.S_ref_total"}, {"src": "aero_point_0.total_perf.sum_areas.S_ref_total", "tgt": "aero_point_0.total_perf.moment.S_ref_total"}, {"src": "aero_point_0.wing.normals", "tgt": "aero_point_0.aero_states.mtx_rhs.wing_normals"}, {"src": "aero_point_0.wing.S_ref", "tgt": "aero_point_0.wing_perf.coeffs.S_ref"}, {"src": "aero_point_0.wing.S_ref", "tgt": "aero_point_0.wing_perf.viscousdrag.S_ref"}, {"src": "aero_point_0.wing.widths", "tgt": "aero_point_0.wing_perf.viscousdrag.widths"}, {"src": "aero_point_0.wing.lengths", "tgt": "aero_point_0.wing_perf.viscousdrag.lengths"}, {"src": "aero_point_0.wing.cos_sweep", "tgt": "aero_point_0.wing_perf.viscousdrag.cos_sweep"}, {"src": "aero_point_0.wing.widths", "tgt": "aero_point_0.wing_perf.liftcoeff.widths"}, {"src": "aero_point_0.wing.chords", "tgt": "aero_point_0.wing_perf.liftcoeff.chords"}, {"src": "aero_point_0.wing.widths", "tgt": "aero_point_0.wing_perf.wavedrag.widths"}, {"src": "aero_point_0.wing.chords", "tgt": "aero_point_0.wing_perf.wavedrag.chords"}, {"src": "aero_point_0.wing.cos_sweep", "tgt": "aero_point_0.wing_perf.wavedrag.cos_sweep"}, {"src": "aero_point_0.wing.S_ref", "tgt": "aero_point_0.total_perf.sum_areas.wing_S_ref"}, {"src": "aero_point_0.wing.S_ref", "tgt": "aero_point_0.total_perf.CL_CD.wing_S_ref"}, {"src": "aero_point_0.wing.S_ref", "tgt": "aero_point_0.total_perf.moment.wing_S_ref"}, {"src": "aero_point_0.wing.widths", "tgt": "aero_point_0.total_perf.moment.wing_widths"}, {"src": "aero_point_0.wing.chords", "tgt": "aero_point_0.total_perf.moment.wing_chords"}, {"src": "aero_point_0.wing.b_pts", "tgt": "aero_point_0.total_perf.moment.wing_b_pts"}, {"src": "aero_point_0.aero_states.mtx_assy.wing_coll_pts_vel_mtx", "tgt": "aero_point_0.aero_states.mtx_rhs.wing_coll_pts_vel_mtx"}, {"src": "aero_point_0.aero_states.get_vectors.wing_coll_pts_vectors", "tgt": "aero_point_0.aero_states.mtx_assy.wing_coll_pts_vectors"}, {"src": "aero_point_0.aero_states.mtx_assy_forces.wing_force_pts_vel_mtx", "tgt": "aero_point_0.aero_states.eval_velocities.wing_force_pts_vel_mtx"}, {"src": "aero_point_0.aero_states.get_vectors_force.wing_force_pts_vectors", "tgt": "aero_point_0.aero_states.mtx_assy_forces.wing_force_pts_vectors"}, {"src": "aero_point_0.aero_states.collocation_points.coll_pts", "tgt": "aero_point_0.aero_states.get_vectors.coll_pts"}, {"src": "aero_point_0.aero_states.collocation_points.force_pts", "tgt": "aero_point_0.aero_states.get_vectors_force.force_pts"}, {"src": "aero_point_0.aero_states.collocation_points.bound_vecs", "tgt": "aero_point_0.aero_states.panel_forces.bound_vecs"}, {"src": "aero_point_0.aero_states.vortex_mesh.wing_vortex_mesh", "tgt": "aero_point_0.aero_states.get_vectors.wing_vortex_mesh"}, {"src": "aero_point_0.aero_states.vortex_mesh.wing_vortex_mesh", "tgt": "aero_point_0.aero_states.get_vectors_force.wing_vortex_mesh"}, {"src": "wing.mesh.rotate.mesh", "tgt": "aero_point_0.wing.def_mesh"}, {"src": "wing.mesh.rotate.mesh", "tgt": "aero_point_0.aero_states.collocation_points.wing_def_mesh"}, {"src": "wing.mesh.rotate.mesh", "tgt": "aero_point_0.aero_states.vortex_mesh.wing_def_mesh"}, {"src": "wing.mesh.shear_z.mesh", "tgt": "wing.mesh.rotate.in_mesh"}, {"src": "wing.mesh.dihedral.mesh", "tgt": "wing.mesh.shear_z.in_mesh"}, {"src": "wing.mesh.shear_y.mesh", "tgt": "wing.mesh.dihedral.in_mesh"}, {"src": "wing.mesh.stretch.mesh", "tgt": "wing.mesh.shear_y.in_mesh"}, {"src": "wing.mesh.shear_x.mesh", "tgt": "wing.mesh.stretch.in_mesh"}, {"src": "wing.mesh.sweep.mesh", "tgt": "wing.mesh.shear_x.in_mesh"}, {"src": "wing.mesh.scale_x.mesh", "tgt": "wing.mesh.sweep.in_mesh"}, {"src": "wing.mesh.taper.mesh", "tgt": "wing.mesh.scale_x.in_mesh"}, {"src": "aero_point_0.aero_states.convert_velocity.freestream_velocities", "tgt": "aero_point_0.aero_states.mtx_rhs.freestream_velocities"}, {"src": "aero_point_0.aero_states.convert_velocity.freestream_velocities", "tgt": "aero_point_0.aero_states.eval_velocities.freestream_velocities"}, {"src": "_auto_ivc.v0", "tgt": "wing.mesh.taper.taper"}, {"src": "_auto_ivc.v1", "tgt": "wing.mesh.scale_x.chord"}, {"src": "_auto_ivc.v2", "tgt": "wing.mesh.sweep.sweep"}, {"src": "_auto_ivc.v3", "tgt": "wing.mesh.shear_x.xshear"}, {"src": "_auto_ivc.v4", "tgt": "wing.mesh.stretch.span"}, {"src": "_auto_ivc.v5", "tgt": "wing.mesh.shear_y.yshear"}, {"src": "_auto_ivc.v6", "tgt": "wing.mesh.dihedral.dihedral"}, {"src": "_auto_ivc.v7", "tgt": "wing.mesh.shear_z.zshear"}, {"src": "_auto_ivc.v8", "tgt": "aero_point_0.aero_states.convert_velocity.beta"}, {"src": "_auto_ivc.v8", "tgt": "aero_point_0.wing_perf.liftdrag.beta"}, {"src": "prob_vars.v", "tgt": "aero_point_0.aero_states.convert_velocity.v"}, {"src": "prob_vars.alpha", "tgt": "aero_point_0.aero_states.convert_velocity.alpha"}, {"src": "prob_vars.v", "tgt": "aero_point_0.wing_perf.liftcoeff.v"}, {"src": "prob_vars.alpha", "tgt": "aero_point_0.wing_perf.liftcoeff.alpha"}, {"src": "prob_vars.rho", "tgt": "aero_point_0.wing_perf.liftcoeff.rho"}, {"src": "prob_vars.v", "tgt": "aero_point_0.wing_perf.coeffs.v"}, {"src": "prob_vars.rho", "tgt": "aero_point_0.wing_perf.coeffs.rho"}, {"src": "prob_vars.v", "tgt": "aero_point_0.total_perf.moment.v"}, {"src": "prob_vars.rho", "tgt": "aero_point_0.total_perf.moment.rho"}, {"src": "prob_vars.cg", "tgt": "aero_point_0.total_perf.moment.cg"}, {"src": "prob_vars.alpha", "tgt": "aero_point_0.aero_states.mtx_assy.alpha"}, {"src": "prob_vars.alpha", "tgt": "aero_point_0.aero_states.mtx_assy_forces.alpha"}, {"src": "prob_vars.alpha", "tgt": "aero_point_0.wing_perf.liftdrag.alpha"}, {"src": "prob_vars.Mach_number", "tgt": "aero_point_0.wing_perf.viscousdrag.Mach_number"}, {"src": "prob_vars.re", "tgt": "aero_point_0.wing_perf.viscousdrag.re"}, {"src": "prob_vars.Mach_number", "tgt": "aero_point_0.wing_perf.wavedrag.Mach_number"}, {"src": "prob_vars.rho", "tgt": "aero_point_0.aero_states.panel_forces.rho"}, {"src": "wing.twist_bsp.twist", "tgt": "wing.mesh.rotate.twist"}, {"src": "wing.t_over_c_bsp.t_over_c", "tgt": "aero_point_0.wing_perf.viscousdrag.t_over_c"}, {"src": "wing.t_over_c_bsp.t_over_c", "tgt": "aero_point_0.wing_perf.wavedrag.t_over_c"}, {"src": "wing.indep_vars.twist_cp", "tgt": "wing.twist_bsp.twist_cp"}, {"src": "wing.indep_vars.t_over_c_cp", "tgt": "wing.t_over_c_bsp.t_over_c_cp"}], "abs2prom": {"input": {"wing.twist_bsp.twist_cp": "wing.twist_cp", "wing.t_over_c_bsp.t_over_c_cp": "wing.t_over_c_cp", "wing.mesh.taper.taper": "wing.mesh.taper.taper", "wing.mesh.scale_x.chord": "wing.mesh.scale_x.chord", "wing.mesh.scale_x.in_mesh": "wing.mesh.scale_x.in_mesh", "wing.mesh.sweep.sweep": "wing.mesh.sweep.sweep", "wing.mesh.sweep.in_mesh": "wing.mesh.sweep.in_mesh", "wing.mesh.shear_x.xshear": "wing.mesh.shear_x.xshear", "wing.mesh.shear_x.in_mesh": "wing.mesh.shear_x.in_mesh", "wing.mesh.stretch.span": "wing.mesh.stretch.span", "wing.mesh.stretch.in_mesh": "wing.mesh.stretch.in_mesh", "wing.mesh.shear_y.yshear": "wing.mesh.shear_y.yshear", "wing.mesh.shear_y.in_mesh": "wing.mesh.shear_y.in_mesh", "wing.mesh.dihedral.dihedral": "wing.mesh.dihedral.dihedral", "wing.mesh.dihedral.in_mesh": "wing.mesh.dihedral.in_mesh", "wing.mesh.shear_z.zshear": "wing.mesh.shear_z.zshear", "wing.mesh.shear_z.in_mesh": "wing.mesh.shear_z.in_mesh", "wing.mesh.rotate.twist": "wing.twist", "wing.mesh.rotate.in_mesh": "wing.mesh.rotate.in_mesh", "aero_point_0.wing.def_mesh": "aero_point_0.wing.def_mesh", "aero_point_0.aero_states.collocation_points.wing_def_mesh": "aero_point_0.aero_states.wing_def_mesh", "aero_point_0.aero_states.vortex_mesh.wing_def_mesh": "aero_point_0.aero_states.wing_def_mesh", "aero_point_0.aero_states.get_vectors.coll_pts": "aero_point_0.aero_states.coll_pts", "aero_point_0.aero_states.get_vectors.wing_vortex_mesh": "aero_point_0.aero_states.wing_vortex_mesh", "aero_point_0.aero_states.mtx_assy.alpha": "alpha", "aero_point_0.aero_states.mtx_assy.wing_coll_pts_vectors": "aero_point_0.aero_states.wing_coll_pts_vectors", "aero_point_0.aero_states.convert_velocity.alpha": "alpha", "aero_point_0.aero_states.convert_velocity.beta": "aero_point_0.beta", "aero_point_0.aero_states.convert_velocity.v": "v", "aero_point_0.aero_states.mtx_rhs.freestream_velocities": "aero_point_0.aero_states.freestream_velocities", "aero_point_0.aero_states.mtx_rhs.wing_coll_pts_vel_mtx": "aero_point_0.aero_states.wing_coll_pts_vel_mtx", "aero_point_0.aero_states.mtx_rhs.wing_normals": "aero_point_0.aero_states.wing_normals", "aero_point_0.aero_states.solve_matrix.mtx": "aero_point_0.aero_states.mtx", "aero_point_0.aero_states.solve_matrix.rhs": "aero_point_0.aero_states.rhs", "aero_point_0.aero_states.horseshoe_circulations.circulations": "aero_point_0.aero_states.circulations", "aero_point_0.aero_states.get_vectors_force.force_pts": "aero_point_0.aero_states.force_pts", "aero_point_0.aero_states.get_vectors_force.wing_vortex_mesh": "aero_point_0.aero_states.wing_vortex_mesh", "aero_point_0.aero_states.mtx_assy_forces.alpha": "alpha", "aero_point_0.aero_states.mtx_assy_forces.wing_force_pts_vectors": "aero_point_0.aero_states.wing_force_pts_vectors", "aero_point_0.aero_states.eval_velocities.freestream_velocities": "aero_point_0.aero_states.freestream_velocities", "aero_point_0.aero_states.eval_velocities.circulations": "aero_point_0.aero_states.circulations", "aero_point_0.aero_states.eval_velocities.wing_force_pts_vel_mtx": "aero_point_0.aero_states.wing_force_pts_vel_mtx", "aero_point_0.aero_states.panel_forces.rho": "rho", "aero_point_0.aero_states.panel_forces.horseshoe_circulations": "aero_point_0.aero_states.horseshoe_circulations", "aero_point_0.aero_states.panel_forces.force_pts_velocities": "aero_point_0.aero_states.force_pts_velocities", "aero_point_0.aero_states.panel_forces.bound_vecs": "aero_point_0.aero_states.bound_vecs", "aero_point_0.aero_states.panel_forces_surf.panel_forces": "aero_point_0.aero_states.panel_forces", "aero_point_0.aero_states.mesh_point_forces_surf.wing_sec_forces": "aero_point_0.aero_states.wing_sec_forces", "aero_point_0.wing_perf.liftcoeff.alpha": "alpha", "aero_point_0.wing_perf.liftcoeff.sec_forces": "aero_point_0.wing_perf.sec_forces", "aero_point_0.wing_perf.liftcoeff.widths": "aero_point_0.wing_perf.widths", "aero_point_0.wing_perf.liftcoeff.chords": "aero_point_0.wing_perf.chords", "aero_point_0.wing_perf.liftcoeff.v": "v", "aero_point_0.wing_perf.liftcoeff.rho": "rho", "aero_point_0.wing_perf.liftdrag.sec_forces": "aero_point_0.wing_perf.sec_forces", "aero_point_0.wing_perf.liftdrag.alpha": "alpha", "aero_point_0.wing_perf.liftdrag.beta": "aero_point_0.beta", "aero_point_0.wing_perf.coeffs.S_ref": "aero_point_0.wing_perf.S_ref", "aero_point_0.wing_perf.coeffs.L": "aero_point_0.wing_perf.L", "aero_point_0.wing_perf.coeffs.D": "aero_point_0.wing_perf.D", "aero_point_0.wing_perf.coeffs.v": "v", "aero_point_0.wing_perf.coeffs.rho": "rho", "aero_point_0.wing_perf.CL.CL1": "aero_point_0.wing_perf.CL1", "aero_point_0.wing_perf.viscousdrag.re": "re", "aero_point_0.wing_perf.viscousdrag.Mach_number": "Mach_number", "aero_point_0.wing_perf.viscousdrag.S_ref": "aero_point_0.wing_perf.S_ref", "aero_point_0.wing_perf.viscousdrag.cos_sweep": "aero_point_0.wing_perf.cos_sweep", "aero_point_0.wing_perf.viscousdrag.widths": "aero_point_0.wing_perf.widths", "aero_point_0.wing_perf.viscousdrag.lengths": "aero_point_0.wing_perf.lengths", "aero_point_0.wing_perf.viscousdrag.t_over_c": "aero_point_0.wing_perf.t_over_c", "aero_point_0.wing_perf.wavedrag.Mach_number": "Mach_number", "aero_point_0.wing_perf.wavedrag.cos_sweep": "aero_point_0.wing_perf.cos_sweep", "aero_point_0.wing_perf.wavedrag.widths": "aero_point_0.wing_perf.widths", "aero_point_0.wing_perf.wavedrag.CL": "aero_point_0.wing_perf.CL", "aero_point_0.wing_perf.wavedrag.chords": "aero_point_0.wing_perf.chords", "aero_point_0.wing_perf.wavedrag.t_over_c": "aero_point_0.wing_perf.t_over_c", "aero_point_0.wing_perf.CD.CDi": "aero_point_0.wing_perf.CDi", "aero_point_0.wing_perf.CD.CDv": "aero_point_0.wing_perf.CDv", "aero_point_0.wing_perf.CD.CDw": "aero_point_0.wing_perf.CDw", "aero_point_0.total_perf.sum_areas.wing_S_ref": "aero_point_0.total_perf.wing_S_ref", "aero_point_0.total_perf.CL_CD.wing_CL": "aero_point_0.total_perf.wing_CL", "aero_point_0.total_perf.CL_CD.wing_CD": "aero_point_0.total_perf.wing_CD", "aero_point_0.total_perf.CL_CD.wing_S_ref": "aero_point_0.total_perf.wing_S_ref", "aero_point_0.total_perf.CL_CD.S_ref_total": "aero_point_0.S_ref_total", "aero_point_0.total_perf.moment.wing_b_pts": "aero_point_0.total_perf.wing_b_pts", "aero_point_0.total_perf.moment.wing_widths": "aero_point_0.total_perf.wing_widths", "aero_point_0.total_perf.moment.wing_chords": "aero_point_0.total_perf.wing_chords", "aero_point_0.total_perf.moment.wing_S_ref": "aero_point_0.total_perf.wing_S_ref", "aero_point_0.total_perf.moment.wing_sec_forces": "aero_point_0.total_perf.wing_sec_forces", "aero_point_0.total_perf.moment.cg": "cg", "aero_point_0.total_perf.moment.v": "v", "aero_point_0.total_perf.moment.rho": "rho", "aero_point_0.total_perf.moment.S_ref_total": "aero_point_0.S_ref_total"}, "output": {"prob_vars.v": "v", "prob_vars.alpha": "alpha", "prob_vars.Mach_number": "Mach_number", "prob_vars.re": "re", "prob_vars.rho": "rho", "prob_vars.cg": "cg", "wing.indep_vars.twist_cp": "wing.twist_cp", "wing.indep_vars.t_over_c_cp": "wing.t_over_c_cp", "wing.twist_bsp.twist": "wing.twist", "wing.t_over_c_bsp.t_over_c": "wing.t_over_c", "wing.mesh.taper.mesh": "wing.mesh.taper.mesh", "wing.mesh.scale_x.mesh": "wing.mesh.scale_x.mesh", "wing.mesh.sweep.mesh": "wing.mesh.sweep.mesh", "wing.mesh.shear_x.mesh": "wing.mesh.shear_x.mesh", "wing.mesh.stretch.mesh": "wing.mesh.stretch.mesh", "wing.mesh.shear_y.mesh": "wing.mesh.shear_y.mesh", "wing.mesh.dihedral.mesh": "wing.mesh.dihedral.mesh", "wing.mesh.shear_z.mesh": "wing.mesh.shear_z.mesh", "wing.mesh.rotate.mesh": "wing.mesh", "aero_point_0.wing.b_pts": "aero_point_0.wing.b_pts", "aero_point_0.wing.widths": "aero_point_0.wing.widths", "aero_point_0.wing.cos_sweep": "aero_point_0.wing.cos_sweep", "aero_point_0.wing.lengths": "aero_point_0.wing.lengths", "aero_point_0.wing.chords": "aero_point_0.wing.chords", "aero_point_0.wing.normals": "aero_point_0.wing.normals", "aero_point_0.wing.S_ref": "aero_point_0.wing.S_ref", "aero_point_0.aero_states.collocation_points.coll_pts": "aero_point_0.aero_states.coll_pts", "aero_point_0.aero_states.collocation_points.force_pts": "aero_point_0.aero_states.force_pts", "aero_point_0.aero_states.collocation_points.bound_vecs": "aero_point_0.aero_states.bound_vecs", "aero_point_0.aero_states.vortex_mesh.wing_vortex_mesh": "aero_point_0.aero_states.wing_vortex_mesh", "aero_point_0.aero_states.get_vectors.wing_coll_pts_vectors": "aero_point_0.aero_states.wing_coll_pts_vectors", "aero_point_0.aero_states.mtx_assy.wing_coll_pts_vel_mtx": "aero_point_0.aero_states.wing_coll_pts_vel_mtx", "aero_point_0.aero_states.convert_velocity.freestream_velocities": "aero_point_0.aero_states.freestream_velocities", "aero_point_0.aero_states.mtx_rhs.mtx": "aero_point_0.aero_states.mtx", "aero_point_0.aero_states.mtx_rhs.rhs": "aero_point_0.aero_states.rhs", "aero_point_0.aero_states.solve_matrix.circulations": "aero_point_0.circulations", "aero_point_0.aero_states.horseshoe_circulations.horseshoe_circulations": "aero_point_0.aero_states.horseshoe_circulations", "aero_point_0.aero_states.get_vectors_force.wing_force_pts_vectors": "aero_point_0.aero_states.wing_force_pts_vectors", "aero_point_0.aero_states.mtx_assy_forces.wing_force_pts_vel_mtx": "aero_point_0.aero_states.wing_force_pts_vel_mtx", "aero_point_0.aero_states.eval_velocities.force_pts_velocities": "aero_point_0.aero_states.force_pts_velocities", "aero_point_0.aero_states.panel_forces.panel_forces": "aero_point_0.aero_states.panel_forces", "aero_point_0.aero_states.panel_forces_surf.wing_sec_forces": "aero_point_0.aero_states.wing_sec_forces", "aero_point_0.aero_states.mesh_point_forces_surf.wing_mesh_point_forces": "aero_point_0.aero_states.wing_mesh_point_forces", "aero_point_0.wing_perf.liftcoeff.Cl": "aero_point_0.wing_perf.Cl", "aero_point_0.wing_perf.liftdrag.L": "aero_point_0.wing_perf.L", "aero_point_0.wing_perf.liftdrag.D": "aero_point_0.wing_perf.D", "aero_point_0.wing_perf.coeffs.CL1": "aero_point_0.wing_perf.CL1", "aero_point_0.wing_perf.coeffs.CDi": "aero_point_0.wing_perf.CDi", "aero_point_0.wing_perf.CL.CL": "aero_point_0.wing_perf.CL", "aero_point_0.wing_perf.viscousdrag.CDv": "aero_point_0.wing_perf.CDv", "aero_point_0.wing_perf.wavedrag.CDw": "aero_point_0.wing_perf.CDw", "aero_point_0.wing_perf.CD.CD": "aero_point_0.wing_perf.CD", "aero_point_0.total_perf.sum_areas.S_ref_total": "aero_point_0.total_perf.S_ref_total", "aero_point_0.total_perf.CL_CD.CL": "aero_point_0.CL", "aero_point_0.total_perf.CL_CD.CD": "aero_point_0.CD", "aero_point_0.total_perf.moment.CM": "aero_point_0.CM", "_auto_ivc.v0": "_auto_ivc.v0", "_auto_ivc.v1": "_auto_ivc.v1", "_auto_ivc.v2": "_auto_ivc.v2", "_auto_ivc.v3": "_auto_ivc.v3", "_auto_ivc.v4": "_auto_ivc.v4", "_auto_ivc.v5": "_auto_ivc.v5", "_auto_ivc.v6": "_auto_ivc.v6", "_auto_ivc.v7": "_auto_ivc.v7", "_auto_ivc.v8": "_auto_ivc.v8"}}, "driver": {"name": "ScipyOptimizeDriver", "type": "optimization", "options": {"debug_print": [], "optimizer": "SLSQP", "tol": 1e-09, "maxiter": 200, "disp": true}, "opt_settings": {}}, "design_vars": {"wing.indep_vars.twist_cp": {"scaler": null, "adder": null, "name": "wing.twist_cp", "upper": 15.0, "lower": -10.0, "ref": null, "ref0": null, "units": null, "cache_linear_solution": false, "indices": null, "parallel_deriv_color": null, "vectorize_derivs": false, "total_adder": null, "total_scaler": null, "size": 5, "distributed": false, "global_size": 5}}, "responses": {"aero_point_0.wing_perf.CL.CL": {"lower": -1e+30, "upper": 1e+30, "equals": 0.5, "linear": false, "indices": null, "scaler": null, "adder": null, "name": "aero_point_0.wing_perf.CL", "ref": null, "ref0": null, "type": "con", "units": null, "cache_linear_solution": false, "parallel_deriv_color": null, "vectorize_derivs": false, "total_scaler": null, "total_adder": null, "distributed": false, "size": 1, "global_size": 1}, "aero_point_0.wing_perf.CD.CD": {"indices": null, "scaler": 10000.0, "adder": null, "name": "aero_point_0.wing_perf.CD", "ref": null, "ref0": null, "type": "obj", "units": null, "cache_linear_solution": false, "parallel_deriv_color": null, "vectorize_derivs": false, "total_scaler": 10000.0, "total_adder": null, "distributed": false, "size": 1, "global_size": 1}}, "declare_partials_list": ["_auto_ivc.v0 > _auto_ivc.v0", "_auto_ivc.v1 > _auto_ivc.v1", "_auto_ivc.v2 > _auto_ivc.v2", "_auto_ivc.v3 > _auto_ivc.v3", "_auto_ivc.v4 > _auto_ivc.v4", "_auto_ivc.v5 > _auto_ivc.v5", "_auto_ivc.v6 > _auto_ivc.v6", "_auto_ivc.v7 > _auto_ivc.v7", "_auto_ivc.v8 > _auto_ivc.v8", "prob_vars.v > prob_vars.v", "prob_vars.alpha > prob_vars.alpha", "prob_vars.Mach_number > prob_vars.Mach_number", "prob_vars.re > prob_vars.re", "prob_vars.rho > prob_vars.rho", "prob_vars.cg > prob_vars.cg", "wing.indep_vars.twist_cp > wing.indep_vars.twist_cp", "wing.indep_vars.t_over_c_cp > wing.indep_vars.t_over_c_cp", "wing.twist_bsp.twist > wing.twist_bsp.twist_cp", "wing.twist_bsp.twist > wing.twist_bsp.twist", "wing.t_over_c_bsp.t_over_c > wing.t_over_c_bsp.t_over_c_cp", "wing.t_over_c_bsp.t_over_c > wing.t_over_c_bsp.t_over_c", "wing.mesh.taper.mesh > wing.mesh.taper.mesh", "wing.mesh.taper.mesh > wing.mesh.taper.taper", "wing.mesh.scale_x.mesh > wing.mesh.scale_x.chord", "wing.mesh.scale_x.mesh > wing.mesh.scale_x.in_mesh", "wing.mesh.scale_x.mesh > wing.mesh.scale_x.mesh", "wing.mesh.sweep.mesh > wing.mesh.sweep.sweep", "wing.mesh.sweep.mesh > wing.mesh.sweep.in_mesh", "wing.mesh.sweep.mesh > wing.mesh.sweep.mesh", "wing.mesh.shear_x.mesh > wing.mesh.shear_x.xshear", "wing.mesh.shear_x.mesh > wing.mesh.shear_x.in_mesh", "wing.mesh.shear_x.mesh > wing.mesh.shear_x.mesh", "wing.mesh.stretch.mesh > wing.mesh.stretch.span", "wing.mesh.stretch.mesh > wing.mesh.stretch.in_mesh", "wing.mesh.stretch.mesh > wing.mesh.stretch.mesh", "wing.mesh.shear_y.mesh > wing.mesh.shear_y.yshear", "wing.mesh.shear_y.mesh > wing.mesh.shear_y.in_mesh", "wing.mesh.shear_y.mesh > wing.mesh.shear_y.mesh", "wing.mesh.dihedral.mesh > wing.mesh.dihedral.dihedral", "wing.mesh.dihedral.mesh > wing.mesh.dihedral.in_mesh", "wing.mesh.dihedral.mesh > wing.mesh.dihedral.mesh", "wing.mesh.shear_z.mesh > wing.mesh.shear_z.zshear", "wing.mesh.shear_z.mesh > wing.mesh.shear_z.in_mesh", "wing.mesh.shear_z.mesh > wing.mesh.shear_z.mesh", "wing.mesh.rotate.mesh > wing.mesh.rotate.twist", "wing.mesh.rotate.mesh > wing.mesh.rotate.in_mesh", "wing.mesh.rotate.mesh > wing.mesh.rotate.mesh", "aero_point_0.wing.b_pts > aero_point_0.wing.def_mesh", "aero_point_0.wing.widths > aero_point_0.wing.def_mesh", "aero_point_0.wing.cos_sweep > aero_point_0.wing.def_mesh", "aero_point_0.wing.lengths > aero_point_0.wing.def_mesh", "aero_point_0.wing.chords > aero_point_0.wing.def_mesh", "aero_point_0.wing.normals > aero_point_0.wing.def_mesh", "aero_point_0.wing.S_ref > aero_point_0.wing.def_mesh", "aero_point_0.wing.b_pts > aero_point_0.wing.b_pts", "aero_point_0.wing.widths > aero_point_0.wing.widths", "aero_point_0.wing.cos_sweep > aero_point_0.wing.cos_sweep", "aero_point_0.wing.lengths > aero_point_0.wing.lengths", "aero_point_0.wing.chords > aero_point_0.wing.chords", "aero_point_0.wing.normals > aero_point_0.wing.normals", "aero_point_0.wing.S_ref > aero_point_0.wing.S_ref", "aero_point_0.aero_states.collocation_points.coll_pts > aero_point_0.aero_states.collocation_points.wing_def_mesh", "aero_point_0.aero_states.collocation_points.force_pts > aero_point_0.aero_states.collocation_points.wing_def_mesh", "aero_point_0.aero_states.collocation_points.bound_vecs > aero_point_0.aero_states.collocation_points.wing_def_mesh", "aero_point_0.aero_states.collocation_points.coll_pts > aero_point_0.aero_states.collocation_points.coll_pts", "aero_point_0.aero_states.collocation_points.force_pts > aero_point_0.aero_states.collocation_points.force_pts", "aero_point_0.aero_states.collocation_points.bound_vecs > aero_point_0.aero_states.collocation_points.bound_vecs", "aero_point_0.aero_states.vortex_mesh.wing_vortex_mesh > aero_point_0.aero_states.vortex_mesh.wing_def_mesh", "aero_point_0.aero_states.vortex_mesh.wing_vortex_mesh > aero_point_0.aero_states.vortex_mesh.wing_vortex_mesh", "aero_point_0.aero_states.get_vectors.wing_coll_pts_vectors > aero_point_0.aero_states.get_vectors.wing_vortex_mesh", "aero_point_0.aero_states.get_vectors.wing_coll_pts_vectors > aero_point_0.aero_states.get_vectors.coll_pts", "aero_point_0.aero_states.get_vectors.wing_coll_pts_vectors > aero_point_0.aero_states.get_vectors.wing_coll_pts_vectors", "aero_point_0.aero_states.mtx_assy.wing_coll_pts_vel_mtx > aero_point_0.aero_states.mtx_assy.wing_coll_pts_vectors", "aero_point_0.aero_states.mtx_assy.wing_coll_pts_vel_mtx > aero_point_0.aero_states.mtx_assy.alpha", "aero_point_0.aero_states.mtx_assy.wing_coll_pts_vel_mtx > aero_point_0.aero_states.mtx_assy.wing_coll_pts_vel_mtx", "aero_point_0.aero_states.convert_velocity.freestream_velocities > aero_point_0.aero_states.convert_velocity.alpha", "aero_point_0.aero_states.convert_velocity.freestream_velocities > aero_point_0.aero_states.convert_velocity.beta", "aero_point_0.aero_states.convert_velocity.freestream_velocities > aero_point_0.aero_states.convert_velocity.v", "aero_point_0.aero_states.convert_velocity.freestream_velocities > aero_point_0.aero_states.convert_velocity.freestream_velocities", "aero_point_0.aero_states.mtx_rhs.rhs > aero_point_0.aero_states.mtx_rhs.freestream_velocities", "aero_point_0.aero_states.mtx_rhs.mtx > aero_point_0.aero_states.mtx_rhs.wing_coll_pts_vel_mtx", "aero_point_0.aero_states.mtx_rhs.mtx > aero_point_0.aero_states.mtx_rhs.wing_normals", "aero_point_0.aero_states.mtx_rhs.rhs > aero_point_0.aero_states.mtx_rhs.wing_normals", "aero_point_0.aero_states.mtx_rhs.mtx > aero_point_0.aero_states.mtx_rhs.mtx", "aero_point_0.aero_states.mtx_rhs.rhs > aero_point_0.aero_states.mtx_rhs.rhs", "aero_point_0.aero_states.solve_matrix.circulations > aero_point_0.aero_states.solve_matrix.circulations", "aero_point_0.aero_states.solve_matrix.circulations > aero_point_0.aero_states.solve_matrix.mtx", "aero_point_0.aero_states.solve_matrix.circulations > aero_point_0.aero_states.solve_matrix.rhs", "aero_point_0.aero_states.horseshoe_circulations.horseshoe_circulations > aero_point_0.aero_states.horseshoe_circulations.circulations", "aero_point_0.aero_states.horseshoe_circulations.horseshoe_circulations > aero_point_0.aero_states.horseshoe_circulations.horseshoe_circulations", "aero_point_0.aero_states.get_vectors_force.wing_force_pts_vectors > aero_point_0.aero_states.get_vectors_force.wing_vortex_mesh", "aero_point_0.aero_states.get_vectors_force.wing_force_pts_vectors > aero_point_0.aero_states.get_vectors_force.force_pts", "aero_point_0.aero_states.get_vectors_force.wing_force_pts_vectors > aero_point_0.aero_states.get_vectors_force.wing_force_pts_vectors", "aero_point_0.aero_states.mtx_assy_forces.wing_force_pts_vel_mtx > aero_point_0.aero_states.mtx_assy_forces.wing_force_pts_vectors", "aero_point_0.aero_states.mtx_assy_forces.wing_force_pts_vel_mtx > aero_point_0.aero_states.mtx_assy_forces.alpha", "aero_point_0.aero_states.mtx_assy_forces.wing_force_pts_vel_mtx > aero_point_0.aero_states.mtx_assy_forces.wing_force_pts_vel_mtx", "aero_point_0.aero_states.eval_velocities.force_pts_velocities > aero_point_0.aero_states.eval_velocities.circulations", "aero_point_0.aero_states.eval_velocities.force_pts_velocities > aero_point_0.aero_states.eval_velocities.freestream_velocities", "aero_point_0.aero_states.eval_velocities.force_pts_velocities > aero_point_0.aero_states.eval_velocities.wing_force_pts_vel_mtx", "aero_point_0.aero_states.eval_velocities.force_pts_velocities > aero_point_0.aero_states.eval_velocities.force_pts_velocities", "aero_point_0.aero_states.panel_forces.panel_forces > aero_point_0.aero_states.panel_forces.rho", "aero_point_0.aero_states.panel_forces.panel_forces > aero_point_0.aero_states.panel_forces.horseshoe_circulations", "aero_point_0.aero_states.panel_forces.panel_forces > aero_point_0.aero_states.panel_forces.force_pts_velocities", "aero_point_0.aero_states.panel_forces.panel_forces > aero_point_0.aero_states.panel_forces.bound_vecs", "aero_point_0.aero_states.panel_forces.panel_forces > aero_point_0.aero_states.panel_forces.panel_forces", "aero_point_0.aero_states.panel_forces_surf.wing_sec_forces > aero_point_0.aero_states.panel_forces_surf.panel_forces", "aero_point_0.aero_states.panel_forces_surf.wing_sec_forces > aero_point_0.aero_states.panel_forces_surf.wing_sec_forces", "aero_point_0.aero_states.mesh_point_forces_surf.wing_mesh_point_forces > aero_point_0.aero_states.mesh_point_forces_surf.wing_sec_forces", "aero_point_0.aero_states.mesh_point_forces_surf.wing_mesh_point_forces > aero_point_0.aero_states.mesh_point_forces_surf.wing_mesh_point_forces", "aero_point_0.wing_perf.liftcoeff.Cl > aero_point_0.wing_perf.liftcoeff.widths", "aero_point_0.wing_perf.liftcoeff.Cl > aero_point_0.wing_perf.liftcoeff.v", "aero_point_0.wing_perf.liftcoeff.Cl > aero_point_0.wing_perf.liftcoeff.rho", "aero_point_0.wing_perf.liftcoeff.Cl > aero_point_0.wing_perf.liftcoeff.alpha", "aero_point_0.wing_perf.liftcoeff.Cl > aero_point_0.wing_perf.liftcoeff.chords", "aero_point_0.wing_perf.liftcoeff.Cl > aero_point_0.wing_perf.liftcoeff.sec_forces", "aero_point_0.wing_perf.liftcoeff.Cl > aero_point_0.wing_perf.liftcoeff.Cl", "aero_point_0.wing_perf.liftdrag.L > aero_point_0.wing_perf.liftdrag.sec_forces", "aero_point_0.wing_perf.liftdrag.D > aero_point_0.wing_perf.liftdrag.sec_forces", "aero_point_0.wing_perf.liftdrag.L > aero_point_0.wing_perf.liftdrag.alpha", "aero_point_0.wing_perf.liftdrag.D > aero_point_0.wing_perf.liftdrag.alpha", "aero_point_0.wing_perf.liftdrag.L > aero_point_0.wing_perf.liftdrag.L", "aero_point_0.wing_perf.liftdrag.D > aero_point_0.wing_perf.liftdrag.L", "aero_point_0.wing_perf.liftdrag.L > aero_point_0.wing_perf.liftdrag.D", "aero_point_0.wing_perf.liftdrag.D > aero_point_0.wing_perf.liftdrag.D", "aero_point_0.wing_perf.liftdrag.D > aero_point_0.wing_perf.liftdrag.beta", "aero_point_0.wing_perf.coeffs.CL1 > aero_point_0.wing_perf.coeffs.L", "aero_point_0.wing_perf.coeffs.CDi > aero_point_0.wing_perf.coeffs.D", "aero_point_0.wing_perf.coeffs.CL1 > aero_point_0.wing_perf.coeffs.v", "aero_point_0.wing_perf.coeffs.CDi > aero_point_0.wing_perf.coeffs.v", "aero_point_0.wing_perf.coeffs.CL1 > aero_point_0.wing_perf.coeffs.rho", "aero_point_0.wing_perf.coeffs.CDi > aero_point_0.wing_perf.coeffs.rho", "aero_point_0.wing_perf.coeffs.CL1 > aero_point_0.wing_perf.coeffs.S_ref", "aero_point_0.wing_perf.coeffs.CDi > aero_point_0.wing_perf.coeffs.S_ref", "aero_point_0.wing_perf.coeffs.CL1 > aero_point_0.wing_perf.coeffs.CL1", "aero_point_0.wing_perf.coeffs.CDi > aero_point_0.wing_perf.coeffs.CDi", "aero_point_0.wing_perf.CL.CL > aero_point_0.wing_perf.CL.CL1", "aero_point_0.wing_perf.CL.CL > aero_point_0.wing_perf.CL.CL", "aero_point_0.wing_perf.viscousdrag.CDv > aero_point_0.wing_perf.viscousdrag.CDv", "aero_point_0.wing_perf.viscousdrag.CDv > aero_point_0.wing_perf.viscousdrag.re", "aero_point_0.wing_perf.viscousdrag.CDv > aero_point_0.wing_perf.viscousdrag.Mach_number", "aero_point_0.wing_perf.viscousdrag.CDv > aero_point_0.wing_perf.viscousdrag.S_ref", "aero_point_0.wing_perf.viscousdrag.CDv > aero_point_0.wing_perf.viscousdrag.cos_sweep", "aero_point_0.wing_perf.viscousdrag.CDv > aero_point_0.wing_perf.viscousdrag.widths", "aero_point_0.wing_perf.viscousdrag.CDv > aero_point_0.wing_perf.viscousdrag.lengths", "aero_point_0.wing_perf.viscousdrag.CDv > aero_point_0.wing_perf.viscousdrag.t_over_c", "aero_point_0.wing_perf.wavedrag.CDw > aero_point_0.wing_perf.wavedrag.CDw", "aero_point_0.wing_perf.wavedrag.CDw > aero_point_0.wing_perf.wavedrag.Mach_number", "aero_point_0.wing_perf.wavedrag.CDw > aero_point_0.wing_perf.wavedrag.cos_sweep", "aero_point_0.wing_perf.wavedrag.CDw > aero_point_0.wing_perf.wavedrag.widths", "aero_point_0.wing_perf.wavedrag.CDw > aero_point_0.wing_perf.wavedrag.CL", "aero_point_0.wing_perf.wavedrag.CDw > aero_point_0.wing_perf.wavedrag.chords", "aero_point_0.wing_perf.wavedrag.CDw > aero_point_0.wing_perf.wavedrag.t_over_c", "aero_point_0.wing_perf.CD.CD > aero_point_0.wing_perf.CD.CDi", "aero_point_0.wing_perf.CD.CD > aero_point_0.wing_perf.CD.CDv", "aero_point_0.wing_perf.CD.CD > aero_point_0.wing_perf.CD.CDw", "aero_point_0.wing_perf.CD.CD > aero_point_0.wing_perf.CD.CD", "aero_point_0.total_perf.sum_areas.S_ref_total > aero_point_0.total_perf.sum_areas.S_ref_total", "aero_point_0.total_perf.sum_areas.S_ref_total > aero_point_0.total_perf.sum_areas.wing_S_ref", "aero_point_0.total_perf.CL_CD.CL > aero_point_0.total_perf.CL_CD.wing_CL", "aero_point_0.total_perf.CL_CD.CD > aero_point_0.total_perf.CL_CD.wing_CD", "aero_point_0.total_perf.CL_CD.CL > aero_point_0.total_perf.CL_CD.wing_S_ref", "aero_point_0.total_perf.CL_CD.CD > aero_point_0.total_perf.CL_CD.wing_S_ref", "aero_point_0.total_perf.CL_CD.CL > aero_point_0.total_perf.CL_CD.S_ref_total", "aero_point_0.total_perf.CL_CD.CD > aero_point_0.total_perf.CL_CD.S_ref_total", "aero_point_0.total_perf.CL_CD.CL > aero_point_0.total_perf.CL_CD.CL", "aero_point_0.total_perf.CL_CD.CD > aero_point_0.total_perf.CL_CD.CD", "aero_point_0.total_perf.moment.CM > aero_point_0.total_perf.moment.CM", "aero_point_0.total_perf.moment.CM > aero_point_0.total_perf.moment.wing_b_pts", "aero_point_0.total_perf.moment.CM > aero_point_0.total_perf.moment.wing_widths", "aero_point_0.total_perf.moment.CM > aero_point_0.total_perf.moment.wing_chords", "aero_point_0.total_perf.moment.CM > aero_point_0.total_perf.moment.wing_S_ref", "aero_point_0.total_perf.moment.CM > aero_point_0.total_perf.moment.wing_sec_forces", "aero_point_0.total_perf.moment.CM > aero_point_0.total_perf.moment.cg", "aero_point_0.total_perf.moment.CM > aero_point_0.total_perf.moment.v", "aero_point_0.total_perf.moment.CM > aero_point_0.total_perf.moment.rho", "aero_point_0.total_perf.moment.CM > aero_point_0.total_perf.moment.S_ref_total"], "options": {"use_declare_partial_info": false}}
+var modelData = {"tree": {"name": "root", "type": "root", "class": "Group", "expressions": null, "component_type": null, "subsystem_type": "group", "is_parallel": false, "linear_solver": "LN: RUNONCE", "nonlinear_solver": "NL: RUNONCE", "children": [{"name": "prob_vars", "type": "subsystem", "class": "IndepVarComp", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "indep", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "v", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "alpha", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "Mach_number", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "re", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "rho", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "cg", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "wing", "type": "subsystem", "class": "Geometry", "expressions": null, "component_type": null, "subsystem_type": "group", "is_parallel": false, "linear_solver": "LN: RUNONCE", "nonlinear_solver": "NL: RUNONCE", "children": [{"name": "indep_vars", "type": "subsystem", "class": "IndepVarComp", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "indep", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "twist_cp", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "t_over_c_cp", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "twist_bsp", "type": "subsystem", "class": "SplineComp", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "twist_cp", "type": "param", "dtype": "ndarray"}, {"name": "twist", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "t_over_c_bsp", "type": "subsystem", "class": "SplineComp", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "t_over_c_cp", "type": "param", "dtype": "ndarray"}, {"name": "t_over_c", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "mesh", "type": "subsystem", "class": "GeometryMesh", "expressions": null, "component_type": null, "subsystem_type": "group", "is_parallel": false, "linear_solver": "LN: RUNONCE", "nonlinear_solver": "NL: RUNONCE", "children": [{"name": "taper", "type": "subsystem", "class": "Taper", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "taper", "type": "param", "dtype": "ndarray"}, {"name": "mesh", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "scale_x", "type": "subsystem", "class": "ScaleX", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "chord", "type": "param", "dtype": "ndarray"}, {"name": "in_mesh", "type": "param", "dtype": "ndarray"}, {"name": "mesh", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "sweep", "type": "subsystem", "class": "Sweep", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "sweep", "type": "param", "dtype": "ndarray"}, {"name": "in_mesh", "type": "param", "dtype": "ndarray"}, {"name": "mesh", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "shear_x", "type": "subsystem", "class": "ShearX", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "xshear", "type": "param", "dtype": "ndarray"}, {"name": "in_mesh", "type": "param", "dtype": "ndarray"}, {"name": "mesh", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "stretch", "type": "subsystem", "class": "Stretch", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "span", "type": "param", "dtype": "ndarray"}, {"name": "in_mesh", "type": "param", "dtype": "ndarray"}, {"name": "mesh", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "shear_y", "type": "subsystem", "class": "ShearY", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "yshear", "type": "param", "dtype": "ndarray"}, {"name": "in_mesh", "type": "param", "dtype": "ndarray"}, {"name": "mesh", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "dihedral", "type": "subsystem", "class": "Dihedral", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "dihedral", "type": "param", "dtype": "ndarray"}, {"name": "in_mesh", "type": "param", "dtype": "ndarray"}, {"name": "mesh", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "shear_z", "type": "subsystem", "class": "ShearZ", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "zshear", "type": "param", "dtype": "ndarray"}, {"name": "in_mesh", "type": "param", "dtype": "ndarray"}, {"name": "mesh", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "rotate", "type": "subsystem", "class": "Rotate", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "twist", "type": "param", "dtype": "ndarray"}, {"name": "in_mesh", "type": "param", "dtype": "ndarray"}, {"name": "mesh", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}]}]}, {"name": "aero_point_0", "type": "subsystem", "class": "AeroPoint", "expressions": null, "component_type": null, "subsystem_type": "group", "is_parallel": false, "linear_solver": "LN: RUNONCE", "nonlinear_solver": "NL: RUNONCE", "children": [{"name": "wing", "type": "subsystem", "class": "VLMGeometry", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "def_mesh", "type": "param", "dtype": "ndarray"}, {"name": "b_pts", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "widths", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "cos_sweep", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "lengths", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "chords", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "normals", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "S_ref", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "aero_states", "type": "subsystem", "class": "VLMStates", "expressions": null, "component_type": null, "subsystem_type": "group", "is_parallel": false, "linear_solver": "LN: RUNONCE", "nonlinear_solver": "NL: RUNONCE", "children": [{"name": "collocation_points", "type": "subsystem", "class": "CollocationPoints", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "wing_def_mesh", "type": "param", "dtype": "ndarray"}, {"name": "coll_pts", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "force_pts", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "bound_vecs", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "vortex_mesh", "type": "subsystem", "class": "VortexMesh", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "wing_def_mesh", "type": "param", "dtype": "ndarray"}, {"name": "wing_vortex_mesh", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "get_vectors", "type": "subsystem", "class": "GetVectors", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "coll_pts", "type": "param", "dtype": "ndarray"}, {"name": "wing_vortex_mesh", "type": "param", "dtype": "ndarray"}, {"name": "wing_coll_pts_vectors", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "mtx_assy", "type": "subsystem", "class": "EvalVelMtx", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "alpha", "type": "param", "dtype": "ndarray"}, {"name": "wing_coll_pts_vectors", "type": "param", "dtype": "ndarray"}, {"name": "wing_coll_pts_vel_mtx", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "convert_velocity", "type": "subsystem", "class": "ConvertVelocity", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "alpha", "type": "param", "dtype": "ndarray"}, {"name": "beta", "type": "param", "dtype": "ndarray"}, {"name": "v", "type": "param", "dtype": "ndarray"}, {"name": "freestream_velocities", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "mtx_rhs", "type": "subsystem", "class": "VLMMtxRHSComp", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "freestream_velocities", "type": "param", "dtype": "ndarray"}, {"name": "wing_coll_pts_vel_mtx", "type": "param", "dtype": "ndarray"}, {"name": "wing_normals", "type": "param", "dtype": "ndarray"}, {"name": "mtx", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "rhs", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "solve_matrix", "type": "subsystem", "class": "SolveMatrix", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "implicit", "linear_solver": "solve_linear", "nonlinear_solver": "solve_nonlinear", "children": [{"name": "mtx", "type": "param", "dtype": "ndarray"}, {"name": "rhs", "type": "param", "dtype": "ndarray"}, {"name": "circulations", "type": "unknown", "implicit": true, "dtype": "ndarray"}]}, {"name": "horseshoe_circulations", "type": "subsystem", "class": "HorseshoeCirculations", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "circulations", "type": "param", "dtype": "ndarray"}, {"name": "horseshoe_circulations", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "get_vectors_force", "type": "subsystem", "class": "GetVectors", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "force_pts", "type": "param", "dtype": "ndarray"}, {"name": "wing_vortex_mesh", "type": "param", "dtype": "ndarray"}, {"name": "wing_force_pts_vectors", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "mtx_assy_forces", "type": "subsystem", "class": "EvalVelMtx", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "alpha", "type": "param", "dtype": "ndarray"}, {"name": "wing_force_pts_vectors", "type": "param", "dtype": "ndarray"}, {"name": "wing_force_pts_vel_mtx", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "eval_velocities", "type": "subsystem", "class": "EvalVelocities", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "freestream_velocities", "type": "param", "dtype": "ndarray"}, {"name": "circulations", "type": "param", "dtype": "ndarray"}, {"name": "wing_force_pts_vel_mtx", "type": "param", "dtype": "ndarray"}, {"name": "force_pts_velocities", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "panel_forces", "type": "subsystem", "class": "PanelForces", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "rho", "type": "param", "dtype": "ndarray"}, {"name": "horseshoe_circulations", "type": "param", "dtype": "ndarray"}, {"name": "force_pts_velocities", "type": "param", "dtype": "ndarray"}, {"name": "bound_vecs", "type": "param", "dtype": "ndarray"}, {"name": "panel_forces", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "panel_forces_surf", "type": "subsystem", "class": "PanelForcesSurf", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "panel_forces", "type": "param", "dtype": "ndarray"}, {"name": "wing_sec_forces", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "mesh_point_forces_surf", "type": "subsystem", "class": "MeshPointForces", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "wing_sec_forces", "type": "param", "dtype": "ndarray"}, {"name": "wing_mesh_point_forces", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}]}, {"name": "wing_perf", "type": "subsystem", "class": "VLMFunctionals", "expressions": null, "component_type": null, "subsystem_type": "group", "is_parallel": false, "linear_solver": "LN: RUNONCE", "nonlinear_solver": "NL: RUNONCE", "children": [{"name": "liftcoeff", "type": "subsystem", "class": "LiftCoeff2D", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "alpha", "type": "param", "dtype": "ndarray"}, {"name": "sec_forces", "type": "param", "dtype": "ndarray"}, {"name": "widths", "type": "param", "dtype": "ndarray"}, {"name": "chords", "type": "param", "dtype": "ndarray"}, {"name": "v", "type": "param", "dtype": "ndarray"}, {"name": "rho", "type": "param", "dtype": "ndarray"}, {"name": "Cl", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "liftdrag", "type": "subsystem", "class": "LiftDrag", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "sec_forces", "type": "param", "dtype": "ndarray"}, {"name": "alpha", "type": "param", "dtype": "ndarray"}, {"name": "beta", "type": "param", "dtype": "ndarray"}, {"name": "L", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "D", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "coeffs", "type": "subsystem", "class": "Coeffs", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "S_ref", "type": "param", "dtype": "ndarray"}, {"name": "L", "type": "param", "dtype": "ndarray"}, {"name": "D", "type": "param", "dtype": "ndarray"}, {"name": "v", "type": "param", "dtype": "ndarray"}, {"name": "rho", "type": "param", "dtype": "ndarray"}, {"name": "CL1", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "CDi", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "CL", "type": "subsystem", "class": "TotalLift", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "CL1", "type": "param", "dtype": "ndarray"}, {"name": "CL", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "viscousdrag", "type": "subsystem", "class": "ViscousDrag", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "re", "type": "param", "dtype": "ndarray"}, {"name": "Mach_number", "type": "param", "dtype": "ndarray"}, {"name": "S_ref", "type": "param", "dtype": "ndarray"}, {"name": "cos_sweep", "type": "param", "dtype": "ndarray"}, {"name": "widths", "type": "param", "dtype": "ndarray"}, {"name": "lengths", "type": "param", "dtype": "ndarray"}, {"name": "t_over_c", "type": "param", "dtype": "ndarray"}, {"name": "CDv", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "wavedrag", "type": "subsystem", "class": "WaveDrag", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "Mach_number", "type": "param", "dtype": "ndarray"}, {"name": "cos_sweep", "type": "param", "dtype": "ndarray"}, {"name": "widths", "type": "param", "dtype": "ndarray"}, {"name": "CL", "type": "param", "dtype": "ndarray"}, {"name": "chords", "type": "param", "dtype": "ndarray"}, {"name": "t_over_c", "type": "param", "dtype": "ndarray"}, {"name": "CDw", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "CD", "type": "subsystem", "class": "TotalDrag", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "CDi", "type": "param", "dtype": "ndarray"}, {"name": "CDv", "type": "param", "dtype": "ndarray"}, {"name": "CDw", "type": "param", "dtype": "ndarray"}, {"name": "CD", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}]}, {"name": "total_perf", "type": "subsystem", "class": "TotalAeroPerformance", "expressions": null, "component_type": null, "subsystem_type": "group", "is_parallel": false, "linear_solver": "LN: RUNONCE", "nonlinear_solver": "NL: RUNONCE", "children": [{"name": "sum_areas", "type": "subsystem", "class": "SumAreas", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "wing_S_ref", "type": "param", "dtype": "ndarray"}, {"name": "S_ref_total", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "CL_CD", "type": "subsystem", "class": "TotalLiftDrag", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "wing_CL", "type": "param", "dtype": "ndarray"}, {"name": "wing_CD", "type": "param", "dtype": "ndarray"}, {"name": "wing_S_ref", "type": "param", "dtype": "ndarray"}, {"name": "S_ref_total", "type": "param", "dtype": "ndarray"}, {"name": "CL", "type": "unknown", "implicit": false, "dtype": "ndarray"}, {"name": "CD", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}, {"name": "moment", "type": "subsystem", "class": "MomentCoefficient", "expressions": null, "subsystem_type": "component", "is_parallel": false, "component_type": "explicit", "linear_solver": "", "nonlinear_solver": "", "children": [{"name": "wing_b_pts", "type": "param", "dtype": "ndarray"}, {"name": "wing_widths", "type": "param", "dtype": "ndarray"}, {"name": "wing_chords", "type": "param", "dtype": "ndarray"}, {"name": "wing_S_ref", "type": "param", "dtype": "ndarray"}, {"name": "wing_sec_forces", "type": "param", "dtype": "ndarray"}, {"name": "cg", "type": "param", "dtype": "ndarray"}, {"name": "v", "type": "param", "dtype": "ndarray"}, {"name": "rho", "type": "param", "dtype": "ndarray"}, {"name": "S_ref_total", "type": "param", "dtype": "ndarray"}, {"name": "CM", "type": "unknown", "implicit": false, "dtype": "ndarray"}]}]}]}]}, "sys_pathnames_list": [], "connections_list": [{"src": "aero_point_0.wing_perf.CD.CD", "tgt": "aero_point_0.total_perf.CL_CD.wing_CD"}, {"src": "aero_point_0.wing_perf.wavedrag.CDw", "tgt": "aero_point_0.wing_perf.CD.CDw"}, {"src": "aero_point_0.wing_perf.CL.CL", "tgt": "aero_point_0.total_perf.CL_CD.wing_CL"}, {"src": "aero_point_0.wing_perf.CL.CL", "tgt": "aero_point_0.wing_perf.wavedrag.CL"}, {"src": "aero_point_0.wing_perf.coeffs.CL1", "tgt": "aero_point_0.wing_perf.CL.CL1"}, {"src": "aero_point_0.wing_perf.coeffs.CDi", "tgt": "aero_point_0.wing_perf.CD.CDi"}, {"src": "aero_point_0.wing_perf.liftdrag.L", "tgt": "aero_point_0.wing_perf.coeffs.L"}, {"src": "aero_point_0.wing_perf.liftdrag.D", "tgt": "aero_point_0.wing_perf.coeffs.D"}, {"src": "aero_point_0.aero_states.panel_forces_surf.wing_sec_forces", "tgt": "aero_point_0.wing_perf.liftcoeff.sec_forces"}, {"src": "aero_point_0.aero_states.panel_forces_surf.wing_sec_forces", "tgt": "aero_point_0.wing_perf.liftdrag.sec_forces"}, {"src": "aero_point_0.aero_states.panel_forces_surf.wing_sec_forces", "tgt": "aero_point_0.total_perf.moment.wing_sec_forces"}, {"src": "aero_point_0.aero_states.panel_forces_surf.wing_sec_forces", "tgt": "aero_point_0.aero_states.mesh_point_forces_surf.wing_sec_forces"}, {"src": "aero_point_0.aero_states.panel_forces.panel_forces", "tgt": "aero_point_0.aero_states.panel_forces_surf.panel_forces"}, {"src": "aero_point_0.aero_states.horseshoe_circulations.horseshoe_circulations", "tgt": "aero_point_0.aero_states.panel_forces.horseshoe_circulations"}, {"src": "aero_point_0.aero_states.eval_velocities.force_pts_velocities", "tgt": "aero_point_0.aero_states.panel_forces.force_pts_velocities"}, {"src": "aero_point_0.aero_states.solve_matrix.circulations", "tgt": "aero_point_0.aero_states.horseshoe_circulations.circulations"}, {"src": "aero_point_0.aero_states.solve_matrix.circulations", "tgt": "aero_point_0.aero_states.eval_velocities.circulations"}, {"src": "aero_point_0.aero_states.mtx_rhs.mtx", "tgt": "aero_point_0.aero_states.solve_matrix.mtx"}, {"src": "aero_point_0.aero_states.mtx_rhs.rhs", "tgt": "aero_point_0.aero_states.solve_matrix.rhs"}, {"src": "aero_point_0.aero_states.convert_velocity.freestream_velocities", "tgt": "aero_point_0.aero_states.mtx_rhs.freestream_velocities"}, {"src": "aero_point_0.aero_states.convert_velocity.freestream_velocities", "tgt": "aero_point_0.aero_states.eval_velocities.freestream_velocities"}, {"src": "aero_point_0.aero_states.mtx_assy.wing_coll_pts_vel_mtx", "tgt": "aero_point_0.aero_states.mtx_rhs.wing_coll_pts_vel_mtx"}, {"src": "aero_point_0.aero_states.mtx_assy_forces.wing_force_pts_vel_mtx", "tgt": "aero_point_0.aero_states.eval_velocities.wing_force_pts_vel_mtx"}, {"src": "aero_point_0.wing_perf.viscousdrag.CDv", "tgt": "aero_point_0.wing_perf.CD.CDv"}, {"src": "prob_vars.v", "tgt": "aero_point_0.aero_states.convert_velocity.v"}, {"src": "prob_vars.alpha", "tgt": "aero_point_0.aero_states.convert_velocity.alpha"}, {"src": "prob_vars.v", "tgt": "aero_point_0.wing_perf.liftcoeff.v"}, {"src": "prob_vars.alpha", "tgt": "aero_point_0.wing_perf.liftcoeff.alpha"}, {"src": "prob_vars.rho", "tgt": "aero_point_0.wing_perf.liftcoeff.rho"}, {"src": "prob_vars.v", "tgt": "aero_point_0.wing_perf.coeffs.v"}, {"src": "prob_vars.rho", "tgt": "aero_point_0.wing_perf.coeffs.rho"}, {"src": "prob_vars.v", "tgt": "aero_point_0.total_perf.moment.v"}, {"src": "prob_vars.rho", "tgt": "aero_point_0.total_perf.moment.rho"}, {"src": "prob_vars.cg", "tgt": "aero_point_0.total_perf.moment.cg"}, {"src": "prob_vars.alpha", "tgt": "aero_point_0.aero_states.mtx_assy.alpha"}, {"src": "prob_vars.alpha", "tgt": "aero_point_0.aero_states.mtx_assy_forces.alpha"}, {"src": "prob_vars.alpha", "tgt": "aero_point_0.wing_perf.liftdrag.alpha"}, {"src": "prob_vars.Mach_number", "tgt": "aero_point_0.wing_perf.viscousdrag.Mach_number"}, {"src": "prob_vars.re", "tgt": "aero_point_0.wing_perf.viscousdrag.re"}, {"src": "prob_vars.Mach_number", "tgt": "aero_point_0.wing_perf.wavedrag.Mach_number"}, {"src": "prob_vars.rho", "tgt": "aero_point_0.aero_states.panel_forces.rho"}, {"src": "aero_point_0.total_perf.sum_areas.S_ref_total", "tgt": "aero_point_0.total_perf.CL_CD.S_ref_total"}, {"src": "aero_point_0.total_perf.sum_areas.S_ref_total", "tgt": "aero_point_0.total_perf.moment.S_ref_total"}, {"src": "aero_point_0.wing.normals", "tgt": "aero_point_0.aero_states.mtx_rhs.wing_normals"}, {"src": "aero_point_0.wing.S_ref", "tgt": "aero_point_0.wing_perf.coeffs.S_ref"}, {"src": "aero_point_0.wing.S_ref", "tgt": "aero_point_0.wing_perf.viscousdrag.S_ref"}, {"src": "aero_point_0.wing.widths", "tgt": "aero_point_0.wing_perf.viscousdrag.widths"}, {"src": "aero_point_0.wing.lengths", "tgt": "aero_point_0.wing_perf.viscousdrag.lengths"}, {"src": "aero_point_0.wing.cos_sweep", "tgt": "aero_point_0.wing_perf.viscousdrag.cos_sweep"}, {"src": "aero_point_0.wing.widths", "tgt": "aero_point_0.wing_perf.liftcoeff.widths"}, {"src": "aero_point_0.wing.chords", "tgt": "aero_point_0.wing_perf.liftcoeff.chords"}, {"src": "aero_point_0.wing.widths", "tgt": "aero_point_0.wing_perf.wavedrag.widths"}, {"src": "aero_point_0.wing.chords", "tgt": "aero_point_0.wing_perf.wavedrag.chords"}, {"src": "aero_point_0.wing.cos_sweep", "tgt": "aero_point_0.wing_perf.wavedrag.cos_sweep"}, {"src": "aero_point_0.wing.S_ref", "tgt": "aero_point_0.total_perf.sum_areas.wing_S_ref"}, {"src": "aero_point_0.wing.S_ref", "tgt": "aero_point_0.total_perf.CL_CD.wing_S_ref"}, {"src": "aero_point_0.wing.S_ref", "tgt": "aero_point_0.total_perf.moment.wing_S_ref"}, {"src": "aero_point_0.wing.widths", "tgt": "aero_point_0.total_perf.moment.wing_widths"}, {"src": "aero_point_0.wing.chords", "tgt": "aero_point_0.total_perf.moment.wing_chords"}, {"src": "aero_point_0.wing.b_pts", "tgt": "aero_point_0.total_perf.moment.wing_b_pts"}, {"src": "aero_point_0.aero_states.get_vectors.wing_coll_pts_vectors", "tgt": "aero_point_0.aero_states.mtx_assy.wing_coll_pts_vectors"}, {"src": "aero_point_0.aero_states.get_vectors_force.wing_force_pts_vectors", "tgt": "aero_point_0.aero_states.mtx_assy_forces.wing_force_pts_vectors"}, {"src": "aero_point_0.aero_states.collocation_points.coll_pts", "tgt": "aero_point_0.aero_states.get_vectors.coll_pts"}, {"src": "aero_point_0.aero_states.collocation_points.force_pts", "tgt": "aero_point_0.aero_states.get_vectors_force.force_pts"}, {"src": "aero_point_0.aero_states.collocation_points.bound_vecs", "tgt": "aero_point_0.aero_states.panel_forces.bound_vecs"}, {"src": "aero_point_0.aero_states.vortex_mesh.wing_vortex_mesh", "tgt": "aero_point_0.aero_states.get_vectors.wing_vortex_mesh"}, {"src": "aero_point_0.aero_states.vortex_mesh.wing_vortex_mesh", "tgt": "aero_point_0.aero_states.get_vectors_force.wing_vortex_mesh"}, {"src": "wing.mesh.rotate.mesh", "tgt": "aero_point_0.wing.def_mesh"}, {"src": "wing.mesh.rotate.mesh", "tgt": "aero_point_0.aero_states.collocation_points.wing_def_mesh"}, {"src": "wing.mesh.rotate.mesh", "tgt": "aero_point_0.aero_states.vortex_mesh.wing_def_mesh"}, {"src": "wing.twist_bsp.twist", "tgt": "wing.mesh.rotate.twist"}, {"src": "wing.t_over_c_bsp.t_over_c", "tgt": "aero_point_0.wing_perf.viscousdrag.t_over_c"}, {"src": "wing.t_over_c_bsp.t_over_c", "tgt": "aero_point_0.wing_perf.wavedrag.t_over_c"}, {"src": "wing.indep_vars.twist_cp", "tgt": "wing.twist_bsp.twist_cp"}, {"src": "wing.indep_vars.t_over_c_cp", "tgt": "wing.t_over_c_bsp.t_over_c_cp"}, {"src": "wing.mesh.shear_z.mesh", "tgt": "wing.mesh.rotate.in_mesh"}, {"src": "wing.mesh.dihedral.mesh", "tgt": "wing.mesh.shear_z.in_mesh"}, {"src": "wing.mesh.shear_y.mesh", "tgt": "wing.mesh.dihedral.in_mesh"}, {"src": "wing.mesh.stretch.mesh", "tgt": "wing.mesh.shear_y.in_mesh"}, {"src": "wing.mesh.shear_x.mesh", "tgt": "wing.mesh.stretch.in_mesh"}, {"src": "wing.mesh.sweep.mesh", "tgt": "wing.mesh.shear_x.in_mesh"}, {"src": "wing.mesh.scale_x.mesh", "tgt": "wing.mesh.sweep.in_mesh"}, {"src": "wing.mesh.taper.mesh", "tgt": "wing.mesh.scale_x.in_mesh"}], "abs2prom": {"input": {"wing.twist_bsp.twist_cp": "wing.twist_cp", "wing.t_over_c_bsp.t_over_c_cp": "wing.t_over_c_cp", "wing.mesh.taper.taper": "wing.mesh.taper.taper", "wing.mesh.scale_x.chord": "wing.mesh.scale_x.chord", "wing.mesh.scale_x.in_mesh": "wing.mesh.scale_x.in_mesh", "wing.mesh.sweep.sweep": "wing.mesh.sweep.sweep", "wing.mesh.sweep.in_mesh": "wing.mesh.sweep.in_mesh", "wing.mesh.shear_x.xshear": "wing.mesh.shear_x.xshear", "wing.mesh.shear_x.in_mesh": "wing.mesh.shear_x.in_mesh", "wing.mesh.stretch.span": "wing.mesh.stretch.span", "wing.mesh.stretch.in_mesh": "wing.mesh.stretch.in_mesh", "wing.mesh.shear_y.yshear": "wing.mesh.shear_y.yshear", "wing.mesh.shear_y.in_mesh": "wing.mesh.shear_y.in_mesh", "wing.mesh.dihedral.dihedral": "wing.mesh.dihedral.dihedral", "wing.mesh.dihedral.in_mesh": "wing.mesh.dihedral.in_mesh", "wing.mesh.shear_z.zshear": "wing.mesh.shear_z.zshear", "wing.mesh.shear_z.in_mesh": "wing.mesh.shear_z.in_mesh", "wing.mesh.rotate.twist": "wing.twist", "wing.mesh.rotate.in_mesh": "wing.mesh.rotate.in_mesh", "aero_point_0.wing.def_mesh": "aero_point_0.wing.def_mesh", "aero_point_0.aero_states.collocation_points.wing_def_mesh": "aero_point_0.aero_states.wing_def_mesh", "aero_point_0.aero_states.vortex_mesh.wing_def_mesh": "aero_point_0.aero_states.wing_def_mesh", "aero_point_0.aero_states.get_vectors.coll_pts": "aero_point_0.aero_states.coll_pts", "aero_point_0.aero_states.get_vectors.wing_vortex_mesh": "aero_point_0.aero_states.wing_vortex_mesh", "aero_point_0.aero_states.mtx_assy.alpha": "alpha", "aero_point_0.aero_states.mtx_assy.wing_coll_pts_vectors": "aero_point_0.aero_states.wing_coll_pts_vectors", "aero_point_0.aero_states.convert_velocity.alpha": "alpha", "aero_point_0.aero_states.convert_velocity.beta": "aero_point_0.beta", "aero_point_0.aero_states.convert_velocity.v": "v", "aero_point_0.aero_states.mtx_rhs.freestream_velocities": "aero_point_0.aero_states.freestream_velocities", "aero_point_0.aero_states.mtx_rhs.wing_coll_pts_vel_mtx": "aero_point_0.aero_states.wing_coll_pts_vel_mtx", "aero_point_0.aero_states.mtx_rhs.wing_normals": "aero_point_0.aero_states.wing_normals", "aero_point_0.aero_states.solve_matrix.mtx": "aero_point_0.aero_states.mtx", "aero_point_0.aero_states.solve_matrix.rhs": "aero_point_0.aero_states.rhs", "aero_point_0.aero_states.horseshoe_circulations.circulations": "aero_point_0.aero_states.circulations", "aero_point_0.aero_states.get_vectors_force.force_pts": "aero_point_0.aero_states.force_pts", "aero_point_0.aero_states.get_vectors_force.wing_vortex_mesh": "aero_point_0.aero_states.wing_vortex_mesh", "aero_point_0.aero_states.mtx_assy_forces.alpha": "alpha", "aero_point_0.aero_states.mtx_assy_forces.wing_force_pts_vectors": "aero_point_0.aero_states.wing_force_pts_vectors", "aero_point_0.aero_states.eval_velocities.freestream_velocities": "aero_point_0.aero_states.freestream_velocities", "aero_point_0.aero_states.eval_velocities.circulations": "aero_point_0.aero_states.circulations", "aero_point_0.aero_states.eval_velocities.wing_force_pts_vel_mtx": "aero_point_0.aero_states.wing_force_pts_vel_mtx", "aero_point_0.aero_states.panel_forces.rho": "rho", "aero_point_0.aero_states.panel_forces.horseshoe_circulations": "aero_point_0.aero_states.horseshoe_circulations", "aero_point_0.aero_states.panel_forces.force_pts_velocities": "aero_point_0.aero_states.force_pts_velocities", "aero_point_0.aero_states.panel_forces.bound_vecs": "aero_point_0.aero_states.bound_vecs", "aero_point_0.aero_states.panel_forces_surf.panel_forces": "aero_point_0.aero_states.panel_forces", "aero_point_0.aero_states.mesh_point_forces_surf.wing_sec_forces": "aero_point_0.aero_states.wing_sec_forces", "aero_point_0.wing_perf.liftcoeff.alpha": "alpha", "aero_point_0.wing_perf.liftcoeff.sec_forces": "aero_point_0.wing_perf.sec_forces", "aero_point_0.wing_perf.liftcoeff.widths": "aero_point_0.wing_perf.widths", "aero_point_0.wing_perf.liftcoeff.chords": "aero_point_0.wing_perf.chords", "aero_point_0.wing_perf.liftcoeff.v": "v", "aero_point_0.wing_perf.liftcoeff.rho": "rho", "aero_point_0.wing_perf.liftdrag.sec_forces": "aero_point_0.wing_perf.sec_forces", "aero_point_0.wing_perf.liftdrag.alpha": "alpha", "aero_point_0.wing_perf.liftdrag.beta": "aero_point_0.beta", "aero_point_0.wing_perf.coeffs.S_ref": "aero_point_0.wing_perf.S_ref", "aero_point_0.wing_perf.coeffs.L": "aero_point_0.wing_perf.L", "aero_point_0.wing_perf.coeffs.D": "aero_point_0.wing_perf.D", "aero_point_0.wing_perf.coeffs.v": "v", "aero_point_0.wing_perf.coeffs.rho": "rho", "aero_point_0.wing_perf.CL.CL1": "aero_point_0.wing_perf.CL1", "aero_point_0.wing_perf.viscousdrag.re": "re", "aero_point_0.wing_perf.viscousdrag.Mach_number": "Mach_number", "aero_point_0.wing_perf.viscousdrag.S_ref": "aero_point_0.wing_perf.S_ref", "aero_point_0.wing_perf.viscousdrag.cos_sweep": "aero_point_0.wing_perf.cos_sweep", "aero_point_0.wing_perf.viscousdrag.widths": "aero_point_0.wing_perf.widths", "aero_point_0.wing_perf.viscousdrag.lengths": "aero_point_0.wing_perf.lengths", "aero_point_0.wing_perf.viscousdrag.t_over_c": "aero_point_0.wing_perf.t_over_c", "aero_point_0.wing_perf.wavedrag.Mach_number": "Mach_number", "aero_point_0.wing_perf.wavedrag.cos_sweep": "aero_point_0.wing_perf.cos_sweep", "aero_point_0.wing_perf.wavedrag.widths": "aero_point_0.wing_perf.widths", "aero_point_0.wing_perf.wavedrag.CL": "aero_point_0.wing_perf.CL", "aero_point_0.wing_perf.wavedrag.chords": "aero_point_0.wing_perf.chords", "aero_point_0.wing_perf.wavedrag.t_over_c": "aero_point_0.wing_perf.t_over_c", "aero_point_0.wing_perf.CD.CDi": "aero_point_0.wing_perf.CDi", "aero_point_0.wing_perf.CD.CDv": "aero_point_0.wing_perf.CDv", "aero_point_0.wing_perf.CD.CDw": "aero_point_0.wing_perf.CDw", "aero_point_0.total_perf.sum_areas.wing_S_ref": "aero_point_0.total_perf.wing_S_ref", "aero_point_0.total_perf.CL_CD.wing_CL": "aero_point_0.total_perf.wing_CL", "aero_point_0.total_perf.CL_CD.wing_CD": "aero_point_0.total_perf.wing_CD", "aero_point_0.total_perf.CL_CD.wing_S_ref": "aero_point_0.total_perf.wing_S_ref", "aero_point_0.total_perf.CL_CD.S_ref_total": "aero_point_0.S_ref_total", "aero_point_0.total_perf.moment.wing_b_pts": "aero_point_0.total_perf.wing_b_pts", "aero_point_0.total_perf.moment.wing_widths": "aero_point_0.total_perf.wing_widths", "aero_point_0.total_perf.moment.wing_chords": "aero_point_0.total_perf.wing_chords", "aero_point_0.total_perf.moment.wing_S_ref": "aero_point_0.total_perf.wing_S_ref", "aero_point_0.total_perf.moment.wing_sec_forces": "aero_point_0.total_perf.wing_sec_forces", "aero_point_0.total_perf.moment.cg": "cg", "aero_point_0.total_perf.moment.v": "v", "aero_point_0.total_perf.moment.rho": "rho", "aero_point_0.total_perf.moment.S_ref_total": "aero_point_0.S_ref_total"}, "output": {"prob_vars.v": "v", "prob_vars.alpha": "alpha", "prob_vars.Mach_number": "Mach_number", "prob_vars.re": "re", "prob_vars.rho": "rho", "prob_vars.cg": "cg", "wing.indep_vars.twist_cp": "wing.twist_cp", "wing.indep_vars.t_over_c_cp": "wing.t_over_c_cp", "wing.twist_bsp.twist": "wing.twist", "wing.t_over_c_bsp.t_over_c": "wing.t_over_c", "wing.mesh.taper.mesh": "wing.mesh.taper.mesh", "wing.mesh.scale_x.mesh": "wing.mesh.scale_x.mesh", "wing.mesh.sweep.mesh": "wing.mesh.sweep.mesh", "wing.mesh.shear_x.mesh": "wing.mesh.shear_x.mesh", "wing.mesh.stretch.mesh": "wing.mesh.stretch.mesh", "wing.mesh.shear_y.mesh": "wing.mesh.shear_y.mesh", "wing.mesh.dihedral.mesh": "wing.mesh.dihedral.mesh", "wing.mesh.shear_z.mesh": "wing.mesh.shear_z.mesh", "wing.mesh.rotate.mesh": "wing.mesh", "aero_point_0.wing.b_pts": "aero_point_0.wing.b_pts", "aero_point_0.wing.widths": "aero_point_0.wing.widths", "aero_point_0.wing.cos_sweep": "aero_point_0.wing.cos_sweep", "aero_point_0.wing.lengths": "aero_point_0.wing.lengths", "aero_point_0.wing.chords": "aero_point_0.wing.chords", "aero_point_0.wing.normals": "aero_point_0.wing.normals", "aero_point_0.wing.S_ref": "aero_point_0.wing.S_ref", "aero_point_0.aero_states.collocation_points.coll_pts": "aero_point_0.aero_states.coll_pts", "aero_point_0.aero_states.collocation_points.force_pts": "aero_point_0.aero_states.force_pts", "aero_point_0.aero_states.collocation_points.bound_vecs": "aero_point_0.aero_states.bound_vecs", "aero_point_0.aero_states.vortex_mesh.wing_vortex_mesh": "aero_point_0.aero_states.wing_vortex_mesh", "aero_point_0.aero_states.get_vectors.wing_coll_pts_vectors": "aero_point_0.aero_states.wing_coll_pts_vectors", "aero_point_0.aero_states.mtx_assy.wing_coll_pts_vel_mtx": "aero_point_0.aero_states.wing_coll_pts_vel_mtx", "aero_point_0.aero_states.convert_velocity.freestream_velocities": "aero_point_0.aero_states.freestream_velocities", "aero_point_0.aero_states.mtx_rhs.mtx": "aero_point_0.aero_states.mtx", "aero_point_0.aero_states.mtx_rhs.rhs": "aero_point_0.aero_states.rhs", "aero_point_0.aero_states.solve_matrix.circulations": "aero_point_0.circulations", "aero_point_0.aero_states.horseshoe_circulations.horseshoe_circulations": "aero_point_0.aero_states.horseshoe_circulations", "aero_point_0.aero_states.get_vectors_force.wing_force_pts_vectors": "aero_point_0.aero_states.wing_force_pts_vectors", "aero_point_0.aero_states.mtx_assy_forces.wing_force_pts_vel_mtx": "aero_point_0.aero_states.wing_force_pts_vel_mtx", "aero_point_0.aero_states.eval_velocities.force_pts_velocities": "aero_point_0.aero_states.force_pts_velocities", "aero_point_0.aero_states.panel_forces.panel_forces": "aero_point_0.aero_states.panel_forces", "aero_point_0.aero_states.panel_forces_surf.wing_sec_forces": "aero_point_0.aero_states.wing_sec_forces", "aero_point_0.aero_states.mesh_point_forces_surf.wing_mesh_point_forces": "aero_point_0.aero_states.wing_mesh_point_forces", "aero_point_0.wing_perf.liftcoeff.Cl": "aero_point_0.wing_perf.Cl", "aero_point_0.wing_perf.liftdrag.L": "aero_point_0.wing_perf.L", "aero_point_0.wing_perf.liftdrag.D": "aero_point_0.wing_perf.D", "aero_point_0.wing_perf.coeffs.CL1": "aero_point_0.wing_perf.CL1", "aero_point_0.wing_perf.coeffs.CDi": "aero_point_0.wing_perf.CDi", "aero_point_0.wing_perf.CL.CL": "aero_point_0.wing_perf.CL", "aero_point_0.wing_perf.viscousdrag.CDv": "aero_point_0.wing_perf.CDv", "aero_point_0.wing_perf.wavedrag.CDw": "aero_point_0.wing_perf.CDw", "aero_point_0.wing_perf.CD.CD": "aero_point_0.wing_perf.CD", "aero_point_0.total_perf.sum_areas.S_ref_total": "aero_point_0.total_perf.S_ref_total", "aero_point_0.total_perf.CL_CD.CL": "aero_point_0.CL", "aero_point_0.total_perf.CL_CD.CD": "aero_point_0.CD", "aero_point_0.total_perf.moment.CM": "aero_point_0.CM"}}, "driver": {"name": "ScipyOptimizeDriver", "type": "optimization", "options": {"debug_print": [], "optimizer": "SLSQP", "tol": 1e-09, "maxiter": 200, "disp": true}, "opt_settings": {}}, "design_vars": {"wing.indep_vars.twist_cp": {"scaler": null, "adder": null, "name": "wing.twist_cp", "upper": 15.0, "lower": -10.0, "ref": null, "ref0": null, "units": null, "cache_linear_solution": false, "indices": null, "parallel_deriv_color": null, "vectorize_derivs": false, "total_adder": null, "total_scaler": null, "size": 5, "distributed": false, "global_size": 5}}, "responses": {"aero_point_0.wing_perf.CL.CL": {"lower": -1e+30, "upper": 1e+30, "equals": 0.5, "linear": false, "indices": null, "scaler": null, "adder": null, "name": "aero_point_0.wing_perf.CL", "ref": null, "ref0": null, "type": "con", "units": null, "cache_linear_solution": false, "parallel_deriv_color": null, "vectorize_derivs": false, "total_scaler": null, "total_adder": null, "distributed": false, "size": 1, "global_size": 1}, "aero_point_0.wing_perf.CD.CD": {"indices": null, "scaler": 10000.0, "adder": null, "name": "aero_point_0.wing_perf.CD", "ref": null, "ref0": null, "type": "obj", "units": null, "cache_linear_solution": false, "parallel_deriv_color": null, "vectorize_derivs": false, "total_scaler": 10000.0, "total_adder": null, "distributed": false, "size": 1, "global_size": 1}}, "declare_partials_list": ["prob_vars.v > prob_vars.v", "prob_vars.alpha > prob_vars.alpha", "prob_vars.Mach_number > prob_vars.Mach_number", "prob_vars.re > prob_vars.re", "prob_vars.rho > prob_vars.rho", "prob_vars.cg > prob_vars.cg", "wing.indep_vars.twist_cp > wing.indep_vars.twist_cp", "wing.indep_vars.t_over_c_cp > wing.indep_vars.t_over_c_cp", "wing.twist_bsp.twist > wing.twist_bsp.twist_cp", "wing.twist_bsp.twist > wing.twist_bsp.twist", "wing.t_over_c_bsp.t_over_c > wing.t_over_c_bsp.t_over_c_cp", "wing.t_over_c_bsp.t_over_c > wing.t_over_c_bsp.t_over_c", "wing.mesh.taper.mesh > wing.mesh.taper.mesh", "wing.mesh.taper.mesh > wing.mesh.taper.taper", "wing.mesh.scale_x.mesh > wing.mesh.scale_x.chord", "wing.mesh.scale_x.mesh > wing.mesh.scale_x.in_mesh", "wing.mesh.scale_x.mesh > wing.mesh.scale_x.mesh", "wing.mesh.sweep.mesh > wing.mesh.sweep.sweep", "wing.mesh.sweep.mesh > wing.mesh.sweep.in_mesh", "wing.mesh.sweep.mesh > wing.mesh.sweep.mesh", "wing.mesh.shear_x.mesh > wing.mesh.shear_x.xshear", "wing.mesh.shear_x.mesh > wing.mesh.shear_x.in_mesh", "wing.mesh.shear_x.mesh > wing.mesh.shear_x.mesh", "wing.mesh.stretch.mesh > wing.mesh.stretch.span", "wing.mesh.stretch.mesh > wing.mesh.stretch.in_mesh", "wing.mesh.stretch.mesh > wing.mesh.stretch.mesh", "wing.mesh.shear_y.mesh > wing.mesh.shear_y.yshear", "wing.mesh.shear_y.mesh > wing.mesh.shear_y.in_mesh", "wing.mesh.shear_y.mesh > wing.mesh.shear_y.mesh", "wing.mesh.dihedral.mesh > wing.mesh.dihedral.dihedral", "wing.mesh.dihedral.mesh > wing.mesh.dihedral.in_mesh", "wing.mesh.dihedral.mesh > wing.mesh.dihedral.mesh", "wing.mesh.shear_z.mesh > wing.mesh.shear_z.zshear", "wing.mesh.shear_z.mesh > wing.mesh.shear_z.in_mesh", "wing.mesh.shear_z.mesh > wing.mesh.shear_z.mesh", "wing.mesh.rotate.mesh > wing.mesh.rotate.twist", "wing.mesh.rotate.mesh > wing.mesh.rotate.in_mesh", "wing.mesh.rotate.mesh > wing.mesh.rotate.mesh", "aero_point_0.wing.b_pts > aero_point_0.wing.def_mesh", "aero_point_0.wing.widths > aero_point_0.wing.def_mesh", "aero_point_0.wing.cos_sweep > aero_point_0.wing.def_mesh", "aero_point_0.wing.lengths > aero_point_0.wing.def_mesh", "aero_point_0.wing.chords > aero_point_0.wing.def_mesh", "aero_point_0.wing.normals > aero_point_0.wing.def_mesh", "aero_point_0.wing.S_ref > aero_point_0.wing.def_mesh", "aero_point_0.wing.b_pts > aero_point_0.wing.b_pts", "aero_point_0.wing.widths > aero_point_0.wing.widths", "aero_point_0.wing.cos_sweep > aero_point_0.wing.cos_sweep", "aero_point_0.wing.lengths > aero_point_0.wing.lengths", "aero_point_0.wing.chords > aero_point_0.wing.chords", "aero_point_0.wing.normals > aero_point_0.wing.normals", "aero_point_0.wing.S_ref > aero_point_0.wing.S_ref", "aero_point_0.aero_states.collocation_points.coll_pts > aero_point_0.aero_states.collocation_points.wing_def_mesh", "aero_point_0.aero_states.collocation_points.force_pts > aero_point_0.aero_states.collocation_points.wing_def_mesh", "aero_point_0.aero_states.collocation_points.bound_vecs > aero_point_0.aero_states.collocation_points.wing_def_mesh", "aero_point_0.aero_states.collocation_points.coll_pts > aero_point_0.aero_states.collocation_points.coll_pts", "aero_point_0.aero_states.collocation_points.force_pts > aero_point_0.aero_states.collocation_points.force_pts", "aero_point_0.aero_states.collocation_points.bound_vecs > aero_point_0.aero_states.collocation_points.bound_vecs", "aero_point_0.aero_states.vortex_mesh.wing_vortex_mesh > aero_point_0.aero_states.vortex_mesh.wing_def_mesh", "aero_point_0.aero_states.vortex_mesh.wing_vortex_mesh > aero_point_0.aero_states.vortex_mesh.wing_vortex_mesh", "aero_point_0.aero_states.get_vectors.wing_coll_pts_vectors > aero_point_0.aero_states.get_vectors.wing_vortex_mesh", "aero_point_0.aero_states.get_vectors.wing_coll_pts_vectors > aero_point_0.aero_states.get_vectors.coll_pts", "aero_point_0.aero_states.get_vectors.wing_coll_pts_vectors > aero_point_0.aero_states.get_vectors.wing_coll_pts_vectors", "aero_point_0.aero_states.mtx_assy.wing_coll_pts_vel_mtx > aero_point_0.aero_states.mtx_assy.wing_coll_pts_vectors", "aero_point_0.aero_states.mtx_assy.wing_coll_pts_vel_mtx > aero_point_0.aero_states.mtx_assy.alpha", "aero_point_0.aero_states.mtx_assy.wing_coll_pts_vel_mtx > aero_point_0.aero_states.mtx_assy.wing_coll_pts_vel_mtx", "aero_point_0.aero_states.convert_velocity.freestream_velocities > aero_point_0.aero_states.convert_velocity.alpha", "aero_point_0.aero_states.convert_velocity.freestream_velocities > aero_point_0.aero_states.convert_velocity.beta", "aero_point_0.aero_states.convert_velocity.freestream_velocities > aero_point_0.aero_states.convert_velocity.v", "aero_point_0.aero_states.convert_velocity.freestream_velocities > aero_point_0.aero_states.convert_velocity.freestream_velocities", "aero_point_0.aero_states.mtx_rhs.rhs > aero_point_0.aero_states.mtx_rhs.freestream_velocities", "aero_point_0.aero_states.mtx_rhs.mtx > aero_point_0.aero_states.mtx_rhs.wing_coll_pts_vel_mtx", "aero_point_0.aero_states.mtx_rhs.mtx > aero_point_0.aero_states.mtx_rhs.wing_normals", "aero_point_0.aero_states.mtx_rhs.rhs > aero_point_0.aero_states.mtx_rhs.wing_normals", "aero_point_0.aero_states.mtx_rhs.mtx > aero_point_0.aero_states.mtx_rhs.mtx", "aero_point_0.aero_states.mtx_rhs.rhs > aero_point_0.aero_states.mtx_rhs.rhs", "aero_point_0.aero_states.solve_matrix.circulations > aero_point_0.aero_states.solve_matrix.circulations", "aero_point_0.aero_states.solve_matrix.circulations > aero_point_0.aero_states.solve_matrix.mtx", "aero_point_0.aero_states.solve_matrix.circulations > aero_point_0.aero_states.solve_matrix.rhs", "aero_point_0.aero_states.horseshoe_circulations.horseshoe_circulations > aero_point_0.aero_states.horseshoe_circulations.circulations", "aero_point_0.aero_states.horseshoe_circulations.horseshoe_circulations > aero_point_0.aero_states.horseshoe_circulations.horseshoe_circulations", "aero_point_0.aero_states.get_vectors_force.wing_force_pts_vectors > aero_point_0.aero_states.get_vectors_force.wing_vortex_mesh", "aero_point_0.aero_states.get_vectors_force.wing_force_pts_vectors > aero_point_0.aero_states.get_vectors_force.force_pts", "aero_point_0.aero_states.get_vectors_force.wing_force_pts_vectors > aero_point_0.aero_states.get_vectors_force.wing_force_pts_vectors", "aero_point_0.aero_states.mtx_assy_forces.wing_force_pts_vel_mtx > aero_point_0.aero_states.mtx_assy_forces.wing_force_pts_vectors", "aero_point_0.aero_states.mtx_assy_forces.wing_force_pts_vel_mtx > aero_point_0.aero_states.mtx_assy_forces.alpha", "aero_point_0.aero_states.mtx_assy_forces.wing_force_pts_vel_mtx > aero_point_0.aero_states.mtx_assy_forces.wing_force_pts_vel_mtx", "aero_point_0.aero_states.eval_velocities.force_pts_velocities > aero_point_0.aero_states.eval_velocities.circulations", "aero_point_0.aero_states.eval_velocities.force_pts_velocities > aero_point_0.aero_states.eval_velocities.freestream_velocities", "aero_point_0.aero_states.eval_velocities.force_pts_velocities > aero_point_0.aero_states.eval_velocities.wing_force_pts_vel_mtx", "aero_point_0.aero_states.eval_velocities.force_pts_velocities > aero_point_0.aero_states.eval_velocities.force_pts_velocities", "aero_point_0.aero_states.panel_forces.panel_forces > aero_point_0.aero_states.panel_forces.rho", "aero_point_0.aero_states.panel_forces.panel_forces > aero_point_0.aero_states.panel_forces.horseshoe_circulations", "aero_point_0.aero_states.panel_forces.panel_forces > aero_point_0.aero_states.panel_forces.force_pts_velocities", "aero_point_0.aero_states.panel_forces.panel_forces > aero_point_0.aero_states.panel_forces.bound_vecs", "aero_point_0.aero_states.panel_forces.panel_forces > aero_point_0.aero_states.panel_forces.panel_forces", "aero_point_0.aero_states.panel_forces_surf.wing_sec_forces > aero_point_0.aero_states.panel_forces_surf.panel_forces", "aero_point_0.aero_states.panel_forces_surf.wing_sec_forces > aero_point_0.aero_states.panel_forces_surf.wing_sec_forces", "aero_point_0.aero_states.mesh_point_forces_surf.wing_mesh_point_forces > aero_point_0.aero_states.mesh_point_forces_surf.wing_sec_forces", "aero_point_0.aero_states.mesh_point_forces_surf.wing_mesh_point_forces > aero_point_0.aero_states.mesh_point_forces_surf.wing_mesh_point_forces", "aero_point_0.wing_perf.liftcoeff.Cl > aero_point_0.wing_perf.liftcoeff.widths", "aero_point_0.wing_perf.liftcoeff.Cl > aero_point_0.wing_perf.liftcoeff.v", "aero_point_0.wing_perf.liftcoeff.Cl > aero_point_0.wing_perf.liftcoeff.rho", "aero_point_0.wing_perf.liftcoeff.Cl > aero_point_0.wing_perf.liftcoeff.alpha", "aero_point_0.wing_perf.liftcoeff.Cl > aero_point_0.wing_perf.liftcoeff.chords", "aero_point_0.wing_perf.liftcoeff.Cl > aero_point_0.wing_perf.liftcoeff.sec_forces", "aero_point_0.wing_perf.liftcoeff.Cl > aero_point_0.wing_perf.liftcoeff.Cl", "aero_point_0.wing_perf.liftdrag.L > aero_point_0.wing_perf.liftdrag.sec_forces", "aero_point_0.wing_perf.liftdrag.D > aero_point_0.wing_perf.liftdrag.sec_forces", "aero_point_0.wing_perf.liftdrag.L > aero_point_0.wing_perf.liftdrag.alpha", "aero_point_0.wing_perf.liftdrag.D > aero_point_0.wing_perf.liftdrag.alpha", "aero_point_0.wing_perf.liftdrag.L > aero_point_0.wing_perf.liftdrag.L", "aero_point_0.wing_perf.liftdrag.D > aero_point_0.wing_perf.liftdrag.L", "aero_point_0.wing_perf.liftdrag.L > aero_point_0.wing_perf.liftdrag.D", "aero_point_0.wing_perf.liftdrag.D > aero_point_0.wing_perf.liftdrag.D", "aero_point_0.wing_perf.liftdrag.D > aero_point_0.wing_perf.liftdrag.beta", "aero_point_0.wing_perf.coeffs.CL1 > aero_point_0.wing_perf.coeffs.L", "aero_point_0.wing_perf.coeffs.CDi > aero_point_0.wing_perf.coeffs.D", "aero_point_0.wing_perf.coeffs.CL1 > aero_point_0.wing_perf.coeffs.v", "aero_point_0.wing_perf.coeffs.CDi > aero_point_0.wing_perf.coeffs.v", "aero_point_0.wing_perf.coeffs.CL1 > aero_point_0.wing_perf.coeffs.rho", "aero_point_0.wing_perf.coeffs.CDi > aero_point_0.wing_perf.coeffs.rho", "aero_point_0.wing_perf.coeffs.CL1 > aero_point_0.wing_perf.coeffs.S_ref", "aero_point_0.wing_perf.coeffs.CDi > aero_point_0.wing_perf.coeffs.S_ref", "aero_point_0.wing_perf.coeffs.CL1 > aero_point_0.wing_perf.coeffs.CL1", "aero_point_0.wing_perf.coeffs.CDi > aero_point_0.wing_perf.coeffs.CDi", "aero_point_0.wing_perf.CL.CL > aero_point_0.wing_perf.CL.CL1", "aero_point_0.wing_perf.CL.CL > aero_point_0.wing_perf.CL.CL", "aero_point_0.wing_perf.viscousdrag.CDv > aero_point_0.wing_perf.viscousdrag.CDv", "aero_point_0.wing_perf.viscousdrag.CDv > aero_point_0.wing_perf.viscousdrag.re", "aero_point_0.wing_perf.viscousdrag.CDv > aero_point_0.wing_perf.viscousdrag.Mach_number", "aero_point_0.wing_perf.viscousdrag.CDv > aero_point_0.wing_perf.viscousdrag.S_ref", "aero_point_0.wing_perf.viscousdrag.CDv > aero_point_0.wing_perf.viscousdrag.cos_sweep", "aero_point_0.wing_perf.viscousdrag.CDv > aero_point_0.wing_perf.viscousdrag.widths", "aero_point_0.wing_perf.viscousdrag.CDv > aero_point_0.wing_perf.viscousdrag.lengths", "aero_point_0.wing_perf.viscousdrag.CDv > aero_point_0.wing_perf.viscousdrag.t_over_c", "aero_point_0.wing_perf.wavedrag.CDw > aero_point_0.wing_perf.wavedrag.CDw", "aero_point_0.wing_perf.wavedrag.CDw > aero_point_0.wing_perf.wavedrag.Mach_number", "aero_point_0.wing_perf.wavedrag.CDw > aero_point_0.wing_perf.wavedrag.cos_sweep", "aero_point_0.wing_perf.wavedrag.CDw > aero_point_0.wing_perf.wavedrag.widths", "aero_point_0.wing_perf.wavedrag.CDw > aero_point_0.wing_perf.wavedrag.CL", "aero_point_0.wing_perf.wavedrag.CDw > aero_point_0.wing_perf.wavedrag.chords", "aero_point_0.wing_perf.wavedrag.CDw > aero_point_0.wing_perf.wavedrag.t_over_c", "aero_point_0.wing_perf.CD.CD > aero_point_0.wing_perf.CD.CDi", "aero_point_0.wing_perf.CD.CD > aero_point_0.wing_perf.CD.CDv", "aero_point_0.wing_perf.CD.CD > aero_point_0.wing_perf.CD.CDw", "aero_point_0.wing_perf.CD.CD > aero_point_0.wing_perf.CD.CD", "aero_point_0.total_perf.sum_areas.S_ref_total > aero_point_0.total_perf.sum_areas.S_ref_total", "aero_point_0.total_perf.sum_areas.S_ref_total > aero_point_0.total_perf.sum_areas.wing_S_ref", "aero_point_0.total_perf.CL_CD.CL > aero_point_0.total_perf.CL_CD.wing_CL", "aero_point_0.total_perf.CL_CD.CD > aero_point_0.total_perf.CL_CD.wing_CD", "aero_point_0.total_perf.CL_CD.CL > aero_point_0.total_perf.CL_CD.wing_S_ref", "aero_point_0.total_perf.CL_CD.CD > aero_point_0.total_perf.CL_CD.wing_S_ref", "aero_point_0.total_perf.CL_CD.CL > aero_point_0.total_perf.CL_CD.S_ref_total", "aero_point_0.total_perf.CL_CD.CD > aero_point_0.total_perf.CL_CD.S_ref_total", "aero_point_0.total_perf.CL_CD.CL > aero_point_0.total_perf.CL_CD.CL", "aero_point_0.total_perf.CL_CD.CD > aero_point_0.total_perf.CL_CD.CD", "aero_point_0.total_perf.moment.CM > aero_point_0.total_perf.moment.CM", "aero_point_0.total_perf.moment.CM > aero_point_0.total_perf.moment.wing_b_pts", "aero_point_0.total_perf.moment.CM > aero_point_0.total_perf.moment.wing_widths", "aero_point_0.total_perf.moment.CM > aero_point_0.total_perf.moment.wing_chords", "aero_point_0.total_perf.moment.CM > aero_point_0.total_perf.moment.wing_S_ref", "aero_point_0.total_perf.moment.CM > aero_point_0.total_perf.moment.wing_sec_forces", "aero_point_0.total_perf.moment.CM > aero_point_0.total_perf.moment.cg", "aero_point_0.total_perf.moment.CM > aero_point_0.total_perf.moment.v", "aero_point_0.total_perf.moment.CM > aero_point_0.total_perf.moment.rho", "aero_point_0.total_perf.moment.CM > aero_point_0.total_perf.moment.S_ref_total"], "options": {"use_declare_partial_info": false}}
 </script>
      <script type="text/javascript">
 ///////////////////////////
@@ -4658,43 +4690,43 @@ class N2Style {
             'rect': {
                 'stroke': N2Style.color.treeStroke,
             },
-            'g.unknown > rect': {
+            '#tree > g.unknown > rect': {
                 'fill': N2Style.color.unknownExplicit,
                 'fill-opacity': '.8',
             },
-            'g.unknown_implicit > rect': {
+            '#tree > g.unknown_implicit > rect': {
                 'fill': N2Style.color.unknownImplicit,
                 'fill-opacity': '.8',
             },
-            'g.param > rect': {
+            '#tree > g.param > rect': {
                 'fill': N2Style.color.param,
                 'fill-opacity': '.8',
             },
-            'g.unconnected_param > rect': {
+            '#tree > g.unconnected_param > rect': {
                 'fill': N2Style.color.unconnectedParam,
                 'fill-opacity': '.8',
             },
-            'g.subsystem > rect': {
+            '#tree > g.subsystem > rect': {
                 'cursor': 'pointer',
                 'fill-opacity': '.8',
                 'fill': N2Style.color.group,
             },
-            'g.component > rect': {
+            '#tree > g.component > rect': {
                 'cursor': 'pointer',
                 'fill-opacity': '.8',
                 'fill': N2Style.color.component,
             },
-            'g.param_group > rect': {
+            '#tree > g.param_group > rect': {
                 'cursor': 'pointer',
                 'fill-opacity': '.8',
                 'fill': N2Style.color.paramGroup,
             },
-            'g.unknown_group > rect': {
+            '#tree > g.unknown_group > rect': {
                 'cursor': 'pointer',
                 'fill-opacity': '.8',
                 'fill': N2Style.color.unknownGroup,
             },
-            'g.minimized > rect': {
+            '#tree > g.minimized > rect': {
                 'cursor': 'pointer',
                 'fill-opacity': '.8',
                 'fill': N2Style.color.collapsed,
@@ -4817,7 +4849,7 @@ class N2Style {
 
 // From Isaias Reyes
 N2Style.color = {
-    'connection': '#000000',
+    'connection': 'gray',
     'unknownImplicit': '#C7D06D',
     'unknownExplicit': '#9FC4C6',
     'componentBox': '#555',
@@ -4833,7 +4865,9 @@ N2Style.color = {
     'unconnectedParam': '#F42F0D',
     'highlightHovered': 'blue',
     'redArrow': 'salmon',
+    'input': 'salmon',
     'greenArrow': 'seagreen',
+    'output': 'seagreen'
 };
 
 Object.freeze(N2Style.color); // Make it the equivalent of a constant
@@ -5061,10 +5095,8 @@ class N2Layout {
 
     /** Create an off-screen area to render text for _getTextWidth() */
     _setupTextRenderer() {
-        let textGroup = this.svg.append("g").attr("class", "partition_group");
-        let textSVG = textGroup.append("text")
-            .text("")
-            .attr("x", -100); // Put text off screen to the left.
+        const textGroup = this.svg.select('#text-width-renderer');
+        const textSVG = textGroup.select('text');
 
         this.textRenderer = {
             'group': textGroup,
@@ -5467,8 +5499,8 @@ class N2Layout {
 
         this.ratio = (window.innerWidth - 200) / outerDims.width;
         if (this.ratio > 1 || manuallyResized) this.ratio = 1;
-        else if ( this.ratio < 1 )
-            debugInfo("Scaling diagram to " + Math.round(this.ratio * 100) + "%" );
+        else if (this.ratio < 1)
+            debugInfo("Scaling diagram to " + Math.round(this.ratio * 100) + "%");
 
         dom.svgDiv
             .style("width", (outerDims.width * this.ratio) + this.size.unit)
@@ -5491,6 +5523,12 @@ class N2Layout {
             .attr("height", innerDims.height)
             .attr("width", this.size.partitionTree.width)
             .attr("transform", "translate(0 " + innerDims.margin + ")");
+
+        dom.highlightBar
+            .transition(sharedTransition)
+            .attr("height", innerDims.height)
+            .attr("width", "8")
+            .attr("transform", "translate(" + this.size.partitionTree.width + 1 + " " + innerDims.margin + ")");
 
         // Move n2 outer group to right of partition tree, spaced by the margin.
         dom.n2OuterGroup
@@ -5720,12 +5758,59 @@ class N2VectorBase extends N2CellRenderer {
      * @param {Object} dims The cell spec to use while rendering.
      */
     render(svgGroup, dims) {
-        let d3Elem = d3.select(svgGroup)
-            .append("rect")
+        let d3Elem = d3.select(svgGroup).append('rect')
             .attr("class", this.className)
             .attr("id", this.id)
             .style("fill", this.color);
-        return this.update(svgGroup, dims, d3Elem)
+
+        return this.update(svgGroup, dims, d3Elem);
+    }
+}
+
+class N2Connector extends N2CellRenderer {
+    /**
+     * Invoke the superclass constructor with these values and "vMid" as a CSS class.
+     * @param {Object} dims Layout and dimensions for the current cell spec.
+     * @param {Object} prevDims Layout and dimensions for the previous cell spec.
+     * @param {string} color The color to render all shapes in.
+     */
+    constructor(color, id) {
+        super(color, "vMid", id);
+    }
+
+    _transform(scale) { throw ("ERROR: N2Connector._transform() called.") }
+
+    /**
+     * Select the element with D3 if not already done, attach a transition
+     * and resize the shape.
+     * @param svgGroup Reference to SVG <g> element associated with data.
+     * @param {Object} dims The cell spec to use while resizing/repositioning.
+     * @param {selection} [d3Elem = null ] The selection created in render().
+     */
+    update(svgGroup, dims, d3Elem = null) {
+        if (!d3Elem) d3Elem = d3.select(svgGroup).select("." + this.className)
+            .transition(sharedTransition);
+
+        let ret = d3Elem.attr("transform", this._transform(dims.size.width/10.0));
+
+        return ret;
+    }
+
+    /** 
+     * Get the D3 selection for the appropriate group and append a filled arrow.
+     * @param {Object} svgGroup Reference to SVG <g> element associated with data.
+     * @param {Object} dims The cell spec to use while rendering.
+     */
+    render(svgGroup, dims) {
+        let d3Elem = d3.select(svgGroup).append('use')
+            .attr("class", this.className)
+            .attr("id", this.id)
+            .style("fill", this.color)
+            .attr("x", -5)
+            .attr("y", -5)
+            .attr("xlink:href", "#matrix-connector-square")
+
+        return this.update(svgGroup, dims, d3Elem);
     }
 }
 
@@ -5874,6 +5959,24 @@ class N2VectorVectorCell extends N2VectorBase {
     }
 }
 
+class N2ConnectorUpper extends N2Connector {
+    constructor(color, id) {
+        super(color, id);
+    }
+
+    /** Generate a string to use for the transform attribute */
+    _transform(scale) { return('scale(' + scale + ')'); }
+}
+
+class N2ConnectorLower extends N2Connector {
+    constructor(color, id) {
+        super(color, id);
+    }
+
+    /** Generate a string to use for the transform attribute */
+    _transform(scale) { return('scale(' + scale + ') rotate(180)'); }
+}
+
 class N2ScalarGroupCell extends N2GroupBase {
     constructor(color, id) {
         super(color, id);
@@ -5958,6 +6061,22 @@ class N2MatrixCell {
     }
 
     /**
+     * Determine if this node is in the upper-right triangle of the matrix.
+     * @return {Boolean} True if column is greater than row.
+     */
+    inUpperTriangle() {
+        return (this.col > this.row);
+    }
+
+    /**
+     * Determine if this node is in the lower-left triangle of the matrix.
+     * @return {Boolean} True if row is greater than column.
+     */
+    inLowerTriangle() {
+        return (this.row > this.col);
+    }
+
+    /**
      * Select the mouseover callback depending on whether we"re on the diagonal.
      * TODO: Remove these globals
      */
@@ -5966,10 +6085,10 @@ class N2MatrixCell {
             n2MouseFuncs.overOffDiag);
     }
 
-     /**
-     * Select the mousemove callback depending on whether we"re on the diagonal.
-     * TODO: Remove these globals
-     */
+    /**
+    * Select the mousemove callback depending on whether we"re on the diagonal.
+    * TODO: Remove these globals
+    */
     mousemove() {
         return (this.onDiagonal() ? n2MouseFuncs.moveOnDiag : null);
     }
@@ -6033,11 +6152,14 @@ class N2MatrixCell {
         // debugInfo("Total offscreen connections found: " + this.offScreen.total);
     }
 
-    /** Choose a renderer based on our SymbolType.
-     * @param {Object} dims Layout and dimensions for the current cell spec.
-     * @param {Object} prevDims Layout and dimensions for the previous cell spec.
-     */
+    /** Choose a renderer based on our SymbolType. */
     _newRenderer() {
+        if (this.color() == N2Style.color.connection) {
+            if (this.inUpperTriangle()) return new N2ConnectorUpper(this.color(), this.id);
+
+            return new N2ConnectorLower(this.color(), this.id)
+        }
+
         switch (this.symbolType.name) {
             case "scalar":
                 return new N2ScalarCell(this.color(), this.id);
@@ -6064,6 +6186,36 @@ class N2MatrixCell {
             case "groupGroup":
                 return new N2GroupGroupCell(this.color(), this.id);
         }
+    }
+
+    /**
+     * Highlight the variable nodes *associated* with the cell, not the cell
+     * itself. The default is for cells on the diagonal to highlight the
+     * variable directly across from them.
+     * @param {String} [varType = 'self'] Either 'self', 'source', or 'target'
+     *   to indicate the variable name to highlight.
+     * @param {String} [direction = 'self'] Either 'self', 'input', or 'output'
+     *   to indicate the style of the highlighting.
+     */
+    highlight(varType = 'self', direction = 'self') {
+
+        const obj = (varType == 'target') ? this.tgtObj : this.srcObj;
+        const treeId = obj.absPathName.replace(/[\.:]/g, '_');
+        const treeNode = d3.select('rect#' + treeId);
+
+        let fill = treeNode.style('fill');
+        if (direction == 'input') fill = N2Style.color.input;
+        else if (direction == 'output') fill = N2Style.color.output;
+
+        d3.select('#highlight-bar').append('rect')
+            .attr('x', 0)
+            .attr('y', treeNode.node().parentNode.transform.baseVal[0].matrix.f)
+            .attr('rx', 4)
+            .attr('ry', 4)
+            .attr('width', 8)
+            .attr('height', treeNode.attr('height'))
+            .attr('stroke', N2Style.color.treeStroke)
+            .attr('fill', fill);
     }
 }
 </script>
@@ -6641,26 +6793,6 @@ class N2Matrix {
     }
 
     /**
-     * Draw a rectangle at the specified locate to bring attention to
-     * a variable name.
-     * @param {Number} x Upper-left corner X-coordinate in px.
-     * @param {Number} y Upper-left corner Y-coordinate in px.
-     * @param {Number} width Rectangle width in px.
-     * @param {Number} height Rectangle height in px.
-     * @param {string} fill Fill color.
-     */
-    highlight(x, y, width, height, fill) {
-        this.n2Groups.highlights.insert("rect")
-            .attr("class", "n2_hover_elements")
-            .attr("y", y)
-            .attr("x", x)
-            .attr("width", width)
-            .attr("height", height)
-            .attr("fill", fill)
-            .attr("fill-opacity", "1");
-    }
-
-    /**
      * Create an SVG group for each visible element, and have the element
      * render its shape in it. Move the groups around to their correct
      * positions, providing an animated transition from the previous
@@ -6982,9 +7114,7 @@ class N2Matrix {
 
         let leftTextWidthHovered = this.diagNodes[cell.row].nameWidthPx;
 
-        this.highlight(-leftTextWidthHovered - this.layout.size.partitionTreeGap,
-            this.nodeSize.height * cell.row, leftTextWidthHovered,
-            this.nodeSize.height, N2Style.color.highlightHovered); //highlight hovered
+        cell.highlight();
 
         this._drawOffscreenArrows(cell, lineWidth);
 
@@ -7007,10 +7137,7 @@ class N2Matrix {
                         'width': lineWidth
                     }, this.n2Groups, this.nodeSize);
 
-                    //highlight var name
-                    this.highlight(-leftTextWidthDependency - this.layout.size.partitionTreeGap,
-                        this.nodeSize.height * col, leftTextWidthDependency,
-                        this.nodeSize.height, N2Style.color.greenArrow);
+                    this.cell(cell.row, col).highlight('target', 'output');
                 }
 
             }
@@ -7032,12 +7159,8 @@ class N2Matrix {
                         'width': lineWidth
                     }, this.n2Groups, this.nodeSize);
 
-                    //highlight var name
-                    this.highlight(-leftTextWidthDependency - this.layout.size.partitionTreeGap,
-                        this.nodeSize.height * col, leftTextWidthDependency,
-                        this.nodeSize.height, N2Style.color.redArrow);
+                    this.cell(col, cell.row).highlight('source', 'input');
                 }
-
             }
         }
     }
@@ -7152,18 +7275,8 @@ class N2Matrix {
             }
         }
 
-        let leftTextWidthR = this.layout.visibleNodes[cell.row].nameWidthPx,
-            leftTextWidthC = this.layout.visibleNodes[cell.col].nameWidthPx;
-
-        // highlight var name
-        this.highlight(-leftTextWidthR - this.layout.size.partitionTreeGap,
-            this.nodeSize.height * cell.row, leftTextWidthR, this.nodeSize.height,
-            N2Style.color.redArrow);
-
-        // highlight var name
-        this.highlight(-leftTextWidthC - this.layout.size.partitionTreeGap,
-            this.nodeSize.height * cell.col, leftTextWidthC, this.nodeSize.height,
-            N2Style.color.greenArrow);
+        cell.highlight('source', 'input');
+        cell.highlight('target', 'output');
     }
 }
 </script>
@@ -7194,6 +7307,7 @@ class N2Arrow {
         this.elementsGrp = n2Groups.elements;
         this.nodeSize = nodeSize;
         this.attribs = attribs;
+        this._genPath = this._angledPath;
     }
 
     get offsetAbsX() {
@@ -7240,9 +7354,10 @@ class N2BentArrow extends N2Arrow {
         let offsetAbsX = this.offsetAbsX;
         let offsetAbsY = this.offsetAbsY;
 
-        let offsetX = (this.start.col < this.end.col) ? offsetAbsX : -offsetAbsX; // Left-to-Right : Right-to-Left
-        this.pts.start.x = this.nodeSize.width * this.start.col + this.nodeSize.width * .5 + offsetX;
+        this.offsetX = (this.start.col < this.end.col) ? offsetAbsX : -offsetAbsX; // Left-to-Right : Right-to-Left
+        this.pts.start.x = this.nodeSize.width * this.start.col + this.nodeSize.width * .5 + this.offsetX;
         this.pts.mid.x = this.nodeSize.width * this.middle.col + this.nodeSize.width * .5;
+        // this.pts.mid.x = (this.offsetX > 0)? this.nodeSize.width * this.middle.col : this.nodeSize.width * (this.middle.col + 1);
         this.pts.end.x = this.nodeSize.width * this.end.col + this.nodeSize.width * .5;
 
         let offsetY = (this.start.row < this.end.row) ? -offsetAbsY : offsetAbsY; // Down : Up
@@ -7251,16 +7366,30 @@ class N2BentArrow extends N2Arrow {
         this.pts.end.y = this.nodeSize.height * this.end.row + this.nodeSize.height * .5 + offsetY;
     }
 
-    /**
-     * Use SVG to draw the line segments, add a circle at the "middle",
-     * and an arrow at the end-point.
-     */
+    /** Create a path string with a quadratic curve at the bend. */
+    _curvedPath() {
+        const dir = (this.offsetX > 0)? 1 : -1;
+        const s = this.nodeSize.width * .5 * dir;
+
+        return "M" + this.pts.start.x + " " + this.pts.start.y +
+            " L" + this.pts.mid.x + " " + this.pts.mid.y +
+            ` q${s} 0 ${s} ${s}` +
+            " L" + this.pts.end.x + " " + this.pts.end.y;
+    }
+
+    /** Generate a path with a 90-degree angle at the bend. */
+    _angledPath() {
+        return "M" + this.pts.start.x + " " + this.pts.start.y +
+            " L" + this.pts.mid.x + " " + this.pts.mid.y +
+            " L" + this.pts.end.x + " " + this.pts.end.y;
+    }
+
+    /** Use SVG to draw the line segments and an arrow at the end-point. */
     draw() {
         this.path = this.arrowsGrp.insert("path")
             .attr("class", "n2_hover_elements")
-            .attr("d", "M" + this.pts.start.x + " " + this.pts.start.y +
-                " L" + this.pts.mid.x + " " + this.pts.mid.y +
-                " L" + this.pts.end.x + " " + this.pts.end.y)
+            .attr("marker-end", "url(#arrow)")
+            .attr("d", this._genPath())
             .attr("fill", "none")
             .style("stroke-width", this.width)
             .style("stroke", this.color);
@@ -7272,7 +7401,7 @@ class N2BentArrow extends N2Arrow {
             .attr("r", this.width * 1.0)
             .style("stroke-width", 0)
             .style("fill-opacity", 1)
-            .style("fill", "black");
+            .style("fill", N2Style.color.connection);
 
         this.dotsGrp.append("circle")
             .attr("class", "n2_hover_elements")
@@ -7282,8 +7411,6 @@ class N2BentArrow extends N2Arrow {
             .style("stroke-width", 0)
             .style("fill-opacity", .75)
             .style("fill", this.color);
-
-        this.path.attr("marker-end", "url(#arrow)");
     }
 }
 
@@ -7350,14 +7477,13 @@ class N2OffGridArrow extends N2Arrow {
         return true;
     }
 
-    /**
-     * Put the SVG arrow on the screen and position the tooltip.
-     */
+    /** Put the SVG arrow on the screen and position the tooltip. */
     draw() {
         debugInfo('Adding offscreen ' + this.attribs.direction +
             ' arrow connected to ' + this.label.text);
 
         this.path = this.arrowsGrp.insert('path')
+            .attr('marker-end', 'url(#arrow)')
             .attr('class', 'n2_hover_elements')
             .attr('stroke-dasharray', '5,5')
             .attr('d', 'M' + this.pts.start.x + ' ' + this.pts.start.y +
@@ -7365,8 +7491,6 @@ class N2OffGridArrow extends N2Arrow {
             .attr('fill', 'none')
             .style('stroke-width', this.width)
             .style('stroke', this.color);
-
-        this.path.attr('marker-end', 'url(#arrow)');
 
         for (let pos in this.label.pts) {
             this.label.ref.style(pos, this.label.pts[pos] + 'px');
@@ -8178,7 +8302,11 @@ class N2Toolbar {
         new N2ToolbarButtonToggle('#info-button', tooltipBox,
             ["Show detailed node information", "Hide detailed node information"],
             pred => { return n2ui.nodeInfoBox.hidden; },
-            e => { n2ui.nodeInfoBox.toggle(); }
+            e => {
+                n2ui.nodeInfoBox.unpin();
+                n2ui.nodeInfoBox.clear();
+                n2ui.nodeInfoBox.toggle();
+            }
         );
 
         new N2ToolbarButtonToggle('#question-button', tooltipBox,
@@ -8396,10 +8524,10 @@ class N2Diagram {
             'svgStyle': d3.select("#svgId style"),
             'toolTip': d3.select(".tool-tip"),
             'arrowMarker': d3.select("#arrow"),
-            'nodeInfo': d3.select('#node-data'),
             'n2OuterGroup': d3.select('g#n2outer'),
             'n2InnerGroup': d3.select('g#n2inner'),
             'pTreeGroup': d3.select('g#tree'),
+            'highlightBar': d3.select('g#highlight-bar'),
             'pSolverTreeGroup': d3.select('g#solver_tree'),
             'n2BackgroundRect': d3.select('g#n2inner rect'),
             'clips': {
@@ -8506,6 +8634,11 @@ class N2Diagram {
                 .attr("width", this.dims.size.partitionTree.width)
                 .attr("transform", "translate(0 " + innerDims.margin + ")");
 
+            this.dom.highlightBar
+                .attr("height", innerDims.height)
+                .attr("width", "8")
+                .attr("transform", "translate(" + this.dims.size.partitionTree.width + 1 + " " + innerDims.margin + ")");
+
             this.dom.n2OuterGroup
                 .attr("height", outerDims.height)
                 .attr("width", outerDims.height)
@@ -8562,7 +8695,11 @@ class N2Diagram {
                     self.prevScales.model.y(d.prevDims.y) + ")";
             })
             .on("click", function (d) {
-                self.ui.leftClick(d);
+                if (self.ui.nodeInfoBox.hidden) { self.ui.leftClick(d); } // Zoom if not in info panel mode
+                else { // Pin/unpin the info panel
+                    self.ui.nodeInfoBox.togglePin();
+                    self.ui.nodeInfoBox.update(d3.event, d, d3.select(this).select('rect').style('fill'));
+                }
             })
             .on("contextmenu", function (d) {
                 self.ui.rightClick(d, this);
@@ -8585,16 +8722,18 @@ class N2Diagram {
                 return d.prevDims.height * self.prevTransitCoords.model.y;
             })
             .attr("id", function (d) {
-                return d.absPathName.replace(/\./g, '_');
-            });
+                return d.absPathName.replace(/[\.:]/g, '_');
+            })
+            .attr('rx', 12)
+            .attr('ry', 12);
 
         nodeEnter.append("text")
             .attr("dy", ".35em")
             .attr("transform", function (d) {
                 let anchorX = d.prevDims.width * self.prevTransitCoords.model.x -
                     self.layout.size.rightTextMargin;
-                return "translate(" + anchorX + " " + d.prevDims.height *
-                    self.prevTransitCoords.model.y / 2 + ")";
+                return "translate(" + anchorX + " " +
+                    (d.prevDims.height * self.prevTransitCoords.model.y / 2) + ")";
             })
             .style("opacity", function (d) {
                 if (d.depth < self.zoomedElement.depth) return 0;
@@ -8639,8 +8778,8 @@ class N2Diagram {
             .attr("transform", function (d) {
                 let anchorX = d.dims.width * self.transitCoords.model.x -
                     self.layout.size.rightTextMargin;
-                return "translate(" + anchorX + " " + d.dims.height *
-                    self.transitCoords.model.y / 2 + ")";
+                return "translate(" + anchorX + " " + (d.dims.height *
+                    self.transitCoords.model.y / 2) + ")";
             })
             .style("opacity", function (d) {
                 if (d.depth < self.zoomedElement.depth) return 0;
@@ -8672,8 +8811,8 @@ class N2Diagram {
             .attr("transform", function (d) {
                 let anchorX = d.dims.width * self.transitCoords.model.x -
                     self.layout.size.rightTextMargin;
-                return "translate(" + anchorX + "," + d.dims.height *
-                    self.transitCoords.model.y / 2 + ")";
+                return "translate(" + anchorX + "," + (d.dims.height *
+                    self.transitCoords.model.y / 2) + ")";
             })
             .style("opacity", 0);
     }
@@ -8702,7 +8841,11 @@ class N2Diagram {
                     self.prevScales.solver.y(d.prevSolverDims.y) + ")";
             })
             .on("click", function (d) {
-                self.ui.leftClick(d);
+                if (self.ui.nodeInfoBox.hidden) { self.ui.leftClick(d); } // Zoom if not in info panel mode
+                else { // Pin/unpin the info panel
+                    self.ui.nodeInfoBox.togglePin();
+                    self.ui.nodeInfoBox.update(d3.event, d, d3.select(this).select('rect').style('fill'));
+                }
             })
             .on("contextmenu", function (d) {
                 self.ui.rightClick(d, this);
@@ -8729,6 +8872,8 @@ class N2Diagram {
                 }
             })
             .on("mousemove", function () {
+                self.ui.nodeInfoBox.move(d3.event);
+
                 if (self.model.abs2prom != undefined) {
                     self.dom.toolTip.style("top", (d3.event.pageY - 30) + "px")
                         .style("left", (d3.event.pageX + 5) + "px");
@@ -8846,8 +8991,13 @@ class N2Diagram {
             .style("opacity", 0);
     }
 
+    clearHighlights() {
+        this.dom.highlightBar.selectAll('rect').remove();
+    }
+
     clearArrows() {
         this.dom.n2OuterGroup.selectAll("[class^=n2_hover_elements]").remove();
+        this.clearHighlights();
     }
 
     /** Reveal arrows that had been hidden */
@@ -8984,43 +9134,44 @@ class N2Diagram {
     /** When the mouse leaves a cell, remove all temporary arrows. */
     mouseOut() {
         this.dom.n2OuterGroup.selectAll(".n2_hover_elements").remove();
-        d3.selectAll("div.offgrid")
-            .style("visibility", "hidden")
-            .html('');
+        this.clearHighlights();
+        d3.selectAll("div.offgrid").style("visibility", "hidden").html('');
 
         this.ui.nodeInfoBox.clear();
     }
 
     /**
-     * When the mouse if left-clicked on a cell, change their CSS class
+     * When the mouse is left-clicked on a cell, change their CSS class
      * so they're not removed when the mouse moves out.
      * @param {N2MatrixCell} cell The cell the event occured on.
      */
     mouseClick(cell) {
-        let newClassName = "n2_hover_elements_" + cell.row + "_" + cell.col;
-        let selection = this.dom.n2OuterGroup.selectAll("." + newClassName);
-        if (selection.size() > 0) {
-            selection.remove();
-            const arrow = this.arrowCache.find(o => o.cell.row === cell.row && o.cell.col === cell.col);
-            const arrowIndex = this.arrowCache.indexOf(arrow);
-            this.arrowCache.splice(arrowIndex, 1);
-        }
-        else {
-            const arrow = {
-                'cell': cell,
-                'element': this.dom.n2OuterGroup
-                    .selectAll("path.n2_hover_elements, circle.n2_hover_elements"),
-                'className': newClassName
+        if (this.ui.nodeInfoBox.hidden) { // If not in info panel mode
+            let newClassName = "n2_hover_elements_" + cell.row + "_" + cell.col;
+            let selection = this.dom.n2OuterGroup.selectAll("." + newClassName);
+            if (selection.size() > 0) {
+                selection.remove();
+                const arrow = this.arrowCache.find(o => o.cell.row === cell.row && o.cell.col === cell.col);
+                const arrowIndex = this.arrowCache.indexOf(arrow);
+                this.arrowCache.splice(arrowIndex, 1);
             }
-            this.arrowCache.push(arrow);
-            this.dom.n2OuterGroup
-                .selectAll("path.n2_hover_elements, circle.n2_hover_elements")
-                .attr("class", newClassName);
+            else {
+                const arrow = {
+                    'cell': cell,
+                    'element': this.dom.n2OuterGroup
+                        .selectAll("path.n2_hover_elements, circle.n2_hover_elements"),
+                    'className': newClassName
+                }
+                this.arrowCache.push(arrow);
+                this.dom.n2OuterGroup
+                    .selectAll("path.n2_hover_elements, circle.n2_hover_elements")
+                    .attr("class", newClassName);
+            }
         }
-    }
-
-    clearActiveNode() {
-        this.dom.nodeInfo.html('');
+        else { // Pin/unpin the info panel
+            this.ui.nodeInfoBox.togglePin();
+            this.ui.nodeInfoBox.update(d3.event, cell.obj, cell.color());
+        }
     }
 
     mouseClickAll(cell) {
@@ -9189,11 +9340,17 @@ class NodeInfo {
         ];
 
         this.abs2prom = abs2prom;
-        this.table = d3.select('#node-info-container');
+        this.table = d3.select('#node-info-table');
+        this.container = d3.select('#node-info-container');
         this.thead = this.table.select('thead');
         this.tbody = this.table.select('tbody');
         this.toolbarButton = d3.select('#info-button');
         this.hidden = true;
+        this.pinned = false;
+
+        const self = this;
+        this.pinButton = d3.select('#node-info-pin')
+            .on('click', e => { self.unpin(); })
     }
 
     /** Make the info box visible if it's hidden */
@@ -9214,6 +9371,22 @@ class NodeInfo {
     toggle() {
         if (this.hidden) this.show();
         else this.hide();
+    }
+
+    pin() { 
+        this.pinned = true;
+        this.pinButton.attr('class', 'info-visible');
+    }
+    
+    unpin() {
+        this.pinned = false;
+        this.pinButton.attr('class', 'info-hidden');
+        this.clear();
+    }
+
+    togglePin() {
+        if (this.pinned) this.unpin();
+        else this.pin();
     }
 
     _addPropertyRow(label, val, capitalize = false) {
@@ -9237,7 +9410,9 @@ class NodeInfo {
      * @param {N2TreeNode} color The color to make the title bar.
      */
     update(event, obj, color = '#42926b') {
-        if (this.hidden) return;
+        if (this.hidden || this.pinned) return;
+
+        this.clear();
         // Put the name in the title
         this.table.select('thead th')
             .style('background-color', color)
@@ -9268,16 +9443,20 @@ class NodeInfo {
             .style('height', this.table.node().scrollHeight + 'px')
 
         this.move(event);
-        this.table.attr('class', 'info-visible');
+        this.container.attr('class', 'info-visible');
     }
 
     /** Wipe the contents of the table body */
     clear() {
-        if (this.hidden) return;
-        this.table
+        if (this.hidden || this.pinned) return;
+        this.container
             .attr('class', 'info-hidden')
             .style('width', 'auto')
-            .style('height', 'auto')
+            .style('height', 'auto');
+
+        this.table
+            .style('width', 'auto')
+            .style('height', 'auto');
 
         this.tbody.html('');
     }
@@ -9287,29 +9466,29 @@ class NodeInfo {
      * @param {Object} event The triggering event containing the position.
      */
     move(event) {
-        if (this.hidden) return;
+        if (this.hidden || this.pinned) return;
         const offset = 30;
 
         // Mouse is in left half of window, put box to right of mouse
         if (event.clientX < window.innerWidth / 2) {
-            this.table.style('right', 'auto');
-            this.table.style('left', (event.clientX + offset) + 'px')
+            this.container.style('right', 'auto');
+            this.container.style('left', (event.clientX + offset) + 'px')
         }
         // Mouse is in right half of window, put box to left of mouse
         else {
-            this.table.style('left', 'auto');
-            this.table.style('right', (window.innerWidth - event.clientX + offset) + 'px')
+            this.container.style('left', 'auto');
+            this.container.style('right', (window.innerWidth - event.clientX + offset) + 'px')
         }
 
         // Mouse is in top half of window, put box below mouse
         if (event.clientY < window.innerHeight / 2) {
-            this.table.style('bottom', 'auto');
-            this.table.style('top', (event.clientY - offset) + 'px')
+            this.container.style('bottom', 'auto');
+            this.container.style('top', (event.clientY - offset) + 'px')
         }
         // Mouse is in bottom half of window, put box above mouse
         else {
-            this.table.style('top', 'auto');
-            this.table.style('bottom', (window.innerHeight - event.clientY - offset) + 'px')
+            this.container.style('top', 'auto');
+            this.container.style('bottom', (window.innerHeight - event.clientY - offset) + 'px')
         }
     }
 }
@@ -9894,7 +10073,7 @@ class N2UserInterface {
         testThis(this, 'N2UserInterface', 'toggleNodeData');
 
         const infoButton = d3.select('#info-button');
-        const nodeData = d3.select('#node-info-container');
+        const nodeData = d3.select('#node-info-table');
 
         if (nodeData.classed('info-hidden')) {
             nodeData.attr('class', 'info-visible');
