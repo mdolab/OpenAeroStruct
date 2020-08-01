@@ -45,7 +45,7 @@ In the simplest case, you can add a single lifting surface that represents the w
 To define a lifting surface, you first need to produce a computational mesh that represents that surface.
 
 OpenAeroStruct contains a helper function to create these meshes or you can create your own array of points through another method.
-If you want to create your own mesh, see :ref:`Geometry_Creation_and_Manipulation`.
+If you want to create your own mesh, see :ref:`Geometry_Creation_and_Manipulation` and :ref:`Custom_Mesh`.
 To use OpenAeroStruct's helper function, you need to give it the number of spanwise points, `num_y`, as well as the number of chordwise points, `num_x`.
 In the code block shown below, we call the helper function to define a mesh and get a starting twist distribution.
 

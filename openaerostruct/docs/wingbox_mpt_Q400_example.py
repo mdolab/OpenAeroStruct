@@ -2,13 +2,13 @@
 This example script can be used to run a multipoint aerostructural optimization
 for a wing based on the Bombardier Q400 with the wingbox model.
 We create a custom mesh for this wing in this script.
-The fuel burn from the cruise case is the objective function and a 2.5g
-maneuver case is used for the structural sizing.
+The fuel burn from the cruise flight-point is the objective function and a 2.5g
+maneuver flight-point is used for the structural sizing.
 After running the optimization, use the 'plot_wingbox.py' script in the utils/
 directory (e.g., as 'python ../utils/plot_wingbox.py aerostruct.db' if running
-from this directory) to vizualize the results.
+from this directory) to visualize the results.
 This visualization script is based on the plot_wing.py script.
-It's still a bit hacky and will probably not work as it is for other types of
+It's still under development and will probably not work as it is for other types of
 cases for now.
 """
 
@@ -17,9 +17,9 @@ import numpy as np
 
 from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
-import openmdao.api as om
 from openaerostruct.structures.wingbox_fuel_vol_delta import WingboxFuelVolDelta
 from openaerostruct.utils.constants import grav_constant
+import openmdao.api as om
 
 # Provide coordinates for a portion of an airfoil for the wingbox cross-section as an nparray with dtype=complex (to work with the complex-step approximation for derivatives).
 # These should be for an airfoil with the chord scaled to 1.

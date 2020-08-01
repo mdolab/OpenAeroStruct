@@ -28,6 +28,7 @@ Please review these at a minimum to understand how aerodynamic, structural, and 
    struct_example.rst
    aerostructural_walkthrough.rst
    aerostructural_wingbox_walkthrough.rst
+   custom_mesh_example.rst
 
 Once you have reviewed and understand these examples, you can move on to some more advanced examples below.
 
