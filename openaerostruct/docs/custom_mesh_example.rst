@@ -19,7 +19,7 @@ The following shows a visualization of the mesh.
 
   python ../utils/plot_wingbox.py aerostruct.db
 
-.. image:: two_part_wing.png
+.. image:: two_part_mesh.png
 
 The complete script for the optimization is as follows.
 Make sure you go through the :ref:`Aerostructural_with_Wingbox_Walkthrough` before trying to understand this setup.
