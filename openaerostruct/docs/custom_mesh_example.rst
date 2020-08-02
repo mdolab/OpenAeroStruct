@@ -5,6 +5,7 @@ User-Provided Mesh Example
 
 Here is an example script with a custom mesh provided as an array of coordinates.
 This should help you understand how meshes are defined in OpenAeroStruct and how to create them for your own custom planform shapes.
+This is an alternative to the helper-function approach described in :ref:`Aerodynamic_Optimization_Walkthrough`.
 
 The following shows the portion of the example script in which the user provides the coordinates for the mesh.
 This example is for a wing with a kink and two distinct trapezoidal segments.

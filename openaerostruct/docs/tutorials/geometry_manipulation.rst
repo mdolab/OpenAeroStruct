@@ -4,12 +4,21 @@
 Geometry Creation and Manipulation
 ==================================
 
+Geometry Creation
+-----------------
+
 OpenAeroStruct contains two types of default surfaces: a simple rectangular lifting surface, and a wing modeled after a B777-type aircraft called the Common Research Model (CRM).
+See the `run_scaneagle.py` example in the `examples/` directory for an example that uses the `rect` option.
+The `rect` option is convenient for simple rectangular and trapezoidal planforms.
+See :ref:`Aerodynamic_Optimization_Walkthrough` and :ref:`Aerostructural_with_Wingbox_Walkthrough` for examples that use the CRM-based planforms.
+
+Alternatively, if you want to create your own custom mesh, see :ref:`Custom_Mesh`.
 
 Explanation of design variables
 -------------------------------
 
-We currently have eight design variables, which we will detail below. Sweep, taper, and dihedral each have one design variable defined for a single lifting surface, while twist, chord, xshear, zshear, thickness, and radius are arrays that contain values for specific spanwise locations along the surface.
+We currently have eight design variables, which we will detail below. Sweep, taper, and dihedral each have one design variable defined for a single lifting surface, while twist, chord, xshear, zshear, thickness, and radius are arrays that contain values for specific spanwise locations along the surface (there are additional design variables when using the wingbox structural model; see :ref:`Aerostructural_with_Wingbox_Walkthrough` for more).
+Along with being used as design variables during optimization, the planform design variables can also be used to manipulate the default surfaces already provided in OpenAeroStruct (i.e., `rect` and `CRM`) to get a desired initial geometry (see the `run_scaneagle.py` example in the `examples/` directory).
 
 Instead of directly controlling the nodal mesh points for the design variables defined as arrays along the span, we vary b-spline control points which influence a b-spline interpolation.
 For example, in the figure below, we control the green points as our design variables, which are the b-spline knots.
