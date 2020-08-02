@@ -94,3 +94,6 @@ class AeroPoint(om.Group):
             user_specified_Sref=self.options['user_specified_Sref']),
             promotes_inputs=['v', 'rho', 'cg', 'S_ref_total'],
             promotes_outputs=['CM', 'CL', 'CD'])
+
+        # Need to set the default value/unit for beta since it is often unused (unconnected)
+        self.set_input_defaults('beta', val=0., units='deg')

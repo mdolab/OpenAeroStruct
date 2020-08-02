@@ -55,10 +55,10 @@ class ViscousDrag(om.ExplicitComponent):
         self.add_input('re', val=5.e6, units='1/m')
         self.add_input('Mach_number', val=1.6)
         self.add_input('S_ref', val=1., units='m**2')
-        self.add_input('cos_sweep', val=np.ones((ny-1)), units='m')
-        self.add_input('widths', val=np.ones((ny-1)), units='m')
+        self.add_input('cos_sweep', val=np.ones((ny-1))*.2, units='m')
+        self.add_input('widths', val=np.arange((ny-1))+1., units='m')
         self.add_input('lengths', val=np.ones((ny)), units='m')
-        self.add_input('t_over_c', val=np.ones((ny-1)))
+        self.add_input('t_over_c', val=np.arange((ny-1)))
         self.add_output('CDv', val=0.)
 
         self.declare_partials('CDv', '*')
