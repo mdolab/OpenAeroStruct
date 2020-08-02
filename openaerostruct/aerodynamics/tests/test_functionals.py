@@ -11,7 +11,7 @@ class Test(unittest.TestCase):
 
         comp = VLMFunctionals(surface=surfaces[0])
 
-        run_test(self, comp, complex_flag=True)
+        run_test(self, comp, complex_flag=True, step=1e-8)
 
 
 if __name__ == '__main__':
