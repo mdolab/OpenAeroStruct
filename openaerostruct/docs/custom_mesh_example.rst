@@ -15,10 +15,6 @@ This example is for a wing with a kink and two distinct trapezoidal segments.
 
 The following shows a visualization of the mesh.
 
-.. code-block:: python
-
-  python ../utils/plot_wingbox.py aerostruct.db
-
 .. image:: two_part_mesh.png
 
 The complete script for the optimization is as follows.
