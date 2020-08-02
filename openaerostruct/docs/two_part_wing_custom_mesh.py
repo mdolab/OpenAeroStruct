@@ -265,7 +265,7 @@ prob.model.connect('AS_point_0.fuelburn', 'fuel_diff.fuelburn')
 ## Use these settings if you do not have pyOptSparse or SNOPT
 prob.driver = om.ScipyOptimizeDriver()
 prob.driver.options['optimizer'] = 'SLSQP'
-prob.driver.options['tol'] = 1e-6
+prob.driver.options['tol'] = 1e-4
 
 recorder = om.SqliteRecorder("aerostruct.db")
 prob.driver.add_recorder(recorder)

@@ -237,7 +237,7 @@ prob.model.connect('AS_point_0.fuelburn', 'fuel_diff.fuelburn')
 ## Use these settings if you do not have pyOptSparse or SNOPT
 prob.driver = om.ScipyOptimizeDriver()
 prob.driver.options['optimizer'] = 'SLSQP'
-prob.driver.options['tol'] = 1e-5
+prob.driver.options['tol'] = 1e-4
 
 # # The following are the optimizer settings used for the EngOpt conference paper
 # # Uncomment them if you can use SNOPT
