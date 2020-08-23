@@ -21,38 +21,43 @@ import openmdao.api as om
 
 #docs checkpoint 0
 # -----------------------------------------------------------------------------
-# CUSTOM MESH: Example mesh for a 2 segment wing.
+# CUSTOM MESH: Example mesh for a 2-segment wing with sweep
 # -----------------------------------------------------------------------------
 
 # Planform specifications
 half_span = 12.0               # wing half-span in m
-kink_location = 4.0            # spanwise loc of the kink in m
+kink_location = 4.0            # spanwise location of the kink in m
+
 root_chord = 6.0               # root chord in m
 kink_chord = 3.0               # kink chord in m
-tip_chord = 1.0                # tip chord in m
+tip_chord = 2.0                # tip chord in m
+
+inboard_LE_sweep = 10.         # inboard leading-edge sweep angle in deg
+outboard_LE_sweep = -10.       # outboard leading-edge sweep angle in deg
 
 # Mesh specifications
-nx = 5              # number of chordwise nodal points (should be odd)
-ny_outboard = 9    # number of spanwise nodal points for the outboard segment
-ny_inboard = 7      # number of spanwise nodal points for the inboard segment
+# number of chordwise nodal points (should be odd)
+nx = 5
+ny_outboard = 9                # number of spanwise nodal points for the outboard segment
+ny_inboard = 7                 # number of spanwise nodal points for the inboard segment
 
 # Initialize the 3-D mesh object. Indexing: Chordwise, spanwise, then the 3-D coordinates.
 # We use ny_inboard+ny_outboard-1 because the 2 segments share the nodes where they connect.
 mesh = np.zeros((nx, ny_inboard+ny_outboard-1, 3))
 
 # The form of this 3-D array can be confusing initially.
-# For each node we are providing the x, y, and z coordinates.
+# For each node, we are providing the x, y, and z coordinates.
 # x is streamwise, y is spanwise, and z is up.
 # For example, the node for the leading edge at the tip would be specified as mesh[0, 0, :] = np.array([x, y, z]).
 # And the node at the trailing edge at the root would be mesh[nx-1, ny-1, :] = np.array([x, y, z]).
-# We only provide the left half of the wing because we use symmetry.
+# We only provide the right half of the wing here because we use symmetry.
 # Print elements of the mesh to better understand the form.
 
-# Assume the leading edge doesn't have sweep for this simple example.
-# So set the x-coordinates for all the leading-edge points to 0.
-mesh[0, :, 0] = 0.
+####### THE Z-COORDINATES ######
 # Assume no dihedral, so set the z-coordinate for all the points to 0.
 mesh[:, :, 2] = 0.
+
+####### THE Y-COORDINATES ######
 # Using uniform spacing for the spanwise locations of all the nodes within each of the two trapezoidal segments:
 # Outboard
 mesh[:, :ny_outboard, 1] = np.linspace(half_span, kink_location, ny_outboard)
@@ -60,16 +65,45 @@ mesh[:, :ny_outboard, 1] = np.linspace(half_span, kink_location, ny_outboard)
 mesh[:, ny_outboard:ny_outboard+ny_inboard,
      1] = np.linspace(kink_location, 0, ny_inboard)[1:]
 
-# We'll use the chord lengths to linearly interpolate the rest of the x coordinates
-for i in range(1, nx):
-    chord_fraction = float(i) / (nx-1)
+###### THE X-COORDINATES ######
+# Start with the leading edge and create some intermediate arrays that we will use
+x_LE = np.zeros(ny_inboard + ny_outboard - 1)
 
-    mesh[i, :ny_outboard, 0] = chord_fraction * np.linspace(
-        0, 1., ny_outboard) * kink_chord + chord_fraction * np.linspace(1., 0., ny_outboard) * tip_chord
+array_for_inboard_leading_edge_x_coord = np.linspace(
+    0, kink_location, ny_inboard) * np.tan(inboard_LE_sweep / 180. * np.pi)
 
-    mesh[i, ny_outboard:ny_outboard+ny_inboard-1, 0] = chord_fraction * np.linspace(
-        0, 1., ny_inboard)[1:] * root_chord + chord_fraction * np.linspace(1., 0., ny_inboard)[1:] * kink_chord
+array_for_outboard_leading_edge_x_coord = np.linspace(0, half_span - kink_location, ny_outboard) * np.tan(
+    outboard_LE_sweep / 180. * np.pi) + np.ones(ny_outboard) * array_for_inboard_leading_edge_x_coord[-1]
 
+x_LE[:ny_inboard] = array_for_inboard_leading_edge_x_coord
+x_LE[ny_inboard: ny_inboard +
+     ny_outboard] = array_for_outboard_leading_edge_x_coord[1:]
+
+# Then the trailing edge
+x_TE = np.zeros(ny_inboard + ny_outboard - 1)
+
+array_for_inboard_trailing_edge_x_coord = np.linspace(
+    array_for_inboard_leading_edge_x_coord[0] + root_chord, array_for_inboard_leading_edge_x_coord[-1] + kink_chord, ny_inboard)
+
+array_for_outboard_trailing_edge_x_coord = np.linspace(
+    array_for_outboard_leading_edge_x_coord[0] + kink_chord, array_for_outboard_leading_edge_x_coord[-1] + tip_chord, ny_outboard)
+
+x_TE[:ny_inboard] = array_for_inboard_trailing_edge_x_coord
+x_TE[ny_inboard: ny_inboard +
+     ny_outboard] = array_for_outboard_trailing_edge_x_coord[1:]
+
+# # Quick plot to check leading and trailing edge x-coords
+# plt.plot(x_LE, np.arange(0, ny_inboard+ny_outboard-1), marker='*')
+# plt.plot(x_TE, np.arange(0, ny_inboard+ny_outboard-1), marker='*')
+# plt.show()
+# exit()
+
+for i in range(0, ny_inboard+ny_outboard-1):
+    mesh[:, i, 0] = np.linspace(np.flip(x_LE)[i], np.flip(x_TE)[i], nx)
+
+# -----------------------------------------------------------------------------
+# END MESH
+# -----------------------------------------------------------------------------
 #docs checkpoint 1
 
 
