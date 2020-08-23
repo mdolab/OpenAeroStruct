@@ -36,8 +36,7 @@ inboard_LE_sweep = 10.         # inboard leading-edge sweep angle in deg
 outboard_LE_sweep = -10.       # outboard leading-edge sweep angle in deg
 
 # Mesh specifications
-# number of chordwise nodal points (should be odd)
-nx = 5
+nx = 5                         # number of chordwise nodal points (should be odd)
 ny_outboard = 9                # number of spanwise nodal points for the outboard segment
 ny_inboard = 7                 # number of spanwise nodal points for the inboard segment
 
