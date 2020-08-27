@@ -45,8 +45,13 @@ In the simplest case, you can add a single lifting surface that represents the w
 To define a lifting surface, you first need to produce a computational mesh that represents that surface.
 
 OpenAeroStruct contains a helper function to create these meshes or you can create your own array of points through another method.
-If you want to create your own mesh, see :ref:`Geometry_Creation_and_Manipulation`.
-To use OpenAeroStruct's helper function, you need to give it the number of spanwise points, `num_y`, as well as the number of chordwise points, `num_x`.
+To use OpenAeroStruct's helper function, you need to give it the number of spanwise points, `num_y`, the number of chordwise points, `num_x`, and the type of baseline planform to start with, `wing_type`.
+There are two main options for `wing_type`: `rect`, which is a rectangular wing, and `CRM`, which is based on the Common Research Model wing.
+This example uses the `CRM` option.
+See the `run_scaneagle.py` example in the `examples/` directory for an example that uses the `rect` option.
+The `rect` option is convenient for simple rectangular and trapezoidal planforms.
+Alternatively, if you want to create your own custom mesh, see :ref:`Custom_Mesh`.
+
 In the code block shown below, we call the helper function to define a mesh and get a starting twist distribution.
 
 .. embed-code::

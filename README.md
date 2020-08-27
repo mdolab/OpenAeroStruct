@@ -7,18 +7,22 @@ OpenAeroStruct
 OpenAeroStruct is a lightweight tool that performs aerostructural optimization using OpenMDAO.
 It couples a vortex-lattice method (VLM) and a 6 degrees of freedom 3-dimensional spatial beam model to simulate aerodynamic and structural analyses using lifting surfaces.
 These simulations are wrapped with an optimizer using NASA's OpenMDAO framework.
-The analysis and optimization results can be visualized using included tools, producing figures such as this:
+The analysis and optimization results can be visualized using included tools, producing figures such as these:
 
+*With a tubular structure*
 ![Example](openaerostruct/docs/example.png)
+
+*With a wingbox structure*
+![Example2](openaerostruct/docs/wingbox_fine.png)
+
+Please note that this repository is provided as is without any guaranteed support.
+If you would like to highlight issues, ask questions, or make changes, please do so using GitHub Issues and Pull Requests.
+The developers will address them at their discretion.
 
 Install OpenAeroStruct by cloning this repository and entering the folder it generates.
 Then do:
 
 `pip install -e .`
-
-Please note that this repository is provided as is without any guaranteed support.
-If you would like to highlight issues, ask questions, or make changes, please do so using GitHub Issues and Pull Requests.
-The developers will address them at their discretion.
 
 Documentation
 -------------

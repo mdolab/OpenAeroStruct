@@ -37,7 +37,7 @@ class LiftDrag(om.ExplicitComponent):
         self.ny = ny = surface['mesh'].shape[1]
         self.num_panels = (nx - 1) * (ny - 1)
 
-        self.add_input('sec_forces', val=np.zeros((nx-1, ny-1, 3)), units='N')
+        self.add_input('sec_forces', val=np.ones((nx-1, ny-1, 3)), units='N')
         self.add_input('alpha', val=3., units='deg')
         self.add_input('beta', val=0., units='deg')
         self.add_output('L', val=0., units='N')

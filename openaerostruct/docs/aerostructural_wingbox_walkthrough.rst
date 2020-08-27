@@ -45,7 +45,7 @@ However, we currently have not implemented the functionality to specify differen
 
 Next, we create the dictionary with information for the mesh and create the mesh.
 For this example we use the uCRM-based geometry (undeflected Common Research Model) already defined and available in OpenAeroStruct.
-Alternatively, the user can provide their own mesh (see :ref:`Aerostructural_with_wingbox_(Q400)` for another example with a custom mesh).
+Alternatively, the user can provide their own mesh (see :ref:`Custom_Mesh` for another example with a custom mesh).
 Here we specify 15 as the number of spanwise nodes and 3 as the number of chordwise nodes for the VLM mesh.
 We also set `chord_cos_spacing` and `span_cos_spacing` to `0` for uniform panel spacing.
 The FEM model will use the spanwise spacing of the VLM mesh for the FEM mesh.

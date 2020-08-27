@@ -1,15 +1,12 @@
 """
-This example script can be used to run a multipoint aerostructural optimization
-for a wing based on the Bombardier Q400 with the wingbox model.
-We create a custom mesh for this wing in this script.
+This example script can be used to run a multipoint aerostructural (w/ wingbox) optimization for a custom user-provided mesh.
+
 The fuel burn from the cruise flight-point is the objective function and a 2.5g
 maneuver flight-point is used for the structural sizing.
 After running the optimization, use the 'plot_wingbox.py' script in the utils/
 directory (e.g., as 'python ../utils/plot_wingbox.py aerostruct.db' if running
 from this directory) to visualize the results.
-This visualization script is based on the plot_wing.py script.
-It's still under development and will probably not work as it is for other types of
-cases for now.
+'plot_wingbox.py' is still under development and will probably not work as it is for other types of cases for now.
 """
 
 from __future__ import division, print_function
@@ -20,6 +17,98 @@ from openaerostruct.integration.aerostruct_groups import AerostructGeometry, Aer
 from openaerostruct.structures.wingbox_fuel_vol_delta import WingboxFuelVolDelta
 from openaerostruct.utils.constants import grav_constant
 import openmdao.api as om
+
+
+#docs checkpoint 0
+# -----------------------------------------------------------------------------
+# CUSTOM MESH: Example mesh for a 2-segment wing with sweep
+# -----------------------------------------------------------------------------
+
+# Planform specifications
+half_span = 12.0               # wing half-span in m
+kink_location = 4.0            # spanwise location of the kink in m
+
+root_chord = 6.0               # root chord in m
+kink_chord = 3.0               # kink chord in m
+tip_chord = 2.0                # tip chord in m
+
+inboard_LE_sweep = 10.         # inboard leading-edge sweep angle in deg
+outboard_LE_sweep = -10.       # outboard leading-edge sweep angle in deg
+
+# Mesh specifications
+nx = 5                         # number of chordwise nodal points (should be odd)
+ny_outboard = 9                # number of spanwise nodal points for the outboard segment
+ny_inboard = 7                 # number of spanwise nodal points for the inboard segment
+
+# Initialize the 3-D mesh object. Indexing: Chordwise, spanwise, then the 3-D coordinates.
+# We use ny_inboard+ny_outboard-1 because the 2 segments share the nodes where they connect.
+mesh = np.zeros((nx, ny_inboard+ny_outboard-1, 3))
+
+# The form of this 3-D array can be confusing initially.
+# For each node, we are providing the x, y, and z coordinates.
+# x is streamwise, y is spanwise, and z is up.
+# For example, the node for the leading edge at the tip would be specified as mesh[0, 0, :] = np.array([x, y, z]).
+# And the node at the trailing edge at the root would be mesh[nx-1, ny-1, :] = np.array([x, y, z]).
+# We only provide the right half of the wing here because we use symmetry.
+# Print elements of the mesh to better understand the form.
+
+####### THE Z-COORDINATES ######
+# Assume no dihedral, so set the z-coordinate for all the points to 0.
+mesh[:, :, 2] = 0.
+
+####### THE Y-COORDINATES ######
+# Using uniform spacing for the spanwise locations of all the nodes within each of the two trapezoidal segments:
+# Outboard
+mesh[:, :ny_outboard, 1] = np.linspace(half_span, kink_location, ny_outboard)
+# Inboard
+mesh[:, ny_outboard:ny_outboard+ny_inboard,
+     1] = np.linspace(kink_location, 0, ny_inboard)[1:]
+
+###### THE X-COORDINATES ######
+# Start with the leading edge and create some intermediate arrays that we will use
+x_LE = np.zeros(ny_inboard + ny_outboard - 1)
+
+array_for_inboard_leading_edge_x_coord = np.linspace(
+    0, kink_location, ny_inboard) * np.tan(inboard_LE_sweep / 180. * np.pi)
+
+array_for_outboard_leading_edge_x_coord = np.linspace(0, half_span - kink_location, ny_outboard) * np.tan(
+    outboard_LE_sweep / 180. * np.pi) + np.ones(ny_outboard) * array_for_inboard_leading_edge_x_coord[-1]
+
+x_LE[:ny_inboard] = array_for_inboard_leading_edge_x_coord
+x_LE[ny_inboard: ny_inboard +
+     ny_outboard] = array_for_outboard_leading_edge_x_coord[1:]
+
+# Then the trailing edge
+x_TE = np.zeros(ny_inboard + ny_outboard - 1)
+
+array_for_inboard_trailing_edge_x_coord = np.linspace(
+    array_for_inboard_leading_edge_x_coord[0] + root_chord, array_for_inboard_leading_edge_x_coord[-1] + kink_chord, ny_inboard)
+
+array_for_outboard_trailing_edge_x_coord = np.linspace(
+    array_for_outboard_leading_edge_x_coord[0] + kink_chord, array_for_outboard_leading_edge_x_coord[-1] + tip_chord, ny_outboard)
+
+x_TE[:ny_inboard] = array_for_inboard_trailing_edge_x_coord
+x_TE[ny_inboard: ny_inboard +
+     ny_outboard] = array_for_outboard_trailing_edge_x_coord[1:]
+
+# # Quick plot to check leading and trailing edge x-coords
+# plt.plot(x_LE, np.arange(0, ny_inboard+ny_outboard-1), marker='*')
+# plt.plot(x_TE, np.arange(0, ny_inboard+ny_outboard-1), marker='*')
+# plt.show()
+# exit()
+
+for i in range(0, ny_inboard+ny_outboard-1):
+    mesh[:, i, 0] = np.linspace(np.flip(x_LE)[i], np.flip(x_TE)[i], nx)
+
+# -----------------------------------------------------------------------------
+# END MESH
+# -----------------------------------------------------------------------------
+#docs checkpoint 1
+
+
+# -----------------------------------------------------------------------------
+# On to the problem setup (this is the same setup used for the Q400 example)
+# -----------------------------------------------------------------------------
 
 # Provide coordinates for a portion of an airfoil for the wingbox cross-section as an nparray with dtype=complex (to work with the complex-step approximation for derivatives).
 # These should be for an airfoil with the chord scaled to 1.
@@ -32,34 +121,6 @@ lower_x = np.array([0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0
 upper_y = np.array([ 0.0447,  0.046,  0.0472,  0.0484,  0.0495,  0.0505,  0.0514,  0.0523,  0.0531,  0.0538, 0.0545,  0.0551,  0.0557, 0.0563,  0.0568, 0.0573,  0.0577,  0.0581,  0.0585,  0.0588,  0.0591,  0.0593,  0.0595,  0.0597,  0.0599,  0.06,    0.0601,  0.0602,  0.0602,  0.0602,  0.0602,  0.0602,  0.0601,  0.06,    0.0599,  0.0598,  0.0596,  0.0594,  0.0592,  0.0589,  0.0586,  0.0583,  0.058,   0.0576,  0.0572,  0.0568,  0.0563,  0.0558,  0.0553,  0.0547,  0.0541], dtype = 'complex128')
 lower_y = np.array([-0.0447, -0.046, -0.0473, -0.0485, -0.0496, -0.0506, -0.0515, -0.0524, -0.0532, -0.054, -0.0547, -0.0554, -0.056, -0.0565, -0.057, -0.0575, -0.0579, -0.0583, -0.0586, -0.0589, -0.0592, -0.0594, -0.0595, -0.0596, -0.0597, -0.0598, -0.0598, -0.0598, -0.0598, -0.0597, -0.0596, -0.0594, -0.0592, -0.0589, -0.0586, -0.0582, -0.0578, -0.0573, -0.0567, -0.0561, -0.0554, -0.0546, -0.0538, -0.0529, -0.0519, -0.0509, -0.0497, -0.0485, -0.0472, -0.0458, -0.0444], dtype = 'complex128')
 
-
-# Here we create a custom mesh for the wing
-# It is evenly spaced with nx chordwise nodal points and ny spanwise nodal points for the half-span
-
-span = 28.42                    # wing span in m
-root_chord = 3.34               # root chord in m
-
-nx = 3  # number of chordwise nodal points (should be odd)
-ny = 11  # number of spanwise nodal points for the half-span
-
-# Initialize the 3-D mesh object. Chordwise, spanwise, then the 3D coordinates.
-mesh = np.zeros((nx, ny, 3))
-
-# Start away from the symmetry plane and approach the plane as the array indices increase.
-# The form of this 3-D array can be very confusing initially.
-# For each node we are providing the x, y, and z coordinates.
-# x is chordwise, y is spanwise, and z is up.
-# For example (for a mesh with 5 chordwise nodes and 15 spanwise nodes for the half wing), the node for the leading edge at the tip would be specified as mesh[0, 0, :] = np.array([1.1356, -14.21, 0.])
-# and the node at the trailing edge at the root would be mesh[4, 14, :] = np.array([3.34, 0., 0.]).
-# We only provide the left half of the wing because we use symmetry.
-# Print the following mesh and elements of the mesh to better understand the form.
-
-mesh[:, :, 1] = np.linspace(-span/2, 0, ny)
-mesh[0, :, 0] = 0.34 * root_chord * np.linspace(1.0, 0., ny)
-mesh[2, :, 0] = root_chord * (np.linspace(0.4, 1.0, ny) + 0.34 * np.linspace(1.0, 0., ny))
-mesh[1, :, 0] = ( mesh[2, :, 0] + mesh[0, :, 0] ) / 2
-
-# print(mesh)
 
 surf_dict = {
             # Wing definition
@@ -190,7 +251,7 @@ for i in range(2):
         prob.model.connect(name + '.local_stiff_transformed', point_name + '.coupled.' + name + '.local_stiff_transformed')
         prob.model.connect(name + '.nodes', point_name + '.coupled.' + name + '.nodes')
 
-        # Connect aerodyamic mesh to coupled group mesh
+        # Connect aerodynamic mesh to coupled group mesh
         prob.model.connect(name + '.mesh', point_name + '.coupled.' + name + '.mesh')
         if surf_dict['struct_weight_relief']:
             prob.model.connect(name + '.element_mass', point_name + '.coupled.' + name + '.element_mass')
@@ -238,14 +299,6 @@ prob.model.connect('AS_point_0.fuelburn', 'fuel_diff.fuelburn')
 prob.driver = om.ScipyOptimizeDriver()
 prob.driver.options['optimizer'] = 'SLSQP'
 prob.driver.options['tol'] = 1e-4
-
-# # The following are the optimizer settings used for the EngOpt conference paper
-# # Uncomment them if you can use SNOPT
-# prob.driver = om.pyOptSparseDriver()
-# prob.driver.options['optimizer'] = "SNOPT"
-# prob.driver.opt_settings['Major optimality tolerance'] = 5e-6
-# prob.driver.opt_settings['Major feasibility tolerance'] = 1e-8
-# prob.driver.opt_settings['Major iterations limit'] = 200
 
 recorder = om.SqliteRecorder("aerostruct.db")
 prob.driver.add_recorder(recorder)

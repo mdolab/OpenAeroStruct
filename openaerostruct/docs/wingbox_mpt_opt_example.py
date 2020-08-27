@@ -6,9 +6,9 @@ from __future__ import division, print_function
 import numpy as np
 from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
-import openmdao.api as om
 from openaerostruct.structures.wingbox_fuel_vol_delta import WingboxFuelVolDelta
 from openaerostruct.utils.constants import grav_constant
+import openmdao.api as om
 
 #docs checkpoint 1
 

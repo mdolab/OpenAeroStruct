@@ -13,6 +13,6 @@ Make sure you go through the :ref:`Aerostructural_with_Wingbox_Walkthrough` befo
 
 The following shows a visualization of the results.
 As can be seen, there is plenty of room for improvement.
-A finer mesh and a lower optimization tolerance should be used.
+A finer mesh and a tighter optimization tolerance should be used.
 
 .. image:: ../wingbox_Q400.png
