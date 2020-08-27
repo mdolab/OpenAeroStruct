@@ -1,12 +1,11 @@
 os:
 - linux
 
-language: python
-
-python:
-  - 3.7
+language: generic
+  
 env:
-  - PARALLELIZE=true
+- PY=3.7
+- PARALLELIZE=true
 
 addons:
   apt:
