@@ -69,7 +69,7 @@ Shamsheer S. Chauhan and Joaquim R. R. A. Martins, “Low-Fidelity Aerostructura
 
 Version Information
 -------------------
-This version of OpenAeroStruct requires [OpenMDAO](https://github.com/OpenMDAO/openmdao) 3.1+ and Python3.
+This version of OpenAeroStruct requires [OpenMDAO](https://github.com/OpenMDAO/openmdao) 3.2+ and Python3.
 Python2 is no longer supported.
 If you are looking to use the previous version of OpenAeroStruct which uses OpenMDAO 1.7.4, use OpenAeroStruct 1.0 from [here](https://github.com/mdolab/OpenAeroStruct/releases).
 
