@@ -24,7 +24,7 @@ before_install:
 - export PATH=/home/travis/miniconda/bin:$PATH;
 
 install:
-- conda install --yes python=$PY numpy scipy nose sphinx mock swig pip matplotlib numpydoc;
+- conda install --yes python=$PY nose sphinx mock swig pip numpydoc;
 - pip install --upgrade pip;
 - pip install mpi4py;
 
@@ -36,20 +36,19 @@ install:
 
 - pip install coverage;
 - pip install coveralls;
-- pip install testflo==1.3.6;
+- pip install testflo;
 - export PATH=$HOME/.local/bin:$PATH;
 
-# install openmdao and sphinx-travis
-- pip install openmdao
+# install and sphinx-travis
 - pip install --user travis-sphinx;
 - pip install redbaron
 
-# install openaerostruct itself
+# install openaerostruct itself. NOTE: required packages (e.g. openmdao, numpy) are specified in setup.py.
 - pip install -e .;
 
 script:
 - export PYTHONPATH=$PYTHONPATH:$PWD
-- testflo -n 1 openaerostruct --coverage --coverpkg openaerostruct --cover-omit \*tests/\* --cover-omit \*docs/\*;
+- testflo -n 2 openaerostruct --coverage --coverpkg openaerostruct --cover-omit \*tests/\* --cover-omit \*docs/\*;
 - cd openaerostruct/docs;
 - travis-sphinx build --source=.;
 - cd ../..;
