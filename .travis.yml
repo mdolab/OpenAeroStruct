@@ -1,10 +1,12 @@
 os:
 - linux
 
-language: generic
+language: python
 
+python:
+  - 3.7
 env:
-- PY=3.7
+  - PARALLELIZE=true
 
 addons:
   apt:
@@ -26,7 +28,7 @@ before_install:
 install:
 - conda install --yes python=$PY nose sphinx mock swig pip numpydoc;
 - pip install --upgrade pip;
-- pip install mpi4py;
+# - pip install mpi4py;
 
 # install openaerostruct itself. NOTE: required packages (e.g. openmdao, numpy) are specified in setup.py.
 - pip install -e .;
@@ -48,7 +50,7 @@ install:
 
 script:
 - export PYTHONPATH=$PYTHONPATH:$PWD
-- testflo -n 1 openaerostruct --coverage --coverpkg openaerostruct --cover-omit \*tests/\* --cover-omit \*docs/\*;
+- testflo -n 2 openaerostruct --coverage --coverpkg openaerostruct --cover-omit \*tests/\* --cover-omit \*docs/\*;
 - cd openaerostruct/docs;
 - travis-sphinx build --source=.;
 - cd ../..;
