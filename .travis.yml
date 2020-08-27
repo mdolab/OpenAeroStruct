@@ -28,6 +28,9 @@ install:
 - pip install --upgrade pip;
 - pip install mpi4py;
 
+# install openaerostruct itself. NOTE: required packages (e.g. openmdao, numpy) are specified in setup.py.
+- pip install -e .;
+
 # install pyoptsparse
 - git clone https://github.com/mdolab/pyoptsparse.git;
 - cd pyoptsparse;
@@ -42,9 +45,6 @@ install:
 # install and sphinx-travis
 - pip install --user travis-sphinx;
 - pip install redbaron
-
-# install openaerostruct itself. NOTE: required packages (e.g. openmdao, numpy) are specified in setup.py.
-- pip install -e .;
 
 script:
 - export PYTHONPATH=$PYTHONPATH:$PWD
