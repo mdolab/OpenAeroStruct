@@ -28,7 +28,6 @@ before_install:
 install:
 - conda install --yes python=$PY nose sphinx mock swig pip numpydoc;
 - pip install --upgrade pip;
-# - pip install mpi4py;
 
 # install openaerostruct itself. NOTE: required packages (e.g. openmdao, numpy) are specified in setup.py.
 - pip install -e .;
