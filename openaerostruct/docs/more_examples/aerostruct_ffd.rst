@@ -7,7 +7,7 @@ In additional to OpenAeroStruct's internal geometry manipulation group, you can 
 This allows for more general design shape changes and helps sync up geometry changes between meshes from different levels of fidelity.
 
 .. warning::
-  This example requires `pyGeo`, an in-house MDO Lab code. If you have access to the code, you can clone it from `here <https://bitbucket.org/mdolab/pygeo>`_.
+  This example requires `pyGeo`, an external code developed by the MDO Lab. You can install it from `here <https://github.com/mdolab/pygeo>`_.
 
 .. embed-code::
     openaerostruct.tests.test_aerostruct_ffd.Test.test
