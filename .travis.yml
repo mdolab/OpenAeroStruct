@@ -24,7 +24,8 @@ before_install:
 - export PATH=/home/travis/miniconda/bin:$PATH;
 
 install:
-- conda install --yes python=$PY nose sphinx mock swig pip numpydoc;
+# - conda install --yes python=$PY nose sphinx mock swig pip numpydoc;
+- conda install --yes python=$PY pip;
 - pip install --upgrade pip;
 
 # install openaerostruct itself. NOTE: required packages (e.g. openmdao, numpy) are specified in setup.py.
@@ -54,7 +55,7 @@ install:
 - export PATH=$HOME/.local/bin:$PATH;
 
 - pip install --user travis-sphinx;
-- pip install redbaron
+# - pip install redbaron
 
 script:
 - export PYTHONPATH=$PYTHONPATH:$PWD
