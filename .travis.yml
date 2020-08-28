@@ -31,22 +31,16 @@ install:
 # install openaerostruct itself. NOTE: required packages (e.g. openmdao, numpy) are specified in setup.py.
 - pip install -e .;
 
-# install pyoptsparse
-# - git clone https://github.com/mdolab/pyoptsparse.git;
-# - cd pyoptsparse;
-# - python setup.py install;
-# - cd ..;
-
 # install pyGeo and pySpline to run FFD tests. pyspline requires fortran compilations
-- pip install mpi4py;
-- git clone https://github.com/mdolab/pyspline.git;
-- cd pyspline;
-- cp config/defaults/config.LINUX_GFORTRAN.mk config/config.mk;
-- make;
-- pip install -e .;
-- cd ..;
-- git clone https://github.com/mdolab/pygeo.git;
-- pip install -e ./pygeo;
+# - pip install mpi4py;
+# - git clone https://github.com/mdolab/pyspline.git;
+# - cd pyspline;
+# - cp config/defaults/config.LINUX_GFORTRAN.mk config/config.mk;
+# - make;
+# - pip install -e .;
+# - cd ..;
+# - git clone https://github.com/mdolab/pygeo.git;
+# - pip install -e ./pygeo;
 
 # install packages required for tests and docs build etc
 - pip install coverage;
@@ -55,7 +49,6 @@ install:
 - export PATH=$HOME/.local/bin:$PATH;
 
 - pip install --user travis-sphinx;
-# - pip install redbaron
 
 script:
 - export PYTHONPATH=$PYTHONPATH:$PWD
