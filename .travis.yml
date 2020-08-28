@@ -14,8 +14,8 @@ addons:
     - gfortran
     - libblas-dev
     - liblapack-dev
-    - libopenmpi-dev
-    - openmpi-bin
+#    - libopenmpi-dev
+#    - openmpi-bin
 
 before_install:
 -  wget "https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh" -O miniconda.sh;
@@ -32,15 +32,15 @@ install:
 - pip install -e .;
 
 # install pyGeo and pySpline to run FFD tests. pyspline requires fortran compilations
-- pip install mpi4py;
-- git clone https://github.com/mdolab/pyspline.git;
-- cd pyspline;
-- cp config/defaults/config.LINUX_GFORTRAN.mk config/config.mk;
-- make;
-- pip install -e .;
-- cd ..;
-- git clone https://github.com/mdolab/pygeo.git;
-- pip install -e ./pygeo;
+# - pip install mpi4py;
+# - git clone https://github.com/mdolab/pyspline.git;
+# - cd pyspline;
+# - cp config/defaults/config.LINUX_GFORTRAN.mk config/config.mk;
+# - make;
+# - pip install -e .;
+# - cd ..;
+# - git clone https://github.com/mdolab/pygeo.git;
+# - pip install -e ./pygeo;
 
 # install packages required for tests and docs build etc
 - pip install coverage;
@@ -52,7 +52,7 @@ install:
 
 script:
 - export PYTHONPATH=$PYTHONPATH:$PWD
-- testflo -n 2 openaerostruct --coverage --coverpkg openaerostruct --cover-omit \*tests/\* --cover-omit \*docs/\*;
+- testflo -n 1 openaerostruct --coverage --coverpkg openaerostruct --cover-omit \*tests/\* --cover-omit \*docs/\*;
 - cd openaerostruct/docs;
 - travis-sphinx build --source=.;
 - cd ../..;
