@@ -1,8 +1,6 @@
 from __future__ import division, print_function
-from openmdao.utils.assert_utils import assert_rel_error
 import unittest
 import numpy as np
-from six import iteritems
 
 from openaerostruct.geometry.utils import generate_mesh
 
@@ -11,8 +9,6 @@ from openaerostruct.integration.aerostruct_groups import AerostructGeometry, Aer
 import openmdao.api as om
 from openmdao.utils.assert_utils import assert_check_partials
 from openaerostruct.structures.wingbox_fuel_vol_delta import WingboxFuelVolDelta
-
-from openaerostruct.utils.testing import view_mat
 
 
 # Provide coordinates for a portion of an airfoil for the wingbox cross-section as an nparray with dtype=complex (to work with the complex-step approximation for derivatives).

@@ -1,11 +1,9 @@
 from __future__ import print_function, division
-import numpy as np
 
 import unittest
 
 import openmdao.api as om
 
-from six import iteritems
 from numpy.testing import assert_almost_equal
 
 from openaerostruct.structures.section_properties_tube import SectionPropertiesTube
@@ -50,14 +48,14 @@ class Test(unittest.TestCase):
 
         # Loop through this `check` dictionary and visualize the approximated
         # and computed derivatives
-        for key, subjac in iteritems(check[list(check.keys())[0]]):
+        for key, subjac in check[list(check.keys())[0]].items():
             print()
             print(key)
             view_mat(subjac['J_fd'],subjac['J_fwd'],key)
 
         # Loop through the `check` dictionary and perform assert that the
         # approximated deriv must be very close to the computed deriv
-        for key, subjac in iteritems(check[list(check.keys())[0]]):
+        for key, subjac in check[list(check.keys())[0]].items():
             if subjac['magnitude'].fd > 1e-6:
                 assert_almost_equal(
                     subjac['rel error'].forward, 0., err_msg='deriv of %s wrt %s' % key)

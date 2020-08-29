@@ -4,6 +4,7 @@ A collection of functions for modifying source code that is embeded into the Sph
 import sys
 import os
 import re
+import io
 import tokenize
 import importlib
 import inspect
@@ -12,9 +13,6 @@ import tempfile
 import unittest
 import traceback
 from docutils import nodes
-
-from six import StringIO, PY3
-from six.moves import range, zip, cStringIO as cStringIO
 
 from sphinx.errors import SphinxError
 from sphinx.writers.html import HTMLTranslator
@@ -92,7 +90,7 @@ def remove_docstrings(source):
     str
         Source with docstrings removed.
     """
-    io_obj = StringIO(source)
+    io_obj = io.StringIO(source)
     out = ""
     prev_toktype = tokenize.INDENT
     last_lineno = -1
@@ -713,7 +711,7 @@ def run_code(code_to_run, path, module=None, cls=None, shows_plot=False):
             # capture all output
             stdout = sys.stdout
             stderr = sys.stderr
-            strout = cStringIO()
+            strout = io.StringIO()
             sys.stdout = strout
             sys.stderr = strout
 

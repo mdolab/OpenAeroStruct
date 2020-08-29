@@ -6,7 +6,7 @@ import unittest
 try:
     import pygeo
     pygeo_flag = True
-except:
+except ModuleNotFoundError:
     pygeo_flag = False
 
 @unittest.skipUnless(pygeo_flag, "pyGeo is required.")
@@ -16,13 +16,10 @@ class Test(unittest.TestCase):
 
         from openaerostruct.geometry.utils import generate_mesh, write_FFD_file
         from openaerostruct.geometry.geometry_group import Geometry
-        from openaerostruct.transfer.displacement_transfer import DisplacementTransfer
 
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
 
         import openmdao.api as om
-        from openmdao.devtools import iprofile
-        from six import iteritems
         from pygeo import DVGeometry
 
         # Create a dictionary to store options about the surface

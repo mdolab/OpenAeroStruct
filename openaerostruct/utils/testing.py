@@ -1,8 +1,6 @@
 import openmdao.api as om
 
-from six import iteritems
-from numpy.testing import assert_almost_equal
-from openmdao.utils.assert_utils import assert_rel_error, assert_check_partials
+from openmdao.utils.assert_utils import assert_check_partials
 import numpy as np
 from openaerostruct.geometry.utils import generate_mesh
 
@@ -86,7 +84,7 @@ def run_test(test_obj, comp, complex_flag=False, compact_print=True, method='fd'
     if view:
         # Loop through this `check` dictionary and visualize the approximated
         # and computed derivatives
-        for key, subjac in iteritems(check[list(check.keys())[0]]):
+        for key, subjac in check[list(check.keys())[0]].items():
             view_mat(subjac['J_fd'],subjac['J_fwd'],key)
 
     assert_check_partials(check, atol=atol, rtol=rtol)

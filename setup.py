@@ -28,7 +28,6 @@ setup(name='openaerostruct',
         'numpy',
         'scipy',
         'matplotlib',
-        'six'
     ],
     zip_safe=False,
     # ext_modules=ext,
