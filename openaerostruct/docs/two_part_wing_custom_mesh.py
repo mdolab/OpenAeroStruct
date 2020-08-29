@@ -9,13 +9,10 @@ from this directory) to visualize the results.
 'plot_wingbox.py' is still under development and will probably not work as it is for other types of cases for now.
 """
 
-from __future__ import division, print_function
 import numpy as np
 
-from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
 from openaerostruct.structures.wingbox_fuel_vol_delta import WingboxFuelVolDelta
-from openaerostruct.utils.constants import grav_constant
 import openmdao.api as om
 
 

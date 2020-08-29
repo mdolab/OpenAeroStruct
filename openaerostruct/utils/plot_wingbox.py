@@ -5,7 +5,6 @@ This only works when using the wingbox model with MULTIPOINT analysis/optimizati
 """
 
 
-from __future__ import division, print_function
 import sys
 major_python_version = sys.version_info[0]
 

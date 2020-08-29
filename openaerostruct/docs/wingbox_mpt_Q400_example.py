@@ -12,13 +12,10 @@ It's still under development and will probably not work as it is for other types
 cases for now.
 """
 
-from __future__ import division, print_function
 import numpy as np
 
-from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
 from openaerostruct.structures.wingbox_fuel_vol_delta import WingboxFuelVolDelta
-from openaerostruct.utils.constants import grav_constant
 import openmdao.api as om
 
 # Provide coordinates for a portion of an airfoil for the wingbox cross-section as an nparray with dtype=complex (to work with the complex-step approximation for derivatives).

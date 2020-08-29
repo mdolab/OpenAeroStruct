@@ -20,7 +20,6 @@ older version of OAS (very slight differences due to numerical errors, etc.)
 """
 
 
-from __future__ import division, print_function
 import numpy as np
 
 from openaerostruct.geometry.utils import generate_mesh

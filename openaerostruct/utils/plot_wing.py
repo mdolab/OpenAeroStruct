@@ -11,7 +11,6 @@ Ex: `plot_wing aero.db 1` a wider view than `plot_wing aero.db 5`.
 """
 
 
-from __future__ import division, print_function
 import sys
 major_python_version = sys.version_info[0]
 

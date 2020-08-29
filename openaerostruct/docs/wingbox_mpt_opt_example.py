@@ -1,5 +1,3 @@
-from __future__ import division, print_function
-
 # Ignore the #docs checkpoint comments. They are just used to split up the code for the documentation webpage.
 #docs checkpoint 0
 
@@ -7,7 +5,6 @@ import numpy as np
 from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
 from openaerostruct.structures.wingbox_fuel_vol_delta import WingboxFuelVolDelta
-from openaerostruct.utils.constants import grav_constant
 import openmdao.api as om
 
 #docs checkpoint 1

@@ -1,5 +1,3 @@
-from __future__ import division, print_function
-
 import openmdao.api as om
 
 class SumAreas(om.ExplicitComponent):

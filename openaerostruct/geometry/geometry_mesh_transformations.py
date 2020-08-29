@@ -1,8 +1,6 @@
 """ A set of components that manipulate geometry mesh
     based on high-level design parameters. """
 
-from __future__ import division, print_function
-
 import numpy as np
 
 import openmdao.api as om

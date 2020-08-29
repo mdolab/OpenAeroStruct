@@ -9,7 +9,6 @@
 # which was presented at AIAA SciTech 2018.
 ################################################################################
 
-from __future__ import division, print_function
 import numpy as np
 
 from openaerostruct.geometry.utils import generate_mesh

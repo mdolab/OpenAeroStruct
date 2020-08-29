@@ -8,7 +8,6 @@ Although this example varies angle of attack (alpha), you could vary any input
 into the problem, including wing geometry and flight conditions.
 """
 
-from __future__ import division, print_function
 import numpy as np
 
 from openaerostruct.geometry.utils import generate_mesh

@@ -1,9 +1,7 @@
-from __future__ import print_function
-
 from collections import namedtuple
 
 import numpy as np
-from  scipy.interpolate import Akima1DInterpolator as Akima
+from scipy.interpolate import Akima1DInterpolator as Akima
 
 import openmdao.api as om
 

@@ -1,4 +1,3 @@
-from __future__ import division, print_function
 from openmdao.utils.assert_utils import assert_rel_error, assert_check_partials
 import unittest
 from openaerostruct.utils.constants import grav_constant

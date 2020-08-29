@@ -1,4 +1,3 @@
-from __future__ import division, print_function
 import openmdao.api as om
 from openaerostruct.utils.constants import grav_constant
 
