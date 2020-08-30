@@ -1,15 +1,11 @@
 from openmdao.utils.assert_utils import assert_rel_error
-import numpy as np
 import unittest
 
 
 class Test(unittest.TestCase):
-
     def test(self):
-        import numpy as np
-        from openaerostruct.geometry.utils import generate_mesh, write_FFD_file
+        from openaerostruct.geometry.utils import generate_mesh
         from openaerostruct.geometry.geometry_group import Geometry
-        from openaerostruct.transfer.displacement_transfer import DisplacementTransfer
 
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
         from openaerostruct.integration.multipoint_comps import MultiCD
@@ -17,46 +13,44 @@ class Test(unittest.TestCase):
         import openmdao.api as om
 
         # Create a dictionary to store options about the surface
-        mesh_dict = {'num_y' : 5,
-                     'num_x' : 3,
-                     'wing_type' : 'CRM',
-                     'symmetry' : True,
-                     'num_twist_cp' : 5,
-                     'span_cos_spacing' : 0.}
+        mesh_dict = {
+            'num_y': 5,
+            'num_x': 3,
+            'wing_type': 'CRM',
+            'symmetry': True,
+            'num_twist_cp': 5,
+            'span_cos_spacing': 0.0,
+        }
 
         mesh, twist_cp = generate_mesh(mesh_dict)
 
         surf_dict = {
-                    # Wing definition
-                    'name' : 'wing',        # name of the surface
-                    'symmetry' : True,     # if true, model one half of wing
-                                            # reflected across the plane y = 0
-                    'S_ref_type' : 'wetted', # how we compute the wing area,
-                                             # can be 'wetted' or 'projected'
-                    'fem_model_type' : 'tube',
-
-                    'mesh' : mesh,
-                    'twist_cp' : twist_cp,
-
-                    # Aerodynamic performance of the lifting surface at
-                    # an angle of attack of 0 (alpha=0).
-                    # These CL0 and CD0 values are added to the CL and CD
-                    # obtained from aerodynamic analysis of the surface to get
-                    # the total CL and CD.
-                    # These CL0 and CD0 values do not vary wrt alpha.
-                    'CL0' : 0.0,            # CL of the surface at alpha=0
-                    'CD0' : 0.015,            # CD of the surface at alpha=0
-
-                    # Airfoil properties for viscous drag calculation
-                    'k_lam' : 0.05,         # percentage of chord with laminar
-                                            # flow, used for viscous drag
-                    't_over_c_cp' : np.array([0.15]),      # thickness over chord ratio (NACA0015)
-                    'c_max_t' : .303,       # chordwise location of maximum (NACA0015)
-                                            # thickness
-                    'with_viscous' : True,  # if true, compute viscous drag
-                    'with_wave' : False,     # if true, compute wave drag
-                    }
-
+            # Wing definition
+            'name': 'wing',  # name of the surface
+            'symmetry': True,  # if true, model one half of wing
+            # reflected across the plane y = 0
+            'S_ref_type': 'wetted',  # how we compute the wing area,
+            # can be 'wetted' or 'projected'
+            'fem_model_type': 'tube',
+            'mesh': mesh,
+            'twist_cp': twist_cp,
+            # Aerodynamic performance of the lifting surface at
+            # an angle of attack of 0 (alpha=0).
+            # These CL0 and CD0 values are added to the CL and CD
+            # obtained from aerodynamic analysis of the surface to get
+            # the total CL and CD.
+            # These CL0 and CD0 values do not vary wrt alpha.
+            'CL0': 0.0,  # CL of the surface at alpha=0
+            'CD0': 0.015,  # CD of the surface at alpha=0
+            # Airfoil properties for viscous drag calculation
+            'k_lam': 0.05,  # percentage of chord with laminar
+            # flow, used for viscous drag
+            't_over_c_cp': np.array([0.15]),  # thickness over chord ratio (NACA0015)
+            'c_max_t': 0.303,  # chordwise location of maximum (NACA0015)
+            # thickness
+            'with_viscous': True,  # if true, compute viscous drag
+            'with_wave': False,  # if true, compute wave drag
+        }
 
         surfaces = [surf_dict]
 
@@ -67,15 +61,13 @@ class Test(unittest.TestCase):
 
         indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('v', val=248.136, units='m/s')
-        indep_var_comp.add_output('alpha', val=np.ones(n_points)*6.64, units='deg')
+        indep_var_comp.add_output('alpha', val=np.ones(n_points) * 6.64, units='deg')
         indep_var_comp.add_output('Mach_number', val=0.84)
-        indep_var_comp.add_output('re', val=1.e6, units='1/m')
+        indep_var_comp.add_output('re', val=1.0e6, units='1/m')
         indep_var_comp.add_output('rho', val=0.38, units='kg/m**3')
         indep_var_comp.add_output('cg', val=np.zeros((3)), units='m')
 
-        prob.model.add_subsystem('prob_vars',
-            indep_var_comp,
-            promotes=['*'])
+        prob.model.add_subsystem('prob_vars', indep_var_comp, promotes=['*'])
 
         # Loop through and add a certain number of aero points
         for i in range(n_points):
@@ -111,9 +103,13 @@ class Test(unittest.TestCase):
 
                 # Perform the connections with the modified names within the
                 # 'aero_states' group.
-                prob.model.connect(point_name + '.' + name + '_geom.mesh', point_name + '.aero_states.' + name + '_def_mesh')
+                prob.model.connect(
+                    point_name + '.' + name + '_geom.mesh', point_name + '.aero_states.' + name + '_def_mesh'
+                )
 
-                prob.model.connect(point_name + '.' + name + '_geom.t_over_c', point_name + '.' + name + '_perf.' + 't_over_c')
+                prob.model.connect(
+                    point_name + '.' + name + '_geom.t_over_c', point_name + '.' + name + '_perf.' + 't_over_c'
+                )
 
         prob.model.add_subsystem('multi_CD', MultiCD(n_points=n_points), promotes_outputs=['CD'])
 
@@ -140,11 +136,11 @@ class Test(unittest.TestCase):
         # exit()
         prob.run_driver()
 
-
         assert_rel_error(self, prob['aero_point_0.wing_perf.CL'][0], 0.45, 1e-6)
         assert_rel_error(self, prob['aero_point_0.wing_perf.CD'][0], 0.03231556149303963, 1e-6)
         assert_rel_error(self, prob['aero_point_1.wing_perf.CL'][0], 0.5, 1e-6)
         assert_rel_error(self, prob['aero_point_1.wing_perf.CD'][0], 0.03376555561457066, 1e-6)
+
 
 if __name__ == '__main__':
     unittest.main()
