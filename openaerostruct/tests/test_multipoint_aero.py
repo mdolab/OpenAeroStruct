@@ -1,3 +1,4 @@
+import numpy as np
 from openmdao.utils.assert_utils import assert_rel_error
 import unittest
 
@@ -69,6 +70,17 @@ class Test(unittest.TestCase):
 
         prob.model.add_subsystem('prob_vars', indep_var_comp, promotes=['*'])
 
+        # Loop over each surface in the surfaces list
+        for surface in surfaces:
+            # Get the surface name and create a group to contain components
+            # only for this surface
+            name = surface['name']
+
+            geom_group = Geometry(surface=surface)
+
+            # Add tmp_group to the problem with the name of the surface.
+            prob.model.add_subsystem(name + '_geom', geom_group)
+
         # Loop through and add a certain number of aero points
         for i in range(n_points):
 
@@ -87,59 +99,44 @@ class Test(unittest.TestCase):
 
             # Connect the parameters within the model for each aero point
             for surface in surfaces:
-
-                geom_group = Geometry(surface=surface)
-
-                # Add tmp_group to the problem as the name of the surface.
-                # Note that is a group and performance group for each
-                # individual surface.
-                aero_group.add_subsystem(surface['name'] + '_geom', geom_group)
-
                 name = surface['name']
+
+                # Connect the drag coeff at this point to the multi_CD component, which does the summation.
                 prob.model.connect(point_name + '.CD', 'multi_CD.' + str(i) + '_CD')
 
                 # Connect the mesh from the geometry component to the analysis point
-                prob.model.connect(point_name + '.' + name + '_geom.mesh', point_name + '.' + name + '.def_mesh')
+                prob.model.connect(name + '_geom.mesh', point_name + '.' + name + '.def_mesh')
 
                 # Perform the connections with the modified names within the
                 # 'aero_states' group.
-                prob.model.connect(
-                    point_name + '.' + name + '_geom.mesh', point_name + '.aero_states.' + name + '_def_mesh'
-                )
-
-                prob.model.connect(
-                    point_name + '.' + name + '_geom.t_over_c', point_name + '.' + name + '_perf.' + 't_over_c'
-                )
+                prob.model.connect(name + '_geom.mesh', point_name + '.aero_states.' + name + '_def_mesh')
+                prob.model.connect(name + '_geom.t_over_c', point_name + '.' + name + '_perf.' + 't_over_c')
 
         prob.model.add_subsystem('multi_CD', MultiCD(n_points=n_points), promotes_outputs=['CD'])
 
         prob.driver = om.ScipyOptimizeDriver()
         prob.driver.options['tol'] = 1e-9
 
-        # # Setup problem and add design variables, constraint, and objective
+        # Setup problem and add design variables, constraint, and objective
+        # design variable is the wing twist, and angle-of-attack at each point.
         prob.model.add_design_var('alpha', lower=-15, upper=15)
+        prob.model.add_design_var('wing_geom.twist_cp', lower=-5, upper=8)
 
-        prob.model.add_design_var('aero_point_0.wing_geom.twist_cp', lower=-5, upper=8)
+        # set different target CL value at each point.
         prob.model.add_constraint('aero_point_0.wing_perf.CL', equals=0.45)
-
-        prob.model.add_design_var('aero_point_1.wing_geom.twist_cp', lower=-5, upper=8)
         prob.model.add_constraint('aero_point_1.wing_perf.CL', equals=0.5)
 
+        # objective is the sum of CDs at each point.
         prob.model.add_objective('CD', scaler=1e4)
 
-        # Set up the problem
+        # Set up the problem and run optimization
         prob.setup()
-
-        # print('gona check')
-        # prob.run_model()
-        # prob.check_partials(compact_print=True)
-        # exit()
         prob.run_driver()
 
         assert_rel_error(self, prob['aero_point_0.wing_perf.CL'][0], 0.45, 1e-6)
-        assert_rel_error(self, prob['aero_point_0.wing_perf.CD'][0], 0.03231556149303963, 1e-6)
+        assert_rel_error(self, prob['aero_point_0.wing_perf.CD'][0], 0.0323165143, 1e-6)
         assert_rel_error(self, prob['aero_point_1.wing_perf.CL'][0], 0.5, 1e-6)
-        assert_rel_error(self, prob['aero_point_1.wing_perf.CD'][0], 0.03376555561457066, 1e-6)
+        assert_rel_error(self, prob['aero_point_1.wing_perf.CD'][0], 0.0337665178, 1e-6)
 
 
 if __name__ == '__main__':
