@@ -1,16 +1,16 @@
-import numpy as np
 from openmdao.utils.assert_utils import assert_rel_error
 import unittest
 
 
 class Test(unittest.TestCase):
     def test(self):
+        import numpy as np
+        import openmdao.api as om
+
         from openaerostruct.geometry.utils import generate_mesh
         from openaerostruct.geometry.geometry_group import Geometry
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
         from openaerostruct.integration.multipoint_comps import MultiCD
-
-        import openmdao.api as om
 
         # Create a dictionary to store options about the surface
         mesh_dict = {
