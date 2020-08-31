@@ -51,7 +51,7 @@ John P. Jasa, John T. Hwang, and Joaquim R. R. A. Martins. "Open-source coupled 
 	Year = {2018}}
 ```
 
-If using the wingbox model, please cite the following [conference paper](https://mdolab.engin.umich.edu/bibliography/Chauhan2018b.html).
+If using the wingbox model, please cite the following [conference paper](https://www.researchgate.net/publication/327654423_Low-Fidelity_Aerostructural_Optimization_of_Aircraft_Wings_with_a_Simplified_Wingbox_Model_Using_OpenAeroStruct).
 
 Shamsheer S. Chauhan and Joaquim R. R. A. Martins, “Low-Fidelity Aerostructural Optimization of Aircraft Wings with a Simplified Wingbox Model Using OpenAeroStruct,” Proceedings of the 6th International Conference on Engineering Optimization, EngOpt 2018, Springer, Lisbon, Portugal, September 2018, pp. 418–431. doi:10.1007/978-3-319-97773-7 38
 
