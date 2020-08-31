@@ -7,7 +7,6 @@ class Test(unittest.TestCase):
     def test(self):
         from openaerostruct.geometry.utils import generate_mesh
         from openaerostruct.geometry.geometry_group import Geometry
-
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
         from openaerostruct.integration.multipoint_comps import MultiCD
 
@@ -70,20 +69,17 @@ class Test(unittest.TestCase):
 
         prob.model.add_subsystem('prob_vars', indep_var_comp, promotes=['*'])
 
-        # Loop over each surface in the surfaces list
+        # Loop over each surface and create the geometry groups
         for surface in surfaces:
-            # Get the surface name and create a group to contain components
-            # only for this surface
+            # Get the surface name and create a group to contain components only for this surface.
             name = surface['name']
-
             geom_group = Geometry(surface=surface)
 
-            # Add tmp_group to the problem with the name of the surface.
+            # Add geom_group to the problem with the name of the surface.
             prob.model.add_subsystem(name + '_geom', geom_group)
 
         # Loop through and add a certain number of aero points
         for i in range(n_points):
-
             # Create the aero point group and add it to the model
             aero_group = AeroPoint(surfaces=surfaces)
             point_name = 'aero_point_{}'.format(i)
@@ -101,14 +97,13 @@ class Test(unittest.TestCase):
             for surface in surfaces:
                 name = surface['name']
 
-                # Connect the drag coeff at this point to the multi_CD component, which does the summation.
+                # Connect the drag coeff at each point to the multi_CD component, which does the summation.
                 prob.model.connect(point_name + '.CD', 'multi_CD.' + str(i) + '_CD')
 
                 # Connect the mesh from the geometry component to the analysis point
                 prob.model.connect(name + '_geom.mesh', point_name + '.' + name + '.def_mesh')
 
-                # Perform the connections with the modified names within the
-                # 'aero_states' group.
+                # Perform the connections with the modified names within the 'aero_states' group.
                 prob.model.connect(name + '_geom.mesh', point_name + '.aero_states.' + name + '_def_mesh')
                 prob.model.connect(name + '_geom.t_over_c', point_name + '.' + name + '_perf.' + 't_over_c')
 
@@ -118,7 +113,7 @@ class Test(unittest.TestCase):
         prob.driver.options['tol'] = 1e-9
 
         # Setup problem and add design variables, constraint, and objective
-        # design variable is the wing twist, and angle-of-attack at each point.
+        # design variables are the wing twist and angle-of-attack at each point.
         prob.model.add_design_var('alpha', lower=-15, upper=15)
         prob.model.add_design_var('wing_geom.twist_cp', lower=-5, upper=8)
 
@@ -129,7 +124,7 @@ class Test(unittest.TestCase):
         # objective is the sum of CDs at each point.
         prob.model.add_objective('CD', scaler=1e4)
 
-        # Set up the problem and run optimization
+        # Set up the problem and run optimization.
         prob.setup()
         prob.run_driver()
 
