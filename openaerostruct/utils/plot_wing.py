@@ -96,20 +96,20 @@ class Display(object):
         names = []
 
         # Aero or aerostructural
-        for key in cr.system_metadata.keys():
+        for key in cr.system_options.keys():
             try:
-                surfaces = cr.system_metadata[key]['component_options']['surfaces']
+                surfaces = cr.system_options[key]['component_options']['surfaces']
                 for surface in surfaces:
                     names.append(surface['name'])
                 break
             except:
                 pass
 
-        # Structural-only
+        # Structural-onlyplo
         if not names:
-            for key in cr.system_metadata.keys():
+            for key in cr.system_options.keys():
                 try:
-                    surface = cr.system_metadata[key]['component_options']['surface']
+                    surface = cr.system_options[key]['component_options']['surface']
                     names = [surface['name']]
                 except:
                     pass
@@ -255,7 +255,7 @@ class Display(object):
 
         if self.show_tube:
             for name in names:
-                surface = cr.system_metadata[name]['component_options']['surface']
+                surface = cr.system_options[name]['component_options']['surface']
                 self.yield_stress_dict[name + '_yield_stress'] = surface['yield']
                 self.fem_origin_dict[name + '_fem_origin'] = surface['fem_origin']
 
