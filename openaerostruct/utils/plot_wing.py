@@ -105,7 +105,7 @@ class Display(object):
             except:
                 pass
 
-        # Structural-onlyplo
+        # Structural-only
         if not names:
             for key in cr.system_options.keys():
                 try:
