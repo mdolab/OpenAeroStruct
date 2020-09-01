@@ -90,9 +90,9 @@ class Display(object):
         last_case = next(reversed(cr.get_cases('driver')))
 
         names = []
-        for key in cr.system_metadata.keys():
+        for key in cr.system_options.keys():
             try:
-                surfaces = cr.system_metadata[key]['component_options']['surfaces']
+                surfaces = cr.system_options[key]['component_options']['surfaces']
                 for surface in surfaces:
                     names.append(surface['name'])
                 break
@@ -100,7 +100,7 @@ class Display(object):
                 pass
 
         # figure out if this is an optimization and what the objective is
-        obj_keys = last_case.get_objectives()
+        obj_keys = last_case.get_objectives(scaled=False)
         if obj_keys.keys(): # if its not an empty list
             self.opt = True
             self.obj_key = list(obj_keys.keys())[0]
@@ -272,7 +272,7 @@ class Display(object):
 
         if self.show_tube:
             for name in names:
-                surface = cr.system_metadata[name]['component_options']['surface']
+                surface = cr.system_options[name]['component_options']['surface']
                 self.yield_stress_dict[name + '_yield_stress'] = surface['yield']
 
                 # self.fem_origin_dict[name + '_fem_origin'] = surface['fem_origin']
@@ -286,7 +286,7 @@ class Display(object):
                 np.save(str('temp_' + name + '_le_te'), le_te_coords)
 
         if self.opt:
-            self.num_iters = np.max([int(len(self.mesh) / n_names) - 1, 1])
+            self.num_iters = np.max([int(len(self.mesh) / n_names), 1])
         else:
             self.num_iters = 1
 
@@ -722,11 +722,11 @@ class Display(object):
         self.ax.dist = dist
 
     def save_video(self):
-        FFMpegWriter = manimation.writers['ffmpeg']
         options = dict(title='Movie', artist='Matplotlib')
-        writer = FFMpegWriter(fps=5, options=options, bitrate=3000)
+        writer = manimation.FFMpegWriter(fps=5, metadata=options, bitrate=3000)
 
         with writer.saving(self.f, "movie.mp4", 100):
+            # write the initial design for a little longer time (10 frames)
             self.curr_pos = 0
             self.update_graphs()
             self.f.canvas.draw()
@@ -734,6 +734,7 @@ class Display(object):
             for i in range(10):
                 writer.grab_frame()
 
+            # write intermediate designs
             for i in range(self.num_iters):
                 self.curr_pos = i
                 self.update_graphs()
@@ -741,12 +742,11 @@ class Display(object):
                 plt.draw()
                 writer.grab_frame()
 
-            self.curr_pos = self.num_iters
-            self.update_graphs()
-            self.f.canvas.draw()
-            plt.draw()
-            for i in range(20):
+            # write the final design for 10 more frames
+            for i in range(10):
                 writer.grab_frame()
+
+        print('Saved video to movie.mp4')
 
     def update_graphs(self, e=None):
         if e is not None:
@@ -799,6 +799,7 @@ class Display(object):
     def save_image(self):
         fname = 'fig' + '.pdf'
         plt.savefig(fname)
+        print('Saved image to fig.pdf')
 
     def quit(self):
         """
