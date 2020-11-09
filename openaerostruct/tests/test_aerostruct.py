@@ -142,6 +142,10 @@ class Test(unittest.TestCase):
         # Set up the problem
         prob.setup(check=True)
 
+        # Inserting a small unit test here. Verify that beta is correctly promoted in an Aerostruct
+        # group.
+        assert_rel_error(self, prob['AS_point_0.beta'], 0.0)
+
         prob.run_driver()
 
         assert_rel_error(self, prob['AS_point_0.fuelburn'][0], 97696.33252514644, 1e-8)
