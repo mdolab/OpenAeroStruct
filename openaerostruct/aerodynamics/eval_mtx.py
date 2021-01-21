@@ -151,6 +151,8 @@ class EvalVelMtx(om.ExplicitComponent):
         combination of surface name and evaluation points name.
     """
 
+    # TODO BB need to redo this to account for the additional symmetry axis
+
     def initialize(self):
         self.options.declare('surfaces', types=list)
         self.options.declare('eval_name', types=str)
@@ -162,6 +164,8 @@ class EvalVelMtx(om.ExplicitComponent):
         num_eval_points = self.options['num_eval_points']
 
         self.add_input('alpha', val=1., units='deg')
+
+        # TODO come back and fix these derivatives
 
         for surface in surfaces:
             mesh=surface['mesh']
@@ -179,7 +183,10 @@ class EvalVelMtx(om.ExplicitComponent):
             # The logic differs if the surface is symmetric or not, due to the
             # existence of the "ghost" surface; the reflection of the actual.
             if surface['symmetry']:
-                self.add_input(vectors_name, shape=(num_eval_points, nx, 2*ny-1, 3), units='m')
+                if surface['groundplane']:
+                    self.add_input(vectors_name, shape=(num_eval_points, 2*nx, 2*ny-1, 3), units='m')
+                else:
+                    self.add_input(vectors_name, shape=(num_eval_points, nx, 2*ny-1, 3), units='m')
 
                 # Get an array of indices representing the number of entries
                 # in the vectors array.
@@ -252,6 +259,7 @@ class EvalVelMtx(om.ExplicitComponent):
         num_eval_points = self.options['num_eval_points']
 
         for surface in surfaces:
+            nx = surface['mesh'].shape[0]
             ny = surface['mesh'].shape[1]
             name = surface['name']
 
@@ -279,29 +287,107 @@ class EvalVelMtx(om.ExplicitComponent):
             # matrix. Later, we will convert these to horseshoe vortices
             # to compute the panel forces.
 
-            # front vortex
-            r1 = inputs[vectors_name][:, 0:-1, 1:  , :]
-            r2 = inputs[vectors_name][:, 0:-1, 0:-1, :]
-            result1 = _compute_finite_vortex(r1, r2)
+            if not surface['groundplane']:
+                # front vortex
+                r1 = inputs[vectors_name][:, 0:-1, 1:  , :]
+                r2 = inputs[vectors_name][:, 0:-1, 0:-1, :]
+                result1 = _compute_finite_vortex(r1, r2)
 
-            # right vortex
-            r1 = inputs[vectors_name][:, 0:-1, 0:-1, :]
-            r2 = inputs[vectors_name][:, 1:  , 0:-1, :]
-            result2 = _compute_finite_vortex(r1, r2)
+                # right vortex
+                r1 = inputs[vectors_name][:, 0:-1, 0:-1, :]
+                r2 = inputs[vectors_name][:, 1:  , 0:-1, :]
+                result2 = _compute_finite_vortex(r1, r2)
 
-            # rear vortex
-            r1 = inputs[vectors_name][:, 1:  , 0:-1, :]
-            r2 = inputs[vectors_name][:, 1:  , 1:  , :]
-            result3 = _compute_finite_vortex(r1, r2)
+                # rear vortex
+                r1 = inputs[vectors_name][:, 1:  , 0:-1, :]
+                r2 = inputs[vectors_name][:, 1:  , 1:  , :]
+                result3 = _compute_finite_vortex(r1, r2)
 
-            # left vortex
-            r1 = inputs[vectors_name][:, 1:  , 1:  , :]
-            r2 = inputs[vectors_name][:, 0:-1, 1:  , :]
-            result4 = _compute_finite_vortex(r1, r2)
+                # left vortex
+                r1 = inputs[vectors_name][:, 1:  , 1:  , :]
+                r2 = inputs[vectors_name][:, 0:-1, 1:  , :]
+                result4 = _compute_finite_vortex(r1, r2)
 
-            # If the surface is symmetric, mirror the results and add them
-            # to the vel_mtx.
-            if surface['symmetry']:
+                # If the surface is symmetric, mirror the results and add them
+                # to the vel_mtx.
+                if surface['symmetry']:
+                    res1 = result1[:, :, :ny-1, :]
+                    res1 += result1[:, :, ny-1:, :][:, :, ::-1, :]
+                    res2 = result2[:, :, :ny-1, :]
+                    res2 += result2[:, :, ny-1:, :][:, :, ::-1, :]
+                    res3 = result3[:, :, :ny-1, :]
+                    res3 += result3[:, :, ny-1:, :][:, :, ::-1, :]
+                    res4 = result4[:, :, :ny-1, :]
+                    res4 += result4[:, :, ny-1:, :][:, :, ::-1, :]
+                    outputs[vel_mtx_name] += res1 + res2 + res3 + res4
+                else:
+                    outputs[vel_mtx_name] += result1 + result2 + result3 + result4
+
+                # ----------------- last row -----------------
+
+                r1 = inputs[vectors_name][:, -1:, 1:  , :]
+                r2 = inputs[vectors_name][:, -1:, 0:-1, :]
+                result1 = _compute_finite_vortex(r1, r2)
+                result2 = _compute_semi_infinite_vortex(u, r1)
+                result3 = _compute_semi_infinite_vortex(u, r2)
+
+                if surface['symmetry']:
+                    res1 = result1[:, :, :ny-1, :]
+                    res1 += result1[:, :, ny-1:, :][:, :, ::-1, :]
+                    res2 = result2[:, :, :ny-1, :]
+                    res2 += result2[:, :, ny-1:, :][:, :, ::-1, :]
+                    res3 = result3[:, :, :ny-1, :]
+                    res3 += result3[:, :, ny-1:, :][:, :, ::-1, :]
+                    outputs[vel_mtx_name][:, -1:, :, :] += res1 - res2 + res3
+                else:
+                    outputs[vel_mtx_name][:, -1:, :, :] += result1
+                    outputs[vel_mtx_name][:, -1:, :, :] -= result2
+                    outputs[vel_mtx_name][:, -1:, :, :] += result3
+
+            else:
+                # front vortex
+                r1 = inputs[vectors_name][:, 0:nx-1, 1:  , :]
+                r2 = inputs[vectors_name][:, 0:nx-1, 0:-1, :]
+                result1 = _compute_finite_vortex(r1, r2)
+
+                # right vortex
+                r1 = inputs[vectors_name][:, 0:nx-1, 0:-1, :]
+                r2 = inputs[vectors_name][:, 1:nx  , 0:-1, :]
+                result2 = _compute_finite_vortex(r1, r2)
+
+                # rear vortex
+                r1 = inputs[vectors_name][:, 1:nx  , 0:-1, :]
+                r2 = inputs[vectors_name][:, 1:nx  , 1:  , :]
+                result3 = _compute_finite_vortex(r1, r2)
+
+                # left vortex
+                r1 = inputs[vectors_name][:, 1:nx  , 1:  , :]
+                r2 = inputs[vectors_name][:, 0:nx-1, 1:  , :]
+                result4 = _compute_finite_vortex(r1, r2)
+
+                # front vortex
+                r1 = inputs[vectors_name][:, nx:-1, 1:  , :]
+                r2 = inputs[vectors_name][:, nx:-1, 0:-1, :]
+                result5 = _compute_finite_vortex(r1, r2)
+
+                # right vortex
+                r1 = inputs[vectors_name][:, nx:-1, 0:-1, :]
+                r2 = inputs[vectors_name][:, nx+1:  , 0:-1, :]
+                result6 = _compute_finite_vortex(r1, r2)
+
+                # rear vortex
+                r1 = inputs[vectors_name][:, nx+1:  , 0:-1, :]
+                r2 = inputs[vectors_name][:, nx+1:  , 1:  , :]
+                result7 = _compute_finite_vortex(r1, r2)
+
+                # left vortex
+                r1 = inputs[vectors_name][:, nx+1:  , 1:  , :]
+                r2 = inputs[vectors_name][:, nx:-1, 1:  , :]
+                result8 = _compute_finite_vortex(r1, r2)
+
+                # symmtry is assumed
+                if not surface['symmetry']:
+                    raise ValueError('non symmetric ground plane not yet supported')
                 res1 = result1[:, :, :ny-1, :]
                 res1 += result1[:, :, ny-1:, :][:, :, ::-1, :]
                 res2 = result2[:, :, :ny-1, :]
@@ -310,36 +396,52 @@ class EvalVelMtx(om.ExplicitComponent):
                 res3 += result3[:, :, ny-1:, :][:, :, ::-1, :]
                 res4 = result4[:, :, :ny-1, :]
                 res4 += result4[:, :, ny-1:, :][:, :, ::-1, :]
-                outputs[vel_mtx_name] += res1 + res2 + res3 + res4
-            else:
-                outputs[vel_mtx_name] += result1 + result2 + result3 + result4
+                res5 = result5[:, :, :ny-1, :]
+                res5 += result5[:, :, ny-1:, :][:, :, ::-1, :]
+                res6 = result6[:, :, :ny-1, :]
+                res6 += result6[:, :, ny-1:, :][:, :, ::-1, :]
+                res7 = result7[:, :, :ny-1, :]
+                res7 += result7[:, :, ny-1:, :][:, :, ::-1, :]
+                res8 = result8[:, :, :ny-1, :]
+                res8 += result8[:, :, ny-1:, :][:, :, ::-1, :]
+                outputs[vel_mtx_name] += res1 + res2 + res3 + res4 - res5 - res6 - res7 - res8
 
-            # ----------------- last row -----------------
+                # ----------------- last row -----------------
 
-            r1 = inputs[vectors_name][:, -1:, 1:  , :]
-            r2 = inputs[vectors_name][:, -1:, 0:-1, :]
-            result1 = _compute_finite_vortex(r1, r2)
-            result2 = _compute_semi_infinite_vortex(u, r1)
-            result3 = _compute_semi_infinite_vortex(u, r2)
+                r1 = inputs[vectors_name][:, nx-1:nx, 1:  , :]
+                r2 = inputs[vectors_name][:, nx-1:nx, 0:-1, :]
+                result1 = _compute_finite_vortex(r1, r2)
+                result2 = _compute_semi_infinite_vortex(u, r1)
+                result3 = _compute_semi_infinite_vortex(u, r2)
 
-            if surface['symmetry']:
+                r1 = inputs[vectors_name][:, -1:, 1:  , :]
+                r2 = inputs[vectors_name][:, -1:, 0:-1, :]
+                result4 = _compute_finite_vortex(r1, r2)
+                result5 = _compute_semi_infinite_vortex(u, r1)
+                result6 = _compute_semi_infinite_vortex(u, r2)
+
                 res1 = result1[:, :, :ny-1, :]
                 res1 += result1[:, :, ny-1:, :][:, :, ::-1, :]
                 res2 = result2[:, :, :ny-1, :]
                 res2 += result2[:, :, ny-1:, :][:, :, ::-1, :]
                 res3 = result3[:, :, :ny-1, :]
                 res3 += result3[:, :, ny-1:, :][:, :, ::-1, :]
-                outputs[vel_mtx_name][:, -1:, :, :] += res1 - res2 + res3
-            else:
-                outputs[vel_mtx_name][:, -1:, :, :] += result1
-                outputs[vel_mtx_name][:, -1:, :, :] -= result2
-                outputs[vel_mtx_name][:, -1:, :, :] += result3
+                res4 = result4[:, :, :ny-1, :]
+                res4 += result4[:, :, ny-1:, :][:, :, ::-1, :]
+                res5 = result5[:, :, :ny-1, :]
+                res5 += result5[:, :, ny-1:, :][:, :, ::-1, :]
+                res6 = result6[:, :, :ny-1, :]
+                res6 += result6[:, :, ny-1:, :][:, :, ::-1, :]
+                outputs[vel_mtx_name][:, -1:, :, :] += res1 - res2 + res3 - res4 + res5 - res6
+
+
+
 
     def compute_partials(self, inputs, partials):
         surfaces = self.options['surfaces']
         eval_name = self.options['eval_name']
         num_eval_points = self.options['num_eval_points']
-
+        raise ValueError('These derivatives are in progress starting with the vortex_mesh.py file')
         for surface in surfaces:
             nx = surface['mesh'].shape[0]
             ny = surface['mesh'].shape[1]

@@ -61,11 +61,13 @@ class AeroPoint(om.Group):
         # this component requires information from all surfaces because
         # each surface interacts with the others.
         if self.options['compressible'] == True:
+            # TODO BB need to come back and set up ground plane for compressiblevlm
             aero_states = CompressibleVLMStates(surfaces=surfaces, rotational=rotational)
             prom_in = ['v', 'alpha', 'beta', 'rho', 'Mach_number']
         else:
+            # TODO BB come back and pass thru height_agl
             aero_states = VLMStates(surfaces=surfaces, rotational=rotational)
-            prom_in = ['v', 'alpha', 'beta', 'rho']
+            prom_in = ['v', 'alpha', 'beta', 'rho'] #,'height_agl']
 
         aero_states.linear_solver = om.LinearRunOnce()
 
