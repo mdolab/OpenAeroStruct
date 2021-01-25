@@ -20,6 +20,13 @@ When you add or modify code, make sure to provide relevant documentation that ex
 This should be done in code via comments, but also in the Sphinx documentation as well if you add a new feature or capability.
 Look at the .rst files in the `docs` section of the repo or click on `view source` on any of the doc pages to see some examples.
 
+
+Building Docs Locally
+---------------------
+On Linux, use the Makefile in the docs folder.
+It is possible to make the documents on Windows without the make utility.
+Navigate to the docs folder and invoke :code:`sphinx-build -b html .\ .\_build`
+
 Testing
 -------
 When you add code or functionality, add tests that cover the new or modified code.

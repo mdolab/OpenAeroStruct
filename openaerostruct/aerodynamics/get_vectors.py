@@ -45,6 +45,9 @@ class GetVectors(om.ExplicitComponent):
             nx = mesh.shape[0]
             ny = mesh.shape[1]
             name = surface['name']
+
+            ground_effect = surface.get('groundplane', False)
+
             vectors_name = '{}_{}_vectors'.format(name, eval_name)
 
             # This is where we handle the symmetry in the VLM method.
@@ -52,13 +55,11 @@ class GetVectors(om.ExplicitComponent):
             # accounting for the ghost mesh. We do this by using an artificially
             # larger mesh here.
 
-            # TODO BB come back and check these derivatives
-
             if surface['symmetry']:
                 actual_ny_size = ny * 2 - 1
             else:
                 actual_ny_size = ny
-            if surface['groundplane']:
+            if ground_effect:
                 actual_nx_size = nx * 2
             else:
                 actual_nx_size = nx
@@ -90,8 +91,6 @@ class GetVectors(om.ExplicitComponent):
         # a lot of vector algebra to make sure everything's lined up okay
         # and in a usable data format.
 
-        # TODO BB account for the second symmetry axis
-
         for surface in surfaces:
             nx = surface['mesh'].shape[0]
             ny = surface['mesh'].shape[1]
@@ -100,8 +99,10 @@ class GetVectors(om.ExplicitComponent):
             mesh_name = name + '_vortex_mesh'
             vectors_name = '{}_{}_vectors'.format(name, eval_name)
 
+            ground_effect = surface.get('groundplane', False)
+
             mesh_reshaped = np.einsum('i,jkl->ijkl', np.ones(num_eval_points), inputs[mesh_name])
-            if surface['symmetry'] and surface['groundplane']:
+            if surface['symmetry'] and ground_effect:
                 eval_points_reshaped = np.einsum('il,jk->ijkl',
                     inputs[eval_name],
                     np.ones((2*nx, 2*ny-1)),
