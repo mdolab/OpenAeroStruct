@@ -21,7 +21,7 @@ indep_var_comp.add_output('v', val=248.136, units='m/s')  # Freestream Velocity
 indep_var_comp.add_output('alpha', val=5.0, units='deg')  # Angle of Attack
 indep_var_comp.add_output('beta', val=0.0, units='deg')  # Sideslip angle
 indep_var_comp.add_output('omega', val=np.zeros(3), units='deg/s')  # Rotation rate
-indep_var_comp.add_output('Mach_number', val=1.0)  # Freestream Mach number
+indep_var_comp.add_output('Mach_number', val=0.0)  # Freestream Mach number
 indep_var_comp.add_output('re', val=1.0e6, units='1/m')  # Freestream Reynolds number
 indep_var_comp.add_output('rho', val=0.38, units='kg/m**3')  # Freestream air density
 indep_var_comp.add_output('cg', val=np.zeros((3)), units='m')  # Aircraft center of gravity
@@ -31,14 +31,14 @@ prob.model.add_subsystem('flight_vars', indep_var_comp, promotes=['*'])
 
 # Create a dictionary to store options about the surface
 mesh_dict = {
-    'num_y': 51,
-    'num_x': 2,
+    'num_y': 35,
+    'num_x': 11,
     'wing_type': 'rect',
     'symmetry': True,
-    'span': 12.0,
+    'span': 10.0,
     'chord': 1,
-    'span_cos_spacing': 0.0,
-    'chord_cos_spacing': 0.0,
+    'span_cos_spacing': 1.0,
+    'chord_cos_spacing': 1.0,
 }
 
 # Generate half-wing mesh of rectangular wing
@@ -50,7 +50,6 @@ surface = {
     'name': 'wing',  # name of the surface
     'type': 'aero',
     'symmetry': True,  # if true, model one half of wing
-    'groundplane': True,
     # reflected across the plane y = 0
     'S_ref_type': 'projected',  # how we compute the wing area,
     # can be 'wetted' or 'projected'
