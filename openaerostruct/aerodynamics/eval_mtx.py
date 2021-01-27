@@ -189,6 +189,9 @@ class EvalVelMtx(om.ExplicitComponent):
                 nx_actual = nx
             if surface['symmetry']:
                 ny_actual = 2*ny - 1
+                duplicate_jac_entry_idx_set_1 = np.array([], int)
+                duplicate_jac_entry_idx_set_2 = np.array([], int)
+                jac_start_ind_running_total = 0
             else:
                 ny_actual = ny
 
@@ -200,8 +203,10 @@ class EvalVelMtx(om.ExplicitComponent):
                 (num_eval_points, nx_actual, ny_actual, 3))
             vel_mtx_indices = np.arange(num_eval_points * (nx - 1) * (ny - 1) * 3).reshape(
                 (num_eval_points, nx - 1, ny - 1, 3))
-
+            vel_mtx_idx_expanded = np.arange(num_eval_points * (nx - 1) * (ny - 1) * 3 * 3).reshape(
+                (num_eval_points, nx - 1, ny - 1, 3, 3))
             aic_base = np.einsum('ijkl,m->ijklm', vel_mtx_indices, np.ones(3, int))
+            aic_len = np.sum(np.product(aic_base.shape))
 
             if ground_effect:
                 # mirrored surface along the x mesh direction
@@ -218,41 +223,37 @@ class EvalVelMtx(om.ExplicitComponent):
                 inds_C = surface_to_compute[:, 1:  , 0:-1, :]
                 inds_D = surface_to_compute[:, 1:  , 1:  , :]
                 vertices_to_compute = [inds_A, inds_B, inds_C, inds_D]
-                for vertex_to_compute in vertices_to_compute:
+                # symmetric meshes end up with duplicated jacobian entries that need to be deleted later
+                # vertices A and D duplicate their last entries y-wise
+                # vertices B and C duplicate their first entries y-wise
+                jac_dup_sets = [1, 2, 2, 1]
+                for ivert, vertex_to_compute in enumerate(vertices_to_compute):
+                    jac_dup_set = jac_dup_sets[ivert]
                     if surface['symmetry']:
                         rows = np.concatenate([rows, aic_base.flatten()])
                         cols = np.concatenate([cols, np.einsum('ijkm,l->ijklm', vertex_to_compute[:,:,:ny-1,:], np.ones(3, int)).flatten()])
+                        if jac_dup_set == 1:
+                            duplicate_jac_entry_idx_set_1 = np.concatenate([duplicate_jac_entry_idx_set_1,
+                                                                            jac_start_ind_running_total + vel_mtx_idx_expanded[:,:,-1,:,:].flatten()])
+                        jac_start_ind_running_total += aic_len
+
                         rows = np.concatenate([rows, aic_base[:,:,::-1,:].flatten()])
                         cols = np.concatenate([cols, np.einsum('ijkm,l->ijklm', vertex_to_compute[:,:,ny-1:,:], np.ones(3, int)).flatten()])
+                        if jac_dup_set == 2:
+                            duplicate_jac_entry_idx_set_2 = np.concatenate([duplicate_jac_entry_idx_set_2,
+                                                                       jac_start_ind_running_total + vel_mtx_idx_expanded[:,:,0,:,:].flatten()])
+                        jac_start_ind_running_total += aic_len
+
                     else:
                         rows = np.concatenate([rows, aic_base.flatten()])
                         cols = np.concatenate([cols, np.einsum('ijkm,l->ijklm', vertex_to_compute[:,:,:,:], np.ones(3, int)).flatten()])
 
             if surface['symmetry']:
                 # need to determine the location of duplicate indices, knock them out, and save the locations for compute_partials
-                stacked_indices = np.column_stack([rows, cols])
-                temp, temp_counts = np.unique(stacked_indices, return_counts=True, axis=0)
-                # they occur at most twice
-                repeated_index_values = temp[temp_counts > 1]
-                # we'll keep the first repetition and delete the second
-                first_repeated_index = []
-                second_repeated_index = []
-                for repeated_index_value in repeated_index_values:
-                    # get the locations of the repeated value in the array
-                    locs = np.where((stacked_indices == repeated_index_value).all(axis=1))
-                    # this returns a tuple, don't know why
-                    locs = locs[0]
-                    if len(locs) != 2:
-                        raise ValueError('There should be exactly two repeated occurrences each')
-                    first_repeated_index.append(locs[0])
-                    second_repeated_index.append(locs[1])
+                self.surface_indices_repeated[name] = [duplicate_jac_entry_idx_set_1.copy(), duplicate_jac_entry_idx_set_2.copy()]
 
-                first_repeated_index = np.array(first_repeated_index, int)
-                second_repeated_index = np.array(second_repeated_index, int)
-
-                self.surface_indices_repeated[name] = [first_repeated_index.copy(), second_repeated_index.copy()]
-                cols = np.delete(cols, second_repeated_index)
-                rows = np.delete(rows, second_repeated_index)
+                cols = np.delete(cols, duplicate_jac_entry_idx_set_2)
+                rows = np.delete(rows, duplicate_jac_entry_idx_set_2)
 
             self.add_output(vel_mtx_name, shape=(num_eval_points, nx - 1, ny - 1, 3), units='1/m')
 
