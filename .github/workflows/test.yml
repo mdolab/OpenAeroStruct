@@ -47,5 +47,5 @@ jobs:
         testflo -n 2 openaerostruct --coverage --coverpkg openaerostruct --cover-omit \*tests/\* --cover-omit \*docs/\*
     - name: Build docs
       run: |
-        cd docs
+        cd openaerostruct/docs
         travis-sphinx build --source=.
