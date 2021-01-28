@@ -214,12 +214,20 @@ class AerostructPoint(om.Group):
 
             coupled.add_subsystem(name, coupled_AS_group, promotes_inputs=prom_in)
 
+        # check for ground effect and if so, promote
+        ground_effect = False
+        for surface in surfaces:
+            if surface.get('groundplane', False):
+                ground_effect = True
+
         if self.options['compressible'] == True:
             aero_states = CompressibleVLMStates(surfaces=surfaces, rotational=rotational)
             prom_in = ['v', 'alpha', 'beta', 'rho', 'Mach_number']
         else:
             aero_states = VLMStates(surfaces=surfaces, rotational=rotational)
             prom_in = ['v', 'alpha', 'beta', 'rho']
+        if ground_effect:
+            prom_in.append('height_agl')
 
         # Add a single 'aero_states' component for the whole system within the
         # coupled group.
@@ -263,6 +271,8 @@ class AerostructPoint(om.Group):
         prom_in = ['v', 'alpha', 'beta', 'rho']
         if self.options['compressible'] == True:
             prom_in.append('Mach_number')
+        if ground_effect:
+            prom_in.append('height_agl')
 
         # Add the coupled group to the model problem
         self.add_subsystem('coupled', coupled, promotes_inputs=prom_in)

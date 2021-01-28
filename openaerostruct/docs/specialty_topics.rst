@@ -9,3 +9,4 @@ Specialty Topics
    tutorials/geometry_manipulation.rst
    tutorials/customizing_prob_setup.rst
    tutorials/common_pitfalls.rst
+   tutorials/ground_effect.rst

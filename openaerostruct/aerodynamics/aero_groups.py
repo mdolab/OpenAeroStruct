@@ -60,12 +60,21 @@ class AeroPoint(om.Group):
         # While other components only depends on a single surface,
         # this component requires information from all surfaces because
         # each surface interacts with the others.
+
+        # check for ground effect and if so, promote
+        ground_effect = False
+        for surface in surfaces:
+            if surface.get('groundplane', False):
+                ground_effect = True
+
         if self.options['compressible'] == True:
             aero_states = CompressibleVLMStates(surfaces=surfaces, rotational=rotational)
             prom_in = ['v', 'alpha', 'beta', 'rho', 'Mach_number']
         else:
             aero_states = VLMStates(surfaces=surfaces, rotational=rotational)
             prom_in = ['v', 'alpha', 'beta', 'rho']
+        if ground_effect:
+            prom_in.append('height_agl')
 
         aero_states.linear_solver = om.LinearRunOnce()
 
