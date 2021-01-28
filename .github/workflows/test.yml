@@ -1,14 +1,10 @@
-name: Github action test
+name: OpenAeroStruct
 
 on: [push]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-    # strategy:
-    #  matrix:
-    #    python-version: [2.7, 3.5, 3.6, 3.7, 3.8]
 
     steps:
     - uses: actions/checkout@v2
@@ -16,11 +12,15 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: '3.8'
+
+    # OAS dependencies are specified in setup.py.
     - name: Install OAS and its dependencies
       run: |
         python -m pip install --upgrade pip wheel
         pip install .
-    - name: Install pyGeo and pySpline
+
+    # We need pySpline/pyGeo to run FFD tests.
+    - name: Install pySpline and pyGeo
       run: |
         sudo apt-get install openmpi-bin libopenmpi-dev
         pip install mpi4py
@@ -32,10 +32,12 @@ jobs:
         cd ..
         git clone https://github.com/mdolab/pygeo.git
         pip install -e ./pygeo
+        export OMPI_MCA_btl=^openib
+
     - name: Install packages for tests and docs
       run: |
         pip install coverage coveralls testflo
-        pip install travis-sphinx
+    #    pip install travis-sphinx
     #    pip install --user travis-sphinx
     # - name: Lint with flake8
     #  run: |
@@ -43,6 +45,7 @@ jobs:
     #    flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
     #    # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
     #    flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
     - name: Run tests
       run: |
         cd openaerostruct
@@ -51,3 +54,7 @@ jobs:
     #  run: |
     #    cd openaerostruct/docs
     #    travis-sphinx build --source=.
+
+    - name: Coverage check
+      run: |
+        coveralls --rcfile=../.coveragerc;
