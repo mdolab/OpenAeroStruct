@@ -55,6 +55,7 @@ jobs:
     #    cd openaerostruct/docs
     #    travis-sphinx build --source=.
 
-    - name: Coverage check
-      run: |
-        coveralls --rcfile=../.coveragerc;
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
