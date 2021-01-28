@@ -106,6 +106,7 @@ def get_default_surfaces():
                  'num_y' : 4,
                  'num_x' : 2,
                  'symmetry' : True,
+                 'groundplane' : False,
                  'S_ref_type' : 'wetted',
                  'CL0' : 0.1,
                  'CD0' : 0.1,
@@ -227,13 +228,13 @@ def assert_check_totals(totals, atol=1e-6, rtol=1e-6):
         for i_mode, mode in enumerate(['forward','forward_reverse','reverse']):
             if rel_error[i_mode] is not None:
                 if np.abs(rel_error[i_mode])-rtol > 0.0:
-                    err_str = ('Total deriv of ' + of +
+                    err_str = ('Total deriv (mode ' + mode + ') of ' + of +
                           ' with respect to ' + wrt + ' had rel error ' +
                           str(rel_error[i_mode]) + ' which is greater than tol ' + str(rtol))
                     raise ValueError(err_str)
             if abs_error[i_mode] is not None:
                 if np.abs(abs_error[i_mode])-atol > 0.0:
-                    err_str = ('Total deriv of ' + of +
+                    err_str = ('Total deriv (mode ' + mode + ') of ' + of +
                           ' with respect to ' + wrt + ' had abs error ' +
                           str(abs_error[i_mode]) + ' which is greater than tol ' + str(atol))
                     raise ValueError(err_str)

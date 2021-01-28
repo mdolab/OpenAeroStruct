@@ -132,6 +132,11 @@ class EvalVelMtx(om.ExplicitComponent):
     This basically results in us looping through more calculations as if the
     panels were actually there.
 
+    The calculations also vary when we consider ground effect.
+    This is accomplished by mirroring a second copy of the mesh across
+    the ground plane. The documentation has more detailed explanations.
+    The ground effect is only implemented for symmetric wings.
+
     Parameters
     ----------
     alpha : float
