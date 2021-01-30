@@ -1,12 +1,12 @@
-name: OAS push build
+name: OAS push-to-master build
 
 # This workflow is triggered when we push to the master branch.
 # This yml is mostly the same as oas_pr.yml, but in addition to running tests
 # and building docs, it deploys the docs to gh-pages.
 on:
   push:
-#    branches:
-#      - master
+    branches:
+      - master
 
 jobs:
   build:
