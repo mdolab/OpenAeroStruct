@@ -1,5 +1,7 @@
 name: OAS PR build
 
+# This workflow is triggered on pull request events.
+# This runs tests and builds docs (but not deploy it).
 on: [pull_request]
 
 jobs:
