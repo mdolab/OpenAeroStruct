@@ -45,29 +45,37 @@ class GetVectors(om.ExplicitComponent):
             nx = mesh.shape[0]
             ny = mesh.shape[1]
             name = surface['name']
+
+            ground_effect = surface.get('groundplane', False)
+
             vectors_name = '{}_{}_vectors'.format(name, eval_name)
 
             # This is where we handle the symmetry in the VLM method.
             # If it's symmetric, we need to effectively mirror the mesh by
             # accounting for the ghost mesh. We do this by using an artificially
             # larger mesh here.
+
             if surface['symmetry']:
                 actual_ny_size = ny * 2 - 1
             else:
                 actual_ny_size = ny
+            if ground_effect:
+                actual_nx_size = nx * 2
+            else:
+                actual_nx_size = nx
 
-            self.add_input(name + '_vortex_mesh', val=np.zeros((nx, actual_ny_size, 3)), units='m')
-            self.add_output(vectors_name, val=np.ones((num_eval_points, nx, actual_ny_size, 3)), units='m')
+            self.add_input(name + '_vortex_mesh', val=np.zeros((actual_nx_size, actual_ny_size, 3)), units='m')
+            self.add_output(vectors_name, val=np.ones((num_eval_points, actual_nx_size, actual_ny_size, 3)), units='m')
 
             # Set up indices so we can get the rows and cols for the delcare
-            vector_indices = np.arange(num_eval_points * nx * actual_ny_size * 3)
+            vector_indices = np.arange(num_eval_points * actual_nx_size * actual_ny_size * 3)
             mesh_indices = np.outer(
                 np.ones(num_eval_points, int),
-                np.arange(nx * actual_ny_size * 3),
+                np.arange(actual_nx_size * actual_ny_size * 3),
             ).flatten()
             eval_indices = np.einsum('il,jk->ijkl',
                 np.arange(num_eval_points * 3).reshape((num_eval_points, 3)),
-                np.ones((nx, actual_ny_size), int),
+                np.ones((actual_nx_size, actual_ny_size), int),
             ).flatten()
 
             self.declare_partials(vectors_name, name + '_vortex_mesh', val=-1., rows=vector_indices, cols=mesh_indices)
@@ -91,9 +99,15 @@ class GetVectors(om.ExplicitComponent):
             mesh_name = name + '_vortex_mesh'
             vectors_name = '{}_{}_vectors'.format(name, eval_name)
 
-            mesh_reshaped = np.einsum('i,jkl->ijkl', np.ones(num_eval_points), inputs[mesh_name])
+            ground_effect = surface.get('groundplane', False)
 
-            if surface['symmetry']:
+            mesh_reshaped = np.einsum('i,jkl->ijkl', np.ones(num_eval_points), inputs[mesh_name])
+            if surface['symmetry'] and ground_effect:
+                eval_points_reshaped = np.einsum('il,jk->ijkl',
+                    inputs[eval_name],
+                    np.ones((2*nx, 2*ny-1)),
+                )
+            elif surface['symmetry']:
                 eval_points_reshaped = np.einsum('il,jk->ijkl',
                     inputs[eval_name],
                     np.ones((nx, 2*ny-1)),
