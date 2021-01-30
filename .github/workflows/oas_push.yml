@@ -1,0 +1,77 @@
+name: OAS push build
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'
+
+    # OAS dependencies are specified in setup.py.
+    - name: Install OAS and its dependencies
+      run: |
+        python -m pip install --upgrade pip wheel
+        pip install .
+        pip install coverage coveralls testflo   # for tests and coveralls
+
+    # We need pySpline/pyGeo to run FFD tests.
+    - name: Install pySpline and pyGeo
+      run: |
+        sudo apt-get install openmpi-bin libopenmpi-dev
+        pip install mpi4py
+        git clone https://github.com/mdolab/pyspline.git
+        cd pyspline
+        cp config/defaults/config.LINUX_GFORTRAN.mk config/config.mk
+        make
+        pip install -e .
+        cd ..
+        git clone https://github.com/mdolab/pygeo.git
+        pip install -e ./pygeo
+
+    - name: Run tests
+      env:
+        OMPI_MCA_btl: ^openib   # prevent OpenMPI warning messages
+      run: |
+        cd openaerostruct
+        testflo -n 2 openaerostruct --coverage --coverpkg openaerostruct --cover-omit \*tests/\* --cover-omit \*docs/\*
+
+    # build and deploy docs
+    - name: Build docs
+      run: |
+        cd openaerostruct/docs
+        make clean
+        make html
+
+    - name: Commit doc changes
+      run: |
+        git clone https://github.com/mdolab/OpenAeroStruct.git --branch gh-pages --single-branch gh-pages
+        cp -r ./openaerostruct/docs/_build/html/* gh-pages/
+        cd gh-pages
+        touch .nojekyll
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .
+        git commit -m "Update documentation" -a || true
+
+    - name: Push changes to gh-pages
+      uses: ad-m/github-push-action@master
+      with:
+        branch: gh-pages
+        directory: gh-pages
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Run coveralls
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        cd openaerostruct
+        coveralls --service=github --rcfile=../.coveragerc;
