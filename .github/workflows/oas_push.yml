@@ -56,8 +56,9 @@ jobs:
         make clean
         make html
 
+    # deploy docs only when we're pushing to the master branch.
     - name: Commit doc changes
-      if: ${{ github.event_name == 'push' && github.event.action == 'unassigned' }}
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
       run: |
         git clone https://github.com/mdolab/OpenAeroStruct.git --branch gh-pages --single-branch gh-pages
         cp -r ./openaerostruct/docs/_build/html/* gh-pages/
@@ -69,6 +70,7 @@ jobs:
         git commit -m "Update documentation" -a || true
 
     - name: Push changes to gh-pages
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
       uses: ad-m/github-push-action@master
       with:
         branch: gh-pages
@@ -76,6 +78,7 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Run coveralls
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
