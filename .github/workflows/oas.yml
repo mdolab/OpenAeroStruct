@@ -1,14 +1,13 @@
-name: OAS push-to-master build
+name: OAS build
 
-# This workflow is triggered when we push to the master branch.
-# This yml is mostly the same as oas_pr.yml, but in addition to running tests
-# and building docs, it deploys the docs to gh-pages.
+# This workflow is triggered on the pull-request events, as well as when we push to the master branch (i.e., merge PR).
+# On the pull-request events, this runs tests and builds docs (but not deploy it).
+# On the push-to-master events, in addition to the tests and docs build, it deploys the docs and runs coveralls.
 on:
   pull_request:
   push:
     branches:
       - master
-      - testbranch
 
 jobs:
   build:
@@ -28,7 +27,7 @@ jobs:
         pip install .
         pip install coverage coveralls testflo   # for tests and coveralls
 
-    # We need pySpline/pyGeo to run FFD tests.
+    # we need pySpline/pyGeo to run FFD tests.
     - name: Install pySpline and pyGeo
       run: |
         sudo apt-get install openmpi-bin libopenmpi-dev
@@ -47,7 +46,7 @@ jobs:
         OMPI_MCA_btl: ^openib   # prevent OpenMPI warning messages
       run: |
         cd openaerostruct
-#        testflo -n 2 openaerostruct --coverage --coverpkg openaerostruct --cover-omit \*tests/\* --cover-omit \*docs/\*
+        testflo -n 2 openaerostruct --coverage --coverpkg openaerostruct --cover-omit \*tests/\* --cover-omit \*docs/\*
 
     # build docs
     - name: Build docs
