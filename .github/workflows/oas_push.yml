@@ -4,9 +4,11 @@ name: OAS push-to-master build
 # This yml is mostly the same as oas_pr.yml, but in addition to running tests
 # and building docs, it deploys the docs to gh-pages.
 on:
+  pull_request:
   push:
     branches:
       - master
+      - testbranch
 
 jobs:
   build:
@@ -45,9 +47,9 @@ jobs:
         OMPI_MCA_btl: ^openib   # prevent OpenMPI warning messages
       run: |
         cd openaerostruct
-        testflo -n 2 openaerostruct --coverage --coverpkg openaerostruct --cover-omit \*tests/\* --cover-omit \*docs/\*
+#        testflo -n 2 openaerostruct --coverage --coverpkg openaerostruct --cover-omit \*tests/\* --cover-omit \*docs/\*
 
-    # build and deploy docs
+    # build docs
     - name: Build docs
       run: |
         cd openaerostruct/docs
@@ -55,6 +57,7 @@ jobs:
         make html
 
     - name: Commit doc changes
+      if: ${{ github.event_name == 'push' && github.event.action == 'unassigned' }}
       run: |
         git clone https://github.com/mdolab/OpenAeroStruct.git --branch gh-pages --single-branch gh-pages
         cp -r ./openaerostruct/docs/_build/html/* gh-pages/
