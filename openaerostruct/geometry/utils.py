@@ -639,6 +639,11 @@ def generate_mesh(input_dict):
     chord = surf_dict['root_chord']
     span_cos_spacing = surf_dict['span_cos_spacing']
     chord_cos_spacing = surf_dict['chord_cos_spacing']
+    sweep_angle = surf_dict['sweep']
+    chord_distrib = surf_dict['chord_distrib']
+    dihedral_angle_distrib = surf_dict['dihedral_angle_distrib']
+    taper_ratio = surf_dict['taper']
+    wing_twist_distrib = surf_dict['wing_twist_distrib']
 
     # Check to make sure that an odd number of spanwise points (num_y) was provided
     if not num_y % 2:
@@ -660,7 +665,9 @@ def generate_mesh(input_dict):
         mesh, eta, twist = gen_crm_mesh(num_x, num_y,
             span_cos_spacing, chord_cos_spacing, surf_dict['wing_type'])
         surf_dict['crm_twist'] = twist
-
+    
+    elif 'customized' in surf_dict['wing_type']:
+        mesh = gen_custom_mesh(num_x , num_y , span , chord_distrib , sweep_angle , dihedral_angle_distrib , taper_ratio , wing_twist_distrib, span_cos_spacing, chord_cos_spacing)
     else:
         raise NameError('wing_type option not understood. Must be either a type of ' +
               '"CRM" or "rect".')
@@ -929,3 +936,118 @@ def plot3D_meshes(file_name, zero_tol=0):
         mesh_dict[name] = mesh_list[i]
 
     return mesh_dict
+
+
+def gen_custom_mesh(num_x, num_y, span, chord_distrib, sweep_angle, dihedral_angle_distrib, taper_ratio, wing_twist_distrib, span_cos_spacing=0, chord_cos_spacing=0):
+    """
+    To generate a customized mesh.
+        
+    Imput :
+        num_x : the number of chordwise nodal points
+        num_y : the number of spanwise nodal points
+        span : float (in meters)
+        chord_distrib : numpy array of dimension num_y which contains the chord distribution of the wing. (chords in meters)
+        sweep_angle : float (in radians)
+        dihedral_angle_distrib : numpy array of dimension (num_y -1) (no angle at the wing tips) which contains the dihedral angle distribution along the wing. (in radians)
+        taper_ratio : float
+        wing_twist_distrib : numpy array of dimension num_y which contains the wing twist angle distribution of the wing (in radians).
+        span_cos_spacing : float between -1 and 1 (optional)
+            Blending ratio of uniform and cosine spacing in the spanwise direction.
+            A value of 0. corresponds to uniform spacing and a value of 1.
+            corresponds to regular cosine spacing. A value of 1 increases the number of
+            spanwise node points near the wingtips and a value a -1 increases the number of
+            spanwise node points near the fuselage.
+        chord_cos_spacing : float between -1 and 1 (optional)
+            Blending ratio of uniform and cosine spacing in the chordwise direction.
+            A value of 0. corresponds to uniform spacing and a value of 1.
+            corresponds to regular cosine spacing. A value of 1 increases the number of
+            chordwise node points near the trailing edge and a value a -1 increases the number of
+            chordwise node points near the leading edge.
+    
+    Output :
+        mesh : numpy array of dimension (num_x, num_y, 3)
+        
+    -> To do next in order to improve this function : be able to take into account wing twist
+
+    """
+    
+    # initialize the mesh :
+    mesh = np.zeros((num_x, num_y, 3))
+    
+    # Create the blended spacing using the user input for span_cos_spacing
+    ny2 = (num_y + 1) // 2
+    beta_y = np.linspace(0, np.pi/2, ny2)
+    # Distribution for cosine spacing
+    cosine_y = np.cos(beta_y)
+    # Distribution for uniform spacing
+    uniform_y = np.linspace(0, 1., ny2)[::-1]
+    # Combine the two distrubtions using span_cos_spacing as the weighting factor.
+    # span_cos_spacing == 1. is for fully cosine, 0. for uniform
+    lins_y = cosine_y * span_cos_spacing + (1 - span_cos_spacing) * uniform_y
+    # make the anti-symetry :
+    lins_antisym_x = np.zeros(num_y)
+    lins_antisym_x[:ny2] = -lins_y
+    for k in range(ny2-1):
+        lins_antisym_x[-(k+1)] = lins_y[k]
+         
+    # scale the normed distribution by span/2 to obtain the spanwise nodal point distribution.
+    scaled_lins_antisym_span = (span/2)*lins_antisym_x
+    
+    # set the y coordinates (spanwise coordinate) of all the points of the mesh :
+    for i in range(num_x):
+        mesh[i, :, 1] = scaled_lins_antisym_span
+    
+    # set the x coordiates (chordwise coordinate) of the points of the leading edge :
+    le_slope_x = np.tan(sweep_angle) # leading edge slope (x versus y)(around the z axis)
+    for j in range(num_y):
+        mesh[0, j, 0] = le_slope_x*(np.abs(mesh[0, j, 1]))
+    
+    # # set the z coordinates of the points of the leading edge (no wing twist for now):
+    # le_slope_z = np.tan(dihedral_angle) # leading edge slope (z versus y)(around x axis)
+    # for j in range(num_y):
+    #     mesh[0, j, 2] = le_slope_z*(np.abs(mesh[0, j, 1]))
+    
+    # set the z coordinates of the points of the leading edge (no wing twist for now):
+    le_slope_z_distrib = np.tan(dihedral_angle_distrib) # leading edge slope (z versus y)(around x axis)
+    for j in range(int(num_y-1)):
+        spanwise_dist = np.abs(mesh[0, j, 1] - mesh[0, j+1, 1])
+    spanwise_alt_dihedral_without_central_point = le_slope_z_distrib*spanwise_dist
+    for j in range(int((num_y-1)/2)):
+        spanwise_alt_dihedral_without_central_point[j] = np.sum(spanwise_alt_dihedral_without_central_point[j:int((num_y-1)/2)])
+        spanwise_alt_dihedral_without_central_point[-(j+1)] = np.sum(spanwise_alt_dihedral_without_central_point[::-1][j:int((num_y-1)/2)])
+    spanwise_alt_with_central_point = np.zeros(num_y)
+    spanwise_alt_with_central_point[:int((num_y-1)/2)] += spanwise_alt_dihedral_without_central_point[:int((num_y-1)/2)]
+    spanwise_alt_with_central_point[int((num_y-1)/2)+1:] += spanwise_alt_dihedral_without_central_point[int((num_y-1)/2):]
+    mesh[0, :, 2] = spanwise_alt_with_central_point
+        
+    # set the z coordinates of all the other points of the mesh (no wing twist -> the z coordinate 
+    #depends only on the y coordinate, if there was wing twist it will also depends on the
+    #x coordinate):
+    for j in range(1, num_x):
+        mesh[j, :, 2] = mesh[0, :, 2]    
+    
+    # Create the blended spacing using the user input for chord_cos_spacing
+    beta_x = np.linspace(0, np.pi/2, num_x)[::-1]
+    # Distribution for cosine spacing
+    cosine_x = np.cos(beta_x)
+    # Distribution for uniform spacing
+    uniform_x = np.linspace(0, 1., num_x)
+    # Combine the two distrubtions using span_cos_spacing as the weighting factor.
+    # span_cos_spacing == 1. is for fully cosine, 0. for uniform
+    lins_x = cosine_x * chord_cos_spacing + (1 - chord_cos_spacing) * uniform_x
+    
+    # set the x coordinates of all points of the mesh :
+    # scale the normed distribution by the right chord at each position in y to obtain
+    #the chordwise nodal point distribution at each position in y.
+    scaled_lins_chord = np.zeros((len(lins_x), num_y))
+    for j in range(num_y):
+        scaled_lins_chord[:,j] = chord_distrib[j]*lins_x
+        mesh[:, j, 0] = mesh[0, j, 0]*np.ones(num_x) + scaled_lins_chord[:,j]
+    
+    # update th z coordinates of all th points of the mesh taking into account wing twist :
+    for i in range(num_y):
+        slope_twist = np.tan(wing_twist_distrib[i])
+        for j in range(num_x):
+             mesh[j, i, 2] += (mesh[-1, i, 0] - mesh[j, i, 0]) * slope_twist   
+    
+    return mesh
