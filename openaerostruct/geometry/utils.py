@@ -639,11 +639,13 @@ def generate_mesh(input_dict):
     chord = surf_dict['root_chord']
     span_cos_spacing = surf_dict['span_cos_spacing']
     chord_cos_spacing = surf_dict['chord_cos_spacing']
-    sweep_angle = surf_dict['sweep']
-    chord_distrib = surf_dict['chord_distrib']
-    dihedral_angle_distrib = surf_dict['dihedral_angle_distrib']
-    taper_ratio = surf_dict['taper']
-    wing_twist_distrib = surf_dict['wing_twist_distrib']
+    
+    if 'customized' in surf_dict['wing_type']:
+        sweep_angle = surf_dict['sweep']
+        chord_distrib = surf_dict['chord_distrib']
+        dihedral_angle_distrib = surf_dict['dihedral_angle_distrib']
+        taper_ratio = surf_dict['taper']
+        wing_twist_distrib = surf_dict['wing_twist_distrib']
 
     # Check to make sure that an odd number of spanwise points (num_y) was provided
     if not num_y % 2:
@@ -1001,11 +1003,6 @@ def gen_custom_mesh(num_x, num_y, span, chord_distrib, sweep_angle, dihedral_ang
     le_slope_x = np.tan(sweep_angle) # leading edge slope (x versus y)(around the z axis)
     for j in range(num_y):
         mesh[0, j, 0] = le_slope_x*(np.abs(mesh[0, j, 1]))
-    
-    # # set the z coordinates of the points of the leading edge (no wing twist for now):
-    # le_slope_z = np.tan(dihedral_angle) # leading edge slope (z versus y)(around x axis)
-    # for j in range(num_y):
-    #     mesh[0, j, 2] = le_slope_z*(np.abs(mesh[0, j, 1]))
     
     # set the z coordinates of the points of the leading edge (no wing twist for now):
     le_slope_z_distrib = np.tan(dihedral_angle_distrib) # leading edge slope (z versus y)(around x axis)
