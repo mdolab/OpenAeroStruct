@@ -31,7 +31,7 @@ setup(name='openaerostruct',
     },
     # TODO: add versions?
     install_requires=[
-        'openmdao[docs]>=3.2',
+        'openmdao[docs]>=3.2, <=3.6.0',
         'numpy',
         'scipy',
         'matplotlib',
