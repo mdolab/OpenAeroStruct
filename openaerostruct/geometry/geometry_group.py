@@ -28,7 +28,9 @@ class Geometry(om.Group):
         ny = surface['mesh'].shape[1]
 
         # Check if any control points were added to the surface dict
-        dv_keys = set(['twist_cp', 'chord_cp', 'xshear_cp', 'yshear_cp', 'zshear_cp', 'sweep', 'span', 'taper', 'dihedral', 't_over_c_cp'])
+        # dv_keys = set(['twist_cp', 'chord_cp', 'xshear_cp', 'yshear_cp', 'zshear_cp', 'sweep', 'span', 'taper', 'dihedral', 't_over_c_cp'])
+        #Ajout Rémy
+        dv_keys = set(['twist_cp', 'chord_cp', 'xshear_cp', 'yshear_cp', 'zshear_cp', 'sweep', 'span', 'taper', 'dihedral', 't_over_c_cp', 'dihedral_distrib_cp'])
         active_dv_keys = dv_keys.intersection(set(surface.keys()))
         # Make sure that at least one of them is an independent variable
         make_ivc = False
@@ -172,6 +174,23 @@ class Geometry(om.Group):
                 bsp_inputs.append('zshear')
                 if surface.get('zshear_cp_dv', True):
                     indep_var_comp.add_output('zshear_cp', val=surface['zshear_cp'], units='m')
+                
+            #Ajout Rémy
+            if 'dihedral_distrib_cp' in surface.keys():
+                n_cp = len(surface['dihedral_distrib_cp'])
+                # Add bspline components for active bspline geometric variables.
+                # x_interp = np.linspace(0., 1., int(ny))
+                x_interp = np.linspace(0., 1., int(ny-1))
+                comp = self.add_subsystem('dihedral_distrib_bsp', om.SplineComp(
+                    method='bsplines', x_interp_val=x_interp,
+                    num_cp=n_cp,
+                    interp_options={'order' : min(n_cp, 4)}),
+                    promotes_inputs=['dihedral_distrib_cp'], promotes_outputs=['dihedral_distrib'])
+                comp.add_spline(y_cp_name='dihedral_distrib_cp', y_interp_name='dihedral_distrib',
+                    y_units='deg')
+                bsp_inputs.append('dihedral_distrib')
+                if surface.get('dihedral_distrib_cp_dv', True):
+                    indep_var_comp.add_output('dihedral_distrib_cp', val=surface['dihedral_distrib_cp'], units='deg')
 
             if 'sweep' in surface.keys():
                 bsp_inputs.append('sweep')

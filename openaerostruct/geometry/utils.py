@@ -950,7 +950,7 @@ def gen_custom_mesh(num_x, num_y, span, chord_distrib, sweep_angle, dihedral_ang
         span : float (in meters)
         chord_distrib : numpy array of dimension num_y which contains the chord distribution of the wing. (chords in meters)
         sweep_angle : float (in radians)
-        dihedral_angle_distrib : numpy array of dimension (num_y -1) (no angle at the wing tips) which contains the dihedral angle distribution along the wing. (in radians)
+        dihedral_angle_distrib : numpy array of dimension (num_y -1) (no angle at the wing tips) which contains the dihedral angle distribution along the wing. (in degrees)
         taper_ratio : float
         wing_twist_distrib : numpy array of dimension num_y which contains the wing twist angle distribution of the wing (in radians).
         span_cos_spacing : float between -1 and 1 (optional)
@@ -968,8 +968,6 @@ def gen_custom_mesh(num_x, num_y, span, chord_distrib, sweep_angle, dihedral_ang
     
     Output :
         mesh : numpy array of dimension (num_x, num_y, 3)
-        
-    -> To do next in order to improve this function : be able to take into account wing twist
 
     """
     
@@ -1005,9 +1003,11 @@ def gen_custom_mesh(num_x, num_y, span, chord_distrib, sweep_angle, dihedral_ang
         mesh[0, j, 0] = le_slope_x*(np.abs(mesh[0, j, 1]))
     
     # set the z coordinates of the points of the leading edge (no wing twist for now):
-    le_slope_z_distrib = np.tan(dihedral_angle_distrib) # leading edge slope (z versus y)(around x axis)
+    dihedral_angle_distrib_deg = (np.pi/180)*dihedral_angle_distrib #set dihedral_angle_distrib in radians
+    le_slope_z_distrib = np.tan(dihedral_angle_distrib_deg) # leading edge slope (z versus y)(around x axis)
+    spanwise_dist = np.zeros(np.shape(le_slope_z_distrib))
     for j in range(int(num_y-1)):
-        spanwise_dist = np.abs(mesh[0, j, 1] - mesh[0, j+1, 1])
+        spanwise_dist[j] = np.abs(mesh[0, j, 1] - mesh[0, j+1, 1])
     spanwise_alt_dihedral_without_central_point = le_slope_z_distrib*spanwise_dist
     for j in range(int((num_y-1)/2)):
         spanwise_alt_dihedral_without_central_point[j] = np.sum(spanwise_alt_dihedral_without_central_point[j:int((num_y-1)/2)])

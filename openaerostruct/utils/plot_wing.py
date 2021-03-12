@@ -555,6 +555,27 @@ class Display(object):
                     Y[:] = np.linspace(mesh0[0, i, 1], mesh0[0, i+1, 1], 2)
 
                     # Set the colors of the rectangular surfaces
+                    # if(i==19):
+                    print("X =", X)
+                    print("X.shape =", X.shape)
+                    print("self =", self)
+                    print("self.names =", self.names)
+                    # print("self.mesh =", self.mesh)
+                    print("mesh0 =", mesh0)
+                    print("self.show_tube =", self.show_tube)
+                    print("i =", i)
+                    print("t0 =", t0)
+                    print("self.show_def_mesh.get() =", self.show_def_mesh.get())
+                    print("self.show_wing =", self.show_wing)
+                    print("colors =", colors)
+                    print("type(colors) =", type(colors))
+                    print("np.ravel(colors) =", np.ravel(colors))
+                    print("colors[i] =", colors[i])
+                    print("np.zeros(X.shape) =", np.zeros(X.shape))
+                    # t0 = np.ravel(t0)
+                    # colors = np.ravel(colors)
+                    
+                    
                     col = np.zeros(X.shape)
                     col[:] = colors[i]
 

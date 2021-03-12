@@ -6,7 +6,7 @@ import openmdao.api as om
 
 from openaerostruct.geometry.geometry_mesh_transformations import \
      Taper, ScaleX, Sweep, ShearX, Stretch, ShearY, Dihedral, \
-     ShearZ, Rotate
+     ShearZ, Rotate, Dihedral_distrib
 
 
 class GeometryMesh(om.Group):
@@ -151,7 +151,19 @@ class GeometryMesh(om.Group):
 
         self.add_subsystem('shear_z', ShearZ(val=val, mesh_shape=mesh_shape),
                            promotes_inputs=promotes)
+        
+        #Ajout Rémy :
+        # 10. Dihedral Distrib
+        val = np.zeros(ny-1)
+        if 'dihedral_distrib_cp' in surface:
+            promotes = ['dihedral_distrib']
+        else:
+            val = np.zeros(ny-1)
+            promotes = []
 
+        self.add_subsystem('dihedral_distrib', Dihedral_distrib(val=val, mesh_shape=mesh_shape, symmetry=symmetry),
+                           promotes_inputs=promotes)
+        
         # 9. Rotate
 
         val = np.zeros(ny)
@@ -163,10 +175,25 @@ class GeometryMesh(om.Group):
 
         self.add_subsystem('rotate', Rotate(val=val, mesh_shape=mesh_shape, symmetry=symmetry),
                            promotes_inputs=promotes, promotes_outputs=['mesh'])
+        
+        # #Ajout Rémy :
+        # # 10. Dihedral Distrib
+        # val = np.zeros(ny)
+        # if 'dihedral_distrib_cp' in surface:
+        #     promotes = ['dihedral_distrib']
+        # else:
+        #     val = np.zeros(ny)
+        #     promotes = []
+
+        # self.add_subsystem('dihedral_distrib', Dihedral_distrib(val=val, mesh_shape=mesh_shape, symmetry=symmetry),
+        #                    promotes_inputs=promotes, promotes_outputs=['mesh'])
 
 
+        # names = ['taper', 'scale_x', 'sweep', 'shear_x', 'stretch', 'shear_y', 'dihedral',
+        #          'shear_z', 'rotate']
+        #Ajout rémy :
         names = ['taper', 'scale_x', 'sweep', 'shear_x', 'stretch', 'shear_y', 'dihedral',
-                 'shear_z', 'rotate']
+                 'shear_z', 'dihedral_distrib', 'rotate']
 
         for j in np.arange(len(names) - 1):
             self.connect(names[j] + '.mesh', names[j+1] + '.in_mesh')

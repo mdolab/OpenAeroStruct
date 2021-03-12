@@ -813,7 +813,8 @@ class Rotate(om.ExplicitComponent):
         """
         Declare options.
         """
-        self.options.declare('val', desc='Initial value for dihedral.')
+        # self.options.declare('val', desc='Initial value for dihedral.')
+        self.options.declare('val', desc='Initial value for twist.')
         self.options.declare('mesh_shape', desc='Tuple containing mesh shape (nx, ny).')
         self.options.declare('symmetry', default=False,
                              desc='Flag set to true if surface is reflected about y=0 plane.')
@@ -1095,3 +1096,253 @@ class Rotate(om.ExplicitComponent):
                 partials['mesh', 'in_mesh'][nn5:nn6] = -0.25 * d_dq_flat1
                 nn7 = nn6 + del_n
                 partials['mesh', 'in_mesh'][nn6:nn7] = -0.25 * d_dq_flat2
+
+
+
+class Dihedral_distrib(om.ExplicitComponent):
+    """
+    OpenMDAO component that manipulates the mesh by applying dihedral angles to the panels of the wing 
+    (different to the Dihedral class in the sense that we can apply different dihedral angles to the panels 
+    of the wing and not only the same angle to all the wing). Positive angles up.
+
+    Parameters
+    ----------
+    mesh[nx, ny, 3] : numpy array
+        Nodal mesh defining the initial aerodynamic surface.
+    dihedral_distrib[ny-1] : numpy array
+        1-D array of dihedral angles each wing panel in degrees. 
+        Note that the size is equal to ny-1 because we apply the angles to panels and not to nodes.
+    symmetry : boolean
+        Flag set to true if surface is reflected about y=0 plane.
+
+    Returns
+    -------
+    mesh[nx, ny, 3] : numpy array
+        Nodal mesh defining the aerodynamic surface with dihedral angles on each panels.
+    """
+
+    def initialize(self):
+        """
+        Declare options.
+        """
+        self.options.declare('val', desc='Initial value for dihedral_distrib.')
+        self.options.declare('mesh_shape', desc='Tuple containing mesh shape (nx, ny).')
+        self.options.declare('symmetry', default=False,
+                             desc='Flag set to true if surface is reflected about y=0 plane.')
+
+    def setup(self):
+        mesh_shape = self.options['mesh_shape']
+        val = self.options['val']
+        symmetry = self.options['symmetry']
+
+        self.add_input('dihedral_distrib', val=val, units='deg')
+        self.add_input('in_mesh', shape=mesh_shape, units='m')
+
+        self.add_output('mesh', shape=mesh_shape, units='m')
+
+     
+    def setup_partials(self):
+        symmetry =  self.options['symmetry']
+        mesh_shape = mesh_shape = self.options['mesh_shape']
+        nx, ny, _ = mesh_shape
+        
+        if(symmetry):
+            rows = np.array([]) 
+            cols = np.array([]) 
+
+            for i in range(nx):
+                for k in range(int(ny-1)):
+                    rows= np.concatenate((rows, 3*np.arange(int(i*ny),int(i*ny + (ny-1) -k)) +2)) # add the position of the z coord of the points of the i-th edge
+                    cols= np.concatenate((cols, int((ny-1) -(1+k))*np.ones(int((ny-1) -k)))) # add the position of the dihedral angle of the panel which corresponds 
+
+            self.declare_partials('mesh', 'dihedral_distrib', rows=rows, cols=cols)  
+
+            nn = nx*ny*3
+            # the diagonal elements of the d_mesh/d_in_mesh are jacobian matrix are non zero.
+            rows = np.arange(nn)
+            cols = np.arange(nn)
+
+            for i in range(nx):
+                for j in range(ny):
+                    if (j < (ny-1)):
+                        for k in range(j,int(ny)):
+                            rows = np.concatenate((rows, np.array([i*ny*3 + j*3+2])))
+                            cols = np.concatenate((cols, np.array([k*3+1])))
+
+            self.declare_partials('mesh', 'in_mesh', rows=rows, cols=cols)    
+        
+        else:
+            
+            rows = np.array([]) 
+            cols = np.array([]) 
+
+            for i in range(nx):
+                for k in range(int((ny-1)/2)):
+                    rows= np.concatenate((rows, 3*np.arange(int(i*ny),int(i*ny + ((ny-1)/2) -k)) +2)) # add the position of the z coord of the points of the left part of the i-th edge
+                    rows= np.concatenate((rows, 3*np.arange(int(i*ny + ((ny+1)/2) +k), int((i+1)*ny )) +2)) # add the position of the z coord of the points of the right part of the i-th edge
+                    cols= np.concatenate((cols, int(((ny-1)/2) -(1+k))*np.ones(int(((ny-1)/2) -k)))) # add the position of the dihedral angle of the panel which corresponds
+                    cols= np.concatenate((cols, int(((ny-1)/2) +k)*np.ones(int(((ny-1)/2) -k))))
+
+            self.declare_partials('mesh', 'dihedral_distrib', rows=rows, cols=cols)  
+
+            nn = nx*ny*3
+            # the diagonal elements of the d_mesh/d_in_mesh are jacobian matrix are non zero.
+            rows = np.arange(nn)
+            cols = np.arange(nn)
+
+            for i in range(nx):
+                for j in range(ny):
+                    if (j < (ny-1)/2):
+                        for k in range(j,int((ny+1)/2)):
+                            rows = np.concatenate((rows, np.array([i*ny*3 + j*3+2])))
+                            cols = np.concatenate((cols, np.array([k*3+1])))
+                    if (j > (ny-1)/2):
+                        for k in range(int((ny-1)/2), j+1):
+                            rows = np.concatenate((rows, np.array([i*ny*3 + j*3+2])))
+                            cols = np.concatenate((cols, np.array([k*3+1])))
+
+            self.declare_partials('mesh', 'in_mesh', rows=rows, cols=cols) 
+        
+        
+        
+    def compute(self, inputs, outputs):        
+        # #######################################################################
+        # # save the differences in altitude caused by the wing twist 
+        # #(we need to save these differences in order to not overwrite the data introducing 
+        # #a dihedral angle distribution).
+        # save_twist =  np.zeros((nx,ny))
+        # no_twist_alt = (mesh[0,:,2] + mesh[-1,:,2])/2
+        # for i in range(nx):
+        #     save_twist[i,:] = mesh[i,:,2] - no_twist_alt
+        
+        # # set the z coordinates of the points of the leading edge (no wing twist for now):
+        # le_slope_z_distrib = np.tan(dihedral_angle_distrib) # leading edge slope (z versus y)(around x axis)
+        # for j in range(int(ny-1)):
+        #     spanwise_dist = np.abs(mesh[0, j, 1] - mesh[0, j+1, 1])
+        # spanwise_alt_dihedral_without_central_point = le_slope_z_distrib*spanwise_dist
+        # for j in range(int((ny-1)/2)):
+        #     spanwise_alt_dihedral_without_central_point[j] = np.sum(spanwise_alt_dihedral_without_central_point[j:int((ny-1)/2)])
+        #     spanwise_alt_dihedral_without_central_point[-(j+1)] = np.sum(spanwise_alt_dihedral_without_central_point[::-1][j:int((ny-1)/2)])
+        # spanwise_alt_with_central_point = np.zeros(ny)
+        # spanwise_alt_with_central_point[:int((ny-1)/2)] += spanwise_alt_dihedral_without_central_point[:int((ny-1)/2)]
+        # spanwise_alt_with_central_point[int((ny-1)/2)+1:] += spanwise_alt_dihedral_without_central_point[int((ny-1)/2):]
+        # mesh[0, :, 2] = spanwise_alt_with_central_point
+            
+        # # set the z coordinates of all the other points of the mesh (no wing twist -> the z coordinate 
+        # #depends only on the y coordinate, if there was wing twist it will also depends on the
+        # #x coordinate):
+        # for j in range(nx):
+        #     mesh[j, :, 2] = mesh[0, :, 2] + save_twist[j,:]
+            
+        #######################################################################
+        symmetry = self.options['symmetry']
+        dihedral_angle_distrib = inputs['dihedral_distrib']
+        mesh = inputs['in_mesh']
+
+        # Get the mesh parameters and desired sweep angle
+        nx, ny, _ = mesh.shape
+        p180 = np.pi / 180
+        dihedral_distrib_rad = p180 * dihedral_angle_distrib
+        
+        if(symmetry):
+            # set the z coordinates of the points of the leading edge (no wing twist for now):
+            le_slope_z_distrib = np.tan(dihedral_distrib_rad) # leading edge slope (z versus y)(around x axis)
+            spanwise_dist = np.zeros(np.shape(le_slope_z_distrib))
+            for j in range(int(ny-1)):
+                spanwise_dist[j] = np.abs(mesh[0, j, 1] - mesh[0, j+1, 1])
+            spanwise_alt_dihedral_without_central_point = le_slope_z_distrib*spanwise_dist
+            for j in range(int(ny-1)):
+                spanwise_alt_dihedral_without_central_point[j] = np.sum(spanwise_alt_dihedral_without_central_point[j:int(ny-1)])
+            spanwise_alt_with_central_point = np.zeros(ny)
+            spanwise_alt_with_central_point[:int(ny-1)] += spanwise_alt_dihedral_without_central_point[:int(ny-1)]
+        else:
+            # set the z coordinates of the points of the leading edge (no wing twist for now):
+            le_slope_z_distrib = np.tan(dihedral_distrib_rad) # leading edge slope (z versus y)(around x axis)
+            spanwise_dist = np.zeros(len(le_slope_z_distrib))
+            for j in range(int(ny-1)):
+                spanwise_dist[j] = np.abs(mesh[0, j, 1] - mesh[0, j+1, 1])
+            spanwise_alt_dihedral_without_central_point = le_slope_z_distrib*spanwise_dist
+            for j in range(int((ny-1)/2)):
+                spanwise_alt_dihedral_without_central_point[j] = np.sum(spanwise_alt_dihedral_without_central_point[j:int((ny-1)/2)])
+                spanwise_alt_dihedral_without_central_point[-(j+1)] = np.sum(spanwise_alt_dihedral_without_central_point[::-1][j:int((ny-1)/2)])
+            spanwise_alt_with_central_point = np.zeros(ny)
+            spanwise_alt_with_central_point[:int((ny-1)/2)] += spanwise_alt_dihedral_without_central_point[:int((ny-1)/2)]
+            spanwise_alt_with_central_point[int((ny-1)/2)+1:] += spanwise_alt_dihedral_without_central_point[int((ny-1)/2):]
+            
+            
+        outputs['mesh'][:] = mesh    
+        for j in range(nx):
+            outputs['mesh'][j, :, 2] += spanwise_alt_with_central_point
+                
+    def compute_partials(self, inputs, partials):
+        symmetry = self.options['symmetry']
+        dihedral_angle_distrib = inputs['dihedral_distrib']
+        mesh = inputs['in_mesh']
+    
+        nx, ny, _ = mesh.shape
+        p180 = np.pi / 180 # to pass in radians
+        tan_dihedral_distrib = np.tan(p180 * dihedral_angle_distrib)
+        dtan_ddihedral_angle_distrib = p180 / np.cos(p180*dihedral_angle_distrib)**2 
+    
+        mesh_y_diff = mesh[0,1:,1] - mesh[0,:-1,1]
+        temp = mesh_y_diff * dtan_ddihedral_angle_distrib
+        
+        if symmetry :
+            one_edge_ddihedral = np.array([])
+            for k in range(ny-1):
+                one_edge_ddihedral = np.concatenate((one_edge_ddihedral, temp[ny-1 - (1+k)]*np.ones(ny-1 - k)))
+            
+            partials['mesh', 'dihedral_distrib'][:] = np.tile(one_edge_ddihedral, nx) 
+            # print("partials['mesh', 'dihedral_distrib'] =",partials['mesh', 'dihedral_distrib'])
+            
+            nn = nx * ny * 3
+            partials['mesh', 'in_mesh'][:nn] = np.ones(nn)
+            
+            one_edge_din_mesh = np.array([])
+            
+            for j in range(ny-1): # fill one_edge_din_mesh
+                v = np.zeros(ny-1 +1 -j)
+                for k in range(j, ny-1):
+                    v[k - j] += -tan_dihedral_distrib[k]
+                    v[k+1 -j] += tan_dihedral_distrib[k]
+                one_edge_din_mesh = np.concatenate((one_edge_din_mesh, v))
+          
+            partials['mesh', 'in_mesh'][nn:] = np.tile(one_edge_din_mesh, nx)
+            # print("partials['mesh', 'in_mesh'] =",partials['mesh', 'in_mesh'])
+    
+        
+        else:
+            one_edge_ddihedral = np.array([])
+            for k in range(int((ny-1)/2)):
+                one_edge_ddihedral = np.concatenate((one_edge_ddihedral, temp[int((ny-1)/2) - (1+k)]*np.ones(int((ny-1)/2) - k)))
+                one_edge_ddihedral = np.concatenate((one_edge_ddihedral, temp[int((ny-1)/2) + k]*np.ones(int((ny-1)/2) - k)))
+            
+            partials['mesh', 'dihedral_distrib'][:] = np.tile(one_edge_ddihedral, nx) 
+            # print("partials['mesh', 'dihedral_distrib'] =",partials['mesh', 'dihedral_distrib'])
+    
+            
+            nn = nx * ny * 3
+            partials['mesh', 'in_mesh'][:nn] = np.ones(nn)
+            
+            one_edge_din_mesh_left = np.array([])
+            one_edge_din_mesh_right = np.array([])
+            
+            for j in range(int((ny-1)/2)): # fill the left part of one_edge_din_mesh
+                v_left = np.zeros(int((ny-1)/2) +1 -j)
+                for k in range(j, int((ny-1)/2)):
+                    v_left[k - j] += -tan_dihedral_distrib[k]
+                    v_left[k+1 -j] += tan_dihedral_distrib[k]
+                one_edge_din_mesh_left = np.concatenate((one_edge_din_mesh_left, v_left))
+            for j in range(int((ny-1)/2) +1, ny): # fill the right part of one_edge_din_mesh
+                v_right = np.zeros(j + 1 - int((ny-1)/2))
+                for k in range(int((ny-1)/2), j):
+                    v_right[k - int((ny-1)/2)] += -tan_dihedral_distrib[k]
+                    v_right[k+1 - int((ny-1)/2)] += tan_dihedral_distrib[k]
+                one_edge_din_mesh_right = np.concatenate((one_edge_din_mesh_right, v_right))
+                    
+            one_edge_din_mesh = np.array([])
+            one_edge_din_mesh = np.concatenate((one_edge_din_mesh_left, one_edge_din_mesh_right))
+            
+            partials['mesh', 'in_mesh'][nn:] = np.tile(one_edge_din_mesh, nx)
+            # print("partials['mesh', 'in_mesh'] =",partials['mesh', 'in_mesh'])
+

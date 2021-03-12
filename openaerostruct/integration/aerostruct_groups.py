@@ -40,6 +40,9 @@ class AerostructGeometry(om.Group):
                 geom_promotes.append('taper')
             if 'mx' in surface.keys():
                 geom_promotes.append('shape')
+            #Ajout Rémy :
+            if 'dihedral_distrib_cp' in surface.keys():
+                geom_promotes.append('dihedral_distrib_cp')
 
         self.add_subsystem('geometry',
             Geometry(surface=surface, DVGeo=DVGeo, connect_geom_DVs=connect_geom_DVs),
