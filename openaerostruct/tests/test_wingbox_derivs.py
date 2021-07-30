@@ -241,7 +241,9 @@ class Test(unittest.TestCase):
 
         # Check the partials at the initial point in the design space,
         # only care about relative error
-        data = prob.check_partials(compact_print=True, out_stream=None, method='cs', step=1e-40)
+        # the list of components that uses CS to compute derivatives. We exclude them from check_partials
+        excludes_list = ['wing.wingbox_group.wingbox', '*.fuel_vol', '*.fuel_loads', '*.vonmises', 'fuel_vol_delta']
+        data = prob.check_partials(compact_print=True, out_stream=None, excludes=excludes_list, method='cs', step=1e-40)
 
         assert_check_partials(data, atol=1e20, rtol=1e-6)
 
@@ -249,7 +251,7 @@ class Test(unittest.TestCase):
         prob.run_driver()
 
         # Check the partials at this point in the design space
-        data = prob.check_partials(compact_print=True, out_stream=None, method='cs', step=1e-40)
+        data = prob.check_partials(compact_print=True, out_stream=None, excludes=excludes_list, method='cs', step=1e-40)
         assert_check_partials(data, atol=1e20, rtol=1e-6)
 
 

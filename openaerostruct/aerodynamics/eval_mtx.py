@@ -266,8 +266,7 @@ class EvalVelMtx(om.ExplicitComponent):
 
             # It's worth the cs cost here because alpha is just a scalar
             self.declare_partials(vel_mtx_name, 'alpha', method='cs')
-
-            self.set_check_partial_options(wrt='*', method='cs')
+            self.set_check_partial_options(wrt='alpha', method='fd')
 
     def compute(self, inputs, outputs):
         surfaces = self.options['surfaces']

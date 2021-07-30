@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from openmdao.utils.assert_utils import assert_rel_error
+from openmdao.utils.assert_utils import assert_near_equal
 import openmdao.api as om
 from openaerostruct.structures.compute_thrust_loads import ComputeThrustLoads
 from openaerostruct.utils.testing import run_test, get_default_surfaces
@@ -46,7 +46,7 @@ class Test(unittest.TestCase):
 
         truth_array = np.array([-10., 0, 0., 0., 5., 1.])
 
-        assert_rel_error(self, prob['loads_from_thrusts'][0, :], truth_array, 1e-6)
+        assert_near_equal(prob['loads_from_thrusts'][0, :], truth_array, 1e-6)
 
 
     @unittest.skipUnless(derivs_added, "Analytic derivs not added yet")
@@ -116,7 +116,7 @@ class Test(unittest.TestCase):
 
         truth_array = np.array([0, 0, -1., 0., 0.55012, 0.])
 
-        assert_rel_error(self, prob['comp.loads_from_thrusts'][0, :], truth_array, 1e-6)
+        assert_near_equal(prob['comp.loads_from_thrusts'][0, :], truth_array, 1e-6)
 
 
 if __name__ == '__main__':

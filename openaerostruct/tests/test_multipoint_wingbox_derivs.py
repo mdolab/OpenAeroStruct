@@ -204,7 +204,7 @@ class Test(unittest.TestCase):
             promotes_outputs=['fuel_diff'])
         prob.model.connect('AS_point_0.fuelburn', 'fuel_diff.fuelburn')
 
-        comp = om.ExecComp('fuel_diff_25 = (fuel_mass - fuelburn) / fuelburn')
+        comp = om.ExecComp('fuel_diff_25 = (fuel_mass - fuelburn) / fuelburn', units='kg')
         prob.model.add_subsystem('fuel_diff_25', comp,
             promotes_inputs=['fuel_mass'],
             promotes_outputs=['fuel_diff_25'])
@@ -252,14 +252,16 @@ class Test(unittest.TestCase):
 
         # Check the partials at the initial point in the design space,
         # only care about relative error
-        data = prob.check_partials(compact_print=True, out_stream=None, method='cs', step=1e-40)
+        # the list of components that uses CS to compute derivatives. We exclude them from check_partials
+        excludes_list = ['wing.wingbox_group.wingbox', '*.fuel_vol', '*.fuel_loads', '*.vonmises', 'fuel_vol_delta']
+        data = prob.check_partials(compact_print=True, out_stream=None, excludes=excludes_list, method='cs', step=1e-40)
         assert_check_partials(data, atol=1e20, rtol=1e-6)
 
         # Run the optimizer for 5 iterations
         prob.run_driver()
 
         # Check the partials at this point in the design space
-        data = prob.check_partials(compact_print=True, out_stream=None, method='cs', step=1e-40)
+        data = prob.check_partials(compact_print=True, out_stream=None, excludes=excludes_list, method='cs', step=1e-40)
         assert_check_partials(data, atol=1e20, rtol=1e-6)
 
 

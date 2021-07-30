@@ -127,6 +127,7 @@ class ScaleToPrandtlGlauert(om.ExplicitComponent):
         # We'll compute all of sensitivities associated with Mach number through
         # complex-step. Since it's a scalar this is pretty cheap.
         self.declare_partials('*', 'Mach_number', method='cs')
+        self.set_check_partial_options(wrt='Mach_number', method='fd', step=1e-8)
 
         row_col = np.arange(num_eval_points*3)
 
@@ -267,6 +268,7 @@ class ScaleFromPrandtlGlauert(om.ExplicitComponent):
         # We'll compute all of sensitivities associated with Mach number through
         # complex-step. Since it's a scalar this is pretty cheap.
         self.declare_partials('*', 'Mach_number', method='cs')
+        self.set_check_partial_options(wrt='Mach_number', method='fd', step=1e-8)
 
         for surface in self.options['surfaces']:
             mesh = surface['mesh']

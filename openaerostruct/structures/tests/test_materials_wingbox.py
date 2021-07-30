@@ -2,11 +2,12 @@ import unittest
 import numpy as np
 from openaerostruct.structures.section_properties_wingbox import SectionPropertiesWingbox
 from openaerostruct.utils.testing import run_test, get_default_surfaces
-from openmdao.utils.assert_utils import assert_rel_error
+from openmdao.utils.assert_utils import assert_near_equal
 import openmdao.api as om
 
 class Test(unittest.TestCase):
 
+    @unittest.skip("Analytic derivatives not added yet.")
     def test(self):
         """
         This is for checking the partials.
@@ -58,11 +59,11 @@ class Test(unittest.TestCase):
 
         indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('t_over_c_cp', val=surface['t_over_c_cp'])
-        indep_var_comp.add_output('spar_thickness_cp', val=surface['spar_thickness_cp'])
-        indep_var_comp.add_output('skin_thickness_cp', val=surface['skin_thickness_cp'])
-        indep_var_comp.add_output('fem_chords_cp', val=surface['fem_chords_cp'])
-        indep_var_comp.add_output('streamwise_chords_cp', val=surface['streamwise_chords_cp'])
-        indep_var_comp.add_output('fem_twists_cp', val=surface['fem_twists_cp'])
+        indep_var_comp.add_output('spar_thickness_cp', val=surface['spar_thickness_cp'], units='m')
+        indep_var_comp.add_output('skin_thickness_cp', val=surface['skin_thickness_cp'], units='m')
+        indep_var_comp.add_output('fem_chords_cp', val=surface['fem_chords_cp'], units='m')
+        indep_var_comp.add_output('streamwise_chords_cp', val=surface['streamwise_chords_cp'], units='m')
+        indep_var_comp.add_output('fem_twists_cp', val=surface['fem_twists_cp'], units='deg')
         prob.model.add_subsystem('indep_var_comp', indep_var_comp, promotes=['*'])
         
         x_interp = np.linspace(0., 1., int(ny-1))
@@ -99,17 +100,17 @@ class Test(unittest.TestCase):
         # print( prob['hfront'] )
         # print( prob['hrear'] )
 
-        assert_rel_error(self, prob['A'] , np.array([0.02203548, 0.0563726,  0.11989703]), 1e-6)
-        assert_rel_error(self, prob['A_enc'] , np.array([0.3243776, 0.978003,  2.17591  ]), 1e-6)
-        assert_rel_error(self, prob['A_int'] , np.array([0.3132502, 0.949491,  2.11512  ]), 1e-6)
-        assert_rel_error(self, prob['Iy'] , np.array([0.00218612, 0.01455083, 0.06342765]), 1e-6)
-        assert_rel_error(self, prob['Qz'] , np.array([0.00169233, 0.00820558, 0.02707493]), 1e-6)
-        assert_rel_error(self, prob['Iz'] , np.array([0.00055292, 0.00520911, 0.02785168]), 1e-6)
-        assert_rel_error(self, prob['J'] , np.array([0.00124939, 0.01241967, 0.06649673]), 1e-6)
-        assert_rel_error(self, prob['htop'] , np.array([0.19106873, 0.36005945, 0.5907887 ]), 1e-6)
-        assert_rel_error(self, prob['hbottom'] , np.array([0.19906584, 0.37668887, 0.61850335]), 1e-6)
-        assert_rel_error(self, prob['hfront'] , np.array([0.52341176, 0.78649186, 1.04902676]), 1e-6)
-        assert_rel_error(self, prob['hrear'] , np.array([0.47524073, 0.71429312, 0.95303545]), 1e-6)
+        assert_near_equal(prob['A'] , np.array([0.02203548, 0.0563726,  0.11989703]), 1e-6)
+        assert_near_equal(prob['A_enc'] , np.array([0.3243776, 0.978003,  2.17591  ]), 1e-6)
+        assert_near_equal(prob['A_int'] , np.array([0.3132502, 0.949491,  2.11512  ]), 1e-6)
+        assert_near_equal(prob['Iy'] , np.array([0.00218612, 0.01455083, 0.06342765]), 1e-6)
+        assert_near_equal(prob['Qz'] , np.array([0.00169233, 0.00820558, 0.02707493]), 1e-6)
+        assert_near_equal(prob['Iz'] , np.array([0.00055292, 0.00520911, 0.02785168]), 1e-6)
+        assert_near_equal(prob['J'] , np.array([0.00124939, 0.01241967, 0.06649673]), 1e-6)
+        assert_near_equal(prob['htop'] , np.array([0.19106873, 0.36005945, 0.5907887 ]), 1e-6)
+        assert_near_equal(prob['hbottom'] , np.array([0.19906584, 0.37668887, 0.61850335]), 1e-6)
+        assert_near_equal(prob['hfront'] , np.array([0.52341176, 0.78649186, 1.04902676]), 1e-6)
+        assert_near_equal(prob['hrear'] , np.array([0.47524073, 0.71429312, 0.95303545]), 1e-6)
 
 
 
@@ -141,11 +142,11 @@ class Test(unittest.TestCase):
 
         indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output('t_over_c_cp', val=surface['t_over_c_cp'])
-        indep_var_comp.add_output('spar_thickness_cp', val=surface['spar_thickness_cp'])
-        indep_var_comp.add_output('skin_thickness_cp', val=surface['skin_thickness_cp'])
-        indep_var_comp.add_output('fem_chords_cp', val=surface['fem_chords_cp'])
-        indep_var_comp.add_output('streamwise_chords_cp', val=surface['streamwise_chords_cp'])
-        indep_var_comp.add_output('fem_twists_cp', val=surface['fem_twists_cp'])
+        indep_var_comp.add_output('spar_thickness_cp', val=surface['spar_thickness_cp'], units='m')
+        indep_var_comp.add_output('skin_thickness_cp', val=surface['skin_thickness_cp'], units='m')
+        indep_var_comp.add_output('fem_chords_cp', val=surface['fem_chords_cp'], units='m')
+        indep_var_comp.add_output('streamwise_chords_cp', val=surface['streamwise_chords_cp'], units='m')
+        indep_var_comp.add_output('fem_twists_cp', val=surface['fem_twists_cp'], units='deg')
         prob.model.add_subsystem('indep_var_comp', indep_var_comp, promotes=['*'])
         
         x_interp = np.linspace(0., 1., int(ny-1))
@@ -182,17 +183,17 @@ class Test(unittest.TestCase):
         # print( prob['hfront'] )
         # print( prob['hrear'] )
 
-        assert_rel_error(self, prob['A'] , np.array([ 0.0058738,  -0.05739528, -0.05042289]), 1e-6)
-        assert_rel_error(self, prob['A_enc'] , np.array([0.3243776, 0.978003,  2.17591  ]), 1e-6)
-        assert_rel_error(self, prob['A_int'] , np.array([0.3132502, 0.949491,  2.11512  ]), 1e-6)
-        assert_rel_error(self, prob['Iy'] , np.array([ 3.59803239e-05, -1.52910019e-02, -4.01035510e-03]), 1e-6)
-        assert_rel_error(self, prob['Qz'] , np.array([0.00129261, 0.00870662, 0.02500053]), 1e-6)
-        assert_rel_error(self, prob['Iz'] , np.array([ 0.00056586, -0.00582207, -0.02877714]), 1e-6)
-        assert_rel_error(self, prob['J'] , np.array([0.00124939, 0.01241967, 0.06649673]), 1e-6)
-        assert_rel_error(self, prob['htop'] , np.array([ 0.53933652, -0.23509863,  0.71255343]), 1e-6)
-        assert_rel_error(self, prob['hbottom'] , np.array([ 0.50366564, -0.19185349,  0.73525459]), 1e-6)
-        assert_rel_error(self, prob['hfront'] , np.array([ 0.13442747, -0.78514756, -0.3919784 ]), 1e-6)
-        assert_rel_error(self, prob['hrear'] , np.array([ 0.12219305, -0.71214916, -0.35484131]), 1e-6)
+        assert_near_equal(prob['A'] , np.array([ 0.0058738,  -0.05739528, -0.05042289]), 1e-6)
+        assert_near_equal(prob['A_enc'] , np.array([0.3243776, 0.978003,  2.17591  ]), 1e-6)
+        assert_near_equal(prob['A_int'] , np.array([0.3132502, 0.949491,  2.11512  ]), 1e-6)
+        assert_near_equal(prob['Iy'] , np.array([ 3.59803239e-05, -1.52910019e-02, -4.01035510e-03]), 1e-6)
+        assert_near_equal(prob['Qz'] , np.array([0.00129261, 0.00870662, 0.02500053]), 1e-6)
+        assert_near_equal(prob['Iz'] , np.array([ 0.00056586, -0.00582207, -0.02877714]), 1e-6)
+        assert_near_equal(prob['J'] , np.array([0.00124939, 0.01241967, 0.06649673]), 1e-6)
+        assert_near_equal(prob['htop'] , np.array([ 0.53933652, -0.23509863,  0.71255343]), 1e-6)
+        assert_near_equal(prob['hbottom'] , np.array([ 0.50366564, -0.19185349,  0.73525459]), 1e-6)
+        assert_near_equal(prob['hfront'] , np.array([ 0.13442747, -0.78514756, -0.3919784 ]), 1e-6)
+        assert_near_equal(prob['hrear'] , np.array([ 0.12219305, -0.71214916, -0.35484131]), 1e-6)
 
 
 if __name__ == '__main__':

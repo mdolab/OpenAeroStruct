@@ -122,6 +122,7 @@ class RotateToWindFrame(om.ExplicitComponent):
         # pretty cheap.
         self.declare_partials('*', 'alpha', method='cs')
         self.declare_partials('*', 'beta', method='cs')
+        self.set_check_partial_options(wrt=['alpha', 'beta'], method='fd', step=1e-8)
 
         row = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2])
         col = np.array([0, 1, 2, 0, 1, 2, 0, 1, 2])
@@ -279,6 +280,7 @@ class RotateFromWindFrame(om.ExplicitComponent):
         # pretty cheap.
         self.declare_partials('*', 'alpha', method='cs')
         self.declare_partials('*', 'beta', method='cs')
+        self.set_check_partial_options(wrt=['alpha', 'beta'], method='fd', step=1e-8)
 
         for surface in self.options['surfaces']:
             mesh = surface['mesh']

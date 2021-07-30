@@ -1,4 +1,4 @@
-from openmdao.utils.assert_utils import assert_rel_error
+from openmdao.utils.assert_utils import assert_near_equal
 import numpy as np
 import unittest
 
@@ -166,8 +166,8 @@ class Test(unittest.TestCase):
 
         prob.run_driver()
 
-        assert_rel_error(self, prob['aero_point_0.wing_perf.CL'][0], 0.45, 1e-6)
-        assert_rel_error(self, prob['aero_point_1.wing_perf.CL'][0], 0.5, 1e-6)
-        assert_rel_error(self, prob['twist_cp_0'], np.array([ 8., -1.21207749, -2.42415497, -1.21207749, -1.0821358 ]), 1e-6)
-        assert_rel_error(self, prob['twist_cp_1'], np.array([ 8., -0.02049115, -0.0409823,  -0.02049115,  0.77903674]), 1e-6)
-        assert_rel_error(self, prob['aero_point_1.wing_perf.CL'][0], 0.5, 1e-6)
+        assert_near_equal(prob['aero_point_0.wing_perf.CL'][0], 0.45, 1e-6)
+        assert_near_equal(prob['aero_point_1.wing_perf.CL'][0], 0.5, 1e-6)
+        assert_near_equal(prob['twist_cp_0'], np.array([ 8., -1.21207749, -2.42415497, -1.21207749, -1.0821358 ]), 1e-6)
+        assert_near_equal(prob['twist_cp_1'], np.array([ 8., -0.02049115, -0.0409823,  -0.02049115,  0.77903674]), 1e-6)
+        assert_near_equal(prob['aero_point_1.wing_perf.CL'][0], 0.5, 1e-6)

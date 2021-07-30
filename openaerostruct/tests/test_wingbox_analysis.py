@@ -4,8 +4,7 @@ from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.geometry.geometry_group import Geometry
 from openaerostruct.transfer.displacement_transfer import DisplacementTransfer
 from openaerostruct.structures.struct_groups import SpatialBeamAlone
-from openmdao.utils.assert_utils import assert_check_partials
-from openmdao.utils.assert_utils import assert_rel_error
+from openmdao.utils.assert_utils import assert_check_partials, assert_near_equal
 import openmdao.api as om
 
 upper_x = np.array([0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.3, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.4, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.5, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.6], dtype = 'complex128')
@@ -116,11 +115,14 @@ class Test(unittest.TestCase):
         prob.setup()
 
         prob.run_model()
-        data = prob.check_partials(compact_print=True, out_stream=None, method='cs')
+
+        # the list of components that uses CS to compute derivatives. We exclude them from check_partials
+        excludes_list = ['wing.wingbox_group.wingbox', 'wing.struct_setup.fuel_vol', 'wing.struct_states.fuel_loads', 'wing.struct_funcs.vonmises']
+        data = prob.check_partials(compact_print=True, out_stream=None, excludes=excludes_list, method='cs')
         assert_check_partials(data, atol=1e20, rtol=1e-6)
 
         prob.run_driver()
-        assert_rel_error(self, prob['wing.structural_mass'], 16704.10113356, 1e-6)
+        assert_near_equal(prob['wing.structural_mass'], 16704.10113356, 1e-6)
 
 if __name__ == '__main__':
     unittest.main()

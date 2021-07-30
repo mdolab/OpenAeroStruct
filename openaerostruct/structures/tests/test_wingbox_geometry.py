@@ -7,6 +7,7 @@ from openaerostruct.utils.testing import run_test, get_default_surfaces
 
 class Test(unittest.TestCase):
 
+    @unittest.skip("Analytic derivatives not added yet.")
     def test(self):
         surface = get_default_surfaces()[0]
 

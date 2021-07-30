@@ -1,4 +1,4 @@
-from openmdao.utils.assert_utils import assert_rel_error
+from openmdao.utils.assert_utils import assert_near_equal
 import unittest
 import numpy as np
 
@@ -207,7 +207,7 @@ class Test(unittest.TestCase):
             promotes_outputs=['fuel_diff'])
         prob.model.connect('AS_point_0.fuelburn', 'fuel_diff.fuelburn')
 
-        comp = om.ExecComp('fuel_diff_25 = (fuel_mass - fuelburn) / fuelburn')
+        comp = om.ExecComp('fuel_diff_25 = (fuel_mass - fuelburn) / fuelburn', units='kg')
         prob.model.add_subsystem('fuel_diff_25', comp,
             promotes_inputs=['fuel_mass'],
             promotes_outputs=['fuel_diff_25'])
@@ -260,8 +260,8 @@ class Test(unittest.TestCase):
         print(prob['AS_point_0.fuelburn'][0])
         print(prob['wing.structural_mass'][0]/1.25)
 
-        assert_rel_error(self, prob['AS_point_0.fuelburn'][0], 93177.833744, 1e-5)
-        assert_rel_error(self, prob['wing.structural_mass'][0]/1.25, 26640.125856, 1e-5)
+        assert_near_equal(prob['AS_point_0.fuelburn'][0], 93177.833744, 1e-5)
+        assert_near_equal(prob['wing.structural_mass'][0]/1.25, 26640.125856, 1e-5)
 
 
 if __name__ == '__main__':

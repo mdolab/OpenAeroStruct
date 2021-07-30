@@ -1,4 +1,4 @@
-from openmdao.utils.assert_utils import assert_rel_error
+from openmdao.utils.assert_utils import assert_near_equal
 import unittest
 from openaerostruct.utils.constants import grav_constant
 
@@ -123,10 +123,10 @@ class Test(unittest.TestCase):
         prob.driver = om.ScipyOptimizeDriver()
         prob.driver.options['tol'] = 1e-9
 
-        recorder = om.SqliteRecorder("aerostruct.db")
-        prob.driver.add_recorder(recorder)
-        prob.driver.recording_options['record_derivatives'] = True
-        prob.driver.recording_options['includes'] = ['*']
+        # recorder = om.SqliteRecorder("aerostruct.db")
+        # prob.driver.add_recorder(recorder)
+        # prob.driver.recording_options['record_derivatives'] = True
+        # prob.driver.recording_options['includes'] = ['*']
 
         # Setup problem and add design variables, constraint, and objective
         prob.model.add_design_var('wing.twist_cp', lower=-10., upper=15.)
@@ -144,11 +144,11 @@ class Test(unittest.TestCase):
 
         # Inserting a small unit test here. Verify that beta is correctly promoted in an Aerostruct
         # group.
-        assert_rel_error(self, prob['AS_point_0.beta'], 0.0)
+        assert_near_equal(prob['AS_point_0.beta'], 0.0)
 
         prob.run_driver()
 
-        assert_rel_error(self, prob['AS_point_0.fuelburn'][0], 97696.33252514644, 1e-8)
+        assert_near_equal(prob['AS_point_0.fuelburn'][0], 97696.33252514644, 1e-8)
 
 
 if __name__ == '__main__':

@@ -42,7 +42,7 @@ class LiftDrag(om.ExplicitComponent):
         self.add_output('L', val=0., units='N')
         self.add_output('D', val=0., units='N')
 
-        self.declare_partials('*', ['sec_forces', 'alpha', 'L', 'D'])
+        self.declare_partials(['L', 'D'], ['sec_forces', 'alpha'])
         self.declare_partials('D', 'beta')
 
     def compute(self, inputs, outputs):
