@@ -52,6 +52,7 @@ jobs:
     - name: Build docs
       run: |
         cd openaerostruct/docs
+        pip install requirements.txt
         make clean
         make html
 
