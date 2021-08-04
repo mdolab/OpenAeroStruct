@@ -1,9 +1,0 @@
-openmdao[docs]==3.7.0
-numpy
-scipy
-matplotlib
-mock
-redbaron
-sphinx>=1.8.5
-numpydoc>=0.9.1
-sphinx-rtd-theme==0.1.9

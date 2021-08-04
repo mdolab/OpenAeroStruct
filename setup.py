@@ -6,6 +6,19 @@ __version__ = re.findall(
     r"""__version__ = ["']+([0-9\.]*)["']+""",
     open('openaerostruct/__init__.py').read(),
 )[0]
+
+optional_dependencies = {
+    'docs': ['openmdao[docs]==3.9.2'],
+    'test': ['testflo>=1.3.6']
+}
+
+# Add an optional dependency that concatenates all others
+optional_dependencies['all'] = sorted([
+    dependency
+    for dependencies in optional_dependencies.values()
+    for dependency in dependencies
+])
+
 setup(name='openaerostruct',
     version=__version__,
     description='OpenAeroStruct',
@@ -29,13 +42,13 @@ setup(name='openaerostruct',
     package_data={
         'openaerostruct': ['tests/*.py', '*/tests/*.py', '*/*/tests/*.py']
     },
-    # TODO: add versions?
     install_requires=[
         'openmdao[docs]>=3.2, <=3.10.0',
         'numpy',
         'scipy',
         'matplotlib',
     ],
+    extras_require=optional_dependencies,
     zip_safe=False,
     # ext_modules=ext,
     entry_points="""

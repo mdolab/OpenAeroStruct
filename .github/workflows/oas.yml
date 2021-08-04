@@ -24,8 +24,8 @@ jobs:
     - name: Install OAS and its dependencies
       run: |
         python -m pip install --upgrade pip wheel
-        pip install .
-        pip install coverage coveralls testflo   # for tests and coveralls
+        pip install .[test]
+        pip install coverage coveralls     # for coveralls
 
     # we need pySpline/pyGeo to run FFD tests.
     - name: Install pySpline and pyGeo
@@ -51,8 +51,8 @@ jobs:
     # build docs
     - name: Build docs
       run: |
+        pip install .[docs]
         cd openaerostruct/docs
-        pip install -r requirements.txt
         make clean
         make html
 
