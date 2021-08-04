@@ -5,7 +5,7 @@ import os
 import sys
 import openmdao
 import importlib
-from mock import Mock
+from unittest.mock import Mock
 from openmdao.docs.config_params import MOCK_MODULES
 from openmdao.docutils import do_monkeypatch, embed_code, embed_options, embed_compare
 from openmdao.docs._exts import embed_n2
