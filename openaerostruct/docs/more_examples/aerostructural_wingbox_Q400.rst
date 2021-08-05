@@ -9,7 +9,6 @@ Make sure you go through the :ref:`Aerostructural_with_Wingbox_Walkthrough` befo
 
 .. embed-code::
     openaerostruct.docs.wingbox_mpt_Q400_example
-    :layout: interleave
 
 The following shows a visualization of the results.
 As can be seen, there is plenty of room for improvement.
