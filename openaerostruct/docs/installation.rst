@@ -16,12 +16,10 @@ Then from within the OpenAeroStruct folder, pip install the package:
 .. code-block:: bash
 
 	cd openaerostruct
-    pip install -e .
+	pip install -e .
 
 This will automatically install the dependencies: numpy, scipy, matplotlib, and OpenMDAO.
 
-OpenMDAO
-~~~~~~~~
 The latest version of OpenAeroStruct supports OpenMDAO version 3.2.0 to 3.10.0; 3.10.0 is recommended.
 If you wish to install a specific version of OpenMDAO, follow the instructions at https://github.com/OpenMDAO/OpenMDAO/.
 
@@ -30,17 +28,17 @@ If you are unfamiliar with OpenMDAO and wish to modify the internals of OpenAero
 Advanced Options
 ~~~~~~~~~~~~~~~~
 
-To run the tests on your machine, use `[test]` option. This will install the `testflo <https://github.com/OpenMDAO/testflo>`_ package.
+To run the tests on your machine, use the [test] option. This will install the `testflo <https://github.com/OpenMDAO/testflo>`_ package.
 
 .. code-block:: bash
 
     pip install -e .[test]
 
 
-To build the documentation on your machine, run:
+To install the dependencies to build the documentation locally, run:
 
 .. code-block:: bash
 
     pip install -e .[docs]
 
-The documentation requires OpenMDAO version 3.9.2 or older.
+The documentation build requires OpenMDAO 3.9.2 or older.
