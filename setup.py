@@ -8,7 +8,7 @@ __version__ = re.findall(
 )[0]
 
 optional_dependencies = {
-    'docs': ['openmdao[docs]==3.9.2'],
+    'docs': ['openmdao[docs]>=3.2, <=3.9.2'],
     'test': ['testflo>=1.3.6']
 }
 
@@ -43,7 +43,7 @@ setup(name='openaerostruct',
         'openaerostruct': ['tests/*.py', '*/tests/*.py', '*/*/tests/*.py']
     },
     install_requires=[
-        'openmdao[docs]>=3.2, <=3.10.0',
+        'openmdao>=3.2, <=3.10.0',
         'numpy',
         'scipy',
         'matplotlib',
