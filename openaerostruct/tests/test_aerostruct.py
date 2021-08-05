@@ -123,6 +123,11 @@ class Test(unittest.TestCase):
         prob.driver = om.ScipyOptimizeDriver()
         prob.driver.options['tol'] = 1e-9
 
+        recorder = om.SqliteRecorder("aerostruct.db")
+        prob.driver.add_recorder(recorder)
+        prob.driver.recording_options['record_derivatives'] = True
+        prob.driver.recording_options['includes'] = ['*']
+        
         # Setup problem and add design variables, constraint, and objective
         prob.model.add_design_var('wing.twist_cp', lower=-10., upper=15.)
         prob.model.add_design_var('wing.thickness_cp', lower=0.01, upper=0.5, scaler=1e2)
