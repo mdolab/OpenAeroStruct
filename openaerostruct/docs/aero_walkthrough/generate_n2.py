@@ -81,8 +81,6 @@ prob.model.connect(name + ".t_over_c", point_name + "." + name + "_perf." + "t_o
 
 # Import the Scipy Optimizer and set the driver of the problem to use
 # it, which defaults to an SLSQP optimization method
-import openmdao.api as om
-
 prob.driver = om.ScipyOptimizeDriver()
 prob.driver.options["tol"] = 1e-9
 

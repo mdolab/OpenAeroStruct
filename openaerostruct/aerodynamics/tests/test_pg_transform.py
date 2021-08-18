@@ -5,10 +5,9 @@ import numpy as np
 import openmdao.api as om
 from openmdao.utils.assert_utils import assert_check_partials
 
-from openaerostruct.aerodynamics.pg_transform import PGTransform
 from openaerostruct.aerodynamics.pg_scale import ScaleFromPrandtlGlauert, ScaleToPrandtlGlauert
 from openaerostruct.aerodynamics.pg_wind_rotation import RotateFromWindFrame, RotateToWindFrame
-from openaerostruct.utils.testing import run_test, get_default_surfaces
+from openaerostruct.utils.testing import get_default_surfaces
 
 
 class Test(unittest.TestCase):

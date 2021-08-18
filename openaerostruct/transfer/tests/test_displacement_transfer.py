@@ -15,8 +15,6 @@ class Test(unittest.TestCase):
 
         indep_var_comp = om.IndepVarComp()
 
-        ny = surface["mesh"].shape[1]
-
         mesh = surface["mesh"]
 
         indep_var_comp.add_output("mesh", val=mesh, units="m")

@@ -276,7 +276,7 @@ class AerostructPoint(om.Group):
             if surface.get("groundplane", False):
                 ground_effect = True
 
-        if self.options["compressible"] == True:
+        if self.options["compressible"] is True:
             aero_states = CompressibleVLMStates(surfaces=surfaces, rotational=rotational)
             prom_in = ["v", "alpha", "beta", "rho", "Mach_number"]
         else:
@@ -324,7 +324,7 @@ class AerostructPoint(om.Group):
         ### End change of solver settings ###
         """
         prom_in = ["v", "alpha", "beta", "rho"]
-        if self.options["compressible"] == True:
+        if self.options["compressible"] is True:
             prom_in.append("Mach_number")
         if ground_effect:
             prom_in.append("height_agl")

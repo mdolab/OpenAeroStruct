@@ -1,10 +1,5 @@
 from openmdao.utils.assert_utils import assert_rel_error
 import unittest
-import numpy as np
-
-from openaerostruct.geometry.utils import generate_mesh
-from openaerostruct.geometry.geometry_group import Geometry
-from openaerostruct.aerodynamics.aero_groups import AeroPoint
 
 
 class Test(unittest.TestCase):

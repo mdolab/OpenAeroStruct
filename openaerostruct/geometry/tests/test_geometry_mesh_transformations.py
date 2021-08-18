@@ -4,7 +4,7 @@ import numpy as np
 import unittest
 
 import openmdao.api as om
-from openmdao.utils.assert_utils import assert_rel_error, assert_check_partials
+from openmdao.utils.assert_utils import assert_check_partials
 
 from openaerostruct.geometry.geometry_mesh_transformations import (
     Taper,

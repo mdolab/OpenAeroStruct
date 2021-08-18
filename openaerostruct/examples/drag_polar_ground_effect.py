@@ -50,7 +50,7 @@ def compute_drag_polar_ground_effect(Mach, alphas, heights, surfaces, trimmed=Fa
     )
 
     # For trimmed polar, setup balance component
-    if trimmed == True:
+    if trimmed is True:
         bal = om.BalanceComp()
         bal.add_balance(name="tail_rotation", rhs_val=0.0, units="deg")
         prob.model.add_subsystem("balance", bal, promotes_outputs=["tail_rotation"])

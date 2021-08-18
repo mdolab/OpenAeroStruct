@@ -65,8 +65,8 @@ class RadiusComp(om.ExplicitComponent):
         dr_dchords = 0.25 * t_c
         dr = mesh[0, :] - mesh[-1, :]
 
-        l = np.sqrt(np.sum(dr ** 2, axis=1))
-        dr = dr / l[:, np.newaxis]
+        length = np.sqrt(np.sum(dr ** 2, axis=1))
+        dr = dr / length[:, np.newaxis]
 
         drad = np.empty((self.ny - 1, 6))
         drad[:, :3] = np.einsum("i, ij -> ij", dr_dchords, dr[:-1, :])

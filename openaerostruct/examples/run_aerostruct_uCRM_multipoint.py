@@ -26,7 +26,10 @@ from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
 import openmdao.api as om
 from openaerostruct.structures.wingbox_fuel_vol_delta import WingboxFuelVolDelta
-from openaerostruct.utils.constants import grav_constant
+
+# The following imports are only necessary for testing purposes for the developers.
+from openmdao.utils.assert_utils import assert_rel_error
+import unittest
 
 # Provide coordinates for a portion of an airfoil for the wingbox cross-section as an nparray with dtype=complex (to work with the complex-step approximation for derivatives).
 # These should be for an airfoil with the chord scaled to 1.
@@ -532,9 +535,6 @@ print(
 # developers.
 # =======================================================================================
 # =======================================================================================
-
-from openmdao.utils.assert_utils import assert_rel_error
-import unittest
 
 
 class Test(unittest.TestCase):

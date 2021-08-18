@@ -69,7 +69,7 @@ class AeroPoint(om.Group):
             if surface.get("groundplane", False):
                 ground_effect = True
 
-        if self.options["compressible"] == True:
+        if self.options["compressible"] is True:
             aero_states = CompressibleVLMStates(surfaces=surfaces, rotational=rotational)
             prom_in = ["v", "alpha", "beta", "rho", "Mach_number"]
         else:

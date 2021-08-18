@@ -85,10 +85,7 @@ class Weight(om.ExplicitComponent):
         # Calculate the volume and weight of the structure
         const0 = nodes[1:, :] - nodes[:-1, :]
         const1 = np.linalg.norm(const0, axis=1)
-        element_volumes = const1 * A
-        volume = np.sum(element_volumes)
         const2 = mrho * wwr
-        weight = volume * const2
 
         # First we will solve for dweight_dA
         # Calculate the volume and weight of the total structure

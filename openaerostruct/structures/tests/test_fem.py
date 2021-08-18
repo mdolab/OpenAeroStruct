@@ -8,7 +8,6 @@ class Test(unittest.TestCase):
     def test(self):
         surface = get_default_surfaces()[0]
 
-        ny = surface["mesh"].shape[1]
         comp = FEM(surface=surface)
 
         run_test(self, comp)

@@ -1,8 +1,6 @@
 import numpy as np
 import unittest
 from openaerostruct.geometry.utils import generate_mesh
-from openaerostruct.geometry.geometry_group import Geometry
-from openaerostruct.transfer.displacement_transfer import DisplacementTransfer
 from openaerostruct.structures.struct_groups import SpatialBeamAlone
 from openmdao.utils.assert_utils import assert_check_partials, assert_near_equal
 import openmdao.api as om
@@ -318,10 +316,6 @@ class Test(unittest.TestCase):
 
         # Add design variables, constraisnt, and objective on the problem
         prob.model.add_objective("wing.structural_mass", scaler=1e-5)
-
-        import warnings
-
-        # warnings.filterwarnings('error')
 
         # Set up the problem
         prob.setup()

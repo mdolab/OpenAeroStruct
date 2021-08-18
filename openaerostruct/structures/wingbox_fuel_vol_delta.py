@@ -45,7 +45,7 @@ class WingboxFuelVolDelta(om.ExplicitComponent):
         fuel_density = self.surface["fuel_density"]
         vols = inputs["fuel_vols"]
 
-        if self.surface["symmetry"] == True:
+        if self.surface["symmetry"] is True:
             fuel_weight /= 2.0
             reserves /= 2.0
 

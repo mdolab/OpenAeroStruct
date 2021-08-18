@@ -58,7 +58,6 @@ class LocalStiff(om.ExplicitComponent):
     def compute(self, inputs, outputs):
         surface = self.options["surface"]
 
-        ny = self.ny
         E = surface["E"]
         G = surface["G"]
 

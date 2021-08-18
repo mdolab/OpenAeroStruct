@@ -201,16 +201,16 @@ class VLMGeometry(om.ExplicitComponent):
 
         partials["lengths", "def_mesh"][:] = 0.0
         dmesh = np.diff(mesh, axis=0)
-        l = np.sqrt(np.sum(dmesh ** 2, axis=2))
-        dmesh = dmesh / l[:, :, np.newaxis]
+        length = np.sqrt(np.sum(dmesh ** 2, axis=2))
+        dmesh = dmesh / length[:, :, np.newaxis]
         derivs = np.transpose(dmesh, axes=[0, 2, 1]).flatten()
         nn = len(derivs)
         partials["lengths", "def_mesh"][:nn] -= derivs
         partials["lengths", "def_mesh"][-nn:] += derivs
 
         dfullmesh = mesh[0, :] - mesh[-1, :]
-        l = np.sqrt(np.sum(dfullmesh ** 2, axis=1))
-        derivs = (dfullmesh.T / l).flatten()
+        length = np.sqrt(np.sum(dfullmesh ** 2, axis=1))
+        derivs = (dfullmesh.T / length).flatten()
         partials["chords", "def_mesh"] = np.concatenate([derivs, -derivs])
 
         # f = c / n

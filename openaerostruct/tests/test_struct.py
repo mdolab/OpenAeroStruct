@@ -8,8 +8,6 @@ class Test(unittest.TestCase):
         import numpy as np
 
         from openaerostruct.geometry.utils import generate_mesh
-        from openaerostruct.geometry.geometry_group import Geometry
-        from openaerostruct.transfer.displacement_transfer import DisplacementTransfer
         from openaerostruct.structures.struct_groups import SpatialBeamAlone
 
         import openmdao.api as om

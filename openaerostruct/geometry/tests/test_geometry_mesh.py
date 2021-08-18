@@ -1,11 +1,7 @@
 import numpy as np
-
 import unittest
 
-import openmdao.api as om
-
 from openaerostruct.geometry.geometry_mesh import GeometryMesh
-
 from openaerostruct.utils.testing import run_test
 
 

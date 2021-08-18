@@ -1,6 +1,5 @@
 from openmdao.utils.assert_utils import assert_rel_error
 import unittest
-from openaerostruct.utils.constants import grav_constant
 from openaerostruct.utils.testing import assert_check_totals
 
 

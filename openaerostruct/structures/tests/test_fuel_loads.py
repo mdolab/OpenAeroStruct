@@ -16,8 +16,6 @@ class Test(unittest.TestCase):
 
         indep_var_comp = om.IndepVarComp()
 
-        ny = surface["mesh"].shape[1]
-
         nodesval = np.array([[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 2.0, 0.0], [0.0, 3.0, 0.0]], dtype=complex)
 
         indep_var_comp.add_output("nodes", val=nodesval)

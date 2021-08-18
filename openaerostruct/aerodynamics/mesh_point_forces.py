@@ -2,8 +2,6 @@
 Class definition for the MeshPointForces component.
 """
 import numpy as np
-from scipy.sparse import csr_matrix
-
 import openmdao.api as om
 
 
@@ -75,9 +73,6 @@ class MeshPointForces(om.ExplicitComponent):
         le_wt = self.options["le_wt"]
         te_wt = self.options["te_wt"]
         for surface in surfaces:
-            mesh = surface["mesh"]
-            nx = mesh.shape[0]
-            ny = mesh.shape[1]
 
             name = surface["name"]
             sec_forces_name = "{}_sec_forces".format(name)

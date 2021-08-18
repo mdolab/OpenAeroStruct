@@ -491,7 +491,6 @@ class Test(unittest.TestCase):
 
         mesh = surface["mesh"]
         ny = mesh.shape[1]
-        nx = mesh.shape[0]
         n_cp = len(surface["t_over_c_cp"])
 
         prob = om.Problem()
@@ -794,7 +793,6 @@ class Test(unittest.TestCase):
 
         mesh = surface["mesh"]
         ny = mesh.shape[1]
-        nx = mesh.shape[0]
         n_cp = len(surface["t_over_c_cp"])
 
         prob = om.Problem()

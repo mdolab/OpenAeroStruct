@@ -1,6 +1,5 @@
 from openmdao.utils.assert_utils import assert_near_equal
 import unittest
-from openaerostruct.utils.constants import grav_constant
 
 
 class Test(unittest.TestCase):

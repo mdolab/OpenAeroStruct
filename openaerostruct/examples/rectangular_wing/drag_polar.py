@@ -4,6 +4,7 @@ attacks. Plot drag polar at end. Check output directory for Tecplot solution fil
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 import openmdao.api as om
 
@@ -121,8 +122,6 @@ for i in range(len(alpha)):
     CD[i] = prob["aero_point_0.wing_perf.CD"][0]
 
 # Plot polar
-import matplotlib.pyplot as plt
-
 plt.plot(CD * 1e4, CL, "-o")
 plt.grid(color="lightgray", linestyle="-", linewidth=1)
 plt.xlabel("$C_D$ (counts)")

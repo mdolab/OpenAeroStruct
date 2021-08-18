@@ -1,4 +1,3 @@
-from openmdao.utils.assert_utils import assert_rel_error
 import unittest
 import numpy as np
 

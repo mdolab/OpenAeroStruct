@@ -2,11 +2,8 @@ from openmdao.utils.assert_utils import assert_near_equal
 import numpy as np
 import unittest
 
-
-import numpy as np
-from openaerostruct.geometry.utils import generate_mesh, write_FFD_file
+from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.geometry.geometry_group import Geometry
-from openaerostruct.transfer.displacement_transfer import DisplacementTransfer
 
 from openaerostruct.aerodynamics.aero_groups import AeroPoint
 from openaerostruct.integration.multipoint_comps import MultiCD

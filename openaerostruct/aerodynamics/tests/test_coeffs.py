@@ -1,7 +1,7 @@
 import unittest
 
 from openaerostruct.aerodynamics.coeffs import Coeffs
-from openaerostruct.utils.testing import run_test, get_default_surfaces
+from openaerostruct.utils.testing import run_test
 
 
 class Test(unittest.TestCase):

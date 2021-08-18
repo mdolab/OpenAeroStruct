@@ -1,7 +1,6 @@
 import numpy as np
 
 import openmdao.api as om
-from openaerostruct.structures.utils import norm
 from openaerostruct.utils.constants import grav_constant
 
 
@@ -48,7 +47,7 @@ class ComputePointMassLoads(om.ExplicitComponent):
         self.add_output("nodal_weightings", val=np.zeros((self.n_point_masses, self.ny)))
         self.add_output(
             "loads_from_point_masses", val=np.zeros((self.ny, 6)), units="N"
-        )  ## WARNING!!! UNITS ARE A MIXTURE OF N & N*m
+        )  # WARNING!!! UNITS ARE A MIXTURE OF N & N*m
 
         self.set_check_partial_options(wrt="*", method="fd")
         self.declare_partials("*", "*", method="cs")

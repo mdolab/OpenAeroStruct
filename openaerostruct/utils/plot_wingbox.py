@@ -6,6 +6,19 @@ This only works when using the wingbox model with MULTIPOINT analysis/optimizati
 
 
 import sys
+import numpy as np
+from openmdao.recorders.sqlite_reader import SqliteCaseReader
+
+import matplotlib
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+import matplotlib.pyplot as plt
+import matplotlib.animation as manimation
+
+# matplotlib settings
+matplotlib.use("TkAgg")
+matplotlib.rcParams["lines.linewidth"] = 2
+matplotlib.rcParams["axes.edgecolor"] = "gray"
+matplotlib.rcParams["axes.linewidth"] = 0.5
 
 major_python_version = sys.version_info[0]
 
@@ -16,19 +29,6 @@ else:
     import tkinter as Tk
     from tkinter import font as tkFont
 
-import numpy as np
-from openmdao.recorders.sqlite_reader import SqliteCaseReader
-
-import matplotlib
-
-matplotlib.use("TkAgg")
-matplotlib.rcParams["lines.linewidth"] = 2
-matplotlib.rcParams["axes.edgecolor"] = "gray"
-matplotlib.rcParams["axes.linewidth"] = 0.5
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.animation as manimation
 
 #####################
 # User-set parameters
@@ -46,7 +46,7 @@ class Display(object):
 
         try:
             self.zoom_scale = args[2]
-        except:
+        except IndexError:
             self.zoom_scale = 2.8
 
         self.root = Tk.Tk()
@@ -97,7 +97,7 @@ class Display(object):
                 for surface in surfaces:
                     names.append(surface["name"])
                 break
-            except:
+            except KeyError:
                 pass
 
         # figure out if this is an optimization and what the objective is
@@ -184,7 +184,7 @@ class Display(object):
                         self.thickness.append(case.outputs[name + ".thickness"])
                         self.vonmises.append(np.max(case.outputs[name + ".vonmises"], axis=1))
                         self.show_tube = True
-                    except:
+                    except KeyError:
                         self.show_tube = False
                     try:
                         self.def_mesh.append(case.outputs[name + ".mesh"])
@@ -195,7 +195,7 @@ class Display(object):
                         self.S_ref.append(case.outputs[pt_name + "." + name + ".S_ref"])
                         self.show_wing = True
 
-                    except:
+                    except KeyError:
                         self.show_wing = False
                 else:
                     self.show_wing, self.show_tube = True, True
@@ -252,7 +252,7 @@ class Display(object):
                         self.twist.append(case.outputs[name + ".geometry.twist"])
                     else:
                         self.twist.append(case.outputs[name + ".twist"])
-                except:
+                except KeyError:
                     ny = self.mesh[0].shape[1]
                     self.twist.append(np.atleast_2d(np.zeros(ny)))
 
@@ -271,7 +271,7 @@ class Display(object):
             try:
                 self.point_mass_locations.append(case.outputs["point_mass_locations"])
                 self.point_masses_exist = True
-            except:
+            except KeyError:
                 self.point_masses_exist = False
                 pass
 
@@ -618,7 +618,7 @@ class Display(object):
             # for wingbox viz
             try:
                 le_te = np.load(str("temp_" + name + "_le_te.npy"))
-            except:
+            except FileNotFoundError:
                 print("temp_le_te.npy file not found")
 
             mesh0 = self.mesh[self.curr_pos * n_names + j].copy()
@@ -723,7 +723,7 @@ class Display(object):
                             x_box4, y_box4, z_box4, rstride=1, cstride=1, color="k", alpha=0.25
                         )  # wingbox viz
                         self.c2.grid_forget()
-                except:
+                except AttributeError:
                     self.ax.plot_wireframe(x, y, z, rstride=1, cstride=1, color="k")
                     self.ax.plot_surface(
                         x_box, y_box, z_box, rstride=1, cstride=1, color="k", alpha=0.25
@@ -762,7 +762,7 @@ class Display(object):
 
             try:
                 wing_weight_ratio = np.load(str("temp_" + name + "_le_te.npy"))[2]
-            except:
+            except FileNotFoundError:
                 print("temp_le_te.npy file not found")
 
             sw_val = self.struct_masses[self.curr_pos] / wing_weight_ratio

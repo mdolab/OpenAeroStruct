@@ -48,7 +48,6 @@ class ComputeTransformationMatrix(om.ExplicitComponent):
 
         # Create index arrays for each relevant input and output.
         # This allows us to set up the rows and cols for the sparse Jacobians.
-        disp_indices = get_array_indices(self.ny, 6)
         transform_indices = get_array_indices(self.ny, 3, 3)
 
         # Set up the rows and cols for `transformation_matrix` wrt `disp`

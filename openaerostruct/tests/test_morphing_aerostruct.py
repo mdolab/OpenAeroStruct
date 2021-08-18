@@ -1,6 +1,5 @@
-from openmdao.utils.assert_utils import assert_rel_error, assert_check_partials
+from openmdao.utils.assert_utils import assert_check_partials
 import unittest
-from openaerostruct.utils.constants import grav_constant
 
 
 """
@@ -131,7 +130,6 @@ class Test(unittest.TestCase):
             prob.model.connect("empty_cg", point_name + ".empty_cg")
             prob.model.connect("load_factor", point_name + ".load_factor", src_indices=[point])
 
-            com_name = point_name + "." + name + "_perf"
             AS_point.connect(name + ".local_stiff_transformed", "coupled." + name + ".local_stiff_transformed")
             AS_point.connect(name + ".nodes", "coupled." + name + ".nodes")
 

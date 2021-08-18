@@ -22,8 +22,6 @@ class Test(unittest.TestCase):
 
         indep_var_comp = om.IndepVarComp()
 
-        ny = surface["mesh"].shape[1]
-
         nodesval = np.array([[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 2.0, 0.0], [0.0, 3.0, 0.0]])
 
         engine_thrusts = np.array([[10.0]])
@@ -57,8 +55,6 @@ class Test(unittest.TestCase):
 
         indep_var_comp = om.IndepVarComp()
 
-        ny = surface["mesh"].shape[1]
-
         nodesval = np.array([[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 2.0, 0.0], [0.0, 3.0, 0.0]])
 
         engine_thrusts = np.array([[2.0, 1.0]])
@@ -72,7 +68,7 @@ class Test(unittest.TestCase):
         group.add_subsystem("indep_var_comp", indep_var_comp, promotes=["*"])
         group.add_subsystem("compute_point_mass_loads", comp, promotes=["*"])
 
-        prob = run_test(self, group, complex_flag=True, step=1e-8, atol=1e-5, compact_print=True)
+        run_test(self, group, complex_flag=True, step=1e-8, atol=1e-5, compact_print=True)
 
     @unittest.skipUnless(derivs_added, "Analytic derivs not added yet")
     def test_simple_values(self):
@@ -85,8 +81,6 @@ class Test(unittest.TestCase):
         group = om.Group()
 
         indep_var_comp = om.IndepVarComp()
-
-        ny = surface["mesh"].shape[1]
 
         nodesval = np.array([[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 2.0, 0.0], [0.0, 3.0, 0.0]])
 

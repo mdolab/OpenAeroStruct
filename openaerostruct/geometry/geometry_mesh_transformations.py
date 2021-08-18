@@ -710,8 +710,6 @@ class Dihedral(om.ExplicitComponent):
         else:
             ny2 = (ny - 1) // 2
             y0 = le[ny2, 1]
-            dz_right = (le[ny2:, 1] - y0) * tan_theta
-            dz_left = -(le[:ny2, 1] - y0) * tan_theta
 
             ddz_right = (le[ny2:, 1] - y0) * dtan_dangle
             ddz_left = -(le[:ny2, 1] - y0) * dtan_dangle

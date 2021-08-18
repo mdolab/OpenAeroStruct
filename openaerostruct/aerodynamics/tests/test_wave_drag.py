@@ -3,7 +3,6 @@ import numpy as np
 from openaerostruct.aerodynamics.wave_drag import WaveDrag
 from openaerostruct.utils.testing import run_test, get_default_surfaces
 import openmdao.api as om
-import numpy as np
 
 
 class Test(unittest.TestCase):
@@ -12,7 +11,6 @@ class Test(unittest.TestCase):
         surface["with_wave"] = True
         surface["t_over_c_cp"] = np.array([0.15, 0.21, 0.03, 0.05])
 
-        nx = surface["mesh"].shape[0]
         ny = surface["mesh"].shape[1]
         n_cp = len(surface["t_over_c_cp"])
 

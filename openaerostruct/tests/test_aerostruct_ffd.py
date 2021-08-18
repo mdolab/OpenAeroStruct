@@ -3,11 +3,12 @@ import unittest
 import numpy as np
 from openaerostruct.utils.constants import grav_constant
 
+# check if pygeo is available
 try:
-    import pygeo
+    import pygeo  # noqa: F401
 
     pygeo_flag = True
-except:
+except ImportError():
     pygeo_flag = False
 
 

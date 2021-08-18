@@ -54,7 +54,7 @@ class LoadTransfer(om.ExplicitComponent):
         self.add_input("def_mesh", val=np.zeros((nx, ny, 3)), units="m")
         self.add_input("sec_forces", val=np.zeros((nx - 1, ny - 1, 3)), units="N")
 
-        self.add_output("loads", val=np.zeros((self.ny, 6)), units="N")  ## WARNING!!! UNITS ARE A MIXTURE OF N & N*m
+        self.add_output("loads", val=np.zeros((self.ny, 6)), units="N")  # WARNING!!! UNITS ARE A MIXTURE OF N & N*m
         # Well, technically the units of this load array are mixed.
         # The first 3 indices are N and the last 3 are N*m.
 

@@ -11,7 +11,6 @@ class Test(unittest.TestCase):
         surface = get_default_surfaces()[0]
         surface["t_over_c_cp"] = np.array([0.1, 0.15, 0.2])
 
-        nx = surface["mesh"].shape[0]
         ny = surface["mesh"].shape[1]
         n_cp = len(surface["t_over_c_cp"])
 
@@ -41,7 +40,6 @@ class Test(unittest.TestCase):
         surface = get_default_surfaces()[0]
         surface["k_lam"] = 0.5
 
-        nx = surface["mesh"].shape[0]
         ny = surface["mesh"].shape[1]
         n_cp = len(surface["t_over_c_cp"])
 

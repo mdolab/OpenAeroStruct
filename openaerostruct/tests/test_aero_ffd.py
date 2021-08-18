@@ -2,8 +2,9 @@ from openmdao.utils.assert_utils import assert_rel_error
 import numpy as np
 import unittest
 
+# check if pygeo is available
 try:
-    import pygeo
+    import pygeo  # noqa: F401
 
     pygeo_flag = True
 except ModuleNotFoundError:

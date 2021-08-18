@@ -48,7 +48,7 @@ def compute_drag_polar(Mach, alphas, surfaces, trimmed=False):
     prob.model.add_subsystem(point_name, aero_group, promotes_inputs=["v", "alpha", "Mach_number", "re", "rho", "cg"])
 
     # For trimmed polar, setup balance component
-    if trimmed == True:
+    if trimmed is True:
         bal = om.BalanceComp()
         bal.add_balance(name="tail_rotation", rhs_val=0.0, units="deg")
         prob.model.add_subsystem("balance", bal, promotes_outputs=["tail_rotation"])

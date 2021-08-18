@@ -52,9 +52,7 @@ class Test(unittest.TestCase):
         group.add_subsystem("indep_var_comp", indep_var_comp, promotes=["*"])
         group.add_subsystem("load", comp, promotes=["*"])
 
-        p = run_test(self, group, complex_flag=True, compact_print=True)
-
-        # print(p['comp.struct_weight_loads'])
+        run_test(self, group, complex_flag=True, compact_print=True)
 
 
 if __name__ == "__main__":
