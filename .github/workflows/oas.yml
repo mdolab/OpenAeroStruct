@@ -45,13 +45,13 @@ jobs:
     - name: Code style (flake8)
       run: |
         pwd
+        ls -a
         pip install flake8==3.9.2
-        python -m flake8 openaerostruct --append-config ../.github/.flake8 --count --show-source --statistics
+        python -m flake8 openaerostruct --append-config ./.github/.flake8 --count --show-source --statistics
 
     # code format check by black
     - name: Code format (black)
       run: |
-        pwd
         pip install black==21.6b0
         black openaerostruct --check --diff -l 120 --target-version py38
 
