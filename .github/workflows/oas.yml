@@ -41,11 +41,16 @@ jobs:
         git clone https://github.com/mdolab/pygeo.git
         pip install -e ./pygeo
 
+    - name: Run tests
+      env:
+        OMPI_MCA_btl: ^openib   # prevent OpenMPI warning messages
+      run: |
+        cd openaerostruct
+        testflo -n 2 openaerostruct --coverage --coverpkg openaerostruct --cover-omit \*tests/\* --cover-omit \*docs/\*
+
     # code style check by flake8
     - name: Code style (flake8)
       run: |
-        pwd
-        ls -a
         pip install flake8==3.9.2
         python -m flake8 openaerostruct --append-config ./.github/.flake8 --count --show-source --statistics
 
@@ -54,13 +59,6 @@ jobs:
       run: |
         pip install black==21.6b0
         black openaerostruct --check --diff -l 120 --target-version py38
-
-    - name: Run tests
-      env:
-        OMPI_MCA_btl: ^openib   # prevent OpenMPI warning messages
-      run: |
-        cd openaerostruct
-        testflo -n 2 openaerostruct --coverage --coverpkg openaerostruct --cover-omit \*tests/\* --cover-omit \*docs/\*
 
     # build docs
     - name: Build docs

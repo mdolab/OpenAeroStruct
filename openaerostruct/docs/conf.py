@@ -71,9 +71,9 @@ numpydoc_show_class_members = False
 # master_doc = 'index'
 
 # General information about the project.
-project = u"OpenAeroStruct"
-copyright = u"2018, John Jasa, Dr. John Hwang, Justin S. Gray"
-author = u"John Jasa, Dr. John Hwang, Justin S. Gray"
+project = "OpenAeroStruct"
+copyright = "2018, John Jasa, Dr. John Hwang, Justin S. Gray"
+author = "John Jasa, Dr. John Hwang, Justin S. Gray"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
