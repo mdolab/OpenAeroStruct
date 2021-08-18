@@ -132,4 +132,4 @@ html_extra_path = ["_n2html"]
 master_doc = "index"
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "openaerostruct", u"OpenAeroStruct Documentation", [author], 1)]
+man_pages = [(master_doc, "openaerostruct", "OpenAeroStruct Documentation", [author], 1)]
