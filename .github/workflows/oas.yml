@@ -48,6 +48,19 @@ jobs:
         cd openaerostruct
         testflo -n 2 openaerostruct --coverage --coverpkg openaerostruct --cover-omit \*tests/\* --cover-omit \*docs/\*
 
+    # code style check by flake8. Get flake8 config file from mdolab/.github
+    - name: Code style (flake8)
+      run: |
+        pip install flake8==3.9.2
+        git clone https://github.com/mdolab/.github.git mdolab_github
+        python -m flake8 . --append-config ./mdolab_github/.flake8 --count --show-source --statistics
+
+    # code format check by black
+    - name: Code format (black)
+      run: |
+        pip install black==21.6b0
+        black . --check --diff -l 120 --target-version py38
+
     # build docs
     - name: Build docs
       run: |
