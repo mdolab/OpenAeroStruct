@@ -21,19 +21,13 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 import matplotlib.animation as manimation
 
+import tkinter as Tk
+from tkinter import font as tkFont
+
 matplotlib.use("TkAgg")
 matplotlib.rcParams["lines.linewidth"] = 2
 matplotlib.rcParams["axes.edgecolor"] = "gray"
 matplotlib.rcParams["axes.linewidth"] = 0.5
-
-major_python_version = sys.version_info[0]
-
-if major_python_version == 2:
-    import tkFont
-    import Tkinter as Tk
-else:
-    import tkinter as Tk
-    from tkinter import font as tkFont
 
 
 class Display(object):

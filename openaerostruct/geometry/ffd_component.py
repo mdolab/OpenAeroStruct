@@ -6,7 +6,7 @@ import openmdao.api as om
 
 try:
     from pygeo import DVGeometry
-except ImportError():
+except ImportError:
     pass
 
 

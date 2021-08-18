@@ -8,7 +8,7 @@ try:
     import pygeo  # noqa: F401
 
     pygeo_flag = True
-except ImportError():
+except ImportError:
     pygeo_flag = False
 
 
