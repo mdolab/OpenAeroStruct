@@ -6,23 +6,22 @@ from openaerostruct.common.reynolds_comp import ReynoldsComp
 
 
 class Test(unittest.TestCase):
-
     def test_reynolds_derivs(self):
         comp = ReynoldsComp()
 
         prob = om.Problem()
-        prob.model.add_subsystem('comp', comp, promotes=['*'])
+        prob.model.add_subsystem("comp", comp, promotes=["*"])
         prob.setup(force_alloc_complex=True)
 
-        prob['rho'] = np.random.random()
-        prob['mu'] = np.random.random()
-        prob['v'] = np.random.random()
+        prob["rho"] = np.random.random()
+        prob["mu"] = np.random.random()
+        prob["v"] = np.random.random()
         prob.run_model()
 
-        check = prob.check_partials(compact_print=True, method='cs', step=1e-40)
+        check = prob.check_partials(compact_print=True, method="cs", step=1e-40)
 
         assert_check_partials(check)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

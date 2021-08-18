@@ -32,26 +32,26 @@ class SparWithinWing(om.ExplicitComponent):
     """
 
     def initialize(self):
-        self.options.declare('surface', types=dict)
+        self.options.declare("surface", types=dict)
 
     def setup(self):
-        self.surface = surface = self.options['surface']
+        self.surface = surface = self.options["surface"]
 
-        self.ny = surface['mesh'].shape[1]
-        nx = surface['mesh'].shape[0]
+        self.ny = surface["mesh"].shape[1]
+        nx = surface["mesh"].shape[0]
 
-        self.add_input('mesh', val=np.zeros((nx, self.ny, 3)), units='m')
-        self.add_input('radius', val=np.zeros((self.ny-1)), units='m')
-        self.add_input('t_over_c', val=np.zeros((self.ny-1)))
-        self.add_output('spar_within_wing', val=np.zeros((self.ny-1)), units='m')
+        self.add_input("mesh", val=np.zeros((nx, self.ny, 3)), units="m")
+        self.add_input("radius", val=np.zeros((self.ny - 1)), units="m")
+        self.add_input("t_over_c", val=np.zeros((self.ny - 1)))
+        self.add_output("spar_within_wing", val=np.zeros((self.ny - 1)), units="m")
 
-        self.declare_partials('spar_within_wing', 'mesh', method='cs')
+        self.declare_partials("spar_within_wing", "mesh", method="cs")
 
         arange = np.arange(self.ny - 1)
-        self.declare_partials('spar_within_wing', 'radius', rows=arange, cols=arange, val=1.)
+        self.declare_partials("spar_within_wing", "radius", rows=arange, cols=arange, val=1.0)
 
     def compute(self, inputs, outputs):
-        mesh = inputs['mesh']
-        t_over_c = inputs['t_over_c']
+        mesh = inputs["mesh"]
+        t_over_c = inputs["t_over_c"]
         max_radius = radii(mesh, t_over_c)
-        outputs['spar_within_wing'] = inputs['radius'] - max_radius
+        outputs["spar_within_wing"] = inputs["radius"] - max_radius

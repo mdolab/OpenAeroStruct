@@ -10,7 +10,6 @@ from openaerostruct.utils.testing import run_test, get_default_surfaces
 
 
 class Test(unittest.TestCase):
-
     def test(self):
         surfaces = get_default_surfaces()
 
@@ -24,17 +23,18 @@ class Test(unittest.TestCase):
         comp = RotationalVelocity(surfaces=surfaces)
 
         prob = om.Problem()
-        prob.model.add_subsystem('comp', comp)
+        prob.model.add_subsystem("comp", comp)
         prob.setup(force_alloc_complex=True)
 
-        prob['comp.omega'] = np.array([.3, .4, -.1])
-        prob['comp.cg'] = np.array([.1, .6, .4])
-        prob['comp.coll_pts'] = np.random.random(prob['comp.coll_pts'].shape)
+        prob["comp.omega"] = np.array([0.3, 0.4, -0.1])
+        prob["comp.cg"] = np.array([0.1, 0.6, 0.4])
+        prob["comp.coll_pts"] = np.random.random(prob["comp.coll_pts"].shape)
         prob.run_model()
 
-        check = prob.check_partials(compact_print=True, method='cs', step=1e-40)
+        check = prob.check_partials(compact_print=True, method="cs", step=1e-40)
 
         assert_check_partials(check)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

@@ -17,7 +17,7 @@ class Test(unittest.TestCase):
     """
 
     def test_quick(self):
-        """ Short pre-setup test to compare component derivs. """
+        """Short pre-setup test to compare component derivs."""
         surfaces = get_default_surfaces()
 
         comp = SectionPropertiesTube(surface=surfaces[0])
@@ -25,7 +25,7 @@ class Test(unittest.TestCase):
         run_test(self, comp, complex_flag=True)
 
     def test_detailed(self):
-        """ This is a longer version of the previous method, with plotting. """
+        """This is a longer version of the previous method, with plotting."""
 
         # Load in default lifting surfaces to setup the comparison
         surfaces = get_default_surfaces()
@@ -33,7 +33,7 @@ class Test(unittest.TestCase):
         # Instantiate an OpenMDAO problem and add the component we want to test
         # as asubsystem, giving that component a default lifting surface
         prob = om.Problem()
-        prob.model.add_subsystem('tube', SectionPropertiesTube(surface=surfaces[0]))
+        prob.model.add_subsystem("tube", SectionPropertiesTube(surface=surfaces[0]))
 
         # Set up the problem and ensure it uses complex arrays so we can check
         # the derivatives using complex step
@@ -49,17 +49,16 @@ class Test(unittest.TestCase):
         for key, subjac in check[list(check.keys())[0]].items():
             print()
             print(key)
-            view_mat(subjac['J_fd'],subjac['J_fwd'],key)
+            view_mat(subjac["J_fd"], subjac["J_fwd"], key)
 
         # Loop through the `check` dictionary and perform assert that the
         # approximated deriv must be very close to the computed deriv
         for key, subjac in check[list(check.keys())[0]].items():
-            if subjac['magnitude'].fd > 1e-6:
-                assert_almost_equal(
-                    subjac['rel error'].forward, 0., err_msg='deriv of %s wrt %s' % key)
-                assert_almost_equal(
-                    subjac['rel error'].reverse, 0., err_msg='deriv of %s wrt %s' % key)
+            if subjac["magnitude"].fd > 1e-6:
+                assert_almost_equal(subjac["rel error"].forward, 0.0, err_msg="deriv of %s wrt %s" % key)
+                assert_almost_equal(subjac["rel error"].reverse, 0.0, err_msg="deriv of %s wrt %s" % key)
+
 
 # Run the tests included in this script
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

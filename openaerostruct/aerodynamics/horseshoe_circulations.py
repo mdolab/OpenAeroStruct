@@ -27,17 +27,17 @@ class HorseshoeCirculations(om.ExplicitComponent):
     """
 
     def initialize(self):
-        self.options.declare('surfaces', types=list)
+        self.options.declare("surfaces", types=list)
 
     def setup(self):
-        surfaces = self.options['surfaces']
+        surfaces = self.options["surfaces"]
 
         system_size = 0
 
         # Loop through all the surfaces to obtain the total system size,
         # which is the number of panels in the total system.
         for surface in surfaces:
-            mesh = surface['mesh']
+            mesh = surface["mesh"]
             nx = mesh.shape[0]
             ny = mesh.shape[1]
 
@@ -45,8 +45,8 @@ class HorseshoeCirculations(om.ExplicitComponent):
 
         self.system_size = system_size
 
-        self.add_input('circulations', shape=system_size, units='m**2/s')
-        self.add_output('horseshoe_circulations', shape=system_size, units='m**2/s')
+        self.add_input("circulations", shape=system_size, units="m**2/s")
+        self.add_output("horseshoe_circulations", shape=system_size, units="m**2/s")
 
         # To convert between the two circulations, we simply need to set up a
         # matrix that linearly transforms the vortex ring circulations to
@@ -59,7 +59,7 @@ class HorseshoeCirculations(om.ExplicitComponent):
         ind_1 = 0
         ind_2 = 0
         for surface in surfaces:
-            mesh = surface['mesh']
+            mesh = surface["mesh"]
             nx = mesh.shape[0]
             ny = mesh.shape[1]
             num = (nx - 1) * (ny - 1)
@@ -85,7 +85,7 @@ class HorseshoeCirculations(om.ExplicitComponent):
         # Actually create the sparse matrix based on these rows and cols
         self.mtx = csc_matrix((data, (rows, cols)), shape=(system_size, system_size))
 
-        self.declare_partials('horseshoe_circulations', 'circulations', val=data, rows=rows, cols=cols)
+        self.declare_partials("horseshoe_circulations", "circulations", val=data, rows=rows, cols=cols)
 
     def compute(self, inputs, outputs):
-        outputs['horseshoe_circulations'] = self.mtx.dot(inputs['circulations'])
+        outputs["horseshoe_circulations"] = self.mtx.dot(inputs["circulations"])

@@ -23,27 +23,27 @@ class ComputeNodes(om.ExplicitComponent):
     """
 
     def initialize(self):
-        self.options.declare('surface', types=dict)
+        self.options.declare("surface", types=dict)
 
     def setup(self):
-        surface = self.options['surface']
-        mesh = surface['mesh']
+        surface = self.options["surface"]
+        mesh = surface["mesh"]
         nx = mesh.shape[0]
         ny = mesh.shape[1]
 
-        if surface['fem_model_type'] == 'tube':
-            self.fem_origin = surface['fem_origin']
+        if surface["fem_model_type"] == "tube":
+            self.fem_origin = surface["fem_origin"]
         else:
-            y_upper = surface['data_y_upper']
-            x_upper = surface['data_x_upper']
-            y_lower = surface['data_y_lower']
+            y_upper = surface["data_y_upper"]
+            x_upper = surface["data_x_upper"]
+            y_lower = surface["data_y_lower"]
 
-            self.fem_origin = (x_upper[0]  * (y_upper[0]  - y_lower[0]) +
-                               x_upper[-1] * (y_upper[-1] - y_lower[-1])) / \
-                             ((y_upper[0]  -  y_lower[0]) + (y_upper[-1] - y_lower[-1]))
+            self.fem_origin = (x_upper[0] * (y_upper[0] - y_lower[0]) + x_upper[-1] * (y_upper[-1] - y_lower[-1])) / (
+                (y_upper[0] - y_lower[0]) + (y_upper[-1] - y_lower[-1])
+            )
 
-        self.add_input('mesh', val=np.zeros((nx, ny, 3)), units='m')
-        self.add_output('nodes', val=np.zeros((ny, 3)), units='m')
+        self.add_input("mesh", val=np.zeros((nx, ny, 3)), units="m")
+        self.add_output("nodes", val=np.zeros((ny, 3)), units="m")
 
         w = self.fem_origin
         n = ny * 3
@@ -57,9 +57,9 @@ class ComputeNodes(om.ExplicitComponent):
         rows = np.hstack((arange, arange))
         cols = np.hstack((arange, arange + (nx - 1) * n))
 
-        self.declare_partials('nodes', 'mesh', rows=rows, cols=cols, val=data)
+        self.declare_partials("nodes", "mesh", rows=rows, cols=cols, val=data)
 
     def compute(self, inputs, outputs):
         w = self.fem_origin
-        mesh = inputs['mesh']
-        outputs['nodes'] = (1-w) * mesh[0, :, :] + w * mesh[-1, :, :]
+        mesh = inputs["mesh"]
+        outputs["nodes"] = (1 - w) * mesh[0, :, :] + w * mesh[-1, :, :]

@@ -4,7 +4,7 @@ import openmdao.api as om
 
 
 class Energy(om.ExplicitComponent):
-    """ Compute strain energy.
+    """Compute strain energy.
 
     Parameters
     ----------
@@ -22,22 +22,22 @@ class Energy(om.ExplicitComponent):
     """
 
     def initialize(self):
-        self.options.declare('surface', types=dict)
+        self.options.declare("surface", types=dict)
 
     def setup(self):
-        surface = self.options['surface']
+        surface = self.options["surface"]
 
-        ny = surface['mesh'].shape[1]
+        ny = surface["mesh"].shape[1]
 
-        self.add_input('disp', val=np.zeros((ny, 6)), units='m')
-        self.add_input('loads', val=np.zeros((ny, 6)), units='N')
-        self.add_output('energy', val=0., units='N*m')
+        self.add_input("disp", val=np.zeros((ny, 6)), units="m")
+        self.add_input("loads", val=np.zeros((ny, 6)), units="N")
+        self.add_output("energy", val=0.0, units="N*m")
 
-        self.declare_partials('*', '*')
+        self.declare_partials("*", "*")
 
     def compute(self, inputs, outputs):
-        outputs['energy'] = np.sum(inputs['disp'] * inputs['loads'])
+        outputs["energy"] = np.sum(inputs["disp"] * inputs["loads"])
 
     def compute_partials(self, inputs, partials):
-        partials['energy', 'disp'][0, :] = inputs['loads'].real.flatten()
-        partials['energy', 'loads'][0, :] = inputs['disp'].real.flatten()
+        partials["energy", "disp"][0, :] = inputs["loads"].real.flatten()
+        partials["energy", "loads"][0, :] = inputs["disp"].real.flatten()

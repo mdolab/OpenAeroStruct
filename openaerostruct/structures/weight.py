@@ -5,7 +5,7 @@ from openaerostruct.structures.utils import norm
 
 
 class Weight(om.ExplicitComponent):
-    """ Compute total weight and center-of-gravity location of the spar elements.
+    """Compute total weight and center-of-gravity location of the spar elements.
 
     parameters
     ----------
@@ -24,39 +24,41 @@ class Weight(om.ExplicitComponent):
     """
 
     def initialize(self):
-        self.options.declare('surface', types=dict)
+        self.options.declare("surface", types=dict)
 
     def setup(self):
-        self.surface = surface = self.options['surface']
+        self.surface = surface = self.options["surface"]
 
-        self.ny = ny = surface['mesh'].shape[1]
+        self.ny = ny = surface["mesh"].shape[1]
 
-        self.add_input('A', val=np.ones((self.ny - 1)), units='m**2')
-        self.add_input('nodes', val=np.zeros((self.ny, 3)), units='m')
+        self.add_input("A", val=np.ones((self.ny - 1)), units="m**2")
+        self.add_input("nodes", val=np.zeros((self.ny, 3)), units="m")
 
-        self.add_output('structural_mass', val=0., units='kg')
-        self.add_output('element_mass', val=np.zeros((self.ny-1)), units='kg')
+        self.add_output("structural_mass", val=0.0, units="kg")
+        self.add_output("element_mass", val=np.zeros((self.ny - 1)), units="kg")
 
-        self.declare_partials('structural_mass', ['A','nodes'])
+        self.declare_partials("structural_mass", ["A", "nodes"])
 
-        row_col = np.arange(self.ny-1, dtype=int)
-        self.declare_partials('element_mass','A', rows=row_col, cols=row_col)
+        row_col = np.arange(self.ny - 1, dtype=int)
+        self.declare_partials("element_mass", "A", rows=row_col, cols=row_col)
 
         dimensions = 3
-        rows=np.empty((dimensions*2*(ny-1)))
-        cols=np.empty((dimensions*2*(ny-1)))
-        for i in range (ny-1):
-            rows[i*dimensions*2:(i+1)*dimensions*2] = i
-            cols[i*dimensions*2:(i+1)*dimensions*2] = np.linspace(i*dimensions,i*dimensions+(dimensions*2-1),dimensions*2)
-        self.declare_partials('element_mass','nodes', rows=rows, cols=cols)
+        rows = np.empty((dimensions * 2 * (ny - 1)))
+        cols = np.empty((dimensions * 2 * (ny - 1)))
+        for i in range(ny - 1):
+            rows[i * dimensions * 2 : (i + 1) * dimensions * 2] = i
+            cols[i * dimensions * 2 : (i + 1) * dimensions * 2] = np.linspace(
+                i * dimensions, i * dimensions + (dimensions * 2 - 1), dimensions * 2
+            )
+        self.declare_partials("element_mass", "nodes", rows=rows, cols=cols)
 
-        self.set_check_partial_options('*', method='cs', step=1e-40)
+        self.set_check_partial_options("*", method="cs", step=1e-40)
 
     def compute(self, inputs, outputs):
-        A = inputs['A']
-        nodes = inputs['nodes']
-        mrho = self.surface['mrho']
-        wwr = self.surface['wing_weight_ratio']
+        A = inputs["A"]
+        nodes = inputs["nodes"]
+        mrho = self.surface["mrho"]
+        wwr = self.surface["wing_weight_ratio"]
 
         # Calculate the volume and weight of the structure
         element_volumes = norm(nodes[1:, :] - nodes[:-1, :], axis=1) * A
@@ -66,18 +68,18 @@ class Weight(om.ExplicitComponent):
         weight = np.sum(element_mass)
 
         # If the tube is symmetric, double the computed weight
-        if self.surface['symmetry']:
-            weight *= 2.
+        if self.surface["symmetry"]:
+            weight *= 2.0
 
-        outputs['structural_mass'] = weight
-        outputs['element_mass'] = element_mass
+        outputs["structural_mass"] = weight
+        outputs["element_mass"] = element_mass
 
     def compute_partials(self, inputs, partials):
 
-        A = inputs['A']
-        nodes = inputs['nodes']
-        mrho = self.surface['mrho']
-        wwr = self.surface['wing_weight_ratio']
+        A = inputs["A"]
+        nodes = inputs["nodes"]
+        mrho = self.surface["mrho"]
+        wwr = self.surface["wing_weight_ratio"]
         ny = self.ny
 
         # Calculate the volume and weight of the structure
@@ -96,11 +98,11 @@ class Weight(om.ExplicitComponent):
         dweight_dA = norms * const2
 
         # Account for symmetry
-        if self.surface['symmetry']:
-            dweight_dA *= 2.
+        if self.surface["symmetry"]:
+            dweight_dA *= 2.0
 
         # Save the result to the jacobian dictionary
-        partials['structural_mass', 'A'] = dweight_dA
+        partials["structural_mass", "A"] = dweight_dA
 
         # Next, we will compute the derivative of weight wrt nodes.
         # Here we're using results from AD to compute the derivative
@@ -113,20 +115,22 @@ class Weight(om.ExplicitComponent):
         # Apply the multipliers for material properties and symmetry
         nodesb *= mrho * wwr
 
-        if self.surface['symmetry']:
-            nodesb *= 2.
+        if self.surface["symmetry"]:
+            nodesb *= 2.0
 
         # Store the flattened array in the jacobian dictionary
-        partials['structural_mass', 'nodes'] = nodesb.reshape(1, -1)
+        partials["structural_mass", "nodes"] = nodesb.reshape(1, -1)
 
         # Element_weight Partials
-        partials['element_mass','A'] = const1 * const2
+        partials["element_mass", "A"] = const1 * const2
 
-        precalc = np.sum(np.power(const0,2),axis=1)
-        d__dprecalc = 0.5 * precalc**(-.5)
+        precalc = np.sum(np.power(const0, 2), axis=1)
+        d__dprecalc = 0.5 * precalc ** (-0.5)
 
         dimensions = 3
-        for i in range(ny-1):
-            first_part = const0[i,:] * d__dprecalc[i] * 2 * (-1) * A[i] * const2
-            second_part = const0[i,:] * d__dprecalc[i] * 2 * A[i] * const2
-            partials['element_mass', 'nodes'][i*dimensions*2:(i+1)*dimensions*2] = np.append(first_part,second_part)
+        for i in range(ny - 1):
+            first_part = const0[i, :] * d__dprecalc[i] * 2 * (-1) * A[i] * const2
+            second_part = const0[i, :] * d__dprecalc[i] * 2 * A[i] * const2
+            partials["element_mass", "nodes"][i * dimensions * 2 : (i + 1) * dimensions * 2] = np.append(
+                first_part, second_part
+            )

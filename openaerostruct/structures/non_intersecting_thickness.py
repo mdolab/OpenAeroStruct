@@ -27,20 +27,20 @@ class NonIntersectingThickness(om.ExplicitComponent):
     """
 
     def initialize(self):
-        self.options.declare('surface', types=dict)
+        self.options.declare("surface", types=dict)
 
     def setup(self):
-        self.surface = surface = self.options['surface']
+        self.surface = surface = self.options["surface"]
 
-        self.ny = surface['mesh'].shape[1]
+        self.ny = surface["mesh"].shape[1]
 
-        self.add_input('thickness', val=np.zeros((self.ny-1)), units='m')
-        self.add_input('radius', val=np.zeros((self.ny-1)), units='m')
-        self.add_output('thickness_intersects', val=np.zeros((self.ny-1)), units='m')
+        self.add_input("thickness", val=np.zeros((self.ny - 1)), units="m")
+        self.add_input("radius", val=np.zeros((self.ny - 1)), units="m")
+        self.add_output("thickness_intersects", val=np.zeros((self.ny - 1)), units="m")
 
-        arange = np.arange(self.ny-1)
-        self.declare_partials('thickness_intersects', 'thickness', rows=arange, cols=arange, val=1.)
-        self.declare_partials('thickness_intersects', 'radius', rows=arange, cols=arange, val=-1.)
+        arange = np.arange(self.ny - 1)
+        self.declare_partials("thickness_intersects", "thickness", rows=arange, cols=arange, val=1.0)
+        self.declare_partials("thickness_intersects", "radius", rows=arange, cols=arange, val=-1.0)
 
     def compute(self, inputs, outputs):
-        outputs['thickness_intersects'] = inputs['thickness'] - inputs['radius']
+        outputs["thickness_intersects"] = inputs["thickness"] - inputs["radius"]

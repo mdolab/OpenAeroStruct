@@ -4,7 +4,8 @@ import openmdao.api as om
 
 
 def norm(vec):
-    return np.sqrt(np.sum(vec**2))
+    return np.sqrt(np.sum(vec ** 2))
+
 
 class WingboxFuelVol(om.ExplicitComponent):
     """
@@ -24,28 +25,28 @@ class WingboxFuelVol(om.ExplicitComponent):
     """
 
     def initialize(self):
-        self.options.declare('surface', types=dict)
+        self.options.declare("surface", types=dict)
 
     def setup(self):
-        self.surface = surface = self.options['surface']
+        self.surface = surface = self.options["surface"]
 
-        self.ny = surface['mesh'].shape[1]
+        self.ny = surface["mesh"].shape[1]
 
-        self.add_input('nodes', val=np.zeros((self.ny, 3)), units='m')
-        self.add_input('A_int', val=np.zeros((self.ny-1)), units='m**2')
-        self.add_output('fuel_vols', val=np.zeros((self.ny-1)), units='m**3')
+        self.add_input("nodes", val=np.zeros((self.ny, 3)), units="m")
+        self.add_input("A_int", val=np.zeros((self.ny - 1)), units="m**2")
+        self.add_output("fuel_vols", val=np.zeros((self.ny - 1)), units="m**3")
 
-        self.declare_partials('*', '*', method='cs')
+        self.declare_partials("*", "*", method="cs")
 
     def compute(self, inputs, outputs):
-        nodes = inputs['nodes']
+        nodes = inputs["nodes"]
 
-        element_lengths = np.zeros(self.ny-1, dtype=type(nodes[0, 0]))
+        element_lengths = np.zeros(self.ny - 1, dtype=type(nodes[0, 0]))
 
         for i in range(self.ny - 1):
-            element_lengths[i] = norm(nodes[i+1] - nodes[i])
+            element_lengths[i] = norm(nodes[i + 1] - nodes[i])
 
         # Next we multiply the element lengths with the A_int for the internal volumes of the wingobox segments
-        vols = element_lengths * inputs['A_int']
+        vols = element_lengths * inputs["A_int"]
 
-        outputs['fuel_vols'] = vols
+        outputs["fuel_vols"] = vols

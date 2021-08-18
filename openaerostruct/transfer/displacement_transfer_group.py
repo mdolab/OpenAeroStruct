@@ -11,15 +11,13 @@ class DisplacementTransferGroup(om.Group):
     """
 
     def initialize(self):
-        self.options.declare('surface', types=dict)
+        self.options.declare("surface", types=dict)
 
     def setup(self):
-        surface = self.options['surface']
+        surface = self.options["surface"]
 
-        self.add_subsystem('compute_transformation_matrix',
-                 ComputeTransformationMatrix(surface=surface),
-                 promotes=['*'])
+        self.add_subsystem(
+            "compute_transformation_matrix", ComputeTransformationMatrix(surface=surface), promotes=["*"]
+        )
 
-        self.add_subsystem('displacement_transfer',
-                 DisplacementTransfer(surface=surface),
-                 promotes=['*'])
+        self.add_subsystem("displacement_transfer", DisplacementTransfer(surface=surface), promotes=["*"])

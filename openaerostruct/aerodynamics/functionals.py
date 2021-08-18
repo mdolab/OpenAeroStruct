@@ -17,42 +17,45 @@ class VLMFunctionals(om.Group):
     """
 
     def initialize(self):
-        self.options.declare('surface', types=dict)
+        self.options.declare("surface", types=dict)
 
     def setup(self):
-        surface = self.options['surface']
+        surface = self.options["surface"]
 
-        self.add_subsystem('liftcoeff',
-             LiftCoeff2D(surface=surface),
-             promotes_inputs=['v', 'alpha', 'rho', 'widths', 'chords', 'sec_forces'],
-             promotes_outputs=['Cl'])
+        self.add_subsystem(
+            "liftcoeff",
+            LiftCoeff2D(surface=surface),
+            promotes_inputs=["v", "alpha", "rho", "widths", "chords", "sec_forces"],
+            promotes_outputs=["Cl"],
+        )
 
-        self.add_subsystem('liftdrag',
+        self.add_subsystem(
+            "liftdrag",
             LiftDrag(surface=surface),
-            promotes_inputs=['alpha', 'beta', 'sec_forces'],
-            promotes_outputs=['L', 'D'])
+            promotes_inputs=["alpha", "beta", "sec_forces"],
+            promotes_outputs=["L", "D"],
+        )
 
-        self.add_subsystem('coeffs',
-            Coeffs(),
-            promotes_inputs=['v', 'rho', 'S_ref', 'L', 'D'],
-            promotes_outputs=['CL1', 'CDi'])
+        self.add_subsystem(
+            "coeffs", Coeffs(), promotes_inputs=["v", "rho", "S_ref", "L", "D"], promotes_outputs=["CL1", "CDi"]
+        )
 
-        self.add_subsystem('CL',
-            TotalLift(surface=surface),
-            promotes_inputs=['CL1'],
-            promotes_outputs=['CL'])
+        self.add_subsystem("CL", TotalLift(surface=surface), promotes_inputs=["CL1"], promotes_outputs=["CL"])
 
-        self.add_subsystem('viscousdrag',
+        self.add_subsystem(
+            "viscousdrag",
             ViscousDrag(surface=surface),
-                promotes_inputs=['Mach_number', 're', 'widths', 'cos_sweep', 'lengths', 'S_ref', 't_over_c'],
-                promotes_outputs=['CDv'])
+            promotes_inputs=["Mach_number", "re", "widths", "cos_sweep", "lengths", "S_ref", "t_over_c"],
+            promotes_outputs=["CDv"],
+        )
 
-        self.add_subsystem('wavedrag',
+        self.add_subsystem(
+            "wavedrag",
             WaveDrag(surface=surface),
-                promotes_inputs=['Mach_number', 'cos_sweep', 'widths', 'CL', 'chords', 't_over_c'],
-                promotes_outputs=['CDw'])
+            promotes_inputs=["Mach_number", "cos_sweep", "widths", "CL", "chords", "t_over_c"],
+            promotes_outputs=["CDw"],
+        )
 
-        self.add_subsystem('CD',
-            TotalDrag(surface=surface),
-            promotes_inputs=['CDv', 'CDi', 'CDw'],
-            promotes_outputs=['CD'])
+        self.add_subsystem(
+            "CD", TotalDrag(surface=surface), promotes_inputs=["CDv", "CDi", "CDw"], promotes_outputs=["CD"]
+        )

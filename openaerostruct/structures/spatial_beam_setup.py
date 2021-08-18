@@ -7,35 +7,42 @@ from openaerostruct.structures.fuel_vol import WingboxFuelVol
 
 
 class SpatialBeamSetup(om.Group):
-    """ Group that sets up the spatial beam components and assembles the
-        stiffness matrix."""
+    """Group that sets up the spatial beam components and assembles the
+    stiffness matrix."""
 
     def initialize(self):
-        self.options.declare('surface', types=dict)
+        self.options.declare("surface", types=dict)
 
     def setup(self):
-        surface = self.options['surface']
+        surface = self.options["surface"]
 
-        self.add_subsystem('nodes',
-                 ComputeNodes(surface=surface),
-                 promotes_inputs=['mesh'], promotes_outputs=['nodes'])
+        self.add_subsystem("nodes", ComputeNodes(surface=surface), promotes_inputs=["mesh"], promotes_outputs=["nodes"])
 
-        self.add_subsystem('assembly',
-                 AssembleKGroup(surface=surface),
-                 promotes_inputs=['A', 'Iy', 'Iz', 'J', 'nodes'], promotes_outputs=['local_stiff_transformed'])
+        self.add_subsystem(
+            "assembly",
+            AssembleKGroup(surface=surface),
+            promotes_inputs=["A", "Iy", "Iz", "J", "nodes"],
+            promotes_outputs=["local_stiff_transformed"],
+        )
 
-        self.add_subsystem('structural_mass',
-                 Weight(surface=surface),
-                 promotes_inputs=['A', 'nodes'],
-                 promotes_outputs=['structural_mass', 'element_mass'])
+        self.add_subsystem(
+            "structural_mass",
+            Weight(surface=surface),
+            promotes_inputs=["A", "nodes"],
+            promotes_outputs=["structural_mass", "element_mass"],
+        )
 
-        self.add_subsystem('structural_cg',
+        self.add_subsystem(
+            "structural_cg",
             StructuralCG(surface=surface),
-            promotes_inputs=['nodes', 'structural_mass', 'element_mass'],
-            promotes_outputs=['cg_location'])
+            promotes_inputs=["nodes", "structural_mass", "element_mass"],
+            promotes_outputs=["cg_location"],
+        )
 
-        if surface['fem_model_type'] == 'wingbox':
-            self.add_subsystem('fuel_vol',
+        if surface["fem_model_type"] == "wingbox":
+            self.add_subsystem(
+                "fuel_vol",
                 WingboxFuelVol(surface=surface),
-                promotes_inputs=['nodes', 'A_int'],
-                promotes_outputs=['fuel_vols'])
+                promotes_inputs=["nodes", "A_int"],
+                promotes_outputs=["fuel_vols"],
+            )

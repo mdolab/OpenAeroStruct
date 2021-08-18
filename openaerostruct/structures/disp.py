@@ -27,21 +27,21 @@ class Disp(om.ExplicitComponent):
     """
 
     def initialize(self):
-        self.options.declare('surface', types=dict)
+        self.options.declare("surface", types=dict)
 
     def setup(self):
-        surface = self.options['surface']
+        surface = self.options["surface"]
 
-        self.ny = surface['mesh'].shape[1]
+        self.ny = surface["mesh"].shape[1]
 
-        self.add_input('disp_aug', val=np.zeros(((self.ny+1)*6)), units='m')
-        self.add_output('disp', val=np.zeros((self.ny, 6)), units='m')
+        self.add_input("disp_aug", val=np.zeros(((self.ny + 1) * 6)), units="m")
+        self.add_output("disp", val=np.zeros((self.ny, 6)), units="m")
 
         n = self.ny * 6
         arange = np.arange((n))
-        self.declare_partials('disp', 'disp_aug', val=1., rows=arange, cols=arange)
+        self.declare_partials("disp", "disp_aug", val=1.0, rows=arange, cols=arange)
 
     def compute(self, inputs, outputs):
         # Obtain the relevant portions of disp_aug and store the reshaped
         # displacements in disp
-        outputs['disp'] = inputs['disp_aug'][:-6].reshape((-1, 6))
+        outputs["disp"] = inputs["disp_aug"][:-6].reshape((-1, 6))

@@ -31,31 +31,33 @@ class ComputeThrustLoads(om.ExplicitComponent):
     """
 
     def initialize(self):
-        self.options.declare('surface', types=dict)
+        self.options.declare("surface", types=dict)
 
     def setup(self):
-        self.surface = surface = self.options['surface']
-        self.ny = surface['mesh'].shape[1]
-        self.n_point_masses = surface['n_point_masses']
+        self.surface = surface = self.options["surface"]
+        self.ny = surface["mesh"].shape[1]
+        self.n_point_masses = surface["n_point_masses"]
 
-        self.add_input('point_mass_locations', val=np.zeros((self.n_point_masses, 3)), units='m')
-        self.add_input('engine_thrusts', val=np.zeros((self.n_point_masses)), units='N')
-        self.add_input('nodes', val=np.zeros((self.ny, 3)), units='m')
+        self.add_input("point_mass_locations", val=np.zeros((self.n_point_masses, 3)), units="m")
+        self.add_input("engine_thrusts", val=np.zeros((self.n_point_masses)), units="N")
+        self.add_input("nodes", val=np.zeros((self.ny, 3)), units="m")
 
-        self.add_output('nodal_weightings', val=np.zeros((self.n_point_masses, self.ny)))
-        self.add_output('loads_from_thrusts', val=np.zeros((self.ny, 6)), units='N') ## WARNING!!! UNITS ARE A MIXTURE OF N & N*m
+        self.add_output("nodal_weightings", val=np.zeros((self.n_point_masses, self.ny)))
+        self.add_output(
+            "loads_from_thrusts", val=np.zeros((self.ny, 6)), units="N"
+        )  ## WARNING!!! UNITS ARE A MIXTURE OF N & N*m
 
-        self.set_check_partial_options(wrt='*', method='fd')
-        self.declare_partials('*', '*', method='cs')
+        self.set_check_partial_options(wrt="*", method="fd")
+        self.declare_partials("*", "*", method="cs")
 
     def compute(self, inputs, outputs):
-        nodes = inputs['nodes']
-        nodal_weightings = outputs['nodal_weightings']
-        loads_from_engine_thrusts = outputs['loads_from_thrusts']
-        loads_from_engine_thrusts[:] = 0.
+        nodes = inputs["nodes"]
+        nodal_weightings = outputs["nodal_weightings"]
+        loads_from_engine_thrusts = outputs["loads_from_thrusts"]
+        loads_from_engine_thrusts[:] = 0.0
 
         # Loop through each point mass location, incrementing idx
-        for idx, point_mass_location in enumerate(inputs['point_mass_locations']):
+        for idx, point_mass_location in enumerate(inputs["point_mass_locations"]):
 
             # Get the vector between the nodes and the point mass location
             xyz_dist = point_mass_location - nodes
@@ -67,17 +69,17 @@ class ComputeThrustLoads(om.ExplicitComponent):
             # nodes. These weightings determine the amount of the force and
             # moment that each of the nodes receive.
             # nodal_weightings are scalars for each node.
-            dist10 = span_dist**10  # TODO: investigate effect of power here
+            dist10 = span_dist ** 10  # TODO: investigate effect of power here
             inv_dist10 = 1 / (dist10 + 1e-10)
             nodal_weightings[idx, :] = inv_dist10 / np.sum(inv_dist10)
 
             # Create an array with the inverse distance weighted vectors in the
             # forward chordwise direction (negative x). Each node has a 3-vector
             # in the forward direction whose magnitude is based on nodal_weightings.
-            directional_weightings = np.outer(nodal_weightings[idx, :], np.array([[-1., 0., 0.]]))
+            directional_weightings = np.outer(nodal_weightings[idx, :], np.array([[-1.0, 0.0, 0.0]]))
 
             # Compute the perceived weight due to the point mass on each node in N
-            weight_forces = directional_weightings * inputs['engine_thrusts'][idx]
+            weight_forces = directional_weightings * inputs["engine_thrusts"][idx]
 
             # Actually add the perceived weights to the load array
             loads_from_engine_thrusts[:, :3] += weight_forces

@@ -12,6 +12,7 @@ Ex: `plot_wing aero.db 1` a wider view than `plot_wing aero.db 5`.
 
 
 import sys
+
 major_python_version = sys.version_info[0]
 
 if major_python_version == 2:
@@ -25,12 +26,12 @@ import numpy as np
 from openmdao.recorders.sqlite_reader import SqliteCaseReader
 
 import matplotlib
-matplotlib.use('TkAgg')
-matplotlib.rcParams['lines.linewidth'] = 2
-matplotlib.rcParams['axes.edgecolor'] = 'gray'
-matplotlib.rcParams['axes.linewidth'] = 0.5
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg,\
-    NavigationToolbar2Tk
+
+matplotlib.use("TkAgg")
+matplotlib.rcParams["lines.linewidth"] = 2
+matplotlib.rcParams["axes.edgecolor"] = "gray"
+matplotlib.rcParams["axes.linewidth"] = 0.5
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
@@ -41,6 +42,7 @@ from traceback import print_exc
 #####################
 # User-set parameters
 #####################
+
 
 class Display(object):
     def __init__(self, args):
@@ -55,7 +57,7 @@ class Display(object):
         self.root = Tk.Tk()
         self.root.wm_title("Viewer")
 
-        self.f = plt.figure(dpi=100, figsize=(12, 6), facecolor='white')
+        self.f = plt.figure(dpi=100, figsize=(12, 6), facecolor="white")
         self.canvas = FigureCanvasTkAgg(self.f, master=self.root)
         self.canvas.get_tk_widget().pack(side=Tk.TOP, fill=Tk.BOTH, expand=1)
 
@@ -65,8 +67,7 @@ class Display(object):
         toolbar = NavigationToolbar2Tk(self.canvas, self.root)
         toolbar.update()
         self.canvas._tkcanvas.pack(side=Tk.TOP, fill=Tk.BOTH, expand=1)
-        self.ax = plt.subplot2grid((4, 8), (0, 0), rowspan=4,
-                                   colspan=4, projection='3d')
+        self.ax = plt.subplot2grid((4, 8), (0, 0), rowspan=4, colspan=4, projection="3d")
 
         self.num_iters = 0
         self.show_wing = True
@@ -91,16 +92,16 @@ class Display(object):
 
     def load_db(self):
         cr = self.case_reader = SqliteCaseReader(self.db_name, pre_load=True)
-        last_case = next(reversed(cr.get_cases('driver')))
+        last_case = next(reversed(cr.get_cases("driver")))
 
         names = []
 
         # Aero or aerostructural
         for key in cr.system_options.keys():
             try:
-                surfaces = cr.system_options[key]['component_options']['surfaces']
+                surfaces = cr.system_options[key]["component_options"]["surfaces"]
                 for surface in surfaces:
-                    names.append(surface['name'])
+                    names.append(surface["name"])
                 break
             except:
                 pass
@@ -109,14 +110,14 @@ class Display(object):
         if not names:
             for key in cr.system_options.keys():
                 try:
-                    surface = cr.system_options[key]['component_options']['surface']
-                    names = [surface['name']]
+                    surface = cr.system_options[key]["component_options"]["surface"]
+                    names = [surface["name"]]
                 except:
                     pass
 
         # figure out if this is an optimization and what the objective is
         obj_keys = last_case.get_objectives(scaled=False)
-        if obj_keys.keys(): # if its not an empty list
+        if obj_keys.keys():  # if its not an empty list
             self.opt = True
             self.obj_key = list(obj_keys.keys())[0]
         else:
@@ -145,19 +146,19 @@ class Display(object):
 
         pt_names = []
         for key in last_case.outputs:
-            if 'coupled' in key:
+            if "coupled" in key:
                 self.aerostruct = True
 
         for key in last_case.outputs:
-            if 'CL' in key:
-                pt_names.append(key.split('.')[0])
+            if "CL" in key:
+                pt_names.append(key.split(".")[0])
                 break
 
         if pt_names:
             self.pt_names = pt_names = list(set(pt_names))
             pt_name = pt_names[0]
         else:
-            pt_names = ['']
+            pt_names = [""]
         self.names = names
         n_names = len(names)
 
@@ -175,23 +176,22 @@ class Display(object):
                 if not self.aerostruct:
 
                     # A mesh exists for all types of cases
-                    self.mesh.append(case.outputs[name+'.mesh'])
+                    self.mesh.append(case.outputs[name + ".mesh"])
 
                     try:
-                        self.radius.append(np.squeeze(case.outputs[name+'.radius']))
-                        self.thickness.append(case.outputs[name+'.thickness'])
-                        self.vonmises.append(
-                            np.max(case.outputs[name+'.vonmises'], axis=1))
+                        self.radius.append(np.squeeze(case.outputs[name + ".radius"]))
+                        self.thickness.append(case.outputs[name + ".thickness"])
+                        self.vonmises.append(np.max(case.outputs[name + ".vonmises"], axis=1))
                         self.show_tube = True
                     except:
                         self.show_tube = False
                     try:
-                        self.def_mesh.append(case.outputs[name+'.mesh'])
-                        normals.append(case.outputs[pt_name + '.' + name + '.normals'])
-                        widths.append(case.outputs[pt_name + '.' + name + '.widths'])
-                        sec_forces.append(case.outputs[pt_name + '.aero_states.' + name + '_sec_forces'])
-                        self.CL.append(case.outputs[pt_name + '.' + name + '_perf.CL1'])
-                        self.S_ref.append(case.outputs[pt_name + '.' + name + '.S_ref'])
+                        self.def_mesh.append(case.outputs[name + ".mesh"])
+                        normals.append(case.outputs[pt_name + "." + name + ".normals"])
+                        widths.append(case.outputs[pt_name + "." + name + ".widths"])
+                        sec_forces.append(case.outputs[pt_name + ".aero_states." + name + "_sec_forces"])
+                        self.CL.append(case.outputs[pt_name + "." + name + "_perf.CL1"])
+                        self.S_ref.append(case.outputs[pt_name + "." + name + ".S_ref"])
                         self.show_wing = True
 
                     except:
@@ -199,52 +199,54 @@ class Display(object):
                 else:
                     self.show_wing, self.show_tube = True, True
 
-                    self.mesh.append(case.outputs[name+'.mesh'])
-                    self.radius.append(np.squeeze(case.outputs[name+'.radius']))
-                    self.thickness.append(case.outputs[name+'.thickness'])
+                    self.mesh.append(case.outputs[name + ".mesh"])
+                    self.radius.append(np.squeeze(case.outputs[name + ".radius"]))
+                    self.thickness.append(case.outputs[name + ".thickness"])
 
-                    vm_var_name = '{pt_name}.{surf_name}_perf.vonmises'.format(pt_name=pt_name, surf_name=name)
+                    vm_var_name = "{pt_name}.{surf_name}_perf.vonmises".format(pt_name=pt_name, surf_name=name)
                     self.vonmises.append(np.max(case.outputs[vm_var_name], axis=1))
 
-                    def_mesh_var_name = '{pt_name}.coupled.{surf_name}.def_mesh'.format(pt_name=pt_name, surf_name=name)
+                    def_mesh_var_name = "{pt_name}.coupled.{surf_name}.def_mesh".format(pt_name=pt_name, surf_name=name)
                     self.def_mesh.append(case.outputs[def_mesh_var_name])
 
-                    normals_var_name = '{pt_name}.coupled.{surf_name}.normals'.format(pt_name=pt_name, surf_name=name)
+                    normals_var_name = "{pt_name}.coupled.{surf_name}.normals".format(pt_name=pt_name, surf_name=name)
                     normals.append(case.outputs[normals_var_name])
 
-                    widths_var_name = '{pt_name}.coupled.{surf_name}.widths'.format(pt_name=pt_name, surf_name=name)
+                    widths_var_name = "{pt_name}.coupled.{surf_name}.widths".format(pt_name=pt_name, surf_name=name)
                     widths.append(case.outputs[widths_var_name])
-                    sec_forces.append(case.outputs[pt_name+'.coupled.aero_states.' + name + '_sec_forces'])
+                    sec_forces.append(case.outputs[pt_name + ".coupled.aero_states." + name + "_sec_forces"])
 
-                    cl_var_name = '{pt_name}.{surf_name}_perf.CL1'.format(pt_name=pt_name, surf_name=name)
+                    cl_var_name = "{pt_name}.{surf_name}_perf.CL1".format(pt_name=pt_name, surf_name=name)
                     self.CL.append(case.outputs[cl_var_name])
 
-                    S_ref_var_name = '{pt_name}.coupled.{surf_name}.aero_geom.S_ref'.format(pt_name=pt_name, surf_name=name)
+                    S_ref_var_name = "{pt_name}.coupled.{surf_name}.aero_geom.S_ref".format(
+                        pt_name=pt_name, surf_name=name
+                    )
                     self.S_ref.append(case.outputs[S_ref_var_name])
 
                 # Not the best solution for now, but this will ensure
                 # that this plots correctly even if twist isn't a desvar
                 try:
-                    if self.aerostruct: # twist is handled differently for aero and aerostruct
-                        self.twist.append(case.outputs[name+'.geometry.twist'])
+                    if self.aerostruct:  # twist is handled differently for aero and aerostruct
+                        self.twist.append(case.outputs[name + ".geometry.twist"])
                     else:
-                        self.twist.append(case.outputs[name+'.twist'])
+                        self.twist.append(case.outputs[name + ".twist"])
                 except:
                     ny = self.mesh[0].shape[1]
                     self.twist.append(np.atleast_2d(np.zeros(ny)))
 
             if self.show_wing:
-                alpha.append(case.outputs['alpha'] * np.pi / 180.)
-                rho.append(case.outputs['rho'])
-                v.append(case.outputs['v'])
+                alpha.append(case.outputs["alpha"] * np.pi / 180.0)
+                rho.append(case.outputs["rho"])
+                v.append(case.outputs["v"])
                 if self.show_tube:
-                    self.cg.append(case.outputs['{pt_name}.cg'.format(pt_name=pt_name)])
+                    self.cg.append(case.outputs["{pt_name}.cg".format(pt_name=pt_name)])
                 else:
-                    self.cg.append(case.outputs['cg'])
+                    self.cg.append(case.outputs["cg"])
 
             # If there are point masses, save them
             try:
-                self.point_mass_locations.append(case.outputs['point_mass_locations'])
+                self.point_mass_locations.append(case.outputs["point_mass_locations"])
                 self.point_masses_exist = True
             except:
                 self.point_masses_exist = False
@@ -255,9 +257,9 @@ class Display(object):
 
         if self.show_tube:
             for name in names:
-                surface = cr.system_options[name]['component_options']['surface']
-                self.yield_stress_dict[name + '_yield_stress'] = surface['yield']
-                self.fem_origin_dict[name + '_fem_origin'] = surface['fem_origin']
+                surface = cr.system_options[name]["component_options"]["surface"]
+                self.yield_stress_dict[name + "_yield_stress"] = surface["yield"]
+                self.fem_origin_dict[name + "_fem_origin"] = surface["fem_origin"]
 
         if self.opt:
             self.num_iters = np.max([int(len(self.mesh) / n_names), 1])
@@ -288,35 +290,35 @@ class Display(object):
                 new_normals = []
             for i in range(self.num_iters):
                 for j, name in enumerate(names):
-                    mirror_mesh = self.mesh[i*n_names+j].copy()
-                    mirror_mesh[:, :, 1] *= -1.
+                    mirror_mesh = self.mesh[i * n_names + j].copy()
+                    mirror_mesh[:, :, 1] *= -1.0
                     mirror_mesh = mirror_mesh[:, ::-1, :][:, 1:, :]
-                    new_mesh.append(np.hstack((self.mesh[i*n_names+j], mirror_mesh)))
+                    new_mesh.append(np.hstack((self.mesh[i * n_names + j], mirror_mesh)))
 
                     if self.show_tube:
-                        thickness = self.thickness[i*n_names+j]
+                        thickness = self.thickness[i * n_names + j]
                         new_thickness.append(np.hstack((thickness[0], thickness[0][::-1])))
-                        r = self.radius[i*n_names+j]
+                        r = self.radius[i * n_names + j]
                         new_r.append(np.hstack((r, r[::-1])))
-                        vonmises = self.vonmises[i*n_names+j]
+                        vonmises = self.vonmises[i * n_names + j]
                         new_vonmises.append(np.hstack((vonmises, vonmises[::-1])))
 
                     if self.show_wing:
-                        mirror_mesh = self.def_mesh[i*n_names+j].copy()
-                        mirror_mesh[:, :, 1] *= -1.
+                        mirror_mesh = self.def_mesh[i * n_names + j].copy()
+                        mirror_mesh[:, :, 1] *= -1.0
                         mirror_mesh = mirror_mesh[:, ::-1, :][:, 1:, :]
-                        new_def_mesh.append(np.hstack((self.def_mesh[i*n_names+j], mirror_mesh)))
+                        new_def_mesh.append(np.hstack((self.def_mesh[i * n_names + j], mirror_mesh)))
 
-                        mirror_normals = normals[i*n_names+j].copy()
+                        mirror_normals = normals[i * n_names + j].copy()
                         mirror_normals = mirror_normals[:, ::-1, :][:, 1:, :]
-                        new_normals.append(np.hstack((normals[i*n_names+j], mirror_normals)))
+                        new_normals.append(np.hstack((normals[i * n_names + j], mirror_normals)))
 
-                        mirror_forces = sec_forces[i*n_names+j].copy()
+                        mirror_forces = sec_forces[i * n_names + j].copy()
                         mirror_forces = mirror_forces[:, ::-1, :]
-                        new_sec_forces.append(np.hstack((sec_forces[i*n_names+j], mirror_forces)))
+                        new_sec_forces.append(np.hstack((sec_forces[i * n_names + j], mirror_forces)))
 
-                        new_widths.append(np.hstack((widths[i*n_names+j], widths[i*n_names+j][::-1])))
-                        twist = self.twist[i*n_names+j]
+                        new_widths.append(np.hstack((widths[i * n_names + j], widths[i * n_names + j][::-1])))
+                        twist = self.twist[i * n_names + j]
                         new_twist.append(np.hstack((twist[0], twist[0][::-1][1:])))
 
             self.mesh = new_mesh
@@ -333,36 +335,41 @@ class Display(object):
         if self.show_wing:
             for i in range(self.num_iters):
                 for j, name in enumerate(names):
-                    m_vals = self.mesh[i*n_names+j].copy()
+                    m_vals = self.mesh[i * n_names + j].copy()
                     a = alpha[i]
                     cosa = np.cos(a)
                     sina = np.sin(a)
 
-                    forces = np.sum(sec_forces[i*n_names+j], axis=0)
+                    forces = np.sum(sec_forces[i * n_names + j], axis=0)
 
-                    lift = (-forces[:, 0] * sina + forces[:, 2] * cosa) / \
-                        widths[i*n_names+j]/0.5/rho[i][0]/v[i][0]**2
+                    lift = (
+                        (-forces[:, 0] * sina + forces[:, 2] * cosa)
+                        / widths[i * n_names + j]
+                        / 0.5
+                        / rho[i][0]
+                        / v[i][0] ** 2
+                    )
 
-                    span = (m_vals[0, :, 1] / (m_vals[0, -1, 1] - m_vals[0, 0, 1]))
-                    span = span - (span[0] + .5)
+                    span = m_vals[0, :, 1] / (m_vals[0, -1, 1] - m_vals[0, 0, 1])
+                    span = span - (span[0] + 0.5)
 
                     lift_area = np.sum(lift * (span[1:] - span[:-1]))
 
-                    lift_ell = 4 * lift_area / np.pi * np.sqrt(1 - (2*span)**2)
+                    lift_ell = 4 * lift_area / np.pi * np.sqrt(1 - (2 * span) ** 2)
 
                     self.lift.append(lift)
                     self.lift_ell.append(lift_ell)
 
                     wingspan = np.abs(m_vals[0, -1, 1] - m_vals[0, 0, 1])
-                    self.AR.append(wingspan**2 / self.S_ref[i*n_names+j])
+                    self.AR.append(wingspan ** 2 / self.S_ref[i * n_names + j])
 
             # recenter def_mesh points for better viewing
             for i in range(self.num_iters):
                 center = np.zeros((3))
                 for j in range(n_names):
-                    center += np.mean(self.def_mesh[i*n_names+j], axis=(0,1))
+                    center += np.mean(self.def_mesh[i * n_names + j], axis=(0, 1))
                 for j in range(n_names):
-                    self.def_mesh[i*n_names+j] -= center / n_names
+                    self.def_mesh[i * n_names + j] -= center / n_names
                 self.cg[i] -= center / n_names
                 if self.point_masses_exist:
                     self.point_mass_locations[i] -= center / n_names
@@ -371,9 +378,9 @@ class Display(object):
         for i in range(self.num_iters):
             center = np.zeros((3))
             for j in range(n_names):
-                center += np.mean(self.mesh[i*n_names+j], axis=(0,1))
+                center += np.mean(self.mesh[i * n_names + j], axis=(0, 1))
             for j in range(n_names):
-                self.mesh[i*n_names+j] -= center / n_names
+                self.mesh[i * n_names + j] -= center / n_names
 
         if self.show_wing:
             self.min_twist, self.max_twist = self.get_list_limits(self.twist)
@@ -401,65 +408,63 @@ class Display(object):
         if self.show_wing:
 
             self.ax2.cla()
-            self.ax2.locator_params(axis='y',nbins=5)
-            self.ax2.locator_params(axis='x',nbins=3)
+            self.ax2.locator_params(axis="y", nbins=5)
+            self.ax2.locator_params(axis="x", nbins=3)
             self.ax2.set_ylim([self.min_twist, self.max_twist])
             self.ax2.set_xlim([-1, 1])
-            self.ax2.set_ylabel('twist', rotation="horizontal", ha="right")
+            self.ax2.set_ylabel("twist", rotation="horizontal", ha="right")
 
             self.ax3.cla()
-            self.ax3.text(0.05, 0.8, 'elliptical',
-                transform=self.ax3.transAxes, color='g')
-            self.ax3.locator_params(axis='y',nbins=4)
-            self.ax3.locator_params(axis='x',nbins=3)
+            self.ax3.text(0.05, 0.8, "elliptical", transform=self.ax3.transAxes, color="g")
+            self.ax3.locator_params(axis="y", nbins=4)
+            self.ax3.locator_params(axis="x", nbins=3)
             self.ax3.set_ylim([self.min_l, self.max_l])
             self.ax3.set_xlim([-1, 1])
-            self.ax3.set_ylabel('lift', rotation="horizontal", ha="right")
+            self.ax3.set_ylabel("lift", rotation="horizontal", ha="right")
 
         if self.show_tube:
 
             self.ax4.cla()
-            self.ax4.locator_params(axis='y',nbins=4)
-            self.ax4.locator_params(axis='x',nbins=3)
+            self.ax4.locator_params(axis="y", nbins=4)
+            self.ax4.locator_params(axis="x", nbins=3)
             self.ax4.set_ylim([self.min_t, self.max_t])
             self.ax4.set_xlim([-1, 1])
-            self.ax4.set_ylabel('thickness', rotation="horizontal", ha="right")
+            self.ax4.set_ylabel("thickness", rotation="horizontal", ha="right")
 
             self.ax5.cla()
-            max_yield_stress = 0.
+            max_yield_stress = 0.0
             for key, yield_stress in self.yield_stress_dict.items():
-                self.ax5.axhline(yield_stress, c='r', lw=2, ls='--')
+                self.ax5.axhline(yield_stress, c="r", lw=2, ls="--")
                 max_yield_stress = max(max_yield_stress, yield_stress)
 
-            self.ax5.locator_params(axis='y',nbins=4)
-            self.ax5.locator_params(axis='x',nbins=3)
+            self.ax5.locator_params(axis="y", nbins=4)
+            self.ax5.locator_params(axis="x", nbins=3)
             self.ax5.set_ylim([self.min_vm, self.max_vm])
-            self.ax5.set_ylim([0, max_yield_stress*1.1])
+            self.ax5.set_ylim([0, max_yield_stress * 1.1])
             self.ax5.set_xlim([-1, 1])
-            self.ax5.set_ylabel('von mises', rotation="horizontal", ha="right")
-            self.ax5.text(0.075, 1.1, 'failure limit',
-                transform=self.ax5.transAxes, color='r')
+            self.ax5.set_ylabel("von mises", rotation="horizontal", ha="right")
+            self.ax5.text(0.075, 1.1, "failure limit", transform=self.ax5.transAxes, color="r")
 
         n_names = len(self.names)
         for j, name in enumerate(self.names):
-            m_vals = self.mesh[self.curr_pos*n_names+j].copy()
+            m_vals = self.mesh[self.curr_pos * n_names + j].copy()
             span = m_vals[0, -1, 1] - m_vals[0, 0, 1]
             rel_span = (m_vals[0, :, 1] - m_vals[0, 0, 1]) * 2 / span - 1
             span_diff = ((m_vals[0, :-1, 1] + m_vals[0, 1:, 1]) / 2 - m_vals[0, 0, 1]) * 2 / span - 1
 
             if self.show_wing:
-                t_vals = self.twist[self.curr_pos*n_names+j].squeeze()
-                l_vals = self.lift[self.curr_pos*n_names+j]
-                le_vals = self.lift_ell[self.curr_pos*n_names+j]
-                self.ax2.plot(rel_span, t_vals, lw=2, c='b')
-                self.ax3.plot(rel_span, le_vals, '--', lw=2, c='g')
-                self.ax3.plot(span_diff, l_vals, lw=2, c='b')
+                t_vals = self.twist[self.curr_pos * n_names + j].squeeze()
+                l_vals = self.lift[self.curr_pos * n_names + j]
+                le_vals = self.lift_ell[self.curr_pos * n_names + j]
+                self.ax2.plot(rel_span, t_vals, lw=2, c="b")
+                self.ax3.plot(rel_span, le_vals, "--", lw=2, c="g")
+                self.ax3.plot(span_diff, l_vals, lw=2, c="b")
 
             if self.show_tube:
-                thick_vals = self.thickness[self.curr_pos*n_names+j]
-                vm_vals = self.vonmises[self.curr_pos*n_names+j]
-                self.ax4.plot(span_diff, thick_vals, lw=2, c='b')
-                self.ax5.plot(span_diff, vm_vals, lw=2, c='b')
+                thick_vals = self.thickness[self.curr_pos * n_names + j]
+                vm_vals = self.vonmises[self.curr_pos * n_names + j]
+                self.ax4.plot(span_diff, thick_vals, lw=2, c="b")
+                self.ax5.plot(span_diff, vm_vals, lw=2, c="b")
 
     def plot_wing(self):
 
@@ -470,12 +475,12 @@ class Display(object):
         dist = self.ax.dist
 
         for j, name in enumerate(self.names):
-            mesh0 = self.mesh[self.curr_pos*n_names+j].copy()
+            mesh0 = self.mesh[self.curr_pos * n_names + j].copy()
 
             self.ax.set_axis_off()
 
             if self.show_wing:
-                def_mesh0 = self.def_mesh[self.curr_pos*n_names+j]
+                def_mesh0 = self.def_mesh[self.curr_pos * n_names + j]
                 x = mesh0[:, :, 0]
                 y = mesh0[:, :, 1]
                 z = mesh0[:, :, 2]
@@ -492,27 +497,27 @@ class Display(object):
                             def_mesh0 = (def_mesh0 - mesh0) * 30 + def_mesh0
                         else:
                             def_mesh0 = (def_mesh0 - mesh0) * 2 + def_mesh0
-                        self.ax.plot_wireframe(x_def, y_def, z_def, rstride=1, cstride=1, color='k')
-                        self.ax.plot_wireframe(x, y, z, rstride=1, cstride=1, color='k', alpha=.3)
+                        self.ax.plot_wireframe(x_def, y_def, z_def, rstride=1, cstride=1, color="k")
+                        self.ax.plot_wireframe(x, y, z, rstride=1, cstride=1, color="k", alpha=0.3)
                     else:
-                        self.ax.plot_wireframe(x, y, z, rstride=1, cstride=1, color='k')
+                        self.ax.plot_wireframe(x, y, z, rstride=1, cstride=1, color="k")
                         self.c2.grid_forget()
                 except:
-                    self.ax.plot_wireframe(x, y, z, rstride=1, cstride=1, color='k')
+                    self.ax.plot_wireframe(x, y, z, rstride=1, cstride=1, color="k")
 
                 # cg = self.cg[self.curr_pos]
                 # self.ax.scatter(cg[0], cg[1], cg[2], s=100, color='r')
 
                 if self.point_masses_exist:
                     for point_mass_loc in self.point_mass_locations[self.curr_pos]:
-                        self.ax.scatter(point_mass_loc[0], point_mass_loc[1], point_mass_loc[2], s=100, color='b')
+                        self.ax.scatter(point_mass_loc[0], point_mass_loc[1], point_mass_loc[2], s=100, color="b")
                         if self.symmetry:
-                            self.ax.scatter(point_mass_loc[0], -point_mass_loc[1], point_mass_loc[2], s=100, color='b')
+                            self.ax.scatter(point_mass_loc[0], -point_mass_loc[1], point_mass_loc[2], s=100, color="b")
 
             if self.show_tube:
                 # Get the array of radii and thickness values for the FEM system
-                r0 = self.radius[self.curr_pos*n_names+j]
-                t0 = self.thickness[self.curr_pos*n_names+j]
+                r0 = self.radius[self.curr_pos * n_names + j]
+                t0 = self.thickness[self.curr_pos * n_names + j]
 
                 # Create a normalized array of values for the colormap
                 colors = t0
@@ -520,10 +525,10 @@ class Display(object):
 
                 # Set the number of rectangular patches on the cylinder
                 num_circ = 12
-                fem_origin = self.fem_origin_dict[name.split('.')[-1] + '_fem_origin']
+                fem_origin = self.fem_origin_dict[name.split(".")[-1] + "_fem_origin"]
 
                 # Create an array of angles around a circle
-                p = np.linspace(0, 2*np.pi, num_circ)
+                p = np.linspace(0, 2 * np.pi, num_circ)
 
                 # This is just to show the deformed mesh if selected
                 if self.show_wing:
@@ -538,7 +543,7 @@ class Display(object):
                     R, P = np.meshgrid(r, p)
 
                     # Get the X and Z coordinates for all points around the circle
-                    X, Z = R*np.cos(P), R*np.sin(P)
+                    X, Z = R * np.cos(P), R * np.sin(P)
 
                     # Get the chord and center location for the FEM system
                     chords = mesh0[-1, :, 0] - mesh0[0, :, 0]
@@ -546,13 +551,13 @@ class Display(object):
 
                     # Add the location of the element centers to the circle coordinates
                     X[:, 0] += comp[i]
-                    X[:, 1] += comp[i+1]
+                    X[:, 1] += comp[i + 1]
                     Z[:, 0] += fem_origin * (mesh0[-1, i, 2] - mesh0[0, i, 2]) + mesh0[0, i, 2]
-                    Z[:, 1] += fem_origin * (mesh0[-1, i+1, 2] - mesh0[0, i+1, 2]) + mesh0[0, i+1, 2]
+                    Z[:, 1] += fem_origin * (mesh0[-1, i + 1, 2] - mesh0[0, i + 1, 2]) + mesh0[0, i + 1, 2]
 
                     # Get the spanwise locations of the spar points
                     Y = np.empty(X.shape)
-                    Y[:] = np.linspace(mesh0[0, i, 1], mesh0[0, i+1, 1], 2)
+                    Y[:] = np.linspace(mesh0[0, i, 1], mesh0[0, i + 1, 1], 2)
 
                     # Set the colors of the rectangular surfaces
                     col = np.zeros(X.shape)
@@ -560,15 +565,13 @@ class Display(object):
 
                     # Plot the rectangular surfaces for each individual FEM element
                     try:
-                        self.ax.plot_surface(X, Y, Z, rstride=1, cstride=1,
-                            facecolors=cm.viridis(col), linewidth=0)
+                        self.ax.plot_surface(X, Y, Z, rstride=1, cstride=1, facecolors=cm.viridis(col), linewidth=0)
                     except:
-                        self.ax.plot_surface(X, Y, Z, rstride=1, cstride=1,
-                            facecolors=cm.coolwarm(col), linewidth=0)
+                        self.ax.plot_surface(X, Y, Z, rstride=1, cstride=1, facecolors=cm.coolwarm(col), linewidth=0)
 
-        lim = 0.
+        lim = 0.0
         for j in range(n_names):
-            ma = np.max(self.mesh[self.curr_pos*n_names+j], axis=(0,1,2))
+            ma = np.max(self.mesh[self.curr_pos * n_names + j], axis=(0, 1, 2))
             if ma > lim:
                 lim = ma
         lim /= float(self.zoom_scale)
@@ -579,14 +582,13 @@ class Display(object):
         # print objective value under the wing
         if self.opt:
             obj_val = self.obj[self.curr_pos]
-            self.ax.text2D(.15, .05, self.obj_key + ': {}'.format(obj_val),
-                transform=self.ax.transAxes, color='k')
+            self.ax.text2D(0.15, 0.05, self.obj_key + ": {}".format(obj_val), transform=self.ax.transAxes, color="k")
 
         self.ax.view_init(elev=el, azim=az)  # Reproduce view
         self.ax.dist = dist
 
     def save_video(self):
-        options = dict(title='Movie', artist='Matplotlib')
+        options = dict(title="Movie", artist="Matplotlib")
         writer = manimation.FFMpegWriter(fps=5, metadata=options, bitrate=3000)
 
         with writer.saving(self.f, "movie.mp4", 100):
@@ -610,7 +612,7 @@ class Display(object):
             for i in range(10):
                 writer.grab_frame()
 
-        print('Saved video to movie.mp4')
+        print("Saved video to movie.mp4")
 
     def update_graphs(self, e=None):
         if e is not None:
@@ -627,11 +629,11 @@ class Display(object):
 
         # Get the number of current iterations
         # Minus one because OpenMDAO uses 1-indexing
-        self.num_iters = len(cr.get_cases('driver'))
+        self.num_iters = len(cr.get_cases("driver"))
 
     def get_list_limits(self, input_list):
-        list_min = 1.e20
-        list_max = -1.e20
+        list_min = 1.0e20
+        list_max = -1.0e20
         for list_ in input_list:
             mi = np.min(list_)
             if mi < list_min:
@@ -641,7 +643,6 @@ class Display(object):
                 list_max = ma
 
         return list_min, list_max
-
 
     def auto_ref(self):
         """
@@ -661,9 +662,9 @@ class Display(object):
                 self.draw_slider()
 
     def save_image(self):
-        fname = 'fig' + '.pdf'
+        fname = "fig" + ".pdf"
         plt.savefig(fname)
-        print('Saved image to fig.pdf')
+        print("Saved image to fig.pdf")
 
     def quit(self):
         """
@@ -676,12 +677,14 @@ class Display(object):
         # scale to choose iteration to view
         self.w = Tk.Scale(
             self.options_frame,
-            from_=0, to=self.num_iters - 1,
+            from_=0,
+            to=self.num_iters - 1,
             orient=Tk.HORIZONTAL,
             resolution=1,
             font=tkFont.Font(family="Helvetica", size=10),
             command=self.update_graphs,
-            length=200)
+            length=200,
+        )
 
         if self.curr_pos == self.num_iters - 1 or self.curr_pos == 0 or self.var_ref.get():
             self.curr_pos = self.num_iters - 1
@@ -694,10 +697,7 @@ class Display(object):
         """
         font = tkFont.Font(family="Helvetica", size=10)
 
-        lab_font = Tk.Label(
-            self.options_frame,
-            text="Iteration number:",
-            font=font)
+        lab_font = Tk.Label(self.options_frame, text="Iteration number:", font=font)
         lab_font.grid(row=0, column=0, sticky=Tk.S)
 
         self.draw_slider()
@@ -710,7 +710,8 @@ class Display(object):
                 text="Show deformed mesh",
                 variable=self.show_def_mesh,
                 command=self.update_graphs,
-                font=font)
+                font=font,
+            )
             c1.grid(row=0, column=2, padx=5, sticky=Tk.W)
 
             # checkbox to exaggerate deformed mesh
@@ -720,7 +721,8 @@ class Display(object):
                 text="Exaggerate deformations",
                 variable=self.ex_def,
                 command=self.update_graphs,
-                font=font)
+                font=font,
+            )
             self.c2.grid(row=0, column=3, padx=5, sticky=Tk.W)
 
         # Option to automatically refresh history file
@@ -728,35 +730,21 @@ class Display(object):
         self.var_ref = Tk.IntVar()
         # self.var_ref.set(1)
         c11 = Tk.Checkbutton(
-            self.options_frame,
-            text="Automatically refresh",
-            variable=self.var_ref,
-            command=self.auto_ref,
-            font=font)
+            self.options_frame, text="Automatically refresh", variable=self.var_ref, command=self.auto_ref, font=font
+        )
         c11.grid(row=0, column=4, sticky=Tk.W, pady=6)
 
-        button = Tk.Button(
-            self.options_frame,
-            text='Save video',
-            command=self.save_video,
-            font=font)
+        button = Tk.Button(self.options_frame, text="Save video", command=self.save_video, font=font)
         button.grid(row=0, column=5, padx=5, sticky=Tk.W)
 
-        button4 = Tk.Button(
-            self.options_frame,
-            text='Save image',
-            command=self.save_image,
-            font=font)
+        button4 = Tk.Button(self.options_frame, text="Save image", command=self.save_image, font=font)
         button4.grid(row=0, column=6, padx=5, sticky=Tk.W)
 
-        button5 = Tk.Button(
-            self.options_frame,
-            text='Quit',
-            command=self.quit,
-            font=font)
+        button5 = Tk.Button(self.options_frame, text="Quit", command=self.quit, font=font)
         button5.grid(row=0, column=7, padx=5, sticky=Tk.W)
 
         self.auto_ref()
+
 
 def disp_plot(args=sys.argv):
     disp = Display(args)
@@ -765,5 +753,6 @@ def disp_plot(args=sys.argv):
     disp.root.protocol("WM_DELETE_WINDOW", disp.quit)
     Tk.mainloop()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     disp_plot()

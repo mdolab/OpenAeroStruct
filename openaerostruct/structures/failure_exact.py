@@ -20,23 +20,23 @@ class FailureExact(om.ExplicitComponent):
     """
 
     def initialize(self):
-        self.options.declare('surface', types=dict)
+        self.options.declare("surface", types=dict)
 
     def setup(self):
-        surface = self.options['surface']
+        surface = self.options["surface"]
 
-        if surface['fem_model_type'] == 'tube':
+        if surface["fem_model_type"] == "tube":
             num_failure_criteria = 2
-        elif surface['fem_model_type'] == 'wingbox':
+        elif surface["fem_model_type"] == "wingbox":
             num_failure_criteria = 4
 
-        self.ny = surface['mesh'].shape[1]
-        self.sigma = surface['yield']
+        self.ny = surface["mesh"].shape[1]
+        self.sigma = surface["yield"]
 
-        self.add_input('vonmises', val=np.zeros((self.ny-1, num_failure_criteria)), units='N/m**2')
-        self.add_output('failure', val=np.zeros((self.ny-1, num_failure_criteria)))
+        self.add_input("vonmises", val=np.zeros((self.ny - 1, num_failure_criteria)), units="N/m**2")
+        self.add_output("failure", val=np.zeros((self.ny - 1, num_failure_criteria)))
 
-        self.declare_partials('failure', 'vonmises', val=np.eye(((self.ny-1)*num_failure_criteria)) / self.sigma)
+        self.declare_partials("failure", "vonmises", val=np.eye(((self.ny - 1) * num_failure_criteria)) / self.sigma)
 
     def compute(self, inputs, outputs):
-        outputs['failure'] = inputs['vonmises'] / self.sigma - 1
+        outputs["failure"] = inputs["vonmises"] / self.sigma - 1

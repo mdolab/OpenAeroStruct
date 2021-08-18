@@ -23,27 +23,27 @@ class CreateRHS(om.ExplicitComponent):
     """
 
     def initialize(self):
-        self.options.declare('surface', types=dict)
+        self.options.declare("surface", types=dict)
 
     def setup(self):
-        surface = self.options['surface']
+        surface = self.options["surface"]
 
-        self.ny = surface['mesh'].shape[1]
+        self.ny = surface["mesh"].shape[1]
 
-        self.add_input('total_loads', val=np.zeros((self.ny, 6)), units='N')
-        self.add_output('forces', val=np.ones(((self.ny+1)*6)), units='N')
+        self.add_input("total_loads", val=np.zeros((self.ny, 6)), units="N")
+        self.add_output("forces", val=np.ones(((self.ny + 1) * 6)), units="N")
 
         n = self.ny * 6
         arange = np.arange((n))
-        self.declare_partials('forces', 'total_loads', val=1., rows=arange, cols=arange)
+        self.declare_partials("forces", "total_loads", val=1.0, rows=arange, cols=arange)
 
     def compute(self, inputs, outputs):
-        outputs['forces'][:] = 0.
+        outputs["forces"][:] = 0.0
 
         # Populate the right-hand side of the linear system using the
         # prescribed or computed loads
-        outputs['forces'][:6*self.ny] += inputs['total_loads'].reshape(self.ny*6)
+        outputs["forces"][: 6 * self.ny] += inputs["total_loads"].reshape(self.ny * 6)
 
         # Remove extremely small values from the RHS so the linear system
         # can more easily be solved
-        outputs['forces'][np.abs(outputs['forces']) < 1e-6] = 0.
+        outputs["forces"][np.abs(outputs["forces"]) < 1e-6] = 0.0

@@ -5,7 +5,6 @@ from openaerostruct.utils.testing import run_test, get_default_surfaces
 
 
 class Test(unittest.TestCase):
-
     def test(self):
         surfaces = get_default_surfaces()
 
@@ -14,5 +13,5 @@ class Test(unittest.TestCase):
         run_test(self, comp, complex_flag=True)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

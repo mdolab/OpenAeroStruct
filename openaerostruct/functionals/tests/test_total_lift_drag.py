@@ -5,17 +5,11 @@ import openmdao.api as om
 from openaerostruct.functionals.total_lift_drag import TotalLiftDrag
 from openaerostruct.utils.testing import run_test, get_default_surfaces
 
-class Test(unittest.TestCase):
 
+class Test(unittest.TestCase):
     def test(self):
-        wing_dict = {'name' : 'wing',
-                     'num_y' : 7,
-                     'num_x' : 2,
-                     'symmetry' : True}
-        tail_dict = {'name' : 'tail',
-                     'num_y' : 5,
-                     'num_x' : 3,
-                     'symmetry' : False}
+        wing_dict = {"name": "wing", "num_y": 7, "num_x": 2, "symmetry": True}
+        tail_dict = {"name": "tail", "num_y": 5, "num_x": 3, "symmetry": False}
 
         surfaces = [wing_dict, tail_dict]
 
@@ -34,15 +28,15 @@ class Test(unittest.TestCase):
 
         indep_var_comp = om.IndepVarComp()
 
-        indep_var_comp.add_output('S_ref_total', val=10., units='m**2')
+        indep_var_comp.add_output("S_ref_total", val=10.0, units="m**2")
 
-        group.add_subsystem('moment_calc', comp)
-        group.add_subsystem('indep_var_comp', indep_var_comp)
+        group.add_subsystem("moment_calc", comp)
+        group.add_subsystem("indep_var_comp", indep_var_comp)
 
-        group.connect('indep_var_comp.S_ref_total', 'moment_calc.S_ref_total')
+        group.connect("indep_var_comp.S_ref_total", "moment_calc.S_ref_total")
 
         run_test(self, group)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

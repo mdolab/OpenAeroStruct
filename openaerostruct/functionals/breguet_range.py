@@ -42,86 +42,80 @@ class BreguetRange(om.ExplicitComponent):
     """
 
     def initialize(self):
-        self.options.declare('surfaces', types=list)
+        self.options.declare("surfaces", types=list)
 
     def setup(self):
-        for surface in self.options['surfaces']:
-            name = surface['name']
-            self.add_input(name + '_structural_mass', val=1., units='kg')
+        for surface in self.options["surfaces"]:
+            name = surface["name"]
+            self.add_input(name + "_structural_mass", val=1.0, units="kg")
 
-        self.add_input('CT', val=0.25, units='1/s')
-        self.add_input('CL', val=0.7)
-        self.add_input('CD', val=0.02)
-        self.add_input('speed_of_sound', val=100., units='m/s')
-        self.add_input('R', val=3000., units='m')
-        self.add_input('Mach_number', val=1.2)
-        self.add_input('W0', val=200., units='kg')
+        self.add_input("CT", val=0.25, units="1/s")
+        self.add_input("CL", val=0.7)
+        self.add_input("CD", val=0.02)
+        self.add_input("speed_of_sound", val=100.0, units="m/s")
+        self.add_input("R", val=3000.0, units="m")
+        self.add_input("Mach_number", val=1.2)
+        self.add_input("W0", val=200.0, units="kg")
 
-        self.add_output('fuelburn', val=1., units='kg')
+        self.add_output("fuelburn", val=1.0, units="kg")
 
-        self.declare_partials('*', '*')
-        self.set_check_partial_options(wrt='*', method='cs', step=1e-30)
+        self.declare_partials("*", "*")
+        self.set_check_partial_options(wrt="*", method="cs", step=1e-30)
 
     def compute(self, inputs, outputs):
 
-        CT = inputs['CT']
-        a = inputs['speed_of_sound']
-        R = inputs['R']
-        M = inputs['Mach_number']
-        W0 = inputs['W0']
+        CT = inputs["CT"]
+        a = inputs["speed_of_sound"]
+        R = inputs["R"]
+        M = inputs["Mach_number"]
+        W0 = inputs["W0"]
 
         # Loop through the surfaces and add up the structural weights
         # to get the total structural weight.
-        Ws = 0.
-        for surface in self.options['surfaces']:
-            name = surface['name']
-            Ws += inputs[name + '_structural_mass']
+        Ws = 0.0
+        for surface in self.options["surfaces"]:
+            name = surface["name"]
+            Ws += inputs[name + "_structural_mass"]
 
-        CL = inputs['CL']
-        CD = inputs['CD']
+        CL = inputs["CL"]
+        CD = inputs["CD"]
 
-        outputs['fuelburn'] = (W0 + Ws) * (np.exp(R * CT / a / M * CD / CL) - 1)
+        outputs["fuelburn"] = (W0 + Ws) * (np.exp(R * CT / a / M * CD / CL) - 1)
 
     def compute_partials(self, inputs, partials):
 
-        CT = inputs['CT']
-        a = inputs['speed_of_sound']
-        R = inputs['R']
-        M = inputs['Mach_number']
-        W0 = inputs['W0']
+        CT = inputs["CT"]
+        a = inputs["speed_of_sound"]
+        R = inputs["R"]
+        M = inputs["Mach_number"]
+        W0 = inputs["W0"]
 
-        Ws = 0.
-        for surface in self.options['surfaces']:
-            name = surface['name']
-            Ws += inputs[name + '_structural_mass']
+        Ws = 0.0
+        for surface in self.options["surfaces"]:
+            name = surface["name"]
+            Ws += inputs[name + "_structural_mass"]
 
-        CL = inputs['CL']
-        CD = inputs['CD']
+        CL = inputs["CL"]
+        CD = inputs["CD"]
 
-        dfb_dCL = -(W0 + Ws) * np.exp(R * CT / a / M * CD / CL) \
-            * R * CT / a / M * CD / CL ** 2
-        dfb_dCD = (W0 + Ws) * np.exp(R * CT / a / M * CD / CL) \
-            * R * CT / a / M / CL
-        dfb_dCT = (W0 + Ws) * np.exp(R * CT / a / M * CD / CL) \
-            * R / a / M / CL * CD
-        dfb_dR = (W0 + Ws) * np.exp(R * CT / a / M * CD / CL) \
-            / a / M / CL * CD * CT
-        dfb_da = -(W0 + Ws) * np.exp(R * CT / a / M * CD / CL) \
-            * R * CT / a**2 / M * CD / CL
-        dfb_dM = -(W0 + Ws) * np.exp(R * CT / a / M * CD / CL) \
-            * R * CT / a / M**2 * CD / CL
+        dfb_dCL = -(W0 + Ws) * np.exp(R * CT / a / M * CD / CL) * R * CT / a / M * CD / CL ** 2
+        dfb_dCD = (W0 + Ws) * np.exp(R * CT / a / M * CD / CL) * R * CT / a / M / CL
+        dfb_dCT = (W0 + Ws) * np.exp(R * CT / a / M * CD / CL) * R / a / M / CL * CD
+        dfb_dR = (W0 + Ws) * np.exp(R * CT / a / M * CD / CL) / a / M / CL * CD * CT
+        dfb_da = -(W0 + Ws) * np.exp(R * CT / a / M * CD / CL) * R * CT / a ** 2 / M * CD / CL
+        dfb_dM = -(W0 + Ws) * np.exp(R * CT / a / M * CD / CL) * R * CT / a / M ** 2 * CD / CL
 
         dfb_dW = np.exp(R * CT / a / M * CD / CL) - 1
 
-        partials['fuelburn', 'CL'] = dfb_dCL
-        partials['fuelburn', 'CD'] = dfb_dCD
-        partials['fuelburn', 'CT'] = dfb_dCT
-        partials['fuelburn', 'speed_of_sound'] = dfb_da
-        partials['fuelburn', 'R'] = dfb_dR
-        partials['fuelburn', 'Mach_number'] = dfb_dM
-        partials['fuelburn', 'W0'] = dfb_dW
+        partials["fuelburn", "CL"] = dfb_dCL
+        partials["fuelburn", "CD"] = dfb_dCD
+        partials["fuelburn", "CT"] = dfb_dCT
+        partials["fuelburn", "speed_of_sound"] = dfb_da
+        partials["fuelburn", "R"] = dfb_dR
+        partials["fuelburn", "Mach_number"] = dfb_dM
+        partials["fuelburn", "W0"] = dfb_dW
 
-        for surface in self.options['surfaces']:
-            name = surface['name']
-            inp_name = name + '_structural_mass'
-            partials['fuelburn', inp_name] = dfb_dW
+        for surface in self.options["surfaces"]:
+            name = surface["name"]
+            inp_name = name + "_structural_mass"
+            partials["fuelburn", inp_name] = dfb_dW

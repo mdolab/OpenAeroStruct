@@ -20,26 +20,26 @@ class LoadTransfer(om.ExplicitComponent):
 
     Returns
     -------
-    loads[ny, 6] : numpy array 
+    loads[ny, 6] : numpy array
         Array containing the loads applied on the FEM component at each node,
         computed from the sectional forces. The first 3 columns are N, and the last 3 are N*m.
     """
 
     def initialize(self):
-        self.options.declare('surface', types=dict)
+        self.options.declare("surface", types=dict)
 
     def setup(self):
-        self.surface = surface = self.options['surface']
+        self.surface = surface = self.options["surface"]
 
-        self.nx = nx = surface['mesh'].shape[0]
-        self.ny = ny = surface['mesh'].shape[1]
+        self.nx = nx = surface["mesh"].shape[0]
+        self.ny = ny = surface["mesh"].shape[1]
 
-        if surface['fem_model_type'] == 'tube':
-            self.fem_origin = surface['fem_origin']
+        if surface["fem_model_type"] == "tube":
+            self.fem_origin = surface["fem_origin"]
         else:
-            y_upper = surface['data_y_upper']
-            x_upper = surface['data_x_upper']
-            y_lower = surface['data_y_lower']
+            y_upper = surface["data_y_upper"]
+            x_upper = surface["data_x_upper"]
+            y_lower = surface["data_y_lower"]
 
             fem_origin = (x_upper[0] * (y_upper[0] - y_lower[0]) + x_upper[-1] * (y_upper[-1] - y_lower[-1])) / (
                 (y_upper[0] - y_lower[0]) + (y_upper[-1] - y_lower[-1])
@@ -51,10 +51,10 @@ class LoadTransfer(om.ExplicitComponent):
         self.w1 = 0.25
         self.w2 = self.fem_origin
 
-        self.add_input('def_mesh', val=np.zeros((nx, ny, 3)), units='m')
-        self.add_input('sec_forces', val=np.zeros((nx - 1, ny - 1, 3)), units='N')
+        self.add_input("def_mesh", val=np.zeros((nx, ny, 3)), units="m")
+        self.add_input("sec_forces", val=np.zeros((nx - 1, ny - 1, 3)), units="N")
 
-        self.add_output('loads', val=np.zeros((self.ny, 6)), units='N')  ## WARNING!!! UNITS ARE A MIXTURE OF N & N*m
+        self.add_output("loads", val=np.zeros((self.ny, 6)), units="N")  ## WARNING!!! UNITS ARE A MIXTURE OF N & N*m
         # Well, technically the units of this load array are mixed.
         # The first 3 indices are N and the last 3 are N*m.
 
@@ -81,7 +81,7 @@ class LoadTransfer(om.ExplicitComponent):
         rows = np.concatenate([rows1, rows2])
         cols = np.concatenate([cols1, cols2])
 
-        self.declare_partials(of='loads', wrt='sec_forces', rows=rows, cols=cols)
+        self.declare_partials(of="loads", wrt="sec_forces", rows=rows, cols=cols)
 
         # Top diagonal is forward-most mesh point.
         base_row = np.array([3, 3, 4, 4, 5, 5])
@@ -110,23 +110,23 @@ class LoadTransfer(om.ExplicitComponent):
         rows = np.concatenate([rows1, rows2, rows3])
         cols = np.concatenate([cols1, cols2, cols3])
 
-        self.declare_partials(of='loads', wrt='def_mesh', rows=rows, cols=cols)
+        self.declare_partials(of="loads", wrt="def_mesh", rows=rows, cols=cols)
 
         # -------------------------------- Check Partial Options-------------------------------------
-        self.set_check_partial_options('*', method='cs', step=1e-40)
+        self.set_check_partial_options("*", method="cs", step=1e-40)
 
     def compute(self, inputs, outputs):
-        mesh = inputs['def_mesh']  # [nx, ny, 3]
-        sec_forces = inputs['sec_forces']
+        mesh = inputs["def_mesh"]  # [nx, ny, 3]
+        sec_forces = inputs["sec_forces"]
 
         # ----- 1. Forces transfer -----
         # Only need to zero out the part that is assigned via +=
-        outputs['loads'][-1, :] = 0.0
+        outputs["loads"][-1, :] = 0.0
 
         # The aero force acting on each panel is evenly transferred to the adjacent FEM nodes.
         sec_forces_sum = 0.5 * np.sum(sec_forces, axis=0)
-        outputs['loads'][:-1, :3] = sec_forces_sum
-        outputs['loads'][1:, :3] += sec_forces_sum
+        outputs["loads"][:-1, :3] = sec_forces_sum
+        outputs["loads"][1:, :3] += sec_forces_sum
 
         # ----- 2. Moments transfer -----
         # Compute the aerodynamic centers at the quarter-chord point of each panel
@@ -148,12 +148,12 @@ class LoadTransfer(om.ExplicitComponent):
         moment_out = np.sum(np.cross(a_pts - s_pts[1:, :], 0.5 * sec_forces), axis=0)
 
         # Total moment at each node = sum of moment_in and moment_out, except the edge nodes.s
-        outputs['loads'][:-1, 3:] = moment_in
-        outputs['loads'][1:, 3:] += moment_out
+        outputs["loads"][:-1, 3:] = moment_in
+        outputs["loads"][1:, 3:] += moment_out
 
     def compute_partials(self, inputs, partials):
-        mesh = inputs['def_mesh']
-        sec_forces = inputs['sec_forces']
+        mesh = inputs["def_mesh"]
+        sec_forces = inputs["sec_forces"]
         ny = self.ny
         nx = self.nx
         w1 = self.w1
@@ -193,13 +193,13 @@ class LoadTransfer(om.ExplicitComponent):
         dmom_dsec_out[:, :, 5] = diff_out[:, :, 0]
 
         id1 = 6 * (ny - 1) * (nx - 1)
-        partials['loads', 'sec_forces'][:id1] = 0.5
+        partials["loads", "sec_forces"][:id1] = 0.5
 
         id2 = id1 * 2
         dmom_dsec_in = dmom_dsec_in.flatten()
         dmom_dsec_out = dmom_dsec_out.flatten()
-        partials['loads', 'sec_forces'][id1:id2] = dmom_dsec_in
-        partials['loads', 'sec_forces'][id2:] = dmom_dsec_out
+        partials["loads", "sec_forces"][id1:id2] = dmom_dsec_in
+        partials["loads", "sec_forces"][id2:] = dmom_dsec_out
 
         # ----- 2. dmoment__dmesh -----
         # Sensitivity of moments at inner nodes wrt diff_in (upper diagonal)
@@ -239,25 +239,25 @@ class LoadTransfer(om.ExplicitComponent):
         idw = idy * (nx - 1)
 
         # Need to zero out what's there because our assignments overlap.
-        partials['loads', 'def_mesh'][:] = 0.0
+        partials["loads", "def_mesh"][:] = 0.0
 
         # Upper diagonal blocks
-        partials['loads', 'def_mesh'][:idw] = dmom_ddiff_in * ((1 - w1) * 0.25)
-        partials['loads', 'def_mesh'][idy:idx] += dmom_ddiff_in * (w1 * 0.25)
+        partials["loads", "def_mesh"][:idw] = dmom_ddiff_in * ((1 - w1) * 0.25)
+        partials["loads", "def_mesh"][idy:idx] += dmom_ddiff_in * (w1 * 0.25)
 
         # Lower Diagonal blocks
         id2 = idx * 2
-        partials['loads', 'def_mesh'][idx : idx + idw] = dmom_ddiff_out * ((1 - w1) * 0.25)
-        partials['loads', 'def_mesh'][idx + idy : id2] += dmom_ddiff_out * (w1 * 0.25)
+        partials["loads", "def_mesh"][idx : idx + idw] = dmom_ddiff_out * ((1 - w1) * 0.25)
+        partials["loads", "def_mesh"][idx + idy : id2] += dmom_ddiff_out * (w1 * 0.25)
 
         # Central Diagonal blocks
         idy = 6 * ny
         idz = 6 * (nx - 1)
         id3 = id2 + idw + idz
-        partials['loads', 'def_mesh'][id2:id3] = dmon_ddiff_diag * ((1 - w1) * 0.25)
-        partials['loads', 'def_mesh'][id2 : id2 + idy] -= dmon_ddiff_diag_sum * ((1 - w2) * 0.5)
+        partials["loads", "def_mesh"][id2:id3] = dmon_ddiff_diag * ((1 - w1) * 0.25)
+        partials["loads", "def_mesh"][id2 : id2 + idy] -= dmon_ddiff_diag_sum * ((1 - w2) * 0.5)
 
         id2 += idy
         id3 += idy
-        partials['loads', 'def_mesh'][id2:id3] += dmon_ddiff_diag * (w1 * 0.25)
-        partials['loads', 'def_mesh'][id3 - idy : id3] -= dmon_ddiff_diag_sum * (w2 * 0.5)
+        partials["loads", "def_mesh"][id2:id3] += dmon_ddiff_diag * (w1 * 0.25)
+        partials["loads", "def_mesh"][id3 - idy : id3] -= dmon_ddiff_diag_sum * (w2 * 0.5)

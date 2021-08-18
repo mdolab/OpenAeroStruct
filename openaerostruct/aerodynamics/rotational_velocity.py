@@ -29,10 +29,10 @@ class RotationalVelocity(om.ExplicitComponent):
     """
 
     def initialize(self):
-        self.options.declare('surfaces', types=list)
+        self.options.declare("surfaces", types=list)
 
     def setup(self):
-        surfaces = self.options['surfaces']
+        surfaces = self.options["surfaces"]
 
         system_size = 0
         sizes = []
@@ -40,7 +40,7 @@ class RotationalVelocity(om.ExplicitComponent):
         # Loop through each surface and cumulatively add the number of panels
         # to obtain system_size.
         for surface in surfaces:
-            mesh = surface['mesh']
+            mesh = surface["mesh"]
             nx = mesh.shape[0]
             ny = mesh.shape[1]
             size = (nx - 1) * (ny - 1)
@@ -49,72 +49,72 @@ class RotationalVelocity(om.ExplicitComponent):
 
         self.system_size = system_size
 
-        self.add_input('coll_pts', shape=(system_size, 3), units='m')
-        self.add_input('omega', val=np.zeros((3, )), units='rad/s')
-        self.add_input('cg', val=np.ones((3, )), units='m')
+        self.add_input("coll_pts", shape=(system_size, 3), units="m")
+        self.add_input("omega", val=np.zeros((3,)), units="rad/s")
+        self.add_input("cg", val=np.ones((3,)), units="m")
 
-        self.add_output('rotational_velocities', shape=(system_size, 3), units='m/s')
+        self.add_output("rotational_velocities", shape=(system_size, 3), units="m/s")
 
         # First Half of cross product
         row = np.array([1, 2, 0])
         col = np.array([2, 0, 1])
 
-        rows1 = np.tile(row, system_size) + np.repeat(3*np.arange(system_size), 3)
+        rows1 = np.tile(row, system_size) + np.repeat(3 * np.arange(system_size), 3)
         cols1 = np.tile(col, system_size)
 
         # Second Half of cross product
-        rows2 = np.tile(col, system_size) + np.repeat(3*np.arange(system_size), 3)
+        rows2 = np.tile(col, system_size) + np.repeat(3 * np.arange(system_size), 3)
         cols2 = np.tile(row, system_size)
 
         rows = np.concatenate([rows1, rows2])
         cols = np.concatenate([cols1, cols2])
 
-        self.declare_partials('rotational_velocities', 'cg', rows=rows, cols=cols)
-        self.declare_partials('rotational_velocities', 'omega', rows=rows, cols=cols)
+        self.declare_partials("rotational_velocities", "cg", rows=rows, cols=cols)
+        self.declare_partials("rotational_velocities", "omega", rows=rows, cols=cols)
 
-        cols1 = np.tile(col, system_size) + np.repeat(3*np.arange(system_size), 3)
-        cols2 = np.tile(row, system_size) + np.repeat(3*np.arange(system_size), 3)
+        cols1 = np.tile(col, system_size) + np.repeat(3 * np.arange(system_size), 3)
+        cols2 = np.tile(row, system_size) + np.repeat(3 * np.arange(system_size), 3)
         cols = np.concatenate([cols1, cols2])
 
-        self.declare_partials('rotational_velocities', 'coll_pts', rows=rows, cols=cols)
+        self.declare_partials("rotational_velocities", "coll_pts", rows=rows, cols=cols)
 
     def compute(self, inputs, outputs):
         # Angular velocity term
-        cg = inputs['cg']
-        omega = inputs['omega']
-        c_pts = inputs['coll_pts']
+        cg = inputs["cg"]
+        omega = inputs["omega"]
+        c_pts = inputs["coll_pts"]
 
         for j in np.arange(c_pts.shape[0]):
             r = c_pts[j, :] - cg
 
-            outputs['rotational_velocities'][j, :] = np.cross(omega, r)
+            outputs["rotational_velocities"][j, :] = np.cross(omega, r)
 
     def compute_partials(self, inputs, J):
-        cg = inputs['cg']
-        omega = inputs['omega']
-        c_pts = inputs['coll_pts']
+        cg = inputs["cg"]
+        omega = inputs["omega"]
+        c_pts = inputs["coll_pts"]
 
-        surfaces = self.options['surfaces']
+        surfaces = self.options["surfaces"]
         idx = jdx = 0
         ii = self.system_size * 3
         for j, surface in enumerate(surfaces):
-            mesh = surface['mesh']
+            mesh = surface["mesh"]
             nx = mesh.shape[0]
             ny = mesh.shape[1]
             size = (nx - 1) * (ny - 1)
 
-            r = c_pts[jdx:jdx+size, :] - cg
+            r = c_pts[jdx : jdx + size, :] - cg
 
             # Cross product derivatives organized so we can tile a variable directly into slices
 
-            J['rotational_velocities', 'cg'][idx:idx+size*3] = np.tile(omega, size)
-            J['rotational_velocities', 'cg'][idx+ii:idx+ii+size*3] = -np.tile(omega, size)
+            J["rotational_velocities", "cg"][idx : idx + size * 3] = np.tile(omega, size)
+            J["rotational_velocities", "cg"][idx + ii : idx + ii + size * 3] = -np.tile(omega, size)
 
-            J['rotational_velocities', 'coll_pts'][idx:idx+size*3] = -np.tile(omega, size)
-            J['rotational_velocities', 'coll_pts'][idx+ii:idx+ii+size*3] = np.tile(omega, size)
+            J["rotational_velocities", "coll_pts"][idx : idx + size * 3] = -np.tile(omega, size)
+            J["rotational_velocities", "coll_pts"][idx + ii : idx + ii + size * 3] = np.tile(omega, size)
 
-            J['rotational_velocities', 'omega'][idx:idx+size*3] = r.flatten()
-            J['rotational_velocities', 'omega'][idx+ii:idx+ii+size*3] = -r.flatten()
+            J["rotational_velocities", "omega"][idx : idx + size * 3] = r.flatten()
+            J["rotational_velocities", "omega"][idx + ii : idx + ii + size * 3] = -r.flatten()
 
-            idx += 3*size
+            idx += 3 * size
             jdx += size
