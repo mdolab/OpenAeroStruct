@@ -1,6 +1,6 @@
 [flake8]
 # OpenAeroStruct-specific settings in addition to the MDO Lab standard config file.
-exclude =
+extend-exclude =
     openaerostruct/docs/conf.py,
     openaerostruct/docs/aero_walkthrough/part*.py,
     openaerostruct/docs/_utils/docutil.py,

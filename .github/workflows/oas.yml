@@ -72,8 +72,8 @@ jobs:
     - name: Code style (flake8)
       run: |
         pip install flake8==3.9.2
-        git clone https://github.com/mdolab/.github.git mdolab_github_config
-        python -m flake8 openaerostruct --append-config ./mdolab_github_config/.flake8 --append-config ./.github/.flake8_oas_specific --count --show-source --statistics
+        wget https://raw.githubusercontent.com/mdolab/.github/master/.flake8 -O .flake8_mdolab
+        python -m flake8 openaerostruct --append-config .flake8_mdolab --append-config .github/.flake8_oas_specific --count --show-source --statistics
 
   # --- code format check by black ---
   black:
