@@ -105,8 +105,9 @@ jobs:
 
     # build docs
     - name: Build docs
+      env:
+        OPENMDAO_USE_MPI: False
       run: |
-        export OPENMDAO_USE_MPI=False
         python -m pip install --upgrade pip wheel
         pip install .[docs]
         cd openaerostruct/docs
