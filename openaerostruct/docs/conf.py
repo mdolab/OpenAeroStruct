@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.abspath(".."))
 sys.path.insert(0, os.path.abspath("."))
 
 # Only mock the ones that don't import.
-MOCK_MODULES = ['h5py', 'petsc4py', 'pyoptsparse', 'pyDOE2',]
+MOCK_MODULES = ["h5py", "petsc4py", "pyoptsparse", "pyDOE2"]
 for mod_name in MOCK_MODULES:
     try:
         importlib.import_module(mod_name)
