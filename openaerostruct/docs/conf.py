@@ -6,7 +6,6 @@ import sys
 import openmdao
 import importlib
 from unittest.mock import Mock
-from openmdao.docs.config_params import MOCK_MODULES
 from openmdao.docutils import do_monkeypatch, embed_code, embed_options, embed_compare
 from openmdao.docs._exts import embed_n2
 from openaerostruct.docs._utils.generate_sourcedocs import generate_docs
@@ -17,6 +16,7 @@ sys.path.insert(0, os.path.abspath(".."))
 sys.path.insert(0, os.path.abspath("."))
 
 # Only mock the ones that don't import.
+MOCK_MODULES = ['h5py', 'petsc4py', 'pyoptsparse', 'pyDOE2',]
 for mod_name in MOCK_MODULES:
     try:
         importlib.import_module(mod_name)
