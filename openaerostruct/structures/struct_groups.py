@@ -16,41 +16,40 @@ class SpatialBeamAlone(om.Group):
     def setup(self):
         surface = self.options["surface"]
 
-        tube_promotes = []
-        tube_inputs = []
-
-        if "thickness_cp" in surface.keys():
-            tube_promotes.append("thickness_cp")
-        if "radius_cp" not in surface.keys():
-            tube_inputs = ["mesh", "t_over_c"]
-
         self.add_subsystem(
             "geometry", Geometry(surface=surface), promotes_inputs=[], promotes_outputs=["mesh", "t_over_c"]
         )
 
         if surface["fem_model_type"] == "tube":
+            tube_promotes_input = []
+            tube_promotes_output = ["A", "Iy", "Iz", "J", "radius", "thickness"]
+            if "thickness_cp" in surface.keys():
+                tube_promotes_input.append("thickness_cp")
+            if "radius_cp" not in surface.keys():
+                tube_promotes_input = tube_promotes_input + ["mesh", "t_over_c"]
+
             self.add_subsystem(
                 "tube_group",
                 TubeGroup(surface=surface),
-                promotes_inputs=tube_inputs,
-                promotes_outputs=["A", "Iy", "Iz", "J", "radius", "thickness"] + tube_promotes,
+                promotes_inputs=tube_promotes_input,
+                promotes_outputs=tube_promotes_output,
             )
         elif surface["fem_model_type"] == "wingbox":
-            wingbox_promotes = []
+            wingbox_promotes_in = ["mesh", "t_over_c"]
+            wingbox_promotes_out = ["A", "Iy", "Iz", "J", "Qz", "A_enc", "A_int", "htop", "hbottom", "hfront", "hrear"]
             if "skin_thickness_cp" in surface.keys() and "spar_thickness_cp" in surface.keys():
-                wingbox_promotes.append("skin_thickness_cp")
-                wingbox_promotes.append("spar_thickness_cp")
-                wingbox_promotes.append("skin_thickness")
-                wingbox_promotes.append("spar_thickness")
+                wingbox_promotes_in.append("skin_thickness_cp")
+                wingbox_promotes_in.append("spar_thickness_cp")
+                wingbox_promotes_out.append("skin_thickness")
+                wingbox_promotes_out.append("spar_thickness")
             elif "skin_thickness_cp" in surface.keys() or "spar_thickness_cp" in surface.keys():
                 raise NameError("Please have both skin and spar thickness as design variables, not one or the other.")
 
             self.add_subsystem(
                 "wingbox_group",
                 WingboxGroup(surface=surface),
-                promotes_inputs=["mesh", "t_over_c"],
-                promotes_outputs=["A", "Iy", "Iz", "J", "Qz", "A_enc", "A_int", "htop", "hbottom", "hfront", "hrear"]
-                + wingbox_promotes,
+                promotes_inputs=wingbox_promotes_in,
+                promotes_outputs=wingbox_promotes_out,
             )
         else:
             raise NameError("Please select a valid `fem_model_type` from either `tube` or `wingbox`.")

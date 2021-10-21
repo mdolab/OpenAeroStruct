@@ -26,56 +26,58 @@ class AerostructGeometry(om.Group):
         DVGeo = self.options["DVGeo"]
         connect_geom_DVs = self.options["connect_geom_DVs"]
 
-        geom_promotes = []
+        geom_promotes_in = []
+        geom_promotes_out = ["mesh"]
 
         if connect_geom_DVs:
             if "twist_cp" in surface.keys():
-                geom_promotes.append("twist_cp")
+                geom_promotes_in.append("twist_cp")
             if "t_over_c_cp" in surface.keys():
-                geom_promotes.append("t_over_c")
+                geom_promotes_out.append("t_over_c")
             if "sweep" in surface.keys():
-                geom_promotes.append("sweep")
+                geom_promotes_out.append("sweep")
             if "taper" in surface.keys():
-                geom_promotes.append("taper")
+                geom_promotes_out.append("taper")
             if "mx" in surface.keys():
-                geom_promotes.append("shape")
+                geom_promotes_out.append("shape")
 
         self.add_subsystem(
             "geometry",
             Geometry(surface=surface, DVGeo=DVGeo, connect_geom_DVs=connect_geom_DVs),
-            promotes_inputs=[],
-            promotes_outputs=["mesh"] + geom_promotes,
+            promotes_inputs=geom_promotes_in,
+            promotes_outputs=geom_promotes_out,
         )
 
         if surface["fem_model_type"] == "tube":
-            tube_promotes = []
-            tube_inputs = []
-            if "thickness_cp" in surface.keys() and connect_geom_DVs:
-                tube_promotes.append("thickness_cp")
+            tube_promotes_input = []
+            tube_promotes_output = ["A", "Iy", "Iz", "J", "radius", "thickness"]
+            if "thickness_cp" in surface.keys():
+                tube_promotes_input.append("thickness_cp")
             if "radius_cp" not in surface.keys():
-                tube_inputs = ["mesh", "t_over_c"]
+                tube_promotes_input = tube_promotes_input + ["mesh", "t_over_c"]
+
             self.add_subsystem(
                 "tube_group",
-                TubeGroup(surface=surface, connect_geom_DVs=connect_geom_DVs),
-                promotes_inputs=tube_inputs,
-                promotes_outputs=["A", "Iy", "Iz", "J", "radius", "thickness"] + tube_promotes,
+                TubeGroup(surface=surface),
+                promotes_inputs=tube_promotes_input,
+                promotes_outputs=tube_promotes_output,
             )
         elif surface["fem_model_type"] == "wingbox":
-            wingbox_promotes = []
+            wingbox_promotes_in = ["mesh", "t_over_c"]
+            wingbox_promotes_out = ["A", "Iy", "Iz", "J", "Qz", "A_enc", "A_int", "htop", "hbottom", "hfront", "hrear"]
             if "skin_thickness_cp" in surface.keys() and "spar_thickness_cp" in surface.keys():
-                wingbox_promotes.append("skin_thickness_cp")
-                wingbox_promotes.append("spar_thickness_cp")
-                wingbox_promotes.append("skin_thickness")
-                wingbox_promotes.append("spar_thickness")
+                wingbox_promotes_in.append("skin_thickness_cp")
+                wingbox_promotes_in.append("spar_thickness_cp")
+                wingbox_promotes_out.append("skin_thickness")
+                wingbox_promotes_out.append("spar_thickness")
             elif "skin_thickness_cp" in surface.keys() or "spar_thickness_cp" in surface.keys():
                 raise NameError("Please have both skin and spar thickness as design variables, not one or the other.")
 
             self.add_subsystem(
                 "wingbox_group",
                 WingboxGroup(surface=surface),
-                promotes_inputs=["mesh", "t_over_c"],
-                promotes_outputs=["A", "Iy", "Iz", "J", "Qz", "A_enc", "A_int", "htop", "hbottom", "hfront", "hrear"]
-                + wingbox_promotes,
+                promotes_inputs=wingbox_promotes_in,
+                promotes_outputs=wingbox_promotes_out,
             )
         else:
             raise NameError("Please select a valid `fem_model_type` from either `tube` or `wingbox`.")

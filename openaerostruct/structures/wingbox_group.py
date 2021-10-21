@@ -14,13 +14,6 @@ class WingboxGroup(om.Group):
         surface = self.options["surface"]
         ny = surface["mesh"].shape[1]
 
-        if "spar_thickness_cp" in surface.keys() or "skin_thickness_cp" in surface.keys():
-            # Add independent variables that do not belong to a specific component
-            indep_var_comp = om.IndepVarComp()
-
-            # Add structural components to the surface-specific group
-            self.add_subsystem("indep_vars", indep_var_comp, promotes=["*"])
-
         if "spar_thickness_cp" in surface.keys():
             n_cp = len(surface["spar_thickness_cp"])
             # Add bspline components for active bspline geometric variables.
@@ -34,7 +27,7 @@ class WingboxGroup(om.Group):
                 promotes_outputs=["spar_thickness"],
             )
             comp.add_spline(y_cp_name="spar_thickness_cp", y_interp_name="spar_thickness", y_units="m")
-            indep_var_comp.add_output("spar_thickness_cp", val=surface["spar_thickness_cp"], units="m")
+            self.set_input_defaults("spar_thickness_cp", val=surface["spar_thickness_cp"], units="m")
 
         if "skin_thickness_cp" in surface.keys():
             n_cp = len(surface["skin_thickness_cp"])
@@ -49,7 +42,7 @@ class WingboxGroup(om.Group):
                 promotes_outputs=["skin_thickness"],
             )
             comp.add_spline(y_cp_name="skin_thickness_cp", y_interp_name="skin_thickness", y_units="m")
-            indep_var_comp.add_output("skin_thickness_cp", val=surface["skin_thickness_cp"], units="m")
+            self.set_input_defaults("skin_thickness_cp", val=surface["skin_thickness_cp"], units="m")
 
         self.add_subsystem(
             "wingbox_geometry",
