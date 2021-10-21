@@ -21,7 +21,7 @@ class Geometry(om.Group):
 
     def setup(self):
         surface = self.options["surface"]
-        connect_geom_DVs = self.options["connect_geom_DVs"]
+        ### connect_geom_DVs = self.options["connect_geom_DVs"]
 
         # Get the surface name and create a group to contain components
         # only for this surface
@@ -70,7 +70,6 @@ class Geometry(om.Group):
         if self.options["DVGeo"]:
             from openaerostruct.geometry.ffd_component import GeometryMesh
 
-            ### indep_var_comp.add_output("shape", val=np.zeros((surface["mx"], surface["my"])), units="m")
             self.set_input_defaults("shape", val=np.zeros((surface["mx"], surface["my"])), units="m")
 
             if "t_over_c_cp" in surface.keys():
@@ -87,7 +86,6 @@ class Geometry(om.Group):
                 )
                 comp.add_spline(y_cp_name="t_over_c_cp", y_interp_name="t_over_c")
                 if surface.get("t_over_c_cp_dv", True):
-                    ### indep_var_comp.add_output("t_over_c_cp", val=surface["t_over_c_cp"])
                     self.set_input_defaults("t_over_c_cp", val=surface["t_over_c_cp"])
 
             self.add_subsystem(
@@ -119,7 +117,6 @@ class Geometry(om.Group):
 
                 # Since default assumption is that we want tail rotation as a design variable, add this to allow for trimmed drag polar where the tail rotation should not be a design variable
                 if surface.get("twist_cp_dv", True):
-                    ### indep_var_comp.add_output("twist_cp", val=surface["twist_cp"], units="deg")
                     self.set_input_defaults("twist_cp", val=surface["twist_cp"], units="deg")
 
             if "chord_cp" in surface.keys():
@@ -137,7 +134,6 @@ class Geometry(om.Group):
                 comp.add_spline(y_cp_name="chord_cp", y_interp_name="chord", y_units="m")
                 bsp_inputs.append("chord")
                 if surface.get("chord_cp_dv", True):
-                    ### indep_var_comp.add_output("chord_cp", val=surface["chord_cp"], units="m")
                     self.set_input_defaults("chord_cp", val=surface["chord_cp"], units="m")
 
             if "t_over_c_cp" in surface.keys():
@@ -154,7 +150,6 @@ class Geometry(om.Group):
                 )
                 comp.add_spline(y_cp_name="t_over_c_cp", y_interp_name="t_over_c")
                 if surface.get("t_over_c_cp_dv", True):
-                    ### indep_var_comp.add_output("t_over_c_cp", val=surface["t_over_c_cp"])
                     self.set_input_defaults("t_over_c_cp", val=surface["t_over_c_cp"])
 
             if "xshear_cp" in surface.keys():
@@ -172,7 +167,6 @@ class Geometry(om.Group):
                 comp.add_spline(y_cp_name="xshear_cp", y_interp_name="xshear", y_units="m")
                 bsp_inputs.append("xshear")
                 if surface.get("xshear_cp_dv", True):
-                    ### indep_var_comp.add_output("xshear_cp", val=surface["xshear_cp"], units="m")
                     self.set_input_defaults("xshear_cp", val=surface["xshear_cp"], units="m")
 
             if "yshear_cp" in surface.keys():
@@ -190,7 +184,6 @@ class Geometry(om.Group):
                 comp.add_spline(y_cp_name="yshear_cp", y_interp_name="yshear", y_units="m")
                 bsp_inputs.append("yshear")
                 if surface.get("yshear_cp_dv", True):
-                    ### indep_var_comp.add_output("yshear_cp", val=surface["yshear_cp"], units="m")
                     self.set_input_defaults("yshear_cp", val=surface["yshear_cp"], units="m")
 
             if "zshear_cp" in surface.keys():
