@@ -46,7 +46,7 @@ class TubeGroup(om.Group):
             )
             comp.add_spline(y_cp_name="radius_cp", y_interp_name="radius", y_units="m")
             self.set_input_defaults("radius_cp", val=surface["radius_cp"], units="m")
-            
+
         else:
             self.add_subsystem(
                 "radius_comp",
