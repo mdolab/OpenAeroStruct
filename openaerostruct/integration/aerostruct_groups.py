@@ -51,7 +51,7 @@ class AerostructGeometry(om.Group):
         if surface["fem_model_type"] == "tube":
             tube_promotes_input = []
             tube_promotes_output = ["A", "Iy", "Iz", "J", "radius", "thickness"]
-            if "thickness_cp" in surface.keys():
+            if "thickness_cp" in surface.keys() and connect_geom_DVs:
                 tube_promotes_input.append("thickness_cp")
             if "radius_cp" not in surface.keys():
                 tube_promotes_input = tube_promotes_input + ["mesh", "t_over_c"]

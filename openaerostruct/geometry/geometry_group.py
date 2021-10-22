@@ -21,7 +21,7 @@ class Geometry(om.Group):
 
     def setup(self):
         surface = self.options["surface"]
-        ### connect_geom_DVs = self.options["connect_geom_DVs"]
+        connect_geom_DVs = self.options["connect_geom_DVs"]
 
         # Get the surface name and create a group to contain components
         # only for this surface
@@ -85,7 +85,7 @@ class Geometry(om.Group):
                     promotes_outputs=["t_over_c"],
                 )
                 comp.add_spline(y_cp_name="t_over_c_cp", y_interp_name="t_over_c")
-                if surface.get("t_over_c_cp_dv", True):
+                if surface.get("t_over_c_cp_dv", True) and connect_geom_DVs:
                     self.set_input_defaults("t_over_c_cp", val=surface["t_over_c_cp"])
 
             self.add_subsystem(
@@ -116,7 +116,7 @@ class Geometry(om.Group):
                 bsp_inputs.append("twist")
 
                 # Since default assumption is that we want tail rotation as a design variable, add this to allow for trimmed drag polar where the tail rotation should not be a design variable
-                if surface.get("twist_cp_dv", True):
+                if surface.get("twist_cp_dv", True) and connect_geom_DVs:
                     self.set_input_defaults("twist_cp", val=surface["twist_cp"], units="deg")
 
             if "chord_cp" in surface.keys():
@@ -133,7 +133,7 @@ class Geometry(om.Group):
                 )
                 comp.add_spline(y_cp_name="chord_cp", y_interp_name="chord", y_units="m")
                 bsp_inputs.append("chord")
-                if surface.get("chord_cp_dv", True):
+                if surface.get("chord_cp_dv", True) and connect_geom_DVs:
                     self.set_input_defaults("chord_cp", val=surface["chord_cp"], units="m")
 
             if "t_over_c_cp" in surface.keys():
@@ -149,7 +149,7 @@ class Geometry(om.Group):
                     promotes_outputs=["t_over_c"],
                 )
                 comp.add_spline(y_cp_name="t_over_c_cp", y_interp_name="t_over_c")
-                if surface.get("t_over_c_cp_dv", True):
+                if surface.get("t_over_c_cp_dv", True) and connect_geom_DVs:
                     self.set_input_defaults("t_over_c_cp", val=surface["t_over_c_cp"])
 
             if "xshear_cp" in surface.keys():
@@ -166,7 +166,7 @@ class Geometry(om.Group):
                 )
                 comp.add_spline(y_cp_name="xshear_cp", y_interp_name="xshear", y_units="m")
                 bsp_inputs.append("xshear")
-                if surface.get("xshear_cp_dv", True):
+                if surface.get("xshear_cp_dv", True) and connect_geom_DVs:
                     self.set_input_defaults("xshear_cp", val=surface["xshear_cp"], units="m")
 
             if "yshear_cp" in surface.keys():
@@ -200,27 +200,27 @@ class Geometry(om.Group):
                 )
                 comp.add_spline(y_cp_name="zshear_cp", y_interp_name="zshear", y_units="m")
                 bsp_inputs.append("zshear")
-                if surface.get("zshear_cp_dv", True):
+                if surface.get("zshear_cp_dv", True) and connect_geom_DVs:
                     self.set_input_defaults("zshear_cp", val=surface["zshear_cp"], units="m")
 
             if "sweep" in surface.keys():
                 bsp_inputs.append("sweep")
-                if surface.get("sweep_dv", True):
+                if surface.get("sweep_dv", True) and connect_geom_DVs:
                     self.set_input_defaults("sweep", val=surface["sweep"], units="deg")
 
             if "span" in surface.keys():
                 bsp_inputs.append("span")
-                if surface.get("span_dv", True):
+                if surface.get("span_dv", True) and connect_geom_DVs:
                     self.set_input_defaults("span", val=surface["span"], units="m")
 
             if "dihedral" in surface.keys():
                 bsp_inputs.append("dihedral")
-                if surface.get("dihedral_dv", True):
+                if surface.get("dihedral_dv", True) and connect_geom_DVs:
                     self.set_input_defaults("dihedral", val=surface["dihedral"], units="deg")
 
             if "taper" in surface.keys():
                 bsp_inputs.append("taper")
-                if surface.get("taper_dv", True):
+                if surface.get("taper_dv", True) and connect_geom_DVs:
                     self.set_input_defaults("taper", val=surface["taper"])
 
             self.add_subsystem(
