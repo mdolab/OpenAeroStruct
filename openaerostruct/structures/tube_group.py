@@ -10,10 +10,10 @@ class TubeGroup(om.Group):
     def initialize(self):
         self.options.declare("surface", types=dict)
         self.options.declare("connect_geom_DVs", default=True)
+        # The option "connect_geom_DVs" is no longer necessary, but we still keep it to be backward compatible.
 
     def setup(self):
         surface = self.options["surface"]
-        connect_geom_DVs = self.options["connect_geom_DVs"]
         mesh = surface["mesh"]
         ny = mesh.shape[1]
 
@@ -30,8 +30,7 @@ class TubeGroup(om.Group):
                 promotes_outputs=["thickness"],
             )
             comp.add_spline(y_cp_name="thickness_cp", y_interp_name="thickness", y_units="m")
-            if connect_geom_DVs:
-                self.set_input_defaults("thickness_cp", val=surface["thickness_cp"], units="m")
+            self.set_input_defaults("thickness_cp", val=surface["thickness_cp"], units="m")
 
         if "radius_cp" in surface.keys():
             n_cp = len(surface["radius_cp"])
@@ -46,8 +45,8 @@ class TubeGroup(om.Group):
                 promotes_outputs=["radius"],
             )
             comp.add_spline(y_cp_name="radius_cp", y_interp_name="radius", y_units="m")
-            if connect_geom_DVs:
-                self.set_input_defaults("radius_cp", val=surface["radius_cp"], units="m")
+            self.set_input_defaults("radius_cp", val=surface["radius_cp"], units="m")
+            
         else:
             self.add_subsystem(
                 "radius_comp",

@@ -30,6 +30,10 @@ class AerostructGeometry(om.Group):
         geom_promotes_out = ["mesh"]
 
         if connect_geom_DVs:
+            # If connect_geom_DVs is true, then we promote all of the geometric design variables.
+            # If it's false, then we do not promote them, which means that the geometry at each AeroStruct point is independent,
+            # and the user can provide different values at each point.
+            # This is useful when you want to have morphing DVs, such as twist or span, that are different at each point in a multipoint scheme.
             if "twist_cp" in surface.keys():
                 geom_promotes_in.append("twist_cp")
             if "t_over_c_cp" in surface.keys():
@@ -39,11 +43,11 @@ class AerostructGeometry(om.Group):
             if "taper" in surface.keys():
                 geom_promotes_out.append("taper")
             if "mx" in surface.keys():
-                geom_promotes_out.append("shape")
+                geom_promotes_in.append("shape")
 
         self.add_subsystem(
             "geometry",
-            Geometry(surface=surface, DVGeo=DVGeo, connect_geom_DVs=connect_geom_DVs),
+            Geometry(surface=surface, DVGeo=DVGeo),
             promotes_inputs=geom_promotes_in,
             promotes_outputs=geom_promotes_out,
         )
