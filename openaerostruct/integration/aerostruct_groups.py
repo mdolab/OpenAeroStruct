@@ -39,9 +39,9 @@ class AerostructGeometry(om.Group):
             if "t_over_c_cp" in surface.keys():
                 geom_promotes_out.append("t_over_c")
             if "sweep" in surface.keys():
-                geom_promotes_out.append("sweep")
+                geom_promotes_in.append("sweep")
             if "taper" in surface.keys():
-                geom_promotes_out.append("taper")
+                geom_promotes_in.append("taper")
             if "mx" in surface.keys():
                 geom_promotes_in.append("shape")
 
