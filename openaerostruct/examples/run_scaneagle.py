@@ -188,7 +188,8 @@ prob.driver.recording_options["includes"] = ["*"]
 
 # Setup problem and add design variables.
 # Here we're varying twist, thickness, sweep, and alpha.
-prob.model.add_design_var("wing.twist_cp", lower=-5.0, upper=10.0)
+# Lock the root of the wing at a 5 deg twist
+prob.model.add_design_var("wing.twist_cp", lower=np.array([-5., -5., 5.]), upper=np.array([15., 15., 5.]))
 prob.model.add_design_var("wing.thickness_cp", lower=0.001, upper=0.01, scaler=1e3)
 prob.model.add_design_var("wing.sweep", lower=10.0, upper=30.0)
 prob.model.add_design_var("alpha", lower=-10.0, upper=10.0)
@@ -202,7 +203,6 @@ prob.model.add_constraint("AS_point_0.L_equals_W", equals=0.0)
 # Instead of using an equality constraint here, we have to give it a little
 # wiggle room to make SLSQP work correctly.
 prob.model.add_constraint("AS_point_0.CM", lower=-0.001, upper=0.001)
-prob.model.add_constraint("wing.twist_cp", lower=np.array([-1e20, -1e20, 5.0]), upper=np.array([1e20, 1e20, 5.0]))
 
 # We're trying to minimize fuel burn
 prob.model.add_objective("AS_point_0.fuelburn", scaler=0.1)
