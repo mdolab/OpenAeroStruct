@@ -175,12 +175,6 @@ class Test(unittest.TestCase):
         prob.driver = om.ScipyOptimizeDriver()
         prob.driver.options["tol"] = 1e-7
 
-        # Record data from this problem so we can visualize it using plot_wing
-        recorder = om.SqliteRecorder("aerostruct.db")
-        prob.driver.add_recorder(recorder)
-        prob.driver.recording_options["record_derivatives"] = True
-        prob.driver.recording_options["includes"] = ["*"]
-
         # Setup problem and add design variables.
         # Here we're varying twist, thickness, sweep, and alpha.
         # Lock the root of the wing at a 5 deg twist
