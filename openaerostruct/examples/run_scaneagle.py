@@ -189,7 +189,7 @@ prob.driver.recording_options["includes"] = ["*"]
 # Setup problem and add design variables.
 # Here we're varying twist, thickness, sweep, and alpha.
 # Lock the root of the wing at a 5 deg twist
-prob.model.add_design_var("wing.twist_cp", lower=np.array([-5., -5., 5.]), upper=np.array([15., 15., 5.]))
+prob.model.add_design_var("wing.twist_cp", lower=np.array([-5.0, -5.0, 5.0]), upper=np.array([15.0, 15.0, 5.0]))
 prob.model.add_design_var("wing.thickness_cp", lower=0.001, upper=0.01, scaler=1e3)
 prob.model.add_design_var("wing.sweep", lower=10.0, upper=30.0)
 prob.model.add_design_var("alpha", lower=-10.0, upper=10.0)
