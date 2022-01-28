@@ -20,7 +20,7 @@ Then from within the OpenAeroStruct folder, pip install the package:
 
 This will automatically install the dependencies: numpy, scipy, matplotlib, and OpenMDAO.
 
-The latest version of OpenAeroStruct supports OpenMDAO version 3.2.0 to 3.10.0; 3.10.0 is recommended.
+The latest version of OpenAeroStruct supports OpenMDAO version 3.2.0 to 3.16.0; 3.16.0 is recommended.
 If you wish to install a specific version of OpenMDAO, follow the instructions at https://github.com/OpenMDAO/OpenMDAO/.
 
 If you are unfamiliar with OpenMDAO and wish to modify the internals of OpenAeroStruct, you should examine the OpenMDAO documentation at http://openmdao.org/twodocs/versions/latest/index.html. The tutorials provided with OpenMDAO are helpful to understand the basics of using OpenMDAO to solve an optimization problem.
