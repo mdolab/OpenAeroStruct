@@ -46,7 +46,7 @@ class LoadTransfer(om.ExplicitComponent):
             )
 
             # For some reason, surface data is complex in some tests.
-            self.fem_origin = np.float(fem_origin)
+            self.fem_origin = float(fem_origin)
 
         self.w1 = 0.25
         self.w2 = self.fem_origin
