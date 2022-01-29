@@ -1,5 +1,4 @@
 import numpy as np
-from numpy import matlib
 
 import openmdao.api as om
 
@@ -132,7 +131,7 @@ class LiftCoeff2D(om.ExplicitComponent):
         #                        tmp[ind] / widths[jy] / ( 0.5 * rho * v**2 * chord[jy] )
         #
         partials["Cl", "sec_forces"] = np.ravel(
-            matlib.repmat(np.einsum("i,j,j->ji", tmp, 1 / widths, 1 / (0.5 * rho * v ** 2 * chord)), self.nx - 1, 1)
+            np.tile(np.einsum("i,j,j->ji", tmp, 1 / widths, 1 / (0.5 * rho * v ** 2 * chord)), (self.nx - 1, 1))
         )
 
         # Analytic derivatives for widths
