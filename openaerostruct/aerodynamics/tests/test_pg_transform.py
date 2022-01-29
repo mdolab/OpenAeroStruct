@@ -78,7 +78,7 @@ class Test(unittest.TestCase):
 
         check = prob.check_partials(compact_print=True, method="cs", step=1e-40)
 
-        assert_check_partials(check, atol=1e-5, rtol=1e-5)
+        assert_check_partials(check, atol=4e-5, rtol=4e-5)
 
     def test_scale_from_pg(self):
         surfaces = get_default_surfaces()
