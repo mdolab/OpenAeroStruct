@@ -205,9 +205,9 @@ class ScaleToPrandtlGlauert(om.ExplicitComponent):
         rotational = self.options["rotational"]
 
         M = inputs["Mach_number"]
-        betaPG = np.sqrt(1 - M ** 2)
-        fact = np.array([1.0, betaPG, betaPG], M.dtype).flatten()
-        fact_norm = np.array([betaPG, 1.0, 1.0], M.dtype).flatten()
+        betaPG = np.sqrt(1 - M ** 2)[0]
+        fact = np.array([1.0, betaPG, betaPG], M.dtype)
+        fact_norm = np.array([betaPG, 1.0, 1.0], M.dtype)
         num_eval_pts = inputs["bound_vecs_w_frame"].shape[0]
 
         partials["bound_vecs_pg", "bound_vecs_w_frame"] = np.tile(fact, num_eval_pts)
@@ -215,7 +215,7 @@ class ScaleToPrandtlGlauert(om.ExplicitComponent):
         partials["force_pts_pg", "force_pts_w_frame"] = np.tile(fact, num_eval_pts)
 
         if rotational:
-            fact_rot = np.array([betaPG ** 2, betaPG, betaPG], M.dtype).flatten()
+            fact_rot = np.array([betaPG ** 2, betaPG, betaPG], M.dtype)
             partials["rotational_velocities_pg", "rotational_velocities_w_frame"] = np.tile(fact_rot, num_eval_pts)
 
         for surface in self.options["surfaces"]:
