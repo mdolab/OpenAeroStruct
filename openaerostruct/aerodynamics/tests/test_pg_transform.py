@@ -97,7 +97,7 @@ class Test(unittest.TestCase):
 
         check = prob.check_partials(compact_print=True, method="cs", step=1e-40)
 
-        assert_check_partials(check, atol=1e-5, rtol=1e-5)
+        assert_check_partials(check, atol=2e-5, rtol=2e-5)
 
 
 if __name__ == "__main__":

@@ -97,7 +97,7 @@ class Test(unittest.TestCase):
         prob.run_model()
 
         check = prob.check_partials(compact_print=True, step=1e-7)
-        assert_check_partials(check, atol=5e-5, rtol=1e-5)
+        assert_check_partials(check, atol=7.5e-5, rtol=1e-5)
 
     def test_derivs_projected(self):
         # This is a much richer test with the following attributes:
