@@ -17,7 +17,7 @@ class Test(unittest.TestCase):
         group = om.Group()
 
         ivc = om.IndepVarComp()
-        ivc.add_output("nodes", val=np.random.random_sample((ny, 3)), units='m')
+        ivc.add_output("nodes", val=np.random.random_sample((ny, 3)), units="m")
 
         comp = Weight(surface=surface)
 
