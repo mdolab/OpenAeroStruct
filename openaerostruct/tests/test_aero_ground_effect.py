@@ -11,7 +11,7 @@ class Test(unittest.TestCase):
         from openaerostruct.geometry.geometry_group import Geometry
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
 
-        from openmdao.utils.assert_utils import assert_rel_error
+        from openmdao.utils.assert_utils import assert_near_equal
         from openaerostruct.utils.testing import assert_check_totals
 
         # Create a dictionary to store options about the mesh
@@ -112,15 +112,15 @@ class Test(unittest.TestCase):
         prob.setup()
 
         prob.run_driver()
-        assert_rel_error(self, prob["aero_point_0.wing_perf.CD"][0], 0.033389699871650073, 1e-6)
-        assert_rel_error(self, prob["aero_point_0.wing_perf.CL"][0], 0.5, 1e-6)
-        assert_rel_error(self, prob["aero_point_0.CM"][1], -1.7885550372372376, 1e-6)
+        assert_near_equal(prob["aero_point_0.wing_perf.CD"][0], 0.033389699871650073, 1e-6)
+        assert_near_equal(prob["aero_point_0.wing_perf.CL"][0], 0.5, 1e-6)
+        assert_near_equal(prob["aero_point_0.CM"][1], -1.7885550372372376, 1e-6)
 
         prob["height_agl"] = 10.0
         prob.run_driver()
-        assert_rel_error(self, prob["aero_point_0.wing_perf.CD"][0], 0.029145613948518813, 1e-6)
-        assert_rel_error(self, prob["aero_point_0.wing_perf.CL"][0], 0.5, 1e-6)
-        assert_rel_error(self, prob["aero_point_0.CM"][1], -1.7719184423417516, 1e-6)
+        assert_near_equal(prob["aero_point_0.wing_perf.CD"][0], 0.029145613948518813, 1e-6)
+        assert_near_equal(prob["aero_point_0.wing_perf.CL"][0], 0.5, 1e-6)
+        assert_near_equal(prob["aero_point_0.CM"][1], -1.7719184423417516, 1e-6)
 
         totals = prob.check_totals(
             of=["aero_point_0.wing_perf.CD", "aero_point_0.wing_perf.CL"],

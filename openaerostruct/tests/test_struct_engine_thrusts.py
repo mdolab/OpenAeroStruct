@@ -1,4 +1,4 @@
-from openmdao.utils.assert_utils import assert_rel_error
+from openmdao.utils.assert_utils import assert_near_equal
 import unittest
 import numpy as np
 
@@ -66,7 +66,7 @@ class Test(unittest.TestCase):
 
         prob.run_model()
 
-        assert_rel_error(self, prob["vonmises"][-1, 0], 300352.285697, 1e-4)
+        assert_near_equal(prob["vonmises"][-1, 0], 300352.285697, 1e-4)
 
     def test_multiple_masses(self):
 
@@ -125,7 +125,7 @@ class Test(unittest.TestCase):
 
         prob.run_model()
 
-        assert_rel_error(self, prob["vonmises"][-1, 0], 137509.870021, 1e-4)
+        assert_near_equal(prob["vonmises"][-1, 0], 137509.870021, 1e-4)
 
 
 if __name__ == "__main__":

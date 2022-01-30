@@ -1,4 +1,4 @@
-from openmdao.utils.assert_utils import assert_rel_error
+from openmdao.utils.assert_utils import assert_near_equal
 import unittest
 import numpy as np
 from openaerostruct.utils.constants import grav_constant
@@ -194,7 +194,7 @@ class Test(unittest.TestCase):
         # filename += '_' + str(surf_dict['mx']) + '_' + str(surf_dict['my']) + '.mesh'
         # np.save(filename, mesh)
 
-        assert_rel_error(self, prob["AS_point_0.fuelburn"][0], 97680.8964568375, 1e-3)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 97680.8964568375, 1e-3)
 
 
 if __name__ == "__main__":

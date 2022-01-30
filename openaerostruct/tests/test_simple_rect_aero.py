@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 import openmdao.api as om
-from openmdao.utils.assert_utils import assert_rel_error
+from openmdao.utils.assert_utils import assert_near_equal
 
 from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.geometry.geometry_group import Geometry
@@ -106,11 +106,11 @@ class Test(unittest.TestCase):
 
         prob.run_model()
 
-        assert_rel_error(self, prob["aero_point_0.wing_perf.CD"][0], 0.03487336411850356, 1e-6)
-        assert_rel_error(self, prob["aero_point_0.wing_perf.CL"][0], 0.4615561217697067, 1e-6)
-        assert_rel_error(self, prob["aero_point_0.CM"][0], 0.0, 1e-6)
-        assert_rel_error(self, prob["aero_point_0.CM"][1], -0.11507021674483686, 1e-6)
-        assert_rel_error(self, prob["aero_point_0.CM"][2], 0.0, 1e-6)
+        assert_near_equal(prob["aero_point_0.wing_perf.CD"][0], 0.03487336411850356, 1e-6)
+        assert_near_equal(prob["aero_point_0.wing_perf.CL"][0], 0.4615561217697067, 1e-6)
+        assert_near_equal(prob["aero_point_0.CM"][0], 0.0, 1e-6)
+        assert_near_equal(prob["aero_point_0.CM"][1], -0.11507021674483686, 1e-6)
+        assert_near_equal(prob["aero_point_0.CM"][2], 0.0, 1e-6)
 
 
 if __name__ == "__main__":

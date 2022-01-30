@@ -1,4 +1,4 @@
-from openmdao.utils.assert_utils import assert_rel_error
+from openmdao.utils.assert_utils import assert_near_equal
 import unittest
 import numpy as np
 
@@ -432,9 +432,9 @@ class Test(unittest.TestCase):
         # print(prob['AS_point_0.fuelburn'][0])
         # print(prob['wing.structural_mass'][0]/1.25)
         # print(prob['wing.geometry.span'])
-        assert_rel_error(self, prob["AS_point_0.fuelburn"][0], 84387.962001, 1e-5)
-        assert_rel_error(self, prob["wing.structural_mass"][0] / 1.25, 13974.684240, 1e-5)
-        assert_rel_error(self, prob["wing.geometry.span"][0], 60.0, 1e-5)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 84387.962001, 1e-5)
+        assert_near_equal(prob["wing.structural_mass"][0] / 1.25, 13974.684240, 1e-5)
+        assert_near_equal(prob["wing.geometry.span"][0], 60.0, 1e-5)
 
 
 if __name__ == "__main__":

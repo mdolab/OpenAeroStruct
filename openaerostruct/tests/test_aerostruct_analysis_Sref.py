@@ -1,4 +1,4 @@
-from openmdao.utils.assert_utils import assert_rel_error
+from openmdao.utils.assert_utils import assert_near_equal
 import unittest
 import numpy as np
 
@@ -144,8 +144,8 @@ class Test(unittest.TestCase):
 
         prob.run_model()
 
-        assert_rel_error(self, prob["AS_point_0.CL"][0], 1.6217443031469607, 1e-6)
-        assert_rel_error(self, prob["AS_point_0.CM"][1], -1.682700295091543, 1e-5)
+        assert_near_equal(prob["AS_point_0.CL"][0], 1.6217443031469607, 1e-6)
+        assert_near_equal(prob["AS_point_0.CM"][1], -1.682700295091543, 1e-5)
 
 
 if __name__ == "__main__":

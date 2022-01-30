@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 import openmdao.api as om
-from openmdao.utils.assert_utils import assert_rel_error
+from openmdao.utils.assert_utils import assert_near_equal
 
 from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
@@ -204,10 +204,10 @@ class Test(unittest.TestCase):
         # Actually run the optimization problem
         prob.run_driver()
 
-        assert_rel_error(self, prob["AS_point_0.fuelburn"][0], 4.734596439931736, 1e-6)
-        assert_rel_error(self, prob["wing.twist_cp"], np.array([2.52737808, 10.62041433, 5.0]), 1e-6)
-        assert_rel_error(self, prob["wing.sweep"][0], 18.84598985, 1e-6)
-        assert_rel_error(self, prob["alpha"][0], 1.97414017, 1e-6)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 4.734596439931736, 1e-6)
+        assert_near_equal(prob["wing.twist_cp"], np.array([2.52737808, 10.62041433, 5.0]), 1e-6)
+        assert_near_equal(prob["wing.sweep"][0], 18.84598985, 1e-6)
+        assert_near_equal(prob["alpha"][0], 1.97414017, 1e-6)
 
 
 if __name__ == "__main__":

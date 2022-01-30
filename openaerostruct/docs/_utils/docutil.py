@@ -207,8 +207,8 @@ def replace_asserts_with_prints(src):
                 # remove the expected value argument
                 remove_redbaron_node(assert_node.value[1], 1)
 
-    if "assert_rel_error" in src:
-        assert_nodes = rb.findAll("NameNode", value="assert_rel_error")
+    if "assert_near_equal" in src:
+        assert_nodes = rb.findAll("NameNode", value="assert_near_equal")
         for assert_node in assert_nodes:
             assert_node = assert_node.parent
             # If relative error tolerance is specified, there are 4 arguments

@@ -408,8 +408,8 @@ class Test(unittest.TestCase):
 
             comp = om.ExecComp(
                 "fuel_diff = (fuel_mass - fuelburn) / fuelburn",
-                fuel_mass={"value": 1.0, "units": "kg"},
-                fuelburn={"value": 1.0, "units": "kg"},
+                fuel_mass={"val": 1.0, "units": "kg"},
+                fuelburn={"val": 1.0, "units": "kg"},
             )
             prob.model.add_subsystem("fuel_diff", comp, promotes_inputs=["fuel_mass"], promotes_outputs=["fuel_diff"])
             prob.model.connect("AS_point_0.fuelburn", "fuel_diff.fuelburn")
