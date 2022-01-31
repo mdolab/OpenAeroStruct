@@ -108,7 +108,8 @@ class StructureWeightLoads(om.ExplicitComponent):
                 counter += 1
         self.del__dnodes = coo_matrix((data, (rows_el, cols_el)), shape=shape)
 
-        nym1_rand = np.random.rand(nym1)
+        rng = np.random.default_rng(0)
+        nym1_rand = rng.random(nym1)
 
         dzm_dnodes_pattern = (
             (diags(nym1_rand * nym1_rand) * self.ddel0__dnodes + diags(nym1_rand * nym1_rand) * self.ddel1__dnodes)
@@ -140,7 +141,7 @@ class StructureWeightLoads(om.ExplicitComponent):
         rows_1 = np.zeros(2 * nym1)
         rows_0 = np.zeros(2 * nym1)
         cols = np.zeros(2 * nym1)
-        data = np.random.rand(2 * nym1)
+        data = rng.random(2 * nym1)
         counter = 0
         for i in range(nym1):
             for j in range(2):

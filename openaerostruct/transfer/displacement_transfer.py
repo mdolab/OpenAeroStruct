@@ -5,9 +5,6 @@ import openmdao.api as om
 from openaerostruct.utils.vector_algebra import get_array_indices
 
 
-np.random.seed(314)
-
-
 class DisplacementTransfer(om.ExplicitComponent):
     """
     Apply the computed FEM displacements and rotations on the aerodynamic mesh
@@ -51,8 +48,8 @@ class DisplacementTransfer(om.ExplicitComponent):
         self.add_input("disp", val=np.ones((self.ny, 6)), units="m")
         self.add_input("transformation_matrix", val=np.ones((self.ny, 3, 3)))
         self.add_input("nodes", val=np.ones((self.ny, 3)), units="m")
-
-        self.add_output("def_mesh", val=np.random.random_sample((self.nx, self.ny, 3)), units="m")
+        rng = np.random.default_rng(314)
+        self.add_output("def_mesh", val=rng.random((self.nx, self.ny, 3)), units="m")
 
         # Create index arrays for each relevant input and output.
         # This allows us to set up the rows and cols for the sparse Jacobians.

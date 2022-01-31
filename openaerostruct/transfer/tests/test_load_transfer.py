@@ -18,8 +18,9 @@ class Test(unittest.TestCase):
         nx = surface["mesh"].shape[0]
         ny = surface["mesh"].shape[1]
 
-        indep_var_comp.add_output("def_mesh", val=np.random.random((nx, ny, 3)), units="m")
-        indep_var_comp.add_output("sec_forces", val=np.random.random((nx - 1, ny - 1, 3)), units="N")
+        rng = np.random.default_rng(0)
+        indep_var_comp.add_output("def_mesh", val=rng.random((nx, ny, 3)), units="m")
+        indep_var_comp.add_output("sec_forces", val=rng.random((nx - 1, ny - 1, 3)), units="N")
 
         group.add_subsystem("indep_var_comp", indep_var_comp, promotes=["*"])
         group.add_subsystem("load_transfer", comp, promotes=["*"])

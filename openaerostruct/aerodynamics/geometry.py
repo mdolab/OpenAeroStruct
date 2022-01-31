@@ -3,9 +3,6 @@ import numpy as np
 import openmdao.api as om
 
 
-np.random.seed(314)
-
-
 class VLMGeometry(om.ExplicitComponent):
     """
     Compute various geometric properties for VLM analysis.
@@ -49,7 +46,8 @@ class VLMGeometry(om.ExplicitComponent):
         # All of these computations only need the deformed mesh
         self.add_input("def_mesh", val=np.zeros((nx, ny, 3)), units="m")
 
-        self.add_output("b_pts", val=np.random.random((nx - 1, ny, 3)), units="m")
+        rng = np.random.default_rng(314)
+        self.add_output("b_pts", val=rng.random((nx - 1, ny, 3)), units="m")
         self.add_output("widths", val=np.ones((ny - 1)), units="m")
         self.add_output("cos_sweep", val=np.zeros((ny - 1)), units="m")
         self.add_output("lengths", val=np.zeros((ny)), units="m")

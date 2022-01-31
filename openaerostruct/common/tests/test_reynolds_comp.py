@@ -13,9 +13,10 @@ class Test(unittest.TestCase):
         prob.model.add_subsystem("comp", comp, promotes=["*"])
         prob.setup(force_alloc_complex=True)
 
-        prob["rho"] = np.random.random()
-        prob["mu"] = np.random.random()
-        prob["v"] = np.random.random()
+        rng = np.random.default_rng(0)
+        prob["rho"] = rng.random()
+        prob["mu"] = rng.random()
+        prob["v"] = rng.random()
         prob.run_model()
 
         check = prob.check_partials(compact_print=True, method="cs", step=1e-40)
