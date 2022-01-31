@@ -95,7 +95,7 @@ class Test(unittest.TestCase):
 
         prob.run_model()
 
-        check = prob.check_partials(compact_print=True, method='cs')
+        check = prob.check_partials(compact_print=True, method="cs")
         assert_check_partials(check, atol=5e-5, rtol=1e-5)
 
     def test_derivs_projected(self):
@@ -166,7 +166,7 @@ class Test(unittest.TestCase):
 
         prob.run_model()
 
-        check = prob.check_partials(compact_print=True, method='cs')
+        check = prob.check_partials(compact_print=True, method="cs")
 
         assert_check_partials(check, atol=5e-5, rtol=1e-5)
 
