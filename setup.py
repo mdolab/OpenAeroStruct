@@ -7,7 +7,10 @@ __version__ = re.findall(
     open("openaerostruct/__init__.py").read(),
 )[0]
 
-optional_dependencies = {"docs": ["openmdao[docs]>=3.2, <=3.9.2"], "test": ["testflo>=1.3.6"]}
+optional_dependencies = {
+    "docs": ["openmdao[docs]>=3.2, <=3.9.2", "sphinx_mdolab_theme"],
+    "test": ["pytest", "pytest-cov", "coverage"],
+}
 
 # Add an optional dependency that concatenates all others
 optional_dependencies["all"] = sorted(

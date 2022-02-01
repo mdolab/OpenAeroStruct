@@ -47,8 +47,7 @@ jobs:
       env:
         OMPI_MCA_btl: ^openib   # prevent OpenMPI warning messages
       run: |
-        cd openaerostruct
-        testflo -n 2 openaerostruct --coverage --coverpkg openaerostruct --cover-omit \*tests/\* --cover-omit \*docs/\*
+        python -m pytest  --cov-config=.coveragerc --cov=openaerostruct --cov-report=xml
 
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@v2
