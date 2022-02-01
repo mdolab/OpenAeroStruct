@@ -3,6 +3,7 @@ OpenAeroStruct
 
 ![GitHub Actions Status](https://github.com/mdolab/OpenAeroStruct/workflows/OAS%20build/badge.svg)
 [![codecov](https://codecov.io/gh/mdolab/OpenAeroStruct/branch/master/graph/badge.svg?token=yOxeH7rT2H)](https://codecov.io/gh/mdolab/OpenAeroStruct)
+[![Documentation Status](https://readthedocs.com/projects/mdolab-openaerostruct/badge/?version=latest)](https://mdolab-openaerostruct.readthedocs-hosted.com/en/latest/?badge=latest)
 
 OpenAeroStruct is a lightweight tool that performs aerostructural optimization using OpenMDAO.
 It couples a vortex-lattice method (VLM) and a 6 degrees of freedom 3-dimensional spatial beam model to simulate aerodynamic and structural analyses using lifting surfaces.
@@ -27,7 +28,7 @@ Then do:
 Documentation
 -------------
 
-Please see the [documentation](https://mdolab.github.io/OpenAeroStruct/) for more installation details, walkthroughs, and examples.
+Please see the [documentation](https://mdolab-openaerostruct.readthedocs-hosted.com/en/latest/) for more installation details, walkthroughs, and examples.
 
 Citation
 --------

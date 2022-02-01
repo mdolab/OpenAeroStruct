@@ -15,7 +15,7 @@ The analysis and optimization results can be visualized using included tools, pr
 
    Aerostructural optimization of the Common Research Model (CRM) wing.
 
-.. figure:: aerostruct_xdsm.pdf
+.. figure:: aerostruct_xdsm.png
    :align: center
    :width: 70%
    :alt: sample XDSM of aerostructural system

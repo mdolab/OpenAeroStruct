@@ -92,29 +92,6 @@ release = __version__
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = "sphinx"
 
-
-# The theme to use for HTML and HTML Help pages.  See the documentation for
-# a list of builtin themes.
-# html_theme = "_theme"
-
-# Add any paths that contain custom themes here, relative to this directory.
-# html_theme_path = ["."]
-# html_static_path = ["_static"]
-# html_context = {
-#     "css_files": [
-#         "_static/style.css",
-#     ],
-# }
-
-# # The name of an image file (relative to this directory) to place at the top
-# # of the sidebar.
-# html_logo = '_static/OpenMDAO_Logo.png'
-#
-# # The name of an image file (within the static path) to use as favicon of the
-# # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
-# # pixels large.
-# html_favicon = '_static/OpenMDAO_Favicon.ico'
-
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
 html_last_updated_fmt = "%b %d, %Y"
