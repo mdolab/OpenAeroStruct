@@ -43,6 +43,10 @@ jobs:
         git clone https://github.com/mdolab/pygeo.git
         pip install -e ./pygeo
 
+    - name: Check Pkgs
+      run: |
+        python -m pip list
+
     - name: Run tests
       env:
         OMPI_MCA_btl: ^openib   # prevent OpenMPI warning messages
