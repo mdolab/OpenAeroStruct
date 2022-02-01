@@ -49,7 +49,7 @@ jobs:
       env:
         OMPI_MCA_btl: ^openib   # prevent OpenMPI warning messages
       run: |
-        python -m pytest --cov-config=.coveragerc --cov=openaerostruct --cov-report=xml
+        python -m pytest --cov-config=.coveragerc --cov=openaerostruct --cov-report=xml openaerostruct/tests/test_aero_atmos.py
 
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@v2
@@ -93,42 +93,42 @@ jobs:
         black openaerostruct --check --diff -l 120 --target-version py38
 
   # --- documentation build ---
-  docs-build:
-    runs-on: ubuntu-latest
+  # docs-build:
+  #   runs-on: ubuntu-latest
 
-    steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python 3.8
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.8'
+  #   steps:
+  #   - uses: actions/checkout@v2
+  #   - name: Set up Python 3.8
+  #     uses: actions/setup-python@v2
+  #     with:
+  #       python-version: '3.8'
 
     # build docs
-    - name: Build docs
-      run: |
-        python -m pip install --upgrade pip wheel
-        pip install .[docs]
-        cd openaerostruct/docs
-        make clean
-        make html
+    # - name: Build docs
+    #   run: |
+    #     python -m pip install --upgrade pip wheel
+    #     pip install .[docs]
+    #     cd openaerostruct/docs
+    #     make clean
+    #     make html
 
     # deploy docs only when we're pushing to the master branch.
-    - name: Commit doc changes
-      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
-      run: |
-        git clone https://github.com/mdolab/OpenAeroStruct.git --branch gh-pages --single-branch gh-pages
-        cp -r ./openaerostruct/docs/_build/html/* gh-pages/
-        cd gh-pages
-        touch .nojekyll
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add .
-        git commit -m "Update documentation" -a || true
+    # - name: Commit doc changes
+    #   if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+    #   run: |
+    #     git clone https://github.com/mdolab/OpenAeroStruct.git --branch gh-pages --single-branch gh-pages
+    #     cp -r ./openaerostruct/docs/_build/html/* gh-pages/
+    #     cd gh-pages
+    #     touch .nojekyll
+    #     git config --local user.email "action@github.com"
+    #     git config --local user.name "GitHub Action"
+    #     git add .
+    #     git commit -m "Update documentation" -a || true
 
-    - name: Push changes to gh-pages
-      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
-      uses: ad-m/github-push-action@master
-      with:
-        branch: gh-pages
-        directory: gh-pages
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+    # - name: Push changes to gh-pages
+    #   if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+    #   uses: ad-m/github-push-action@master
+    #   with:
+    #     branch: gh-pages
+    #     directory: gh-pages
+    #     github_token: ${{ secrets.GITHUB_TOKEN }}
