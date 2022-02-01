@@ -50,12 +50,11 @@ jobs:
         cd openaerostruct
         testflo -n 2 openaerostruct --coverage --coverpkg openaerostruct --cover-omit \*tests/\* --cover-omit \*docs/\*
 
-    - name: Run coveralls
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        cd openaerostruct
-        coveralls --service=github --rcfile=../.coveragerc;
+    - name: Upload Coverage to Codecov
+      uses: codecov/codecov-action@v2
+      with:
+        fail_ci_if_error: true
+        token: ${{ secrets.CODECOV_TOKEN }}
 
   # --- code style check by flake8 ---
   flake8:
