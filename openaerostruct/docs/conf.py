@@ -6,8 +6,6 @@ import sys
 import openmdao
 import importlib
 from unittest.mock import Mock
-from openmdao.docutils import do_monkeypatch, embed_code, embed_options, embed_compare
-from openmdao.docs._exts import embed_n2
 from openaerostruct.docs._utils.generate_sourcedocs import generate_docs
 from sphinx_mdolab_theme.config import *
 
@@ -23,8 +21,6 @@ for mod_name in MOCK_MODULES:
         importlib.import_module(mod_name)
     except ImportError:
         sys.modules[mod_name] = Mock()
-
-do_monkeypatch()
 
 # -- General configuration ------------------------------------------------
 
