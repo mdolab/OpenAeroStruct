@@ -9,6 +9,7 @@ from unittest.mock import Mock
 from openmdao.docutils import do_monkeypatch, embed_code, embed_options, embed_compare
 from openmdao.docs._exts import embed_n2
 from openaerostruct.docs._utils.generate_sourcedocs import generate_docs
+from sphinx_mdolab_theme.config import *
 
 openmdao_path = os.path.split(os.path.abspath(openmdao.__file__))[0]
 sys.path.insert(0, os.path.join(openmdao_path, "docs", "_exts"))

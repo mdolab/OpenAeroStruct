@@ -1,0 +1,11 @@
+# File: .readthedocs.yaml
+
+version: 2
+
+python:
+  install:
+    - method: pip
+      path: .
+      extra_requirements:
+        - docs
+  system_packages: true
