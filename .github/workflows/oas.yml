@@ -27,7 +27,6 @@ jobs:
       run: |
         python -m pip install --upgrade pip wheel
         pip install .[test]
-        pip install coverage coveralls     # for coveralls
 
     # we need pySpline/pyGeo to run FFD tests.
     - name: Install pySpline and pyGeo
@@ -40,8 +39,7 @@ jobs:
         make
         pip install -e .
         cd ..
-        git clone https://github.com/mdolab/pygeo.git
-        pip install -e ./pygeo
+        pip install "pygeo[testing] @ git+https://github.com/mdolab/pygeo.git"
 
     - name: Check Pkgs
       run: |
@@ -51,7 +49,7 @@ jobs:
       env:
         OMPI_MCA_btl: ^openib   # prevent OpenMPI warning messages
       run: |
-        python -m pytest  --cov-config=.coveragerc --cov=openaerostruct --cov-report=xml
+        python -m pytest --cov-config=.coveragerc --cov=openaerostruct --cov-report=xml
 
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@v2
