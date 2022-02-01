@@ -6,6 +6,8 @@ import sys
 import openmdao
 import importlib
 from unittest.mock import Mock
+from openmdao.docutils import do_monkeypatch, embed_code, embed_options, embed_compare
+from openmdao.docs._exts import embed_n2
 from openaerostruct.docs._utils.generate_sourcedocs import generate_docs
 from sphinx_mdolab_theme.config import *
 
@@ -93,16 +95,16 @@ pygments_style = "sphinx"
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = "_theme"
+# html_theme = "_theme"
 
 # Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = ["."]
-html_static_path = ["_static"]
-html_context = {
-    "css_files": [
-        "_static/style.css",
-    ],
-}
+# html_theme_path = ["."]
+# html_static_path = ["_static"]
+# html_context = {
+#     "css_files": [
+#         "_static/style.css",
+#     ],
+# }
 
 # # The name of an image file (relative to this directory) to place at the top
 # # of the sidebar.
@@ -121,7 +123,7 @@ html_last_updated_fmt = "%b %d, %Y"
 htmlhelp_basename = "OpenAeroStructdoc"
 
 # Customize sidebar
-html_sidebars = {"**": ["globaltoc.html", "searchbox.html"]}
+# html_sidebars = {"**": ["globaltoc.html", "searchbox.html"]}
 
 html_extra_path = ["_n2html"]
 
