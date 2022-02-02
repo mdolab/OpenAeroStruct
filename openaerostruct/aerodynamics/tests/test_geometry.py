@@ -10,6 +10,10 @@ from openaerostruct.utils.testing import run_test, get_default_surfaces
 
 
 class Test(unittest.TestCase):
+    def setUp(self):
+        # setup a random generator and fix the seed
+        self.rng = np.random.default_rng(1)
+
     def test(self):
         surfaces = get_default_surfaces()
 
@@ -40,8 +44,7 @@ class Test(unittest.TestCase):
         # Generate the aerodynamic mesh based on the previous dictionary
         mesh, twist_cp = generate_mesh(mesh_dict)
 
-        rng = np.random.default_rng(0)
-        mesh[:, :, 2] = rng.random(mesh[:, :, 2].shape)
+        mesh[:, :, 2] = self.rng.random(mesh[:, :, 2].shape)
 
         # Create a dictionary with info and options about the aerodynamic
         # lifting surface
@@ -91,7 +94,7 @@ class Test(unittest.TestCase):
 
         prob.setup()
 
-        prob["geom.def_mesh"] = mesh + rng.random(prob["geom.def_mesh"].shape) * 0.1
+        prob["geom.def_mesh"] = mesh + self.rng.random(prob["geom.def_mesh"].shape) * 0.1
 
         prob.run_model()
 
@@ -111,8 +114,7 @@ class Test(unittest.TestCase):
         # Generate the aerodynamic mesh based on the previous dictionary
         mesh, twist_cp = generate_mesh(mesh_dict)
 
-        rng = np.random.default_rng(1)
-        mesh[:, :, 2] = rng.random(mesh[:, :, 2].shape)
+        mesh[:, :, 2] = self.rng.random(mesh[:, :, 2].shape)
 
         # Create a dictionary with info and options about the aerodynamic
         # lifting surface
@@ -162,7 +164,7 @@ class Test(unittest.TestCase):
 
         prob.setup()
 
-        prob["geom.def_mesh"] = mesh + rng.random(prob["geom.def_mesh"].shape) * 0.1
+        prob["geom.def_mesh"] = mesh + self.rng.random(prob["geom.def_mesh"].shape) * 0.1
 
         prob.run_model()
 

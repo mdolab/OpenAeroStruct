@@ -50,6 +50,10 @@ def get_mesh(symmetry):
 
 
 class Test(unittest.TestCase):
+    def setUp(self):
+        # setup a random generator and fix the seed
+        self.rng = np.random.default_rng(1)
+
     def test_taper(self):
         symmetry = False
         mesh = get_mesh(symmetry)
@@ -57,8 +61,7 @@ class Test(unittest.TestCase):
         prob = om.Problem()
         group = prob.model
 
-        rng = np.random.default_rng(1)
-        val = rng.random(1)
+        val = self.rng.random(1)
 
         comp = Taper(val=val, mesh=mesh, symmetry=symmetry)
         group.add_subsystem("comp", comp)
@@ -76,8 +79,7 @@ class Test(unittest.TestCase):
         prob = om.Problem()
         group = prob.model
 
-        rng = np.random.default_rng(2)
-        val = rng.random(1)
+        val = self.rng.random(1)
 
         comp = Taper(val=val, mesh=mesh, symmetry=symmetry)
         group.add_subsystem("comp", comp)
@@ -95,8 +97,7 @@ class Test(unittest.TestCase):
         prob = om.Problem()
         group = prob.model
 
-        rng = np.random.default_rng(3)
-        val = rng.random(NY)
+        val = self.rng.random(NY)
 
         comp = ScaleX(val=val, mesh_shape=mesh.shape)
         group.add_subsystem("comp", comp)
@@ -117,8 +118,7 @@ class Test(unittest.TestCase):
         prob = om.Problem()
         group = prob.model
 
-        rng = np.random.default_rng(4)
-        val = rng.random(NY)
+        val = self.rng.random(NY)
 
         comp = ScaleX(val=val, mesh_shape=mesh.shape)
         group.add_subsystem("comp", comp)
@@ -139,8 +139,7 @@ class Test(unittest.TestCase):
         prob = om.Problem()
         group = prob.model
 
-        rng = np.random.default_rng(5)
-        val = rng.random(1)
+        val = self.rng.random(1)
 
         comp = Sweep(val=val, mesh_shape=mesh.shape, symmetry=symmetry)
         group.add_subsystem("comp", comp)
@@ -161,8 +160,7 @@ class Test(unittest.TestCase):
         prob = om.Problem()
         group = prob.model
 
-        rng = np.random.default_rng(6)
-        val = rng.random(1)
+        val = self.rng.random(1)
 
         comp = Sweep(val=val, mesh_shape=mesh.shape, symmetry=symmetry)
         group.add_subsystem("comp", comp)
@@ -183,8 +181,7 @@ class Test(unittest.TestCase):
         prob = om.Problem()
         group = prob.model
 
-        rng = np.random.default_rng(7)
-        val = rng.random(NY)
+        val = self.rng.random(NY)
 
         comp = ShearX(val=val, mesh_shape=mesh.shape)
         group.add_subsystem("comp", comp)
@@ -205,8 +202,7 @@ class Test(unittest.TestCase):
         prob = om.Problem()
         group = prob.model
 
-        rng = np.random.default_rng(8)
-        val = rng.random(1)
+        val = self.rng.random(1)
 
         comp = Stretch(val=val, mesh_shape=mesh.shape, symmetry=symmetry)
         group.add_subsystem("comp", comp)
@@ -227,8 +223,7 @@ class Test(unittest.TestCase):
         prob = om.Problem()
         group = prob.model
 
-        rng = np.random.default_rng(9)
-        val = rng.random(1)
+        val = self.rng.random(1)
 
         comp = Stretch(val=val, mesh_shape=mesh.shape, symmetry=symmetry)
         group.add_subsystem("comp", comp)
@@ -249,8 +244,7 @@ class Test(unittest.TestCase):
         prob = om.Problem()
         group = prob.model
 
-        rng = np.random.default_rng(10)
-        val = rng.random(NY)
+        val = self.rng.random(NY)
 
         comp = ShearY(val=val, mesh_shape=mesh.shape)
         group.add_subsystem("comp", comp)
@@ -271,8 +265,7 @@ class Test(unittest.TestCase):
         prob = om.Problem()
         group = prob.model
 
-        rng = np.random.default_rng(11)
-        val = 15.0 * rng.random(1)
+        val = 15.0 * self.rng.random(1)
 
         comp = Dihedral(val=val, mesh_shape=mesh.shape, symmetry=symmetry)
         group.add_subsystem("comp", comp)
@@ -293,8 +286,7 @@ class Test(unittest.TestCase):
         prob = om.Problem()
         group = prob.model
 
-        rng = np.random.default_rng(12)
-        val = rng.random(1)
+        val = self.rng.random(1)
 
         comp = Dihedral(val=val, mesh_shape=mesh.shape, symmetry=symmetry)
         group.add_subsystem("comp", comp)
@@ -315,8 +307,7 @@ class Test(unittest.TestCase):
         prob = om.Problem()
         group = prob.model
 
-        rng = np.random.default_rng(13)
-        val = rng.random(NY)
+        val = self.rng.random(NY)
 
         comp = ShearZ(val=val, mesh_shape=mesh.shape)
         group.add_subsystem("comp", comp)
@@ -337,8 +328,7 @@ class Test(unittest.TestCase):
         prob = om.Problem()
         group = prob.model
 
-        rng = np.random.default_rng(14)
-        val = rng.random(NY)
+        val = self.rng.random(NY)
 
         comp = Rotate(val=val, mesh_shape=mesh.shape, symmetry=symmetry)
         group.add_subsystem("comp", comp)
@@ -359,8 +349,7 @@ class Test(unittest.TestCase):
         prob = om.Problem()
         group = prob.model
 
-        rng = np.random.default_rng(15)
-        val = rng.random(NY)
+        val = self.rng.random(NY)
 
         comp = Rotate(val=val, mesh_shape=mesh.shape, symmetry=symmetry)
         group.add_subsystem("comp", comp)
