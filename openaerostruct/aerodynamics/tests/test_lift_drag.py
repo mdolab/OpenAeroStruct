@@ -29,7 +29,8 @@ class Test(unittest.TestCase):
 
         prob["comp.alpha"] = 3.0
         prob["comp.beta"] = 15.0
-        prob["comp.sec_forces"] = 10.0 * np.random.random(prob["comp.sec_forces"].shape)
+        rng = np.random.default_rng(0)
+        prob["comp.sec_forces"] = 10.0 * rng.random(prob["comp.sec_forces"].shape)
 
         prob.run_model()
 

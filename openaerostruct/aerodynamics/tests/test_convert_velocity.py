@@ -26,7 +26,8 @@ class Test(unittest.TestCase):
         prob.model.add_subsystem("comp", comp)
         prob.setup(force_alloc_complex=True)
 
-        prob["comp.rotational_velocities"] = np.random.random(prob["comp.rotational_velocities"].shape)
+        rng = np.random.default_rng(0)
+        prob["comp.rotational_velocities"] = rng.random(prob["comp.rotational_velocities"].shape)
         prob["comp.beta"] = 15.0
         prob.run_model()
 

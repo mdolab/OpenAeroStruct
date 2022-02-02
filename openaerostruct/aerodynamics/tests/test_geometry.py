@@ -8,10 +8,12 @@ from openaerostruct.aerodynamics.geometry import VLMGeometry
 from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.utils.testing import run_test, get_default_surfaces
 
-np.random.seed(224)
-
 
 class Test(unittest.TestCase):
+    def setUp(self):
+        # setup a random generator and fix the seed
+        self.rng = np.random.default_rng(1)
+
     def test(self):
         surfaces = get_default_surfaces()
 
@@ -42,7 +44,7 @@ class Test(unittest.TestCase):
         # Generate the aerodynamic mesh based on the previous dictionary
         mesh, twist_cp = generate_mesh(mesh_dict)
 
-        mesh[:, :, 2] = np.random.random(mesh[:, :, 2].shape)
+        mesh[:, :, 2] = self.rng.random(mesh[:, :, 2].shape)
 
         # Create a dictionary with info and options about the aerodynamic
         # lifting surface
@@ -92,11 +94,11 @@ class Test(unittest.TestCase):
 
         prob.setup()
 
-        prob["geom.def_mesh"] = np.random.random(prob["geom.def_mesh"].shape)
+        prob["geom.def_mesh"] = mesh + self.rng.random(prob["geom.def_mesh"].shape) * 0.1
 
         prob.run_model()
 
-        check = prob.check_partials(compact_print=True, step=1e-7)
+        check = prob.check_partials(compact_print=True, method="cs")
         assert_check_partials(check, atol=5e-5, rtol=1e-5)
 
     def test_derivs_projected(self):
@@ -112,7 +114,7 @@ class Test(unittest.TestCase):
         # Generate the aerodynamic mesh based on the previous dictionary
         mesh, twist_cp = generate_mesh(mesh_dict)
 
-        mesh[:, :, 2] = np.random.random(mesh[:, :, 2].shape)
+        mesh[:, :, 2] = self.rng.random(mesh[:, :, 2].shape)
 
         # Create a dictionary with info and options about the aerodynamic
         # lifting surface
@@ -162,11 +164,11 @@ class Test(unittest.TestCase):
 
         prob.setup()
 
-        prob["geom.def_mesh"] = np.random.random(prob["geom.def_mesh"].shape)
+        prob["geom.def_mesh"] = mesh + self.rng.random(prob["geom.def_mesh"].shape) * 0.1
 
         prob.run_model()
 
-        check = prob.check_partials(compact_print=True)
+        check = prob.check_partials(compact_print=True, method="cs")
 
         assert_check_partials(check, atol=5e-5, rtol=1e-5)
 

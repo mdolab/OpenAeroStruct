@@ -26,7 +26,8 @@ class Test(unittest.TestCase):
         # Generate the aerodynamic mesh based on the previous dictionary
         mesh, twist_cp = generate_mesh(mesh_dict)
 
-        mesh[:, :, 2] = np.random.random(mesh[:, :, 2].shape)
+        rng = np.random.default_rng(0)
+        mesh[:, :, 2] = rng.random(mesh[:, :, 2].shape)
 
         # Create a dictionary with info and options about the aerodynamic
         # lifting surface
@@ -48,7 +49,7 @@ class Test(unittest.TestCase):
 
         prob.setup()
 
-        prob["comp.wing_sec_forces"] = np.random.random(prob["comp.wing_sec_forces"].shape)
+        prob["comp.wing_sec_forces"] = rng.random(prob["comp.wing_sec_forces"].shape)
 
         prob.run_model()
 

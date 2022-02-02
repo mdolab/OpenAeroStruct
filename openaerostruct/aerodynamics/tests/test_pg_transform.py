@@ -11,6 +11,10 @@ from openaerostruct.utils.testing import get_default_surfaces
 
 
 class Test(unittest.TestCase):
+    def setUp(self):
+        # setup a random generator and fix the seed
+        self.rng = np.random.default_rng(1)
+
     def test_to_wind_derivs(self):
         surfaces = get_default_surfaces()
 
@@ -20,15 +24,15 @@ class Test(unittest.TestCase):
         prob.model.add_subsystem("comp", comp)
         prob.setup(force_alloc_complex=True)
 
-        prob["comp.alpha"] = np.random.random(prob["comp.alpha"].shape)
-        prob["comp.beta"] = np.random.random(prob["comp.beta"].shape)
-        prob["comp.coll_pts"] = np.random.random(prob["comp.coll_pts"].shape)
-        prob["comp.bound_vecs"] = np.random.random(prob["comp.bound_vecs"].shape)
-        prob["comp.rotational_velocities"] = np.random.random(prob["comp.rotational_velocities"].shape)
-        prob["comp.wing_def_mesh"] = np.random.random(prob["comp.wing_def_mesh"].shape)
-        prob["comp.tail_def_mesh"] = np.random.random(prob["comp.tail_def_mesh"].shape)
-        prob["comp.tail_normals"] = np.random.random(prob["comp.tail_normals"].shape)
-        prob["comp.wing_normals"] = np.random.random(prob["comp.wing_normals"].shape)
+        prob["comp.alpha"] = self.rng.random(prob["comp.alpha"].shape)
+        prob["comp.beta"] = self.rng.random(prob["comp.beta"].shape)
+        prob["comp.coll_pts"] = self.rng.random(prob["comp.coll_pts"].shape)
+        prob["comp.bound_vecs"] = self.rng.random(prob["comp.bound_vecs"].shape)
+        prob["comp.rotational_velocities"] = self.rng.random(prob["comp.rotational_velocities"].shape)
+        prob["comp.wing_def_mesh"] = self.rng.random(prob["comp.wing_def_mesh"].shape)
+        prob["comp.tail_def_mesh"] = self.rng.random(prob["comp.tail_def_mesh"].shape)
+        prob["comp.tail_normals"] = self.rng.random(prob["comp.tail_normals"].shape)
+        prob["comp.wing_normals"] = self.rng.random(prob["comp.wing_normals"].shape)
 
         prob.run_model()
 
@@ -45,10 +49,10 @@ class Test(unittest.TestCase):
         prob.model.add_subsystem("comp", comp)
         prob.setup(force_alloc_complex=True)
 
-        prob["comp.alpha"] = np.random.random(prob["comp.alpha"].shape)
-        prob["comp.beta"] = np.random.random(prob["comp.beta"].shape)
-        prob["comp.wing_sec_forces_w_frame"] = np.random.random(prob["comp.wing_sec_forces_w_frame"].shape)
-        prob["comp.tail_sec_forces_w_frame"] = np.random.random(prob["comp.tail_sec_forces_w_frame"].shape)
+        prob["comp.alpha"] = self.rng.random(prob["comp.alpha"].shape)
+        prob["comp.beta"] = self.rng.random(prob["comp.beta"].shape)
+        prob["comp.wing_sec_forces_w_frame"] = self.rng.random(prob["comp.wing_sec_forces_w_frame"].shape)
+        prob["comp.tail_sec_forces_w_frame"] = self.rng.random(prob["comp.tail_sec_forces_w_frame"].shape)
 
         prob.run_model()
 
@@ -65,20 +69,20 @@ class Test(unittest.TestCase):
         prob.model.add_subsystem("comp", comp)
         prob.setup(force_alloc_complex=True)
 
-        prob["comp.Mach_number"] = np.random.random(prob["comp.Mach_number"].shape)
-        prob["comp.coll_pts_w_frame"] = np.random.random(prob["comp.coll_pts_w_frame"].shape)
-        prob["comp.bound_vecs_w_frame"] = np.random.random(prob["comp.bound_vecs_w_frame"].shape)
-        prob["comp.rotational_velocities_w_frame"] = np.random.random(prob["comp.rotational_velocities_w_frame"].shape)
-        prob["comp.wing_def_mesh_w_frame"] = np.random.random(prob["comp.wing_def_mesh_w_frame"].shape)
-        prob["comp.tail_def_mesh_w_frame"] = np.random.random(prob["comp.tail_def_mesh_w_frame"].shape)
-        prob["comp.tail_normals_w_frame"] = np.random.random(prob["comp.tail_normals_w_frame"].shape)
-        prob["comp.wing_normals_w_frame"] = np.random.random(prob["comp.wing_normals_w_frame"].shape)
+        prob["comp.Mach_number"] = self.rng.random(prob["comp.Mach_number"].shape)
+        prob["comp.coll_pts_w_frame"] = self.rng.random(prob["comp.coll_pts_w_frame"].shape)
+        prob["comp.bound_vecs_w_frame"] = self.rng.random(prob["comp.bound_vecs_w_frame"].shape)
+        prob["comp.rotational_velocities_w_frame"] = self.rng.random(prob["comp.rotational_velocities_w_frame"].shape)
+        prob["comp.wing_def_mesh_w_frame"] = self.rng.random(prob["comp.wing_def_mesh_w_frame"].shape)
+        prob["comp.tail_def_mesh_w_frame"] = self.rng.random(prob["comp.tail_def_mesh_w_frame"].shape)
+        prob["comp.tail_normals_w_frame"] = self.rng.random(prob["comp.tail_normals_w_frame"].shape)
+        prob["comp.wing_normals_w_frame"] = self.rng.random(prob["comp.wing_normals_w_frame"].shape)
 
         prob.run_model()
 
         check = prob.check_partials(compact_print=True, method="cs", step=1e-40)
 
-        assert_check_partials(check, atol=4e-5, rtol=4e-5)
+        assert_check_partials(check, atol=1e-5, rtol=1e-5)
 
     def test_scale_from_pg(self):
         surfaces = get_default_surfaces()
@@ -89,15 +93,15 @@ class Test(unittest.TestCase):
         prob.model.add_subsystem("comp", comp)
         prob.setup(force_alloc_complex=True)
 
-        prob["comp.Mach_number"] = np.random.random(prob["comp.Mach_number"].shape)
-        prob["comp.wing_sec_forces_pg"] = np.random.random(prob["comp.wing_sec_forces_pg"].shape)
-        prob["comp.tail_sec_forces_pg"] = np.random.random(prob["comp.tail_sec_forces_pg"].shape)
+        prob["comp.Mach_number"] = self.rng.random(prob["comp.Mach_number"].shape)
+        prob["comp.wing_sec_forces_pg"] = self.rng.random(prob["comp.wing_sec_forces_pg"].shape)
+        prob["comp.tail_sec_forces_pg"] = self.rng.random(prob["comp.tail_sec_forces_pg"].shape)
 
         prob.run_model()
 
         check = prob.check_partials(compact_print=True, method="cs", step=1e-40)
 
-        assert_check_partials(check, atol=2e-5, rtol=2e-5)
+        assert_check_partials(check, atol=1e-5, rtol=1e-5)
 
 
 if __name__ == "__main__":
