@@ -90,7 +90,7 @@ v1 Script
 v2 Script
 ^^^^^^^^^
 
-.. literalinclude:: /../tests/test_v1_aero_opt.pyGeo
+.. literalinclude:: /../tests/test_v1_aero_opt.py
   :start-after: checkpoint 4
   :end-before: checkpoint 5
 
@@ -141,3 +141,5 @@ v2 Script
 ^^^^^^^^^
 
 .. literalinclude:: /../tests/test_v1_aero_opt.py
+  :start-after: checkpoint 0
+  :end-before: checkpoint 5
