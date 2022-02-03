@@ -104,4 +104,3 @@ def setup(app):
     app.add_directive("embed-n2", EmbedN2Directive)
 
     return {"version": sphinx.__display_version__, "parallel_read_safe": True}
-
