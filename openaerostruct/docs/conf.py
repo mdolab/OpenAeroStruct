@@ -3,16 +3,15 @@
 # containing dir.
 import os
 import sys
-import openmdao
 import importlib
 from unittest.mock import Mock
+from openaerostruct.docs._exts import embed_n2
 from openaerostruct.docs._utils.generate_sourcedocs import generate_docs
 from sphinx_mdolab_theme.config import *
 
-openmdao_path = os.path.split(os.path.abspath(openmdao.__file__))[0]
-sys.path.insert(0, os.path.join(openmdao_path, "docs", "_exts"))
 sys.path.insert(0, os.path.abspath(".."))
 sys.path.insert(0, os.path.abspath("."))
+sys.path.insert(0, os.path.join("./_exts"))
 
 # Only mock the ones that don't import.
 MOCK_MODULES = ["h5py", "petsc4py", "pyoptsparse", "pyDOE2"]
@@ -36,6 +35,7 @@ extensions = [
     "sphinx.ext.githubpages",
     "numpydoc",
     "sphinx_copybutton",
+    "embed_n2",
 ]
 
 # directories for which to generate sourcedocs
@@ -55,9 +55,6 @@ needs_sphinx = "1.6.2"
 
 numpydoc_show_class_members = False
 
-# The master toctree document.
-# master_doc = 'index'
-
 # General information about the project.
 project = "OpenAeroStruct"
 copyright = "2018, John Jasa, Dr. John Hwang, Justin S. Gray"
@@ -69,10 +66,7 @@ author = "John Jasa, Dr. John Hwang, Justin S. Gray"
 
 import re
 
-__version__ = re.findall(
-    r"""__version__ = ["']+([0-9\.]*)["']+""",
-    open("../__init__.py").read(),
-)[0]
+__version__ = re.findall(r"""__version__ = ["']+([0-9\.]*)["']+""", open("../__init__.py").read(),)[0]
 
 # The short X.Y version.
 version = __version__
