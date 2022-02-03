@@ -2,7 +2,10 @@ from setuptools import setup
 
 import re
 
-__version__ = re.findall(r"""__version__ = ["']+([0-9\.]*)["']+""", open("openaerostruct/__init__.py").read(),)[0]
+__version__ = re.findall(
+    r"""__version__ = ["']+([0-9\.]*)["']+""",
+    open("openaerostruct/__init__.py").read(),
+)[0]
 
 optional_dependencies = {
     "docs": ["sphinx_mdolab_theme"],
