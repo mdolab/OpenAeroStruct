@@ -66,7 +66,10 @@ author = "John Jasa, Dr. John Hwang, Justin S. Gray"
 
 import re
 
-__version__ = re.findall(r"""__version__ = ["']+([0-9\.]*)["']+""", open("../__init__.py").read(),)[0]
+__version__ = re.findall(
+    r"""__version__ = ["']+([0-9\.]*)["']+""",
+    open("../__init__.py").read(),
+)[0]
 
 # The short X.Y version.
 version = __version__
