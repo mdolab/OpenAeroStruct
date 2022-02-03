@@ -4,7 +4,7 @@ OpenAeroStruct v1 to v2 Conversion
 ==================================
 
 There are quite a few differences between OpenAeroStruct v1 and v2, though the underlying analyses remain largely the same.
-In this document, we'll example code using v1 on the left in red and the corresponding code to perform the same computations in v2 on the right in green.
+In this document, we'll example code in each subsection using v1 on the top and the corresponding code to perform the same computations in v2 on the bottom.
 This can serve as a Rosetta Stone to translate older v1 scripts to run in v2.
 
 In general, much more of the code is exposed to the user in v2.
@@ -16,110 +16,128 @@ We'll first go through individual sets of commands then present a full example s
 Instantiate the problem
 -----------------------
 
-.. content-container ::
+v1 Script
+^^^^^^^^^
 
-  .. embed-compare::
-      openaerostruct.tests.test_v1_aero_opt.Test.test
-      numpy
-      prob_vars
+.. code-block:: python
 
-    from __future__ import division, print_function
-    from time import time
-    import numpy as np
+  from __future__ import division, print_function
+  from time import time
+  import numpy as np
 
-    from OpenAeroStruct import OASProblem
+  from OpenAeroStruct import OASProblem
 
 
-    # Set problem type
-    prob_dict = {'type' : 'aero',
-                 'optimize' : True}
+  # Set problem type
+  prob_dict = {'type' : 'aero',
+                'optimize' : True}
 
-    # Instantiate problem and add default surface
-    OAS_prob = OASProblem(prob_dict)
+  # Instantiate problem and add default surface
+  OAS_prob = OASProblem(prob_dict)
+
+v2 Script
+^^^^^^^^^
+
+.. literalinclude:: /../tests/test_v1_aero_opt.py
+  :start-after: checkpoint 0
+  :end-before: checkpoint 1
 
 Create the surface and add it to the problem
 --------------------------------------------
 
-.. content-container ::
+v1 Script
+^^^^^^^^^
 
-  .. embed-compare::
-      openaerostruct.tests.test_v1_aero_opt.Test.test
-      dictionary
-      end
+.. code-block:: python
 
-    # Create a dictionary to store options about the surface
-    surf_dict = {'num_y' : 5,
-                 'num_x' : 3,
-                 'wing_type' : 'rect',
-                 'symmetry' : True,
-                 'num_twist_cp' : 2}
+  # Create a dictionary to store options about the surface
+  surf_dict = {'num_y' : 5,
+                'num_x' : 3,
+                'wing_type' : 'rect',
+                'symmetry' : True,
+                'num_twist_cp' : 2}
 
-    # Add the specified wing surface to the problem
-    OAS_prob.add_surface(surf_dict)
+  # Add the specified wing surface to the problem
+  OAS_prob.add_surface(surf_dict)
+
+v2 Script
+^^^^^^^^^
+
+.. literalinclude:: /../tests/test_v1_aero_opt.py
+  :start-after: checkpoint 2
+  :end-before: checkpoint 3
 
 
 Set up the problem, add design variables, and run the optimization
 ------------------------------------------------------------------
 
-.. content-container ::
+v1 Script
+^^^^^^^^^
 
-  .. embed-compare::
-      openaerostruct.tests.test_v1_aero_opt.Test.test
-      geom_group
-      prob.run_driver()
+.. code-block:: python
 
-    # Setup problem and add design variables, constraint, and objective
-    OAS_prob.add_desvar('wing.twist_cp', lower=-10., upper=15.)
-    OAS_prob.add_desvar('wing.sweep', lower=10., upper=30.)
-    OAS_prob.add_desvar('wing.dihedral', lower=-10., upper=20.)
-    OAS_prob.add_constraint('wing_perf.CL', equals=0.5)
-    OAS_prob.add_objective('wing_perf.CD', scaler=1e4)
-    OAS_prob.setup()
+  # Setup problem and add design variables, constraint, and objective
+  OAS_prob.add_desvar('wing.twist_cp', lower=-10., upper=15.)
+  OAS_prob.add_desvar('wing.sweep', lower=10., upper=30.)
+  OAS_prob.add_desvar('wing.dihedral', lower=-10., upper=20.)
+  OAS_prob.add_constraint('wing_perf.CL', equals=0.5)
+  OAS_prob.add_objective('wing_perf.CD', scaler=1e4)
+  OAS_prob.setup()
 
-    # Actually run the problem
-    OAS_prob.run()
+  # Actually run the problem
+  OAS_prob.run()
+
+v2 Script
+^^^^^^^^^
+
+.. literalinclude:: /../tests/test_v1_aero_opt.pyGeo
+  :start-after: checkpoint 4
+  :end-before: checkpoint 5
 
 Full run scripts
 ----------------
 
-.. content-container ::
+v1 Script
+^^^^^^^^^
 
-  .. embed-compare::
-      openaerostruct.tests.test_v1_aero_opt.Test.test
-      numpy
-      prob.run_driver()
+.. code-block:: python
 
-    from __future__ import division, print_function
-    from time import time
-    import numpy as np
+  from __future__ import division, print_function
+  from time import time
+  import numpy as np
 
-    from OpenAeroStruct import OASProblem
+  from OpenAeroStruct import OASProblem
 
 
-    # Set problem type
-    prob_dict = {'type' : 'aero',
-                 'optimize' : True}
+  # Set problem type
+  prob_dict = {'type' : 'aero',
+                'optimize' : True}
 
-    # Instantiate problem and add default surface
-    OAS_prob = OASProblem(prob_dict)
+  # Instantiate problem and add default surface
+  OAS_prob = OASProblem(prob_dict)
 
-    # Create a dictionary to store options about the surface
-    surf_dict = {'num_y' : 5,
-                 'num_x' : 3,
-                 'wing_type' : 'rect',
-                 'symmetry' : True,
-                 'num_twist_cp' : 2}
+  # Create a dictionary to store options about the surface
+  surf_dict = {'num_y' : 5,
+                'num_x' : 3,
+                'wing_type' : 'rect',
+                'symmetry' : True,
+                'num_twist_cp' : 2}
 
-    # Add the specified wing surface to the problem
-    OAS_prob.add_surface(surf_dict)
+  # Add the specified wing surface to the problem
+  OAS_prob.add_surface(surf_dict)
 
-    # Setup problem and add design variables, constraint, and objective
-    OAS_prob.add_desvar('wing.twist_cp', lower=-10., upper=15.)
-    OAS_prob.add_desvar('wing.sweep', lower=10., upper=30.)
-    OAS_prob.add_desvar('wing.dihedral', lower=-10., upper=20.)
-    OAS_prob.add_constraint('wing_perf.CL', equals=0.5)
-    OAS_prob.add_objective('wing_perf.CD', scaler=1e4)
-    OAS_prob.setup()
+  # Setup problem and add design variables, constraint, and objective
+  OAS_prob.add_desvar('wing.twist_cp', lower=-10., upper=15.)
+  OAS_prob.add_desvar('wing.sweep', lower=10., upper=30.)
+  OAS_prob.add_desvar('wing.dihedral', lower=-10., upper=20.)
+  OAS_prob.add_constraint('wing_perf.CL', equals=0.5)
+  OAS_prob.add_objective('wing_perf.CD', scaler=1e4)
+  OAS_prob.setup()
 
-    # Actually run the problem
-    OAS_prob.run()
+  # Actually run the problem
+  OAS_prob.run()
+
+v2 Script
+^^^^^^^^^
+
+.. literalinclude:: /../tests/test_v1_aero_opt.py

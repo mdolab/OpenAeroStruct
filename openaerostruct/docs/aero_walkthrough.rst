@@ -158,8 +158,8 @@ Investigation of the problem structure -- N2 diagram
 
 We'll now take a moment to explain the organization of the aerodynamic model.
 
-.. embed-n2::
-    aero_walkthrough/generate_n2.py
+.. raw:: html
+    :file: _n2html/generate_n2_n2.html
 
 Mouse over components and parameters to see the data-passing connections between them.
 You can expand this view, click on boxes to zoom in, or right-click to collapse boxes.

@@ -21,8 +21,7 @@ The following shows a visualization of the mesh.
 The complete script for the optimization is as follows.
 Make sure you go through the :ref:`Aerostructural_with_Wingbox_Walkthrough` before trying to understand this setup.
 
-.. embed-code::
-    two_part_wing_custom_mesh.py
+.. literalinclude:: two_part_wing_custom_mesh.py
 
 There is plenty of room for improvement.
 A finer mesh and a tighter optimization tolerance should be used.

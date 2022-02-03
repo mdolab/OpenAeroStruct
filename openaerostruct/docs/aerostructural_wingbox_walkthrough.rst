@@ -305,8 +305,7 @@ The `check_partials` command can be used to check partial derivatives when modif
 
 The complete script for the optimization is as follows.
 
-.. embed-code::
-    openaerostruct.docs.wingbox_mpt_opt_example
+.. literalinclude:: wingbox_mpt_opt_example.py
 
 The following are the visualization results (keep in mind that this is with a very large optimization tolerance) for this problem using the `plot_wingbox.py` visualization script (located in the `utils` directory).
 This visualization script requires the `.db` file as an argument.

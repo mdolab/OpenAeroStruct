@@ -8,6 +8,32 @@ The construction of the problem follows the same logic as outlined in :ref:`Aero
 For example, we use an `AerostructPoint` group instead of an `AeroGroup` because it contains the additional components needed for aerostructural optimization.
 Additionally, we have more variable connections due to the more complex problem formulation.
 
-  .. embed-code::
-      openaerostruct.tests.test_aerostruct.Test.test
-      :layout: interleave
+.. literalinclude:: /../tests/test_aerostruct.py
+   :start-after: checkpoint 0
+   :end-before: checkpoint 1
+
+.. code-block::
+
+  [0.]
+
+.. literalinclude:: /../tests/test_aerostruct.py
+   :start-after: checkpoint 2
+   :end-before: checkpoint 3
+
+.. code-block::
+
+  Optimization terminated successfully    (Exit mode 0)
+            Current function value: [0.97696333]
+            Iterations: 42
+            Function evaluations: 47
+            Gradient evaluations: 42
+  Optimization Complete
+  -----------------------------------
+
+.. code-block:: python
+
+  print(print(prob["AS_point_0.fuelburn"][0]))
+
+.. code-block::
+
+  97696.3325251465

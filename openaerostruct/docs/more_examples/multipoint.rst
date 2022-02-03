@@ -7,5 +7,13 @@ To simulate multiple flight conditions in a single analysis or optimization, you
 This allows you to analyze the performance of the aircraft at multiple flight conditions simultaneously, such as at different cruise and maneuver conditions.
 We optimize the aircraft at two cruise flight conditions below.
 
-.. embed-code::
-    openaerostruct.tests.test_multipoint_aero.Test.test
+.. literalinclude:: /../tests/test_multipoint_aero.py
+    :start-after: checkpoint 0
+    :end-before: checkpoint 1
+
+.. code-block:: python
+
+    print(prob["aero_point_0.wing_perf.CL"][0])
+    print(prob["aero_point_0.wing_perf.CD"][0])
+    print(prob["aero_point_1.wing_perf.CL"][0])
+    print(prob["aero_point_1.wing_perf.CD"][0])

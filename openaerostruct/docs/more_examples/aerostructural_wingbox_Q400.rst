@@ -7,8 +7,7 @@ This is an additional example of a multipoint aerostructural optimization with t
 Here we also create a custom mesh instead of using one provided by OpenAeroStruct.
 Make sure you go through the :ref:`Aerostructural_with_Wingbox_Walkthrough` before trying to understand this example.
 
-.. embed-code::
-    openaerostruct.docs.wingbox_mpt_Q400_example
+.. literalinclude:: wingbox_mpt_Q400_example.py
 
 The following shows a visualization of the results.
 As can be seen, there is plenty of room for improvement.
