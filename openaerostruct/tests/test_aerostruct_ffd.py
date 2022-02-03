@@ -15,6 +15,7 @@ except ImportError:
 @unittest.skipUnless(pygeo_flag, "pyGeo is required.")
 class Test(unittest.TestCase):
     def test(self):
+        # docs checkpoint 0
         from openaerostruct.geometry.utils import generate_mesh, write_FFD_file
 
         from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
@@ -193,6 +194,7 @@ class Test(unittest.TestCase):
         # filename = mesh_dict['wing_type'] + '_' + str(mesh_dict['num_x']) + '_' + str(mesh_dict['num_y'])
         # filename += '_' + str(surf_dict['mx']) + '_' + str(surf_dict['my']) + '.mesh'
         # np.save(filename, mesh)
+        # docs checkpoint 1
 
         assert_near_equal(prob["AS_point_0.fuelburn"][0], 97680.8964568375, 1e-3)
 

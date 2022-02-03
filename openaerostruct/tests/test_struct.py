@@ -4,7 +4,7 @@ import unittest
 
 class Test(unittest.TestCase):
     def test(self):
-
+        # docs checkpoint 0
         import numpy as np
 
         from openaerostruct.geometry.utils import generate_mesh
@@ -78,6 +78,7 @@ class Test(unittest.TestCase):
         # prob.check_partials(compact_print=False, method='fd')
         # exit()
         prob.run_driver()
+        # docs checkpoint 1
 
         assert_near_equal(prob["wing.structural_mass"][0], 71088.4682399, 1e-8)
 

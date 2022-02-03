@@ -4,6 +4,7 @@ import unittest
 
 class Test(unittest.TestCase):
     def test(self):
+        # docs checkpoint 0
         import numpy as np
 
         from openaerostruct.geometry.utils import generate_mesh
@@ -24,7 +25,9 @@ class Test(unittest.TestCase):
         indep_var_comp.add_output("cg", val=np.zeros((3)), units="m")
 
         prob.model.add_subsystem("prob_vars", indep_var_comp, promotes=["*"])
+        # docs checkpoint 1
 
+        # docs checkpoint 2
         # Create a dictionary to store options about the surface
         mesh_dict = {
             "num_y": 5,
@@ -67,7 +70,9 @@ class Test(unittest.TestCase):
             "dihedral": 0.0,
             "taper": 1.0,
         }  # end of surface dictionary
+        # docs checkpoint 3
 
+        # docks checkpoint 4
         geom_group = Geometry(surface=surface)
 
         # Add tmp_group to the problem as the name of the surface.
@@ -112,6 +117,7 @@ class Test(unittest.TestCase):
         prob.setup()
 
         prob.run_driver()
+        # docs checkpoint 5
 
         assert_near_equal(prob["aero_point_0.wing_perf.CD"][0], 0.0049392534859265614, 1e-6)
 

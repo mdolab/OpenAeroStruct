@@ -4,6 +4,8 @@ import unittest
 
 class Test(unittest.TestCase):
     def test(self):
+
+        # docs checkpoint 0
         import numpy as np
 
         from openaerostruct.geometry.utils import generate_mesh
@@ -144,12 +146,15 @@ class Test(unittest.TestCase):
 
         # Set up the problem
         prob.setup(check=True)
+        # docs checkpoint 1
 
         # Inserting a small unit test here. Verify that beta is correctly promoted in an Aerostruct
         # group.
         assert_near_equal(prob["AS_point_0.beta"], 0.0)
 
+        # docks checkpoint 2
         prob.run_driver()
+        # docs checkpoint 3
 
         assert_near_equal(prob["AS_point_0.fuelburn"][0], 97696.33252514644, 1e-8)
 
