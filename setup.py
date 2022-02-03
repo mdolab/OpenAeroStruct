@@ -8,7 +8,7 @@ __version__ = re.findall(
 )[0]
 
 optional_dependencies = {
-    "docs": ["openmdao[docs]>=3.2, <=3.9.2", "sphinx_mdolab_theme"],
+    "docs": ["sphinx_mdolab_theme"],
     "test": ["pytest", "pytest-cov", "coverage"],
 }
 

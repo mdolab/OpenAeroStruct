@@ -6,8 +6,6 @@ import sys
 import openmdao
 import importlib
 from unittest.mock import Mock
-from openmdao.docutils import do_monkeypatch, embed_code, embed_options, embed_compare
-from openmdao.docs._exts import embed_n2
 from openaerostruct.docs._utils.generate_sourcedocs import generate_docs
 from sphinx_mdolab_theme.config import *
 
@@ -24,11 +22,7 @@ for mod_name in MOCK_MODULES:
     except ImportError:
         sys.modules[mod_name] = Mock()
 
-# -- General configuration ------------------------------------------------
-
-# If your documentation needs a minimal Sphinx version, state it here.
-#
-# needs_sphinx = '1.0'
+# --- General configuration ---
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -41,10 +35,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.githubpages",
     "numpydoc",
-    "embed_code",
-    "embed_compare",
-    "embed_options",
-    "embed_n2",
+    "sphinx_copybutton",
 ]
 
 # directories for which to generate sourcedocs
@@ -58,8 +49,6 @@ packages = [
 ]
 
 generate_docs("..", "../..", packages, project_name="openaerostruct")
-
-# -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
 needs_sphinx = "1.6.2"
@@ -84,13 +73,12 @@ __version__ = re.findall(
     r"""__version__ = ["']+([0-9\.]*)["']+""",
     open("../__init__.py").read(),
 )[0]
+
 # The short X.Y version.
 version = __version__
+
 # The full version, including alpha/beta/rc tags.
 release = __version__
-
-# The name of the Pygments (syntax highlighting) style to use.
-pygments_style = "sphinx"
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
@@ -99,13 +87,11 @@ html_last_updated_fmt = "%b %d, %Y"
 # Output file base name for HTML help builder.
 htmlhelp_basename = "OpenAeroStructdoc"
 
-# Customize sidebar
-# html_sidebars = {"**": ["globaltoc.html", "searchbox.html"]}
-
 html_extra_path = ["_n2html"]
 
 # The master toctree document.
 master_doc = "index"
+
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [(master_doc, "openaerostruct", "OpenAeroStruct Documentation", [author], 1)]
