@@ -31,6 +31,7 @@ jobs:
     # we need pySpline/pyGeo to run FFD tests.
     - name: Install pySpline and pyGeo
       run: |
+        cd ..
         sudo apt-get install openmpi-bin libopenmpi-dev
         pip install mpi4py
         git clone https://github.com/mdolab/pyspline.git
