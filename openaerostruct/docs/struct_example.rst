@@ -10,6 +10,7 @@ Although doing structural-only optimizations is relatively rare, this is a build
 .. literalinclude:: /../tests/test_struct.py
   :start-after: checkpoint 0
   :end-before: checkpoint 1
+  :dedent: 8
 
 .. code-block::
 

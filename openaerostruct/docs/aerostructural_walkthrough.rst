@@ -11,6 +11,7 @@ Additionally, we have more variable connections due to the more complex problem 
 .. literalinclude:: /../tests/test_aerostruct.py
    :start-after: checkpoint 0
    :end-before: checkpoint 1
+   :dedent: 8
 
 .. code-block::
 
@@ -19,6 +20,7 @@ Additionally, we have more variable connections due to the more complex problem 
 .. literalinclude:: /../tests/test_aerostruct.py
    :start-after: checkpoint 2
    :end-before: checkpoint 3
+   :dedent: 8
 
 .. code-block::
 

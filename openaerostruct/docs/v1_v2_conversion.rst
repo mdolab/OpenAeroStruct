@@ -41,6 +41,7 @@ v2 Script
 .. literalinclude:: /../tests/test_v1_aero_opt.py
   :start-after: checkpoint 0
   :end-before: checkpoint 1
+  :dedent: 8
 
 Create the surface and add it to the problem
 --------------------------------------------
@@ -66,6 +67,7 @@ v2 Script
 .. literalinclude:: /../tests/test_v1_aero_opt.py
   :start-after: checkpoint 2
   :end-before: checkpoint 3
+  :dedent: 8
 
 
 Set up the problem, add design variables, and run the optimization
@@ -93,6 +95,7 @@ v2 Script
 .. literalinclude:: /../tests/test_v1_aero_opt.py
   :start-after: checkpoint 4
   :end-before: checkpoint 5
+  :dedent: 8
 
 Full run scripts
 ----------------
@@ -143,3 +146,4 @@ v2 Script
 .. literalinclude:: /../tests/test_v1_aero_opt.py
   :start-after: checkpoint 0
   :end-before: checkpoint 5
+  :dedent: 8

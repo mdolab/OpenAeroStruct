@@ -20,6 +20,7 @@ To enable ground effect, add a :code:`groundplane: True` attribute to your aeros
 .. literalinclude:: /../tests/test_aero_ground_effect.py
     :start-after: checkpoint 0
     :end-before: checkpoint 1
+    :dedent: 8
 
 .. code-block::
 

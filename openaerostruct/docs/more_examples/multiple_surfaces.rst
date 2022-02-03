@@ -9,6 +9,7 @@ The most straightforward example is a wing and a tail for a conventional airplan
 .. literalinclude:: /../tests/test_multiple_aero_analysis.py
     :start-after: checkpoint 0
     :end-before: checkpoint 1
+    :dedent: 8
 
 .. code-block:: python
 

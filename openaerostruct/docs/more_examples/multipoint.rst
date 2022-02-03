@@ -10,6 +10,7 @@ We optimize the aircraft at two cruise flight conditions below.
 .. literalinclude:: /../tests/test_multipoint_aero.py
     :start-after: checkpoint 0
     :end-before: checkpoint 1
+    :dedent: 8
 
 .. code-block:: python
 

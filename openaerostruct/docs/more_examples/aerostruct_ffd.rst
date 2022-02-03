@@ -12,6 +12,7 @@ This allows for more general design shape changes and helps sync up geometry cha
 .. literalinclude:: /../tests/test_aerostruct_ffd.py
   :start-after: checkpoint 0
   :end-before: checkpoint 1
+  :dedent: 8
 
 .. code-block:: python
 
