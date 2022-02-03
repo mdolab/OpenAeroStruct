@@ -1,7 +1,7 @@
 import os
 
 
-IGNORE_LIST = ['docs', 'tests', 'devtools', '__pycache__', 'code_review', 'test_suite', 'utils']
+IGNORE_LIST = ["docs", "tests", "devtools", "__pycache__", "code_review", "test_suite", "utils"]
 
 # this function is used to create the entire directory structure
 # of our source docs, as well as writing out each individual rst file.
