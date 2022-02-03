@@ -9,6 +9,7 @@ We'll go into more detail later about how to set up a model, define the optimiza
 .. literalinclude:: /../tests/test_aero.py
     :start-after: checkpoint 0
     :end-before: checkpoint 1
+    :dedent: 4
 
 .. code-block::
 
