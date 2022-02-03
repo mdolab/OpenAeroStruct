@@ -2,10 +2,7 @@ from setuptools import setup
 
 import re
 
-__version__ = re.findall(
-    r"""__version__ = ["']+([0-9\.]*)["']+""",
-    open("openaerostruct/__init__.py").read(),
-)[0]
+__version__ = re.findall(r"""__version__ = ["']+([0-9\.]*)["']+""", open("openaerostruct/__init__.py").read(),)[0]
 
 optional_dependencies = {
     "docs": ["sphinx_mdolab_theme"],
@@ -40,7 +37,7 @@ setup(
     # Test files
     package_data={"openaerostruct": ["tests/*.py", "*/tests/*.py", "*/*/tests/*.py"]},
     install_requires=[
-        "openmdao>=3.2, <=3.16.0",   # don't forget to update OM versions in README.md and docs/installation.rst
+        "openmdao>=3.2, <=3.16.0",  # don't forget to update OM versions in README.md and docs/installation.rst
         "numpy",
         "scipy",
         "matplotlib",
