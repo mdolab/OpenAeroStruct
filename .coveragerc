@@ -2,7 +2,7 @@
 omit =
     */openaerostruct/utils/plot_wing.py
     */openaerostruct/utils/plot_wingbox.py
-    */openaerostruct/tests/*
-    */openaerostruct/docs/*
+    */tests/*
+    */docs/*
 exclude_lines =
     pragma: no cover
