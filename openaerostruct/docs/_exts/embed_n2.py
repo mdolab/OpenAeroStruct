@@ -1,10 +1,10 @@
-    """
-    This file comes from OpenMDAO version 3.9.2 and provides functionality
-    to embed an N2 diagram as an HTML into the docs using a Sphinx
-    extension.
+"""
+This file comes from OpenMDAO version 3.9.2 and provides functionality
+to embed an N2 diagram as an HTML into the docs using a Sphinx
+extension.
 
-    Link to OpenMDAO 3.9.2: https://github.com/OpenMDAO/OpenMDAO/releases/tag/3.9.2
-    """
+Link to OpenMDAO 3.9.2: https://github.com/OpenMDAO/OpenMDAO/releases/tag/3.9.2
+"""
 
 from docutils import nodes
 from docutils.statemachine import ViewList
