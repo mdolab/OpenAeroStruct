@@ -619,6 +619,7 @@ def get_default_geo_dict():
         # Simple Geometric Variables
         "span": 10.0,  # full wingspan, even for symmetric cases
         "root_chord": 1.0,  # root chord
+        "num_twist_cp" : 2,   # number of twist controling point, only relevant for CRM wings.
     }
 
     return defaults
