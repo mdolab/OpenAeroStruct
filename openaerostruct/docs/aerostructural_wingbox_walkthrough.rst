@@ -9,7 +9,7 @@ We strongly recommend reading this relatively short conference paper to learn ab
 The presentation slides for this conference paper can be found `online <https://www.researchgate.net/publication/327802989_Presentation_slides_for_Low-fidelity_Aerostructural_Optimization_of_Aircraft_Wings_with_a_Simplified_Wingbox_Model_Using_OpenAeroStruct>`_.
 Analytic derivatives are not provided for some components of this model, so any optimization problem will use the complex-step approximation to obtain the relevant partial derivatives for these components.
 
-.. image:: wingbox_fine.png
+.. image:: /figures/wingbox_fine.png
 
 This page breaks down and describes an example optimization run-script that uses the wingbox model.
 This example uses the same optimization problem used for the paper linked above, but with fewer design variables and a coarser mesh.
@@ -315,6 +315,6 @@ For example, to use it for this example problem, from the example script's (wing
 
   python ../utils/plot_wingbox.py aerostruct.db
 
-.. image:: wingbox_opt.png
+.. image:: /figures/wingbox_opt.png
 
 This plotting script currently only works for two-flight-point problems like the one described in this walkthrough.

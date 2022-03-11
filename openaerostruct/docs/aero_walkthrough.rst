@@ -20,7 +20,7 @@ Here is an extremely quick rundown of the basic terminology within OpenMDAO:
 - Driver: controls iterative model execution process (e.g., Optimizer, DOE)
 - Problem: top level class that contains everything and provide the model execution API
 
-.. figure:: problem_diagram.png
+.. figure:: /figures/problem_diagram.png
    :align: center
    :width: 50%
    :alt: diagram of the problem structure
@@ -196,4 +196,4 @@ Here you'll use `aero.db` or the filename for where you saved the problem data.
 This will produce a window where you can see how the lifting surface and design variables change with each iteration, as shown below.
 You can monitor the results from your optimization as it progresses by checking the `Automatically refresh` button.
 
-.. image:: aero.png
+.. image:: /figures/aero.png

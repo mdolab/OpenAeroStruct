@@ -12,7 +12,7 @@ This is simple to implement but is not strictly correct because of the influence
 In OpenAeroStruct, the ground effect mirroring plane is parallel to the freestream (influenced by angle of attack).
 This means that configurations deep in ground effect (small altitude compared to wingspan) or at higher angles of attack will obtain the correct ground effect correction.
 
-.. image:: groundplane.svg
+.. image:: /advanced_features/figs/groundplane.svg
     :width: 600
 
 To enable ground effect, add a :code:`groundplane: True` attribute to your aerosurfaces, like so:
@@ -109,10 +109,10 @@ The following plots (generated using the :code:`examples/drag_polar_ground_effec
 As the wing approaches the ground, induced drag is significantly reduced compared to the free-flight induced drag.
 These results are consistent with published values in the literature, for example "Lifting-Line Predictions for Induced Drag and Lift in Ground Effect" by Phillips and Hunsaker.
 
-.. image:: ground_effect_correction.png
+.. image:: /advanced_features/figs/ground_effect_correction.png
     :width: 600
 
-.. image:: ground_effect_polars.png
+.. image:: /advanced_features/figs/ground_effect_polars.png
     :width: 600
 
 

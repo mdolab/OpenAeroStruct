@@ -8,14 +8,14 @@ It couples a vortex-lattice method (VLM) and a 6 degrees of freedom (per node) 3
 These simulations are wrapped with an optimizer using NASA's OpenMDAO framework.
 The analysis and optimization results can be visualized using included tools, producing figures such as this:
 
-.. figure:: example.png
+.. figure:: /figures/example.png
    :align: center
    :width: 100%
    :alt: sample visualization of aerostructural system
 
    Aerostructural optimization of the Common Research Model (CRM) wing.
 
-.. figure:: aerostruct_xdsm.png
+.. figure:: /figures/aerostruct_xdsm.png
    :align: center
    :width: 70%
    :alt: sample XDSM of aerostructural system
@@ -36,9 +36,6 @@ Please review these at a minimum to understand how aerodynamic, structural, and 
    aero_walkthrough.rst
    struct_example.rst
    aerostructural_index.rst
-..   aerostructural_walkthrough.rst
-..   aerostructural_wingbox_walkthrough.rst
-..   custom_mesh_example.rst
 
 
 Advanced Features
