@@ -1,7 +1,7 @@
 .. _Structural_Optimization_Example:
 
-Structural Optimization Example
-===============================
+Structural Optimization
+=======================
 
 OpenAeroStruct can also handle structural-only optimization problems.
 Here we prescribe a load on the spar and allow the optimizer to vary the structural thickness to minimize weight subject to failure constraints.

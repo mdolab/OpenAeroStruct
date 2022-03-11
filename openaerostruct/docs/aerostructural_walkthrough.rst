@@ -1,7 +1,7 @@
 .. _Aerostructural_Walkthrough:
 
-Aerostructural Walkthrough
-==========================
+Aerostructural Optimization with Tubular Spar
+=============================================
 
 With aerodynamic- and structural-only analyses done, we now examine an aerostructural design problem.
 The construction of the problem follows the same logic as outlined in :ref:`Aerodynamic_Optimization_Walkthrough`, though with some added details.

@@ -8,7 +8,7 @@ This allows you to analyze the performance of the aircraft at multiple flight co
 
 
 Aerodynamic Optimization Example
-================================
+--------------------------------
 We optimize the aircraft at two cruise flight conditions below.
 
 .. literalinclude:: /../tests/test_multipoint_aero.py
@@ -25,7 +25,7 @@ We optimize the aircraft at two cruise flight conditions below.
 
 
 Aerostructural Optimization Example (Q400)
-==========================================
+------------------------------------------
 
 This is an additional example of a multipoint aerostructural optimization with the wingbox model using a wing based on the Bombardier Q400.
 Here we also create a custom mesh instead of using one provided by OpenAeroStruct.

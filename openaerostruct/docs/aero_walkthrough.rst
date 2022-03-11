@@ -1,7 +1,7 @@
 .. _Aerodynamic_Optimization_Walkthrough:
 
-Aerodynamic Optimization Walkthrough
-====================================
+Aerodynamic Optimization
+========================
 
 This page documents in detail how we perform aerodynamic optimization in OpenAeroStruct.
 You should read this page in its entirety to get a feel for how the model is set up and used.
