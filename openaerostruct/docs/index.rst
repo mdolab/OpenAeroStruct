@@ -35,26 +35,29 @@ Please review these at a minimum to understand how aerodynamic, structural, and 
    quick_example.rst
    aero_walkthrough.rst
    struct_example.rst
-   aerostructural_walkthrough.rst
-   aerostructural_wingbox_walkthrough.rst
-   custom_mesh_example.rst
+   aerostructural_index.rst
+..   aerostructural_walkthrough.rst
+..   aerostructural_wingbox_walkthrough.rst
+..   custom_mesh_example.rst
 
-Once you have reviewed and understand these examples, you can move on to some more advanced examples below.
 
-.. toctree::
-   :maxdepth: 2
-
-   more_examples.rst
-
-Other Useful Docs
+Advanced Features
 =================
+Once you have reviewed and understand basic walkthroughs, you can move on to some more advanced features below.
 
 .. toctree::
    :maxdepth: 2
 
-   specialty_topics.rst
-   v1_v2_conversion.rst
-   how_to_contribute.rst
+   advanced_features.rst
+
+User Reference
+==============
+Other reference guide can be found below.
+
+.. toctree::
+   :maxdepth: 2
+
+   user_reference.rst
 
 Source Docs
 ===========
