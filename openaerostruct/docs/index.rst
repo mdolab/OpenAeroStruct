@@ -29,7 +29,7 @@ These first few doc pages go into detail about how to set up and run a problem i
 Please review these at a minimum to understand how aerodynamic, structural, and aerostructural problems are constructed.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    installation.rst
    quick_example.rst
