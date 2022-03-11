@@ -619,11 +619,6 @@ def get_default_geo_dict():
         # Simple Geometric Variables
         "span": 10.0,  # full wingspan, even for symmetric cases
         "root_chord": 1.0,  # root chord
-        "dihedral": 0.0,  # wing dihedral angle in degrees
-        # positive is upward
-        "sweep": 0.0,  # wing sweep angle in degrees
-        # positive sweeps back
-        "taper": 1.0,  # taper ratio; 1. is uniform chord
     }
 
     return defaults
