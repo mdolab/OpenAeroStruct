@@ -43,7 +43,7 @@ Here is a list of the keys and default values of the ``mesh-dict``, which is use
       - np.array([0, 0, 0])
       - Coordinates to offset the surface from its default location.
     * - num_twist_cp
-      - 
+      - 2
       - Number of twist control points. Only relevant when ``wing_type = "CRM"``.
  
 
@@ -69,8 +69,8 @@ The surface dict will be provided to Groups, including ``Geometry``, ``AeroPoint
       - "wetted" / "projected"
       - How we compute the wing reference area.
     * - mesh
-      - 
-      - 3D numpy array of mesh vertices, can be created by ``generate_mesh``.
+      - 3D ndarray
+      - ``x, y, z`` coordinates of the mesh vertices, can be created by ``generate_mesh``.
     * - twist_cp
       - np.array([0, 5]) (deg)
       - B-spline control points for twist distribution. Array convention is ``[wing tip, ..., root]`` in symmetry cases, and ``[tip, ..., root, ... tip]`` when ``symmetry = False``.
