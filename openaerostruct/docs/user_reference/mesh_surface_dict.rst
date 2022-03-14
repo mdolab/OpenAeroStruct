@@ -6,9 +6,9 @@ Mesh and Surface Dictionaries
 Mesh Dict
 ---------
 
-Here is a list of the keys and default values of the ``mesh-dict``, which is used to generate a mesh, e.g. ``mesh = generate_mesh(mesh_dict)``.
+Here is a list of the keys and default values of the ``mesh_dict``, which is used to generate a mesh, e.g. ``mesh = generate_mesh(mesh_dict)``.
 
-.. list-table::
+.. list-table:: Mesh definition
     :widths: 20 20 5 55
     :header-rows: 1
 
@@ -23,7 +23,7 @@ Here is a list of the keys and default values of the ``mesh-dict``, which is use
     * - num_y
       - 5
       - 
-      - Number of spanwise vertices for the entire wing. When `symmetry = True`, the numbe of vertices for a half wing will be ``(num_y + 1) / 2.
+      - Number of spanwise vertices for the entire wing. When ``symmetry = True``, the numbe of vertices for a half wing will be ``(num_y + 1) / 2.
     * - span
       - 10.0
       - m
@@ -225,10 +225,10 @@ The surface dict will be provided to Groups, including ``Geometry``, ``AeroPoint
       - m
       - Control point of spar thickness distribution.
     * - skin_thickness_cp
-      - np.array([0.005, 0.025])
+      - np.array([0.005, 0.02])
       - m
       - Control point of skin thickness distribution.
-    * original_wingbox_airfoil_t_over_c
+    * - original_wingbox _airfoil_t_over_c
       - 0.12
       - 
       - Thickness-over-chord ratio of airfoil provided for the wingbox cross-section.
