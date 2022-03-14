@@ -65,12 +65,16 @@ class VortexMesh(om.ExplicitComponent):
                     self.add_input("alpha", val=0.0 * np.pi / 180, units="rad")
 
             if surface["symmetry"]:
+                left_wing = abs(surface["mesh"][0, 0, 1]) > abs(surface["mesh"][0, -1, 1])
                 if ground_effect:
                     self.add_output(vortex_mesh_name, shape=(2 * nx, ny * 2 - 1, 3), units="m")
                     # these are cheaper to just do with CS
                     self.declare_partials(vortex_mesh_name, ["alpha", "height_agl"], method="cs")
                     mesh_indices = np.arange(nx * ny * 3).reshape((nx, ny, 3))
                     vor_indices = np.arange(2 * nx * (2 * ny - 1) * 3).reshape((2 * nx, (2 * ny - 1), 3))
+                    if not left_wing:
+                        vor_indices = vor_indices[:, ::-1, :]
+                        mesh_indices = mesh_indices[:, ::-1, :]
                     quadrant_1_indices = vor_indices[:nx, :ny, :]
                     quadrant_2_indices = vor_indices[:nx, ny:, :]
                     quadrant_3_indices = vor_indices[nx:, :ny, :]
@@ -80,6 +84,9 @@ class VortexMesh(om.ExplicitComponent):
                     self.add_output(vortex_mesh_name, shape=(nx, ny * 2 - 1, 3), units="m")
                     mesh_indices = np.arange(nx * ny * 3).reshape((nx, ny, 3))
                     vor_indices = np.arange(nx * (2 * ny - 1) * 3).reshape((nx, (2 * ny - 1), 3))
+                    if not left_wing:
+                        vor_indices = vor_indices[:, ::-1, :]
+                        mesh_indices = mesh_indices[:, ::-1, :]
                     quadrant_1_indices = vor_indices[:nx, :ny, :]
                     quadrant_2_indices = vor_indices[:nx, ny:, :]
 
@@ -207,17 +214,28 @@ class VortexMesh(om.ExplicitComponent):
             ny = surface["mesh"].shape[1]
             name = surface["name"]
             ground_effect = surface.get("groundplane", False)
+            left_wing = abs(surface["mesh"][0, 0, 1]) > abs(surface["mesh"][0, -1, 1])
 
             mesh_name = "{}_def_mesh".format(name)
             vortex_mesh_name = "{}_vortex_mesh".format(name)
             if not ground_effect:
                 if surface["symmetry"]:
                     mesh = np.zeros((nx, ny * 2 - 1, 3), dtype=type(inputs[mesh_name][0, 0, 0]))
-                    mesh[:, :ny, :] = inputs[mesh_name]
-                    # indices are numbered from tip to centerline
-                    #  reflection is             all but midpoint  in rev order
-                    mesh[:, ny:, :] = inputs[mesh_name][:, :-1, :][:, ::-1, :]
-                    mesh[:, ny:, 1] *= -1.0
+                    # Check if the wing is a left or right wing.
+                    # Regardless, the "y" node ordering must always go from left to right
+                    # for the aic matrix procedure to work correctly
+                    if left_wing:
+                        mesh[:, :ny, :] = inputs[mesh_name]
+                        # indices are numbered from tip to centerline
+                        #  reflection is all but midpoint in rev order
+                        mesh[:, ny:, :] = inputs[mesh_name][:, :-1, :][:, ::-1, :]
+                        mesh[:, ny:, 1] *= -1.0
+                    else:
+                        mesh[:, ny - 1 :, :] = inputs[mesh_name]
+                        # indices are numbered from centerline to tip
+                        #  reflection is all points in rev order
+                        mesh[:, : ny - 1, :] = inputs[mesh_name][:, 1:, :][:, ::-1, :]
+                        mesh[:, : ny - 1, 1] *= -1.0
                 else:
                     mesh = inputs[mesh_name]
 
@@ -229,14 +247,19 @@ class VortexMesh(om.ExplicitComponent):
                 # symmetric in y plus ground plane using the first dimension
                 mesh = np.zeros((2 * nx, ny * 2 - 1, 3), dtype=type(inputs[mesh_name][0, 0, 0]))
 
-                # regular image
-                mesh[:nx, :ny, :] = inputs[mesh_name]
-                # indices are numbered from tip to centerline
-                #  reflection is             all but midpoint  in rev order
-                mesh[:nx, ny:, :] = inputs[mesh_name][:, :-1, :][:, ::-1, :]
-                mesh[:nx, ny:, 1] *= -1.0
+                if left_wing:
+                    mesh[:nx, :ny, :] = inputs[mesh_name]
+                    # indices are numbered from tip to centerline
+                    #  reflection is all but midpoint in rev order
+                    mesh[:nx, ny:, :] = inputs[mesh_name][:, :-1, :][:, ::-1, :]
+                    mesh[:nx, ny:, 1] *= -1.0
+                else:
+                    mesh[:nx, ny - 1 :, :] = inputs[mesh_name]
+                    # indices are numbered from centerline to tip
+                    #  reflection is all points in rev order
+                    mesh[:nx, : ny - 1, :] = inputs[mesh_name][:, 1:, :][:, ::-1, :]
+                    mesh[:nx, : ny - 1, 1] *= -1.0
 
-                # alpha = 5*np.pi/180
                 alpha = inputs["alpha"][0]
                 plane_normal = np.array([np.sin(alpha), 0.0, -np.cos(alpha)]).reshape((1, 1, 3))
                 plane_point = np.zeros((1, 1, 3)) + plane_normal * inputs["height_agl"]
