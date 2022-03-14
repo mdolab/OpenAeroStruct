@@ -22,6 +22,7 @@ Here is a list of the keys and default values of the ``mesh-dict``, which is use
       - Number of chordwise vertices. Needs to be 2 or an odd number.
     * - num_y
       - 5
+      - 
       - Number of spanwise vertices for the entire wing. When `symmetry = True`, the numbe of vertices for a half wing will be ``(num_y + 1) / 2.
     * - span
       - 10.0
@@ -75,11 +76,11 @@ The surface dict will be provided to Groups, including ``Geometry``, ``AeroPoint
       - 
       - Name of the surface.
     * - symmetry
-      - True / False
+      - True or False
       - 
       - If true, OAS models half of the wing reflected across the plane ``y = 0``.
     * - S_ref_type
-      - "wetted" / "projected"
+      - "wetted" or "projected"
       - 
       - How we compute the wing reference area.
     * - mesh
@@ -108,15 +109,15 @@ The surface dict will be provided to Groups, including ``Geometry``, ``AeroPoint
       - 
       - Drag coefficient of the surface at 0 angle of attack.
     * - with_viscous
-      - True / False
+      - True or False
       - 
       - If true, compute viscous drag
     * - with_wave
-      - True / False
+      - True or False
       - 
       - If true, compute wage drag
     * - groundplane
-      - True / False
+      - True or False
       - 
       - If true, compute ground effect.
     * - k_lam
@@ -141,7 +142,7 @@ The surface dict will be provided to Groups, including ``Geometry``, ``AeroPoint
       - Units
       - Description
     * - fem_model_type
-      - "tube" / "wingbox"
+      - "tube" or "wingbox"
       - 
       - Structure model.
     * - E
@@ -169,15 +170,15 @@ The surface dict will be provided to Groups, including ``Geometry``, ``AeroPoint
       - 
       - Ratio of the total wing weight (including non-structural components) to the wing structural weight.
     * - exact_failure_constraint
-      - True / False
+      - True or False
       - 
       - If False, we use KS function to aggregate the stress constraint.
     * - struct_weight_relief
-      - True / False
+      - True or False
       - 
       - Set True to add the weight of the structure to the loads on the structure.
     * - distributed_fuel_weight
-      - True / False
+      - True or False
       - 
       - Set True to distribute the fuel weight across the entire wing.
     * - fuel_density
@@ -212,7 +213,7 @@ The surface dict will be provided to Groups, including ``Geometry``, ``AeroPoint
       - B-spline control point of the tube radius distribution.
 
 .. list-table:: Structure parameterization for wingbox
-    :widths: 20 2 5 55
+    :widths: 20 20 5 55
     :header-rows: 1
 
     * - Key
