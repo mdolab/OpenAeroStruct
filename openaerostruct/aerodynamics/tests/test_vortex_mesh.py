@@ -23,6 +23,18 @@ class Test(unittest.TestCase):
 
         run_test(self, comp, atol=1e6)
 
+    def test_right_wing(self):
+        surfaces = get_default_surfaces()
+
+        # flip each surface to lie on right
+        for surface in surfaces:
+            surface["mesh"] = surface["mesh"][:, ::-1, :]
+            surface["mesh"][:, :, 1] *= -1.0
+
+        comp = VortexMesh(surfaces=surfaces)
+
+        run_test(self, comp, atol=1e6)
+
 
 if __name__ == "__main__":
     unittest.main()
