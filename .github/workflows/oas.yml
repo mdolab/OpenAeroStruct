@@ -2,13 +2,13 @@ name: OAS build
 
 # This workflow runs all unit and regression tests, as well as coveralls.
 # On the pull-request events, this workflow runs OAS tests, checks code format by flake8/black, and builds the docs.
-# On the push-to-master events, it also deploys the docs.
+# On the push-to-main events, it also deploys the docs.
 
 on:
   pull_request:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   # --- run OAS unit and regression tests ---
@@ -69,7 +69,7 @@ jobs:
     - name: Code style (flake8)
       run: |
         pip install flake8==3.9.2
-        wget https://raw.githubusercontent.com/mdolab/.github/master/.flake8 -O .flake8_mdolab
+        wget https://raw.githubusercontent.com/mdolab/.github/main/.flake8 -O .flake8_mdolab
         python -m flake8 openaerostruct --append-config .flake8_mdolab --append-config .github/.flake8_oas_specific --count --show-source --statistics
 
   # --- code format check by black ---
