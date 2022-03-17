@@ -23,7 +23,8 @@ Look at the .rst files in the `docs` section of the repo or click on `view sourc
 
 Building Docs Locally
 ---------------------
-On Linux, use the Makefile in the docs folder.
+To build the OpenAeroStruct documentation locally, first install our sphinx theme by ``pip install sphinx_mdolab_theme``.
+On Linux or Mac, use the Makefile in the docs folder: ``cd PATH-TO-openaerostruct/docs && make html``.
 It is possible to make the documents on Windows without the make utility.
 Navigate to the docs folder and invoke :code:`sphinx-build -b html .\ .\_build`
 
