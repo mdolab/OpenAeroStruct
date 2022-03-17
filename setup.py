@@ -21,8 +21,6 @@ setup(
     name="openaerostruct",
     version=__version__,
     description="OpenAeroStruct",
-    author="John Jasa",
-    author_email="johnjasa@umich.edu",
     license="BSD-3",
     packages=[
         "openaerostruct",

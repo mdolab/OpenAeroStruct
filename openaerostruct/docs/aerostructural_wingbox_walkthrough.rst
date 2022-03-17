@@ -15,7 +15,6 @@ This page breaks down and describes an example optimization run-script that uses
 This example uses the same optimization problem used for the paper linked above, but with fewer design variables and a coarser mesh.
 The wing being optimized is based on the undeflected Common Research Model (uCRM), which is a long-range transport aircraft.
 A script to replicate the optimization problems described in the paper can be found in the examples directory (openaerostruct/examples/run_aerostruct_uCRM_multipoint.py).
-Please contact Shamsheer Chauhan (sschau@umich.edu) with any questions you have after reading the above paper and going through this example.
 
 The goal of the wingbox model is to allow more realistic preliminary structural sizing for commuter to long-range transport-type aircraft which typically have wingbox structures.
 Since more realistic sizing is one of the goals of the wingbox model, this example also shows how to use it with a multipoint optimization.
