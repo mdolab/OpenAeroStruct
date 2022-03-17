@@ -56,6 +56,14 @@ Other reference guide can be found below.
 
    user_reference.rst
 
+How to Contribute
+=================
+
+.. toctree::
+   :maxdepth: 1
+
+   how_to_contribute.rst
+   
 Source Docs
 ===========
 

@@ -126,6 +126,7 @@ If we did not want to add point masses, we would omit this option (do not set it
 Next, we specify the density of the fuel (used to compute fuel volume from fuel mass) and also specify how much fuel we are carrying as reserves.
 This reserve fuel weight is added to the weight of the aircraft for performance calculations as well as computing the loads from the fuel on the wing when using the `distributed_fuel_weight` option.
 With these two final options, we are done with the surface dictionary and add it to a list called surfaces (here we only have one surface, but in general we might have multiple).
+Documentation on the surface dictionary can also be found in :ref:`Mesh and Surface Dict`.
 
 .. literalinclude:: wingbox_mpt_opt_example.py
   :start-after: checkpoint 8
