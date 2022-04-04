@@ -4,13 +4,7 @@ import unittest
 class Test(unittest.TestCase):
     def test(self):
         # docs checkpoint 0
-        import numpy as np
-
-        import openmdao.api as om
-
         from openaerostruct.geometry.utils import generate_mesh
-        from openaerostruct.geometry.geometry_group import Geometry
-        from openaerostruct.aerodynamics.aero_groups import AeroPoint
 
         from openmdao.utils.assert_utils import assert_near_equal
         from openaerostruct.utils.testing import assert_check_totals
@@ -20,10 +14,53 @@ class Test(unittest.TestCase):
 
         # Generate the aerodynamic mesh based on the previous dictionary
         mesh, twist_cp = generate_mesh(mesh_dict)
+        left_problem = self.setup_problem(mesh, twist_cp)
+        left_problem.run_driver()
 
         # flip each surface to lie on right
-        mesh = mesh[:, ::-1, :]
-        mesh[:, :, 1] *= -1.0
+        flip_mesh = mesh[:, ::-1, :]
+        flip_mesh[:, :, 1] *= -1.0
+        right_problem = self.setup_problem(flip_mesh, twist_cp)
+        right_problem.run_driver()
+
+        # docs checkpoint 1
+        assert_near_equal(
+            left_problem["aero_point_0.wing_perf.CD"][0], right_problem["aero_point_0.wing_perf.CD"][0], 1e-6
+        )
+        assert_near_equal(
+            left_problem["aero_point_0.wing_perf.CL"][0], right_problem["aero_point_0.wing_perf.CL"][0], 1e-6
+        )
+        assert_near_equal(left_problem["aero_point_0.CM"][1], right_problem["aero_point_0.CM"][1], 1e-6)
+
+        left_problem["height_agl"] = right_problem["height_agl"] = 10.0
+        left_problem.run_driver()
+        right_problem.run_driver()
+        assert_near_equal(
+            left_problem["aero_point_0.wing_perf.CD"][0], right_problem["aero_point_0.wing_perf.CD"][0], 1e-6
+        )
+        assert_near_equal(
+            left_problem["aero_point_0.wing_perf.CL"][0], right_problem["aero_point_0.wing_perf.CL"][0], 1e-6
+        )
+        assert_near_equal(left_problem["aero_point_0.CM"][1], right_problem["aero_point_0.CM"][1], 1e-6)
+
+        totals = right_problem.check_totals(
+            of=["aero_point_0.wing_perf.CD", "aero_point_0.wing_perf.CL"],
+            wrt=["wing.twist_cp", "height_agl"],
+            compact_print=True,
+            out_stream=None,
+        )
+        assert_check_totals(totals, atol=1e-2, rtol=1e-5)
+
+    def setup_problem(self, mesh, twist_cp):
+        """
+        Setup identical OpenMDAO problems based on an input surface mesh and twist array.
+        """
+        import numpy as np
+
+        import openmdao.api as om
+
+        from openaerostruct.geometry.geometry_group import Geometry
+        from openaerostruct.aerodynamics.aero_groups import AeroPoint
 
         # Create a dictionary with info and options about the aerodynamic
         # lifting surface
@@ -102,11 +139,6 @@ class Test(unittest.TestCase):
         prob.driver = om.ScipyOptimizeDriver()
         prob.driver.options["tol"] = 1e-9
 
-        recorder = om.SqliteRecorder("aero.db")
-        prob.driver.add_recorder(recorder)
-        prob.driver.recording_options["record_derivatives"] = True
-        prob.driver.recording_options["includes"] = ["*"]
-
         # Setup problem and add design variables, constraint, and objective
         prob.model.add_design_var("height_agl", lower=10.0, upper=8000.0)
         prob.model.add_design_var("wing.twist_cp", lower=-10.0, upper=15.0)
@@ -116,25 +148,7 @@ class Test(unittest.TestCase):
         # Set up and run the optimization problem
         prob.setup()
 
-        prob.run_driver()
-        # docs checkpoint 1
-        assert_near_equal(prob["aero_point_0.wing_perf.CD"][0], 0.033389699871650073, 1e-6)
-        assert_near_equal(prob["aero_point_0.wing_perf.CL"][0], 0.5, 1e-6)
-        assert_near_equal(prob["aero_point_0.CM"][1], -1.7885550372372376, 1e-6)
-
-        prob["height_agl"] = 10.0
-        prob.run_driver()
-        assert_near_equal(prob["aero_point_0.wing_perf.CD"][0], 0.029145613948518813, 1e-6)
-        assert_near_equal(prob["aero_point_0.wing_perf.CL"][0], 0.5, 1e-6)
-        assert_near_equal(prob["aero_point_0.CM"][1], -1.7719184423417516, 1e-6)
-
-        totals = prob.check_totals(
-            of=["aero_point_0.wing_perf.CD", "aero_point_0.wing_perf.CL"],
-            wrt=["wing.twist_cp", "height_agl"],
-            compact_print=True,
-            out_stream=None,
-        )
-        assert_check_totals(totals, atol=1e-2, rtol=1e-5)
+        return prob
 
 
 if __name__ == "__main__":

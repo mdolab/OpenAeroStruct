@@ -18,6 +18,29 @@ class Test(unittest.TestCase):
 
         mesh = generate_mesh(mesh_dict)
 
+        # Original left half-wing model
+        left_solution = self.run_problem(mesh)
+
+        # Flip surface to lie on right
+        flip_mesh = mesh[:, ::-1, :]
+        flip_mesh[:, :, 1] *= -1.0
+        right_solution = self.run_problem(flip_mesh)
+
+        assert_near_equal(
+            left_solution["aero_point_0.wing_perf.CD"][0], right_solution["aero_point_0.wing_perf.CD"][0], 1e-6
+        )
+        assert_near_equal(
+            left_solution["aero_point_0.wing_perf.CL"][0], right_solution["aero_point_0.wing_perf.CL"][0], 1e-6
+        )
+        assert_near_equal(left_solution["aero_point_0.CM"][0], right_solution["aero_point_0.CM"][0], 1e-6)
+        assert_near_equal(left_solution["aero_point_0.CM"][1], right_solution["aero_point_0.CM"][1], 1e-6)
+        assert_near_equal(left_solution["aero_point_0.CM"][2], right_solution["aero_point_0.CM"][2], 1e-6)
+
+    def run_problem(self, mesh):
+        """
+        Run identical OpenMDAO problems based on an input surface mesh.
+        """
+
         surf_dict = {
             # Wing definition
             "name": "wing",  # name of the surface
@@ -111,11 +134,7 @@ class Test(unittest.TestCase):
 
         prob.run_model()
 
-        assert_near_equal(prob["aero_point_0.wing_perf.CD"][0], 0.03487336411850356, 1e-6)
-        assert_near_equal(prob["aero_point_0.wing_perf.CL"][0], 0.4615561217697067, 1e-6)
-        assert_near_equal(prob["aero_point_0.CM"][0], 0.0, 1e-6)
-        assert_near_equal(prob["aero_point_0.CM"][1], -0.11507021674483686, 1e-6)
-        assert_near_equal(prob["aero_point_0.CM"][2], 0.0, 1e-6)
+        return prob
 
 
 if __name__ == "__main__":
