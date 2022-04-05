@@ -86,5 +86,5 @@ jobs:
     # code format check by black
     - name: Code format (black)
       run: |
-        pip install black==21.6b0
+        pip install black==22.3.0
         black openaerostruct --check --diff -l 120 --target-version py38
