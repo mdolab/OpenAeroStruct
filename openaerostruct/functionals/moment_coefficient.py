@@ -82,7 +82,7 @@ class MomentCoefficient(om.ExplicitComponent):
             # mean aerodynamic chord (MAC) based on these chords and the
             # computed area
             panel_chords = (chords[1:] + chords[:-1]) * 0.5
-            MAC = 1.0 / S_ref * np.sum(panel_chords ** 2 * widths)
+            MAC = 1.0 / S_ref * np.sum(panel_chords**2 * widths)
 
             # If the surface is symmetric, then the previously computed MAC
             # is half what it should be
@@ -129,11 +129,11 @@ class MomentCoefficient(om.ExplicitComponent):
         M = self.M
         MAC_wing = self.MAC_wing
 
-        fact = 1.0 / (0.5 * rho * v ** 2 * S_ref_total * MAC_wing)
+        fact = 1.0 / (0.5 * rho * v**2 * S_ref_total * MAC_wing)
 
-        partials["CM", "rho"] = -M * fact ** 2 * 0.5 * v ** 2 * S_ref_total * MAC_wing
-        partials["CM", "v"] = -M * fact ** 2 * rho * v * S_ref_total * MAC_wing
-        partials["CM", "S_ref_total"] = -M * fact ** 2 * 0.5 * rho * v ** 2 * MAC_wing
+        partials["CM", "rho"] = -M * fact**2 * 0.5 * v**2 * S_ref_total * MAC_wing
+        partials["CM", "v"] = -M * fact**2 * rho * v * S_ref_total * MAC_wing
+        partials["CM", "S_ref_total"] = -M * fact**2 * 0.5 * rho * v**2 * MAC_wing
 
         partials["CM", "cg"][:] = 0.0
 
@@ -154,7 +154,7 @@ class MomentCoefficient(om.ExplicitComponent):
 
             # MAC derivs
             panel_chords = (chords[1:] + chords[:-1]) * 0.5
-            MAC = 1.0 / S_ref * np.sum(panel_chords ** 2 * widths)
+            MAC = 1.0 / S_ref * np.sum(panel_chords**2 * widths)
 
             # This transformation is used for multiple derivatives
             dpc_dc = np.zeros((ny - 1, ny))
@@ -163,7 +163,7 @@ class MomentCoefficient(om.ExplicitComponent):
             dpc_dc[idx, idx + 1] = 0.5
 
             dMAC_dc = (2.0 / S_ref) * np.einsum("i,ij", panel_chords * widths, dpc_dc)
-            dMAC_dw = (1.0 / S_ref) * panel_chords ** 2
+            dMAC_dw = (1.0 / S_ref) * panel_chords**2
             dMAC_dS = -MAC / S_ref
 
             # If the surface is symmetric, then the previously computed MAC

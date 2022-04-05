@@ -98,12 +98,12 @@ class BreguetRange(om.ExplicitComponent):
         CL = inputs["CL"]
         CD = inputs["CD"]
 
-        dfb_dCL = -(W0 + Ws) * np.exp(R * CT / a / M * CD / CL) * R * CT / a / M * CD / CL ** 2
+        dfb_dCL = -(W0 + Ws) * np.exp(R * CT / a / M * CD / CL) * R * CT / a / M * CD / CL**2
         dfb_dCD = (W0 + Ws) * np.exp(R * CT / a / M * CD / CL) * R * CT / a / M / CL
         dfb_dCT = (W0 + Ws) * np.exp(R * CT / a / M * CD / CL) * R / a / M / CL * CD
         dfb_dR = (W0 + Ws) * np.exp(R * CT / a / M * CD / CL) / a / M / CL * CD * CT
-        dfb_da = -(W0 + Ws) * np.exp(R * CT / a / M * CD / CL) * R * CT / a ** 2 / M * CD / CL
-        dfb_dM = -(W0 + Ws) * np.exp(R * CT / a / M * CD / CL) * R * CT / a / M ** 2 * CD / CL
+        dfb_da = -(W0 + Ws) * np.exp(R * CT / a / M * CD / CL) * R * CT / a**2 / M * CD / CL
+        dfb_dM = -(W0 + Ws) * np.exp(R * CT / a / M * CD / CL) * R * CT / a / M**2 * CD / CL
 
         dfb_dW = np.exp(R * CT / a / M * CD / CL) - 1
 

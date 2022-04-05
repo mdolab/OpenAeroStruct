@@ -51,8 +51,8 @@ class Coeffs(om.ExplicitComponent):
         L = inputs["L"]
         D = inputs["D"]
 
-        outputs["CL1"] = L / (0.5 * rho * v ** 2 * S_ref)
-        outputs["CDi"] = D / (0.5 * rho * v ** 2 * S_ref)
+        outputs["CL1"] = L / (0.5 * rho * v**2 * S_ref)
+        outputs["CDi"] = D / (0.5 * rho * v**2 * S_ref)
 
     def compute_partials(self, inputs, partials):
         S_ref = inputs["S_ref"]
@@ -61,14 +61,14 @@ class Coeffs(om.ExplicitComponent):
         L = inputs["L"]
         D = inputs["D"]
 
-        partials["CL1", "L"] = 1.0 / (0.5 * rho * v ** 2 * S_ref)
-        partials["CDi", "D"] = 1.0 / (0.5 * rho * v ** 2 * S_ref)
+        partials["CL1", "L"] = 1.0 / (0.5 * rho * v**2 * S_ref)
+        partials["CDi", "D"] = 1.0 / (0.5 * rho * v**2 * S_ref)
 
-        partials["CL1", "v"] = -2.0 * L / (0.5 * rho * v ** 3 * S_ref)
-        partials["CDi", "v"] = -2.0 * D / (0.5 * rho * v ** 3 * S_ref)
+        partials["CL1", "v"] = -2.0 * L / (0.5 * rho * v**3 * S_ref)
+        partials["CDi", "v"] = -2.0 * D / (0.5 * rho * v**3 * S_ref)
 
-        partials["CL1", "rho"] = -L / (0.5 * rho ** 2 * v ** 2 * S_ref)
-        partials["CDi", "rho"] = -D / (0.5 * rho ** 2 * v ** 2 * S_ref)
+        partials["CL1", "rho"] = -L / (0.5 * rho**2 * v**2 * S_ref)
+        partials["CDi", "rho"] = -D / (0.5 * rho**2 * v**2 * S_ref)
 
-        partials["CL1", "S_ref"] = -L / (0.5 * rho * v ** 2 * S_ref ** 2)
-        partials["CDi", "S_ref"] = -D / (0.5 * rho * v ** 2 * S_ref ** 2)
+        partials["CL1", "S_ref"] = -L / (0.5 * rho * v**2 * S_ref**2)
+        partials["CDi", "S_ref"] = -D / (0.5 * rho * v**2 * S_ref**2)

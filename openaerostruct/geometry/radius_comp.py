@@ -56,7 +56,7 @@ class RadiusComp(om.ExplicitComponent):
         """
         mesh = inputs["mesh"]
         vectors = mesh[-1, :, :] - mesh[0, :, :]
-        chords = np.sqrt(np.sum(vectors ** 2, axis=1))
+        chords = np.sqrt(np.sum(vectors**2, axis=1))
         t_c = inputs["t_over_c"]
 
         dr_dtoc = 0.25 * (chords[:-1] + chords[1:])
@@ -65,7 +65,7 @@ class RadiusComp(om.ExplicitComponent):
         dr_dchords = 0.25 * t_c
         dr = mesh[0, :] - mesh[-1, :]
 
-        length = np.sqrt(np.sum(dr ** 2, axis=1))
+        length = np.sqrt(np.sum(dr**2, axis=1))
         dr = dr / length[:, np.newaxis]
 
         drad = np.empty((self.ny - 1, 6))

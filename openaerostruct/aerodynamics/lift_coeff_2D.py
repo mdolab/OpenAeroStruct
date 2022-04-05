@@ -88,7 +88,7 @@ class LiftCoeff2D(om.ExplicitComponent):
         chord = 0.5 * (chords[1:] + chords[:-1])  # chord c(y)
 
         # Lift coefficient distribution
-        outputs["Cl"] = lift_dist[:] / (0.5 * rho * v ** 2 * chord[:])
+        outputs["Cl"] = lift_dist[:] / (0.5 * rho * v**2 * chord[:])
 
     def compute_partials(self, inputs, partials):
         """Jacobian for 2D lift coefficient distribution."""
@@ -116,7 +116,7 @@ class LiftCoeff2D(om.ExplicitComponent):
         # Analytic derivatives for alpha
         p180 = np.pi / 180.0
         partials["Cl", "alpha"] = (
-            p180 * (-forces[:, 0] * cosa - forces[:, 2] * sina) / widths[:] / (0.5 * rho * v ** 2 * chord[:])
+            p180 * (-forces[:, 0] * cosa - forces[:, 2] * sina) / widths[:] / (0.5 * rho * v**2 * chord[:])
         )
 
         # Analytic derivatives for sec_forces
@@ -131,16 +131,16 @@ class LiftCoeff2D(om.ExplicitComponent):
         #                        tmp[ind] / widths[jy] / ( 0.5 * rho * v**2 * chord[jy] )
         #
         partials["Cl", "sec_forces"] = np.ravel(
-            np.tile(np.einsum("i,j,j->ji", tmp, 1 / widths, 1 / (0.5 * rho * v ** 2 * chord)), (self.nx - 1, 1))
+            np.tile(np.einsum("i,j,j->ji", tmp, 1 / widths, 1 / (0.5 * rho * v**2 * chord)), (self.nx - 1, 1))
         )
 
         # Analytic derivatives for widths
         partials["Cl", "widths"] = np.diag(
-            -1.0 / widths[:] ** 2 * (-forces[:, 0] * sina + forces[:, 2] * cosa) / (0.5 * rho * v ** 2 * chord[:])
+            -1.0 / widths[:] ** 2 * (-forces[:, 0] * sina + forces[:, 2] * cosa) / (0.5 * rho * v**2 * chord[:])
         )
 
         # Analytic derivatives for chords
-        tmp_der = -1 / (0.5 * (chords[:-1] + chords[1:]) ** 2) * lift_dist / (0.5 * rho * v ** 2)
+        tmp_der = -1 / (0.5 * (chords[:-1] + chords[1:]) ** 2) * lift_dist / (0.5 * rho * v**2)
         partials["Cl", "chords"] = list(tmp_der) * 2
 
         #        ### Replaced to vectorize computation
@@ -154,7 +154,7 @@ class LiftCoeff2D(om.ExplicitComponent):
         #
 
         # Analytic derivatives for v
-        partials["Cl", "v"] = -2.0 / v ** 3 * lift_dist[:] / (0.5 * rho * chord[:])
+        partials["Cl", "v"] = -2.0 / v**3 * lift_dist[:] / (0.5 * rho * chord[:])
 
         # Analytic derivatives for rho
-        partials["Cl", "rho"] = -1.0 / rho ** 2 * lift_dist[:] / (0.5 * v ** 2 * chord[:])
+        partials["Cl", "rho"] = -1.0 / rho**2 * lift_dist[:] / (0.5 * v**2 * chord[:])

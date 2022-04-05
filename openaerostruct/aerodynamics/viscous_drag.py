@@ -79,7 +79,7 @@ class ViscousDrag(om.ExplicitComponent):
             chords = (lengths[1:] + lengths[:-1]) / 2.0
             Re_c = re * chords
 
-            cdturb_total = 0.455 / (np.log10(Re_c)) ** 2.58 / (1.0 + 0.144 * M ** 2) ** 0.65
+            cdturb_total = 0.455 / (np.log10(Re_c)) ** 2.58 / (1.0 + 0.144 * M**2) ** 0.65
             cdlam_tr = 1.328 / np.sqrt(Re_c * self.k_lam)
 
             # Use eq. 12.27 of Raymer for turbulent Cf
@@ -88,7 +88,7 @@ class ViscousDrag(om.ExplicitComponent):
                 cdturb_tr = 0.0
 
             elif self.k_lam < 1.0:
-                cdturb_tr = 0.455 / (np.log10(Re_c * self.k_lam)) ** 2.58 / (1.0 + 0.144 * M ** 2) ** 0.65
+                cdturb_tr = 0.455 / (np.log10(Re_c * self.k_lam)) ** 2.58 / (1.0 + 0.144 * M**2) ** 0.65
 
             else:
                 cdturb_total = 0.0
@@ -100,8 +100,8 @@ class ViscousDrag(om.ExplicitComponent):
             d_over_q = 2 * cd * chords
 
             # Calculate form factor (Raymer Eq. 12.30)
-            k_FF = 1.34 * M ** 0.18 * (1.0 + 0.6 * t_over_c / self.c_max_t + 100 * t_over_c ** 4)
-            FF = k_FF * cos_sweep ** 0.28
+            k_FF = 1.34 * M**0.18 * (1.0 + 0.6 * t_over_c / self.c_max_t + 100 * t_over_c**4)
+            FF = k_FF * cos_sweep**0.28
 
             # Sum individual panel drags to get total drag
             D_over_q = np.sum(d_over_q * widths * FF)
@@ -133,7 +133,7 @@ class ViscousDrag(om.ExplicitComponent):
             chords = (lengths[1:] + lengths[:-1]) / 2.0
             Re_c = re * chords
 
-            cdturb_total = 0.455 / (np.log10(Re_c)) ** 2.58 / (1.0 + 0.144 * M ** 2) ** 0.65
+            cdturb_total = 0.455 / (np.log10(Re_c)) ** 2.58 / (1.0 + 0.144 * M**2) ** 0.65
             cdlam_tr = 1.328 / np.sqrt(Re_c * self.k_lam)
 
             # Use eq. 12.27 of Raymer for turbulent Cf
@@ -142,7 +142,7 @@ class ViscousDrag(om.ExplicitComponent):
                 cdturb_tr = 0.0
 
             elif self.k_lam < 1.0:
-                cdturb_tr = 0.455 / (np.log10(Re_c * self.k_lam)) ** 2.58 / (1.0 + 0.144 * M ** 2) ** 0.65
+                cdturb_tr = 0.455 / (np.log10(Re_c * self.k_lam)) ** 2.58 / (1.0 + 0.144 * M**2) ** 0.65
 
             else:
                 cdturb_total = 0.0
@@ -154,8 +154,8 @@ class ViscousDrag(om.ExplicitComponent):
             d_over_q = 2 * cd * chords
 
             # Calculate form factor (Raymer Eq. 12.30)
-            k_FF = 1.34 * M ** 0.18 * (1.0 + 0.6 * t_over_c / self.c_max_t + 100 * t_over_c ** 4)
-            FF = k_FF * cos_sweep ** 0.28
+            k_FF = 1.34 * M**0.18 * (1.0 + 0.6 * t_over_c / self.c_max_t + 100 * t_over_c**4)
+            FF = k_FF * cos_sweep**0.28
 
             # Sum individual panel drags to get total drag
             D_over_q = np.sum(d_over_q * widths * FF)
@@ -167,7 +167,7 @@ class ViscousDrag(om.ExplicitComponent):
             cdt_Re = 0.0
             cdT_Re = 0.0
 
-            B = (1.0 + 0.144 * M ** 2) ** 0.65
+            B = (1.0 + 0.144 * M**2) ** 0.65
 
             if self.k_lam == 0:
                 cdT_Re = 0.455 / (np.log10(Re_c)) ** 3.58 / B * -2.58 / np.log(10) / Re_c
@@ -187,13 +187,13 @@ class ViscousDrag(om.ExplicitComponent):
             partials["CDv", "lengths"][0, 1:] += CDv_lengths
             partials["CDv", "lengths"][0, :-1] += CDv_lengths
             partials["CDv", "widths"][0, :] = d_over_q * FF / S_ref * 0.72
-            partials["CDv", "S_ref"] = -D_over_q / S_ref ** 2
-            partials["CDv", "cos_sweep"][0, :] = 0.28 * k_FF * d_over_q / S_ref / cos_sweep ** 0.72
+            partials["CDv", "S_ref"] = -D_over_q / S_ref**2
+            partials["CDv", "cos_sweep"][0, :] = 0.28 * k_FF * d_over_q / S_ref / cos_sweep**0.72
             partials["CDv", "t_over_c"] = (
-                d_over_q * widths * 1.34 * M ** 0.18 * (0.6 / self.c_max_t + 400 * t_over_c ** 3) * cos_sweep ** 0.28
+                d_over_q * widths * 1.34 * M**0.18 * (0.6 / self.c_max_t + 400 * t_over_c**3) * cos_sweep**0.28
             ) / S_ref
 
-            term = (-0.65 / (1 + 0.144 * M ** 2) ** 1.65) * 2 * 0.144 * M
+            term = (-0.65 / (1 + 0.144 * M**2) ** 1.65) * 2 * 0.144 * M
             dcdturb_total__dM = 0.455 / (np.log10(Re_c)) ** 2.58 * term
             dcdturb_tr__dM = 0.455 / (np.log10(Re_c * self.k_lam)) ** 2.58 * term
 
@@ -205,14 +205,14 @@ class ViscousDrag(om.ExplicitComponent):
                 dCd__dM = 0.0
             dd_over_q__dM = 2 * chords * dCd__dM
 
-            dk_ff__dM = 1.34 * 0.18 * M ** -0.82 * (1.0 + 0.6 * t_over_c / self.c_max_t + 100 * t_over_c ** 4)
-            dFF__dM = dk_ff__dM * cos_sweep ** 0.28
+            dk_ff__dM = 1.34 * 0.18 * M**-0.82 * (1.0 + 0.6 * t_over_c / self.c_max_t + 100 * t_over_c**4)
+            dFF__dM = dk_ff__dM * cos_sweep**0.28
 
             dD_over_q__dM = np.sum(widths * (dd_over_q__dM * FF + dFF__dM * d_over_q))
 
             partials["CDv", "Mach_number"] = dD_over_q__dM / S_ref
 
-            term = 0.455 / (1 + 0.144 * M ** 2) ** 0.65
+            term = 0.455 / (1 + 0.144 * M**2) ** 0.65
             dRe_c__dRe = chords
             dcdturb_tr__dRe = (
                 term

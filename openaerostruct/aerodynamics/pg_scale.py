@@ -165,7 +165,7 @@ class ScaleToPrandtlGlauert(om.ExplicitComponent):
         rotational = self.options["rotational"]
 
         M = inputs["Mach_number"]
-        betaPG = np.sqrt(1 - M ** 2)
+        betaPG = np.sqrt(1 - M**2)
 
         outputs["bound_vecs_pg"] = inputs["bound_vecs_w_frame"]
         outputs["bound_vecs_pg"][:, 1] *= betaPG
@@ -181,7 +181,7 @@ class ScaleToPrandtlGlauert(om.ExplicitComponent):
 
         if rotational:
             outputs["rotational_velocities_pg"] = inputs["rotational_velocities_w_frame"]
-            outputs["rotational_velocities_pg"][:, 0] *= betaPG ** 2
+            outputs["rotational_velocities_pg"][:, 0] *= betaPG**2
             outputs["rotational_velocities_pg"][:, 1] *= betaPG
             outputs["rotational_velocities_pg"][:, 2] *= betaPG
 
@@ -205,7 +205,7 @@ class ScaleToPrandtlGlauert(om.ExplicitComponent):
         rotational = self.options["rotational"]
 
         M = inputs["Mach_number"]
-        betaPG = np.asscalar(np.sqrt(1 - M ** 2))
+        betaPG = np.asscalar(np.sqrt(1 - M**2))
         fact = np.array([1.0, betaPG, betaPG], M.dtype)
         fact_norm = np.array([betaPG, 1.0, 1.0], M.dtype)
         num_eval_pts = inputs["bound_vecs_w_frame"].shape[0]
@@ -215,7 +215,7 @@ class ScaleToPrandtlGlauert(om.ExplicitComponent):
         partials["force_pts_pg", "force_pts_w_frame"] = np.tile(fact, num_eval_pts)
 
         if rotational:
-            fact_rot = np.array([betaPG ** 2, betaPG, betaPG], M.dtype)
+            fact_rot = np.array([betaPG**2, betaPG, betaPG], M.dtype)
             partials["rotational_velocities_pg", "rotational_velocities_w_frame"] = np.tile(fact_rot, num_eval_pts)
 
         for surface in self.options["surfaces"]:
@@ -292,7 +292,7 @@ class ScaleFromPrandtlGlauert(om.ExplicitComponent):
 
     def compute(self, inputs, outputs):
         M = inputs["Mach_number"]
-        betaPG = np.sqrt(1 - M ** 2)
+        betaPG = np.sqrt(1 - M**2)
 
         for surface in self.options["surfaces"]:
             name = surface["name"]
@@ -300,16 +300,16 @@ class ScaleFromPrandtlGlauert(om.ExplicitComponent):
             of_name = "{}_sec_forces_w_frame".format(name)
 
             outputs[of_name] = inputs[wrt_name]
-            outputs[of_name][:, :, 0] *= 1.0 / betaPG ** 4
-            outputs[of_name][:, :, 1] *= 1.0 / betaPG ** 3
-            outputs[of_name][:, :, 2] *= 1.0 / betaPG ** 3
+            outputs[of_name][:, :, 0] *= 1.0 / betaPG**4
+            outputs[of_name][:, :, 1] *= 1.0 / betaPG**3
+            outputs[of_name][:, :, 2] *= 1.0 / betaPG**3
 
     def compute_partials(self, inputs, partials):
         M = inputs["Mach_number"]
-        betaPG = np.sqrt(1 - M ** 2)
+        betaPG = np.sqrt(1 - M**2)
 
-        term1 = 1.0 / betaPG ** 4
-        term2 = 1.0 / betaPG ** 3
+        term1 = 1.0 / betaPG**4
+        term2 = 1.0 / betaPG**3
         fact = np.array([term1, term2, term2], M.dtype).flatten()
 
         for surface in self.options["surfaces"]:

@@ -76,8 +76,8 @@ class LocalStiff(om.ExplicitComponent):
 
         for i in range(4):
             for j in range(4):
-                outputs["local_stiff"][:, 4 + i, 4 + j] = E * Iy / L ** 3 * coeffs_y[i, j]
-                outputs["local_stiff"][:, 8 + i, 8 + j] = E * Iz / L ** 3 * coeffs_z[i, j]
+                outputs["local_stiff"][:, 4 + i, 4 + j] = E * Iy / L**3 * coeffs_y[i, j]
+                outputs["local_stiff"][:, 8 + i, 8 + j] = E * Iz / L**3 * coeffs_z[i, j]
 
         for i in [1, 3]:
             for j in range(4):
@@ -115,38 +115,38 @@ class LocalStiff(om.ExplicitComponent):
         for i in range(2):
             for j in range(2):
                 derivs_A[:, 0 + i, 0 + j] = E / L * coeffs_2[i, j]
-                derivs_L[:, 0 + i, 0 + j] = -E * A / L ** 2 * coeffs_2[i, j]
+                derivs_L[:, 0 + i, 0 + j] = -E * A / L**2 * coeffs_2[i, j]
 
                 derivs_J[:, 2 + i, 2 + j] = G / L * coeffs_2[i, j]
-                derivs_L[:, 2 + i, 2 + j] = -G * J / L ** 2 * coeffs_2[i, j]
+                derivs_L[:, 2 + i, 2 + j] = -G * J / L**2 * coeffs_2[i, j]
 
         for i in range(4):
             for j in range(4):
-                derivs_Iy[:, 4 + i, 4 + j] = E / L ** 3 * coeffs_y[i, j]
-                derivs_L[:, 4 + i, 4 + j] = -3 * E * Iy / L ** 4 * coeffs_y[i, j]
+                derivs_Iy[:, 4 + i, 4 + j] = E / L**3 * coeffs_y[i, j]
+                derivs_L[:, 4 + i, 4 + j] = -3 * E * Iy / L**4 * coeffs_y[i, j]
 
-                derivs_Iz[:, 8 + i, 8 + j] = E / L ** 3 * coeffs_z[i, j]
-                derivs_L[:, 8 + i, 8 + j] = -3 * E * Iz / L ** 4 * coeffs_z[i, j]
+                derivs_Iz[:, 8 + i, 8 + j] = E / L**3 * coeffs_z[i, j]
+                derivs_L[:, 8 + i, 8 + j] = -3 * E * Iz / L**4 * coeffs_z[i, j]
 
         for i in [1, 3]:
             for j in range(4):
-                derivs_Iy[:, 4 + i, 4 + j] = E / L ** 2 * coeffs_y[i, j]
-                derivs_L[:, 4 + i, 4 + j] = -2 * E * Iy / L ** 3 * coeffs_y[i, j]
+                derivs_Iy[:, 4 + i, 4 + j] = E / L**2 * coeffs_y[i, j]
+                derivs_L[:, 4 + i, 4 + j] = -2 * E * Iy / L**3 * coeffs_y[i, j]
 
-                derivs_Iz[:, 8 + i, 8 + j] = E / L ** 2 * coeffs_z[i, j]
-                derivs_L[:, 8 + i, 8 + j] = -2 * E * Iz / L ** 3 * coeffs_z[i, j]
+                derivs_Iz[:, 8 + i, 8 + j] = E / L**2 * coeffs_z[i, j]
+                derivs_L[:, 8 + i, 8 + j] = -2 * E * Iz / L**3 * coeffs_z[i, j]
         for i in range(4):
             for j in [1, 3]:
-                derivs_Iy[:, 4 + i, 4 + j] = E / L ** 2 * coeffs_y[i, j]
-                derivs_L[:, 4 + i, 4 + j] = -2 * E * Iy / L ** 3 * coeffs_y[i, j]
+                derivs_Iy[:, 4 + i, 4 + j] = E / L**2 * coeffs_y[i, j]
+                derivs_L[:, 4 + i, 4 + j] = -2 * E * Iy / L**3 * coeffs_y[i, j]
 
-                derivs_Iz[:, 8 + i, 8 + j] = E / L ** 2 * coeffs_z[i, j]
-                derivs_L[:, 8 + i, 8 + j] = -2 * E * Iz / L ** 3 * coeffs_z[i, j]
+                derivs_Iz[:, 8 + i, 8 + j] = E / L**2 * coeffs_z[i, j]
+                derivs_L[:, 8 + i, 8 + j] = -2 * E * Iz / L**3 * coeffs_z[i, j]
 
         for i in [1, 3]:
             for j in [1, 3]:
                 derivs_Iy[:, 4 + i, 4 + j] = E / L * coeffs_y[i, j]
-                derivs_L[:, 4 + i, 4 + j] = -E * Iy / L ** 2 * coeffs_y[i, j]
+                derivs_L[:, 4 + i, 4 + j] = -E * Iy / L**2 * coeffs_y[i, j]
 
                 derivs_Iz[:, 8 + i, 8 + j] = E / L * coeffs_z[i, j]
-                derivs_L[:, 8 + i, 8 + j] = -E * Iz / L ** 2 * coeffs_z[i, j]
+                derivs_L[:, 8 + i, 8 + j] = -E * Iz / L**2 * coeffs_z[i, j]

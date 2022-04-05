@@ -96,7 +96,7 @@ class Equilibrium(om.ExplicitComponent):
         tot_weight = (structural_mass + inputs["fuelburn"] + W0) * g
 
         outputs["total_weight"] = tot_weight
-        outputs["L_equals_W"] = 1 - (0.5 * rho * v ** 2 * S_ref_tot) * inputs["CL"] / tot_weight
+        outputs["L_equals_W"] = 1 - (0.5 * rho * v**2 * S_ref_tot) * inputs["CL"] / tot_weight
 
     def compute_partials(self, inputs, partials):
         g = grav_constant * inputs["load_factor"]
@@ -113,23 +113,23 @@ class Equilibrium(om.ExplicitComponent):
 
         tot_weight = (structural_mass + inputs["fuelburn"] + W0) * g
 
-        L = inputs["CL"] * (0.5 * rho * v ** 2 * S_ref_tot)
+        L = inputs["CL"] * (0.5 * rho * v**2 * S_ref_tot)
 
         partials["total_weight", "fuelburn"] = g
         partials["total_weight", "W0"] = g
         partials["total_weight", "load_factor"] = (inputs["fuelburn"] + inputs["W0"] + structural_mass) * grav_constant
 
-        partials["L_equals_W", "fuelburn"] = L / tot_weight ** 2 * g
-        partials["L_equals_W", "W0"] = L / tot_weight ** 2 * g
+        partials["L_equals_W", "fuelburn"] = L / tot_weight**2 * g
+        partials["L_equals_W", "W0"] = L / tot_weight**2 * g
         partials["L_equals_W", "load_factor"] = (
-            L / tot_weight ** 2 * (inputs["fuelburn"] + inputs["W0"] + structural_mass) * grav_constant
+            L / tot_weight**2 * (inputs["fuelburn"] + inputs["W0"] + structural_mass) * grav_constant
         )
-        partials["L_equals_W", "rho"] = -0.5 * S_ref_tot * v ** 2 * inputs["CL"] / tot_weight
+        partials["L_equals_W", "rho"] = -0.5 * S_ref_tot * v**2 * inputs["CL"] / tot_weight
         partials["L_equals_W", "v"] = -rho * S_ref_tot * v * inputs["CL"] / tot_weight
-        partials["L_equals_W", "CL"] = -0.5 * rho * v ** 2 * S_ref_tot / tot_weight
-        partials["L_equals_W", "S_ref_total"] = -0.5 * rho * v ** 2 * inputs["CL"] / tot_weight
+        partials["L_equals_W", "CL"] = -0.5 * rho * v**2 * S_ref_tot / tot_weight
+        partials["L_equals_W", "S_ref_total"] = -0.5 * rho * v**2 * inputs["CL"] / tot_weight
 
         for surface in self.options["surfaces"]:
             name = surface["name"]
             partials["total_weight", name + "_structural_mass"] = 1.0 * g
-            partials["L_equals_W", name + "_structural_mass"] = L / tot_weight ** 2 * g
+            partials["L_equals_W", name + "_structural_mass"] = L / tot_weight**2 * g

@@ -84,7 +84,7 @@ class StructuralCG(om.ExplicitComponent):
 
         is_sym = self.surface["symmetry"]
 
-        J["cg_location", "structural_mass"] = -sum_coe_dot_em / structural_mass ** 2
+        J["cg_location", "structural_mass"] = -sum_coe_dot_em / structural_mass**2
         J["cg_location", "element_mass"] = center_of_elements / structural_mass
 
         # derivates with respect to nodes require special ninja math

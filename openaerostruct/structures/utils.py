@@ -2,7 +2,7 @@ import numpy as np
 
 
 def norm(vec, axis=None):
-    return np.sqrt(np.sum(vec ** 2, axis=axis))
+    return np.sqrt(np.sum(vec**2, axis=axis))
 
 
 def unit(vec):
@@ -59,6 +59,6 @@ def radii(mesh, t_c=0.15):
     Obtain the radii of the FEM element based on local chord.
     """
     vectors = mesh[-1, :, :] - mesh[0, :, :]
-    chords = np.sqrt(np.sum(vectors ** 2, axis=1))
+    chords = np.sqrt(np.sum(vectors**2, axis=1))
     mean_chords = 0.5 * chords[:-1] + 0.5 * chords[1:]
     return t_c * mean_chords * 0.5

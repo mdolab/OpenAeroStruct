@@ -104,7 +104,7 @@ class CenterOfGravity(om.ExplicitComponent):
             spar_cg = spar_cg + inputs[name + "_cg_location"] * inputs[name + "_structural_mass"]
 
         partials["cg", "total_weight"] = -g * (W0_cg + spar_cg) / (tw - fb * g) ** 2
-        partials["cg", "fuelburn"] = g ** 2 * (W0_cg + spar_cg) / (tw - fb * g) ** 2
+        partials["cg", "fuelburn"] = g**2 * (W0_cg + spar_cg) / (tw - fb * g) ** 2
         partials["cg", "load_factor"] = grav_constant * tw * (W0_cg + spar_cg) / (tw - fb * g) ** 2
         partials["cg", "empty_cg"] = W0 / (tw / g - fb)
 

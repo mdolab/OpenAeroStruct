@@ -73,7 +73,7 @@ class WaveDrag(om.ExplicitComponent):
                 panel_areas
             )  # weighted average of 1/4 chord sweep
             avg_t_over_c = np.sum(t_over_c * panel_areas) / np.sum(panel_areas)  # weighted average of streamwise t/c
-            MDD = self.ka / avg_cos_sweep - avg_t_over_c / avg_cos_sweep ** 2 - CL / (10 * avg_cos_sweep ** 3)
+            MDD = self.ka / avg_cos_sweep - avg_t_over_c / avg_cos_sweep**2 - CL / (10 * avg_cos_sweep**3)
             Mcrit = MDD - (0.1 / 80.0) ** (1.0 / 3.0)
 
             if M > Mcrit:
@@ -104,26 +104,26 @@ class WaveDrag(om.ExplicitComponent):
             avg_cos_sweep = np.sum(actual_cos_sweep * panel_areas) / sum_panel_areas
             avg_t_over_c = np.sum(t_over_c * panel_areas) / sum_panel_areas
 
-            MDD = 0.95 / avg_cos_sweep - avg_t_over_c / avg_cos_sweep ** 2 - CL / (10 * avg_cos_sweep ** 3)
+            MDD = 0.95 / avg_cos_sweep - avg_t_over_c / avg_cos_sweep**2 - CL / (10 * avg_cos_sweep**3)
             Mcrit = MDD - (0.1 / 80.0) ** (1.0 / 3.0)
 
             if M > Mcrit:
                 dCDwdMDD = -80 * (M - Mcrit) ** 3
-                dMDDdCL = -1.0 / (10 * avg_cos_sweep ** 3)
-                dMDDdavg = (-10 * self.ka * avg_cos_sweep ** 2 + 20 * avg_t_over_c * avg_cos_sweep + 3 * CL) / (
-                    10 * avg_cos_sweep ** 4
+                dMDDdCL = -1.0 / (10 * avg_cos_sweep**3)
+                dMDDdavg = (-10 * self.ka * avg_cos_sweep**2 + 20 * avg_t_over_c * avg_cos_sweep + 3 * CL) / (
+                    10 * avg_cos_sweep**4
                 )
-                dMDDdtoc = -1.0 / (avg_cos_sweep ** 2)
+                dMDDdtoc = -1.0 / (avg_cos_sweep**2)
                 dtocavgdtoc = panel_areas / sum_panel_areas
 
                 ccos = np.sum(cos_sweep * chords)
-                ccos2w = np.sum(chords * cos_sweep ** 2 / widths)
+                ccos2w = np.sum(chords * cos_sweep**2 / widths)
 
-                davgdcos = 2 * chords * cos_sweep / widths / ccos - chords * ccos2w / ccos ** 2
-                dtocdcos = chords * t_over_c / ccos - chords * np.sum(chords * cos_sweep * t_over_c) / ccos ** 2
-                davgdw = -1 * chords * cos_sweep ** 2 / widths ** 2 / ccos
-                davgdc = cos_sweep ** 2 / widths / ccos - cos_sweep * ccos2w / ccos ** 2
-                dtocdc = t_over_c * cos_sweep / ccos - cos_sweep * np.sum(chords * cos_sweep * t_over_c) / ccos ** 2
+                davgdcos = 2 * chords * cos_sweep / widths / ccos - chords * ccos2w / ccos**2
+                dtocdcos = chords * t_over_c / ccos - chords * np.sum(chords * cos_sweep * t_over_c) / ccos**2
+                davgdw = -1 * chords * cos_sweep**2 / widths**2 / ccos
+                davgdc = cos_sweep**2 / widths / ccos - cos_sweep * ccos2w / ccos**2
+                dtocdc = t_over_c * cos_sweep / ccos - cos_sweep * np.sum(chords * cos_sweep * t_over_c) / ccos**2
 
                 dcdchords = np.zeros((ny - 1, ny))
                 i, j = np.indices(dcdchords.shape)

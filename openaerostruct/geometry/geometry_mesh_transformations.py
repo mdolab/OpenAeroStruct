@@ -506,7 +506,7 @@ class Stretch(om.ExplicitComponent):
         prev_span = quarter_chord[-1, 1] - quarter_chord[0, 1]
         s = quarter_chord[:, 1] / prev_span
 
-        d_prev_span = -quarter_chord[:, 1] / prev_span ** 2
+        d_prev_span = -quarter_chord[:, 1] / prev_span**2
         d_prev_span_qc0 = np.zeros((ny,))
         d_prev_span_qc1 = np.zeros((ny,))
         d_prev_span_qc0[0] = d_prev_span_qc1[-1] = 1.0 / prev_span
@@ -972,7 +972,7 @@ class Rotate(om.ExplicitComponent):
                 fact = 1.0 / (1.0 + (dz_qc / dy_qc) ** 2)
 
                 dthx_dq = np.zeros((ny, 3))
-                dthx_dq[:-1, 1] = -dz_qc * fact / dy_qc ** 2
+                dthx_dq[:-1, 1] = -dz_qc * fact / dy_qc**2
                 dthx_dq[:-1, 2] = fact / dy_qc
 
             else:
@@ -991,8 +991,8 @@ class Rotate(om.ExplicitComponent):
                 fact_right = 1.0 / (1.0 + (dz_qc_right / dy_qc_right) ** 2)
 
                 dthx_dq = np.zeros((ny, 3))
-                dthx_dq[:root_index, 1] = -dz_qc_left * fact_left / dy_qc_left ** 2
-                dthx_dq[root_index + 1 :, 1] = -dz_qc_right * fact_right / dy_qc_right ** 2
+                dthx_dq[:root_index, 1] = -dz_qc_left * fact_left / dy_qc_left**2
+                dthx_dq[root_index + 1 :, 1] = -dz_qc_right * fact_right / dy_qc_right**2
                 dthx_dq[:root_index, 2] = fact_left / dy_qc_left
                 dthx_dq[root_index + 1 :, 2] = fact_right / dy_qc_right
 

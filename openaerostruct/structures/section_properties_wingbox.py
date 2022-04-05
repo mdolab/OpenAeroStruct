@@ -151,8 +151,8 @@ class SectionPropertiesWingbox(om.ExplicitComponent):
 
         # Compute perimeter to thickness ratio for torsion constant
         # This currently does not change with twist
-        p_by_t_1 = (x_up_diff ** 2 + y_up_diff ** 2) ** 0.5 / skin_thickness  # length / thickness of caps
-        p_by_t_2 = (x_low_diff ** 2 + y_low_diff ** 2) ** 0.5 / skin_thickness  # length / thickness of caps
+        p_by_t_1 = (x_up_diff**2 + y_up_diff**2) ** 0.5 / skin_thickness  # length / thickness of caps
+        p_by_t_2 = (x_low_diff**2 + y_low_diff**2) ** 0.5 / skin_thickness  # length / thickness of caps
 
         p_by_t = np.sum(p_by_t_1 + p_by_t_2, axis=0)
 
@@ -160,7 +160,7 @@ class SectionPropertiesWingbox(om.ExplicitComponent):
         p_by_t += (data_y_upper[-1] - data_y_lower[-1] - skin_thickness) / spar_thickness  # length / thickness of spars
 
         # Torsion constant
-        J = 4 * A_enc ** 2 / p_by_t
+        J = 4 * A_enc**2 / p_by_t
 
         outputs["J"] = J
 
@@ -229,10 +229,10 @@ class SectionPropertiesWingbox(om.ExplicitComponent):
 
         I_horiz_1 = 2 * (
             (
-                1.0 / 12.0 * a ** 3 * x2 ** 4
-                + 1.0 / 3.0 * a ** 2 * x2 ** 3 * b
-                + 1.0 / 2.0 * a * x2 ** 2 * b ** 2
-                + 1.0 / 3.0 * b ** 3 * x2
+                1.0 / 12.0 * a**3 * x2**4
+                + 1.0 / 3.0 * a**2 * x2**3 * b
+                + 1.0 / 2.0 * a * x2**2 * b**2
+                + 1.0 / 3.0 * b**3 * x2
             )
         )
         I_horiz_2 = x2 * skin_thickness * (y_up_add / 2 - skin_thickness / 2 - centroid) ** 2
@@ -248,10 +248,10 @@ class SectionPropertiesWingbox(om.ExplicitComponent):
             2
             * (
                 (
-                    1.0 / 12.0 * a ** 3 * x2 ** 4
-                    + 1.0 / 3.0 * a ** 2 * x2 ** 3 * b
-                    + 1.0 / 2.0 * a * x2 ** 2 * b ** 2
-                    + 1.0 / 3.0 * b ** 3 * x2
+                    1.0 / 12.0 * a**3 * x2**4
+                    + 1.0 / 3.0 * a**2 * x2**3 * b
+                    + 1.0 / 2.0 * a * x2**2 * b**2
+                    + 1.0 / 3.0 * b**3 * x2
                 )
             ),
             axis=0,
@@ -296,13 +296,13 @@ class SectionPropertiesWingbox(om.ExplicitComponent):
         )
 
         I_vert += (
-            1.0 / 12.0 * (data_y_upper[0] - data_y_lower[0]) * spar_thickness ** 3
+            1.0 / 12.0 * (data_y_upper[0] - data_y_lower[0]) * spar_thickness**3
             + (data_y_upper[0] - data_y_lower[0])
             * spar_thickness
             * (centroid_Ivert - (data_x_upper[0] + spar_thickness / 2)) ** 2
         )
         I_vert += (
-            1.0 / 12.0 * (data_y_upper[-1] - data_y_lower[-1]) * spar_thickness ** 3
+            1.0 / 12.0 * (data_y_upper[-1] - data_y_lower[-1]) * spar_thickness**3
             + (data_y_upper[-1] - data_y_lower[-1])
             * spar_thickness
             * (data_x_upper[-1] - spar_thickness / 2 - centroid_Ivert) ** 2

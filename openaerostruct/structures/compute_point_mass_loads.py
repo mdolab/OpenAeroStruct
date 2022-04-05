@@ -71,7 +71,7 @@ class ComputePointMassLoads(om.ExplicitComponent):
             # nodes. These weightings determine the amount of the force and
             # moment that each of the nodes receive.
             # nodal_weightings are scalars for each node.
-            dist10 = span_dist ** 10  # TODO: investigate effect of power here
+            dist10 = span_dist**10  # TODO: investigate effect of power here
             inv_dist10 = 1 / (dist10 + 1e-10)
             nodal_weightings[idx, :] = inv_dist10 / np.sum(inv_dist10)
 
