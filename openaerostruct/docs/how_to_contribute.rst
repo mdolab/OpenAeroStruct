@@ -48,3 +48,16 @@ Once you have added or modified code, submit a pull request via the GitHub inter
 This will automatically go through all of the tests in the repo to make sure everything is functioning properly.
 This also automatically does a coverage test to ensure that any added code is covered in a test.
 The main developers of OpenAeroStruct will then merge in the request or provide feedback on how to improve the contribution.
+
+Any code in OpenAeroStruct should adhere to the PEP-8 style.
+Upon PRs, we run ``flake8`` linter and ``black`` formatter to check the code style.
+To run ``flake8`` and ``black`` locally,
+
+.. code-block:: bash
+
+  $ cd PATH-TO-OpenAeroStruct
+  $ pip install flake8==3.9.2
+  $ wget https://raw.githubusercontent.com/mdolab/.github/main/.flake8 -O .flake8_mdolab  # download flake8 configuration for OAS
+  $ python -m flake8 openaerostruct --append-config .flake8_mdolab --append-config .github/.flake8_oas_specific --count --show-source --statistics
+  $ pip install black==22.3.0
+  $ black openaerostruct -l 120 --target-version py38
