@@ -56,10 +56,10 @@ class SectionPropertiesTube(om.ExplicitComponent):
         r2 = inputs["radius"]
 
         # Compute the area, area moments of inertia, and polar moment of inertia
-        outputs["A"] = pi * (r2 ** 2 - r1 ** 2)
-        outputs["Iy"] = pi * (r2 ** 4 - r1 ** 4) / 4.0
-        outputs["Iz"] = pi * (r2 ** 4 - r1 ** 4) / 4.0
-        outputs["J"] = pi * (r2 ** 4 - r1 ** 4) / 2.0
+        outputs["A"] = pi * (r2**2 - r1**2)
+        outputs["Iy"] = pi * (r2**4 - r1**4) / 4.0
+        outputs["Iz"] = pi * (r2**4 - r1**4) / 4.0
+        outputs["J"] = pi * (r2**4 - r1**4) / 2.0
 
     def compute_partials(self, inputs, partials):
         pi = np.pi
@@ -73,8 +73,8 @@ class SectionPropertiesTube(om.ExplicitComponent):
         dr1_dt = -1.0
         dr2_dt = 0.0
 
-        r1_3 = r1 ** 3
-        r2_3 = r2 ** 3
+        r1_3 = r1**3
+        r2_3 = r2**3
 
         partials["A", "radius"] = 2 * pi * (r2 * dr2_dr - r1 * dr1_dr)
         partials["A", "thickness"] = 2 * pi * (r2 * dr2_dt - r1 * dr1_dt)

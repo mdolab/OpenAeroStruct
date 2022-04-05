@@ -121,21 +121,21 @@ class VonMisesWingbox(om.ExplicitComponent):
             torsion_stress = G * J[ielem] / L * (r1x - r0x) / 2 / spar_thickness[ielem] / A_enc[ielem]
 
             # this is moment * h / I
-            top_bending_stress = E / (L ** 2) * (6 * u0y + 2 * r0z * L - 6 * u1y + 4 * r1z * L) * htop[ielem]
+            top_bending_stress = E / (L**2) * (6 * u0y + 2 * r0z * L - 6 * u1y + 4 * r1z * L) * htop[ielem]
 
             # this is moment * h / I
-            bottom_bending_stress = -E / (L ** 2) * (6 * u0y + 2 * r0z * L - 6 * u1y + 4 * r1z * L) * hbottom[ielem]
+            bottom_bending_stress = -E / (L**2) * (6 * u0y + 2 * r0z * L - 6 * u1y + 4 * r1z * L) * hbottom[ielem]
 
             # this is moment * h / I
-            front_bending_stress = -E / (L ** 2) * (-6 * u0z + 2 * r0y * L + 6 * u1z + 4 * r1y * L) * hfront[ielem]
+            front_bending_stress = -E / (L**2) * (-6 * u0z + 2 * r0y * L + 6 * u1z + 4 * r1y * L) * hfront[ielem]
 
             # this is moment * h / I
-            rear_bending_stress = E / (L ** 2) * (-6 * u0z + 2 * r0y * L + 6 * u1z + 4 * r1y * L) * hrear[ielem]
+            rear_bending_stress = E / (L**2) * (-6 * u0z + 2 * r0y * L + 6 * u1z + 4 * r1y * L) * hrear[ielem]
 
             # shear due to bending (VQ/It) note: the I used to get V cancels the other I
             vertical_shear = (
                 E
-                / (L ** 3)
+                / (L**3)
                 * (-12 * u0y - 6 * r0z * L + 12 * u1y - 6 * r1z * L)
                 * Qy[ielem]
                 / (2 * spar_thickness[ielem])
@@ -152,11 +152,11 @@ class VonMisesWingbox(om.ExplicitComponent):
 
             # The 4 stress combinations:
             vonmises[ielem, 0] = (
-                np.sqrt((top_bending_stress + rear_bending_stress + axial_stress) ** 2 + 3 * torsion_stress ** 2)
+                np.sqrt((top_bending_stress + rear_bending_stress + axial_stress) ** 2 + 3 * torsion_stress**2)
                 / self.tssf
             )
             vonmises[ielem, 1] = np.sqrt(
-                (bottom_bending_stress + front_bending_stress + axial_stress) ** 2 + 3 * torsion_stress ** 2
+                (bottom_bending_stress + front_bending_stress + axial_stress) ** 2 + 3 * torsion_stress**2
             )
             vonmises[ielem, 2] = np.sqrt(
                 (front_bending_stress + axial_stress) ** 2 + 3 * (torsion_stress - vertical_shear) ** 2

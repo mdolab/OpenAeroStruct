@@ -1,7 +1,7 @@
 .. _Aerodynamic_Optimization_Walkthrough:
 
-Aerodynamic Optimization Walkthrough
-====================================
+Aerodynamic Optimization
+========================
 
 This page documents in detail how we perform aerodynamic optimization in OpenAeroStruct.
 You should read this page in its entirety to get a feel for how the model is set up and used.
@@ -20,7 +20,7 @@ Here is an extremely quick rundown of the basic terminology within OpenMDAO:
 - Driver: controls iterative model execution process (e.g., Optimizer, DOE)
 - Problem: top level class that contains everything and provide the model execution API
 
-.. figure:: problem_diagram.png
+.. figure:: /figures/problem_diagram.png
    :align: center
    :width: 50%
    :alt: diagram of the problem structure
@@ -66,6 +66,8 @@ There are many options for each surface, and they are loosely organized into the
 - Options for constraints (KS aggregation, monotonic design variables)
 
 .. literalinclude:: aero_walkthrough/part_2.py
+
+For more details about ``mesh_dict`` and ``surface``, see :ref:`Mesh and Surface Dict`.
 
 2. Initialize your problem and add problem conditions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -196,4 +198,4 @@ Here you'll use `aero.db` or the filename for where you saved the problem data.
 This will produce a window where you can see how the lifting surface and design variables change with each iteration, as shown below.
 You can monitor the results from your optimization as it progresses by checking the `Automatically refresh` button.
 
-.. image:: aero.png
+.. image:: /figures/aero.png

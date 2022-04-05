@@ -131,14 +131,14 @@ class VLMGeometry(om.ExplicitComponent):
         dx = mesh[1:, :, 0] - mesh[:-1, :, 0]
         dy = mesh[1:, :, 1] - mesh[:-1, :, 1]
         dz = mesh[1:, :, 2] - mesh[:-1, :, 2]
-        lengths = np.sum(np.sqrt(dx ** 2 + dy ** 2 + dz ** 2), axis=0)
+        lengths = np.sum(np.sqrt(dx**2 + dy**2 + dz**2), axis=0)
 
         # Compute the normal of each panel by taking the cross-product of
         # its diagonals. Note that this could be a nonplanar surface
         normals = np.cross(mesh[:-1, 1:, :] - mesh[1:, :-1, :], mesh[:-1, :-1, :] - mesh[1:, 1:, :], axis=2)
 
         # Normalize the normal vectors
-        norms = np.sqrt(np.sum(normals ** 2, axis=2))
+        norms = np.sqrt(np.sum(normals**2, axis=2))
         for j in range(3):
             normals[:, :, j] /= norms
 
@@ -154,7 +154,7 @@ class VLMGeometry(om.ExplicitComponent):
                 proj_mesh[:-1, 1:, :] - proj_mesh[1:, :-1, :], proj_mesh[:-1, :-1, :] - proj_mesh[1:, 1:, :], axis=2
             )
 
-            proj_norms = np.sqrt(np.sum(proj_normals ** 2, axis=2))
+            proj_norms = np.sqrt(np.sum(proj_normals**2, axis=2))
             for j in range(3):
                 proj_normals[:, :, j] /= proj_norms
 
@@ -199,7 +199,7 @@ class VLMGeometry(om.ExplicitComponent):
 
         partials["lengths", "def_mesh"][:] = 0.0
         dmesh = np.diff(mesh, axis=0)
-        length = np.sqrt(np.sum(dmesh ** 2, axis=2))
+        length = np.sqrt(np.sum(dmesh**2, axis=2))
         dmesh = dmesh / length[:, :, np.newaxis]
         derivs = np.transpose(dmesh, axes=[0, 2, 1]).flatten()
         nn = len(derivs)
@@ -207,7 +207,7 @@ class VLMGeometry(om.ExplicitComponent):
         partials["lengths", "def_mesh"][-nn:] += derivs
 
         dfullmesh = mesh[0, :] - mesh[-1, :]
-        length = np.sqrt(np.sum(dfullmesh ** 2, axis=1))
+        length = np.sqrt(np.sum(dfullmesh**2, axis=1))
         derivs = (dfullmesh.T / length).flatten()
         partials["chords", "def_mesh"] = np.concatenate([derivs, -derivs])
 
@@ -215,7 +215,7 @@ class VLMGeometry(om.ExplicitComponent):
         a = mesh[:-1, 1:, :] - mesh[1:, :-1, :]
         b = mesh[:-1, :-1, :] - mesh[1:, 1:, :]
         c = np.cross(a, b, axis=2)
-        n = np.sqrt(np.sum(c ** 2, axis=2))
+        n = np.sqrt(np.sum(c**2, axis=2))
 
         # Now let's work backwards to get derivative
         # dfdc = (dcdc * n - c * dndc) / n**2
@@ -226,7 +226,7 @@ class VLMGeometry(om.ExplicitComponent):
         dcdc[:, :, 2, 2] = 1.0
 
         # dfdc is now a 3x3 jacobian with f along the rows and c along the columns
-        dfdc = (dcdc * n[:, :, np.newaxis, np.newaxis] - np.einsum("ijk,ijl->ijkl", c, dndc)) / (n ** 2)[
+        dfdc = (dcdc * n[:, :, np.newaxis, np.newaxis] - np.einsum("ijk,ijl->ijkl", c, dndc)) / (n**2)[
             :, :, np.newaxis, np.newaxis
         ]
 
@@ -262,7 +262,7 @@ class VLMGeometry(om.ExplicitComponent):
             a = proj_mesh[:-1, 1:, :] - proj_mesh[1:, :-1, :]
             b = proj_mesh[:-1, :-1, :] - proj_mesh[1:, 1:, :]
             c = np.cross(a, b, axis=2)
-            n = np.sqrt(np.sum(c ** 2, axis=2))
+            n = np.sqrt(np.sum(c**2, axis=2))
 
             dcda[:, :, 0, 1] = b[:, :, 2]
             dcda[:, :, 0, 2] = -b[:, :, 1]

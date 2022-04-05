@@ -100,8 +100,8 @@ class VonMisesTube(om.ExplicitComponent):
             sxx1 = E * (u0x - u1x) / L + E * radius[ielem] / L * tmp
             sxt = G * radius[ielem] * (r1x - r0x) / L
 
-            outputs["vonmises"][ielem, 0] = np.sqrt(sxx0 ** 2 + 3 * sxt ** 2)
-            outputs["vonmises"][ielem, 1] = np.sqrt(sxx1 ** 2 + 3 * sxt ** 2)
+            outputs["vonmises"][ielem, 0] = np.sqrt(sxx0**2 + 3 * sxt**2)
+            outputs["vonmises"][ielem, 1] = np.sqrt(sxx1**2 + 3 * sxt**2)
 
     def compute_partials(self, inputs, partials):
 
@@ -242,11 +242,11 @@ class VonMisesTube(om.ExplicitComponent):
             dsxxdrad = E / L * tmp
             dsxtdrad = G * (r1x - r0x) / L
 
-            fact = 1.0 / (np.sqrt(sxx0 ** 2 + 3 * sxt ** 2))
+            fact = 1.0 / (np.sqrt(sxx0**2 + 3 * sxt**2))
             dVm0dsxx0 = sxx0 * fact
             dVm0dsxt = 3 * sxt * fact
 
-            fact = 1.0 / (np.sqrt(sxx1 ** 2 + 3 * sxt ** 2))
+            fact = 1.0 / (np.sqrt(sxx1**2 + 3 * sxt**2))
             dVm1dsxx1 = sxx1 * fact
             dVm1dsxt = 3 * sxt * fact
 

@@ -73,8 +73,8 @@ class TotalLiftDrag(om.ExplicitComponent):
 
         S_ref_total = inputs["S_ref_total"]
 
-        partials["CL", "S_ref_total"] = -CL / S_ref_total ** 2
-        partials["CD", "S_ref_total"] = -CD / S_ref_total ** 2
+        partials["CL", "S_ref_total"] = -CL / S_ref_total**2
+        partials["CD", "S_ref_total"] = -CD / S_ref_total**2
 
         for surface in self.options["surfaces"]:
             name = surface["name"]

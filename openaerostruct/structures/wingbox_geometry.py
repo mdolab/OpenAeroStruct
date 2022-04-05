@@ -42,7 +42,7 @@ class WingboxGeometry(om.ExplicitComponent):
     def compute(self, inputs, outputs):
         mesh = inputs["mesh"]
         vectors = mesh[-1, :, :] - mesh[0, :, :]
-        streamwise_chords = np.sqrt(np.sum(vectors ** 2, axis=1))
+        streamwise_chords = np.sqrt(np.sum(vectors**2, axis=1))
         streamwise_chords = 0.5 * streamwise_chords[:-1] + 0.5 * streamwise_chords[1:]
 
         # Chord lengths for the panel strips at the panel midpoint

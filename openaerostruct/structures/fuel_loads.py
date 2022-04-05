@@ -5,7 +5,7 @@ from openaerostruct.utils.constants import grav_constant
 
 
 def norm(vec):
-    return np.sqrt(np.sum(vec ** 2))
+    return np.sqrt(np.sum(vec**2))
 
 
 class FuelLoads(om.ExplicitComponent):

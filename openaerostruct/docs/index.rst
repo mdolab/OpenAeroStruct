@@ -8,14 +8,14 @@ It couples a vortex-lattice method (VLM) and a 6 degrees of freedom (per node) 3
 These simulations are wrapped with an optimizer using NASA's OpenMDAO framework.
 The analysis and optimization results can be visualized using included tools, producing figures such as this:
 
-.. figure:: example.png
+.. figure:: /figures/example.png
    :align: center
    :width: 100%
    :alt: sample visualization of aerostructural system
 
    Aerostructural optimization of the Common Research Model (CRM) wing.
 
-.. figure:: aerostruct_xdsm.png
+.. figure:: /figures/aerostruct_xdsm.png
    :align: center
    :width: 70%
    :alt: sample XDSM of aerostructural system
@@ -29,33 +29,41 @@ These first few doc pages go into detail about how to set up and run a problem i
 Please review these at a minimum to understand how aerodynamic, structural, and aerostructural problems are constructed.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    installation.rst
    quick_example.rst
    aero_walkthrough.rst
    struct_example.rst
-   aerostructural_walkthrough.rst
-   aerostructural_wingbox_walkthrough.rst
-   custom_mesh_example.rst
+   aerostructural_index.rst
 
-Once you have reviewed and understand these examples, you can move on to some more advanced examples below.
+
+Advanced Features
+=================
+Once you have reviewed and understand basic walkthroughs, you can move on to some more advanced features below.
 
 .. toctree::
    :maxdepth: 2
 
-   more_examples.rst
+   advanced_features.rst
 
-Other Useful Docs
+User Reference
+==============
+Other reference guide can be found below.
+
+.. toctree::
+   :maxdepth: 2
+
+   user_reference.rst
+
+How to Contribute
 =================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
-   specialty_topics.rst
-   v1_v2_conversion.rst
    how_to_contribute.rst
-
+   
 Source Docs
 ===========
 

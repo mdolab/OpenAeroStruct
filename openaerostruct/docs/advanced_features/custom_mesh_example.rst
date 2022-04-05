@@ -10,18 +10,18 @@ This is an alternative to the helper-function approach described in :ref:`Aerody
 The following shows the portion of the example script in which the user provides the coordinates for the mesh.
 This example is for a wing with a kink and two distinct trapezoidal segments.
 
-.. literalinclude:: two_part_wing_custom_mesh.py
+.. literalinclude:: /advanced_features/scripts/two_part_wing_custom_mesh.py
    :start-after: checkpoint 0
    :end-before: checkpoint 1
 
 The following shows a visualization of the mesh.
 
-.. image:: two_part_mesh.png
+.. image:: /advanced_features/figs/two_part_mesh.png
 
 The complete script for the optimization is as follows.
 Make sure you go through the :ref:`Aerostructural_with_Wingbox_Walkthrough` before trying to understand this setup.
 
-.. literalinclude:: two_part_wing_custom_mesh.py
+.. literalinclude:: /advanced_features/scripts/two_part_wing_custom_mesh.py
 
 There is plenty of room for improvement.
 A finer mesh and a tighter optimization tolerance should be used.

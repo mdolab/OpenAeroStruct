@@ -37,13 +37,13 @@ def _compute_finite_vortex_deriv1(r1, r2, r1_deriv):
     r1_d_r2_deriv = compute_dot_deriv(r2, r1_deriv)
 
     num = (1.0 / r1_norm + 1.0 / r2_norm) * r1_x_r2
-    num_deriv = (-r1_norm_deriv / r1_norm ** 2) * r1_x_r2 + (1.0 / r1_norm + 1.0 / r2_norm) * r1_x_r2_deriv
+    num_deriv = (-r1_norm_deriv / r1_norm**2) * r1_x_r2 + (1.0 / r1_norm + 1.0 / r2_norm) * r1_x_r2_deriv
 
     den = r1_norm * r2_norm + r1_d_r2
     den_deriv = r1_norm_deriv * r2_norm + r1_d_r2_deriv
 
     result = np.divide(
-        num_deriv * den - num * den_deriv, den ** 2 * 4 * np.pi, out=np.zeros_like(num), where=np.abs(den) > tol
+        num_deriv * den - num * den_deriv, den**2 * 4 * np.pi, out=np.zeros_like(num), where=np.abs(den) > tol
     )
 
     return result
@@ -60,13 +60,13 @@ def _compute_finite_vortex_deriv2(r1, r2, r2_deriv):
     r1_d_r2_deriv = compute_dot_deriv(r1, r2_deriv)
 
     num = (1.0 / r1_norm + 1.0 / r2_norm) * r1_x_r2
-    num_deriv = (-r2_norm_deriv / r2_norm ** 2) * r1_x_r2 + (1.0 / r1_norm + 1.0 / r2_norm) * r1_x_r2_deriv
+    num_deriv = (-r2_norm_deriv / r2_norm**2) * r1_x_r2 + (1.0 / r1_norm + 1.0 / r2_norm) * r1_x_r2_deriv
 
     den = r1_norm * r2_norm + r1_d_r2
     den_deriv = r1_norm * r2_norm_deriv + r1_d_r2_deriv
 
     result = np.divide(
-        num_deriv * den - num * den_deriv, den ** 2 * 4 * np.pi, out=np.zeros_like(num), where=np.abs(den) > tol
+        num_deriv * den - num * den_deriv, den**2 * 4 * np.pi, out=np.zeros_like(num), where=np.abs(den) > tol
     )
 
     return result
@@ -98,7 +98,7 @@ def _compute_semi_infinite_vortex_deriv(u, r, r_deriv):
     den = r_norm * (r_norm - u_d_r)
     den_deriv = r_norm_deriv * (r_norm - u_d_r) + r_norm * (r_norm_deriv - u_d_r_deriv)
 
-    return (num_deriv * den - num * den_deriv) / den ** 2 / 4 / np.pi
+    return (num_deriv * den - num * den_deriv) / den**2 / 4 / np.pi
 
 
 class EvalVelMtx(om.ExplicitComponent):

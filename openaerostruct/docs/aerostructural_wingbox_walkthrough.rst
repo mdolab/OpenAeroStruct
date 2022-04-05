@@ -1,7 +1,7 @@
 .. _Aerostructural_with_Wingbox_Walkthrough:
 
-Aerostructural with Wingbox Walkthrough
-=======================================
+Aerostructural Optimization with Wingbox
+========================================
 
 In addition to the tubular-spar structural model available in OpenAeroStruct, you can use a wingbox-based model.
 This model is described in Chauhan and Martins' paper `here <https://www.researchgate.net/publication/327654423_Low-Fidelity_Aerostructural_Optimization_of_Aircraft_Wings_with_a_Simplified_Wingbox_Model_Using_OpenAeroStruct>`_.
@@ -9,13 +9,12 @@ We strongly recommend reading this relatively short conference paper to learn ab
 The presentation slides for this conference paper can be found `online <https://www.researchgate.net/publication/327802989_Presentation_slides_for_Low-fidelity_Aerostructural_Optimization_of_Aircraft_Wings_with_a_Simplified_Wingbox_Model_Using_OpenAeroStruct>`_.
 Analytic derivatives are not provided for some components of this model, so any optimization problem will use the complex-step approximation to obtain the relevant partial derivatives for these components.
 
-.. image:: wingbox_fine.png
+.. image:: /figures/wingbox_fine.png
 
 This page breaks down and describes an example optimization run-script that uses the wingbox model.
 This example uses the same optimization problem used for the paper linked above, but with fewer design variables and a coarser mesh.
 The wing being optimized is based on the undeflected Common Research Model (uCRM), which is a long-range transport aircraft.
 A script to replicate the optimization problems described in the paper can be found in the examples directory (openaerostruct/examples/run_aerostruct_uCRM_multipoint.py).
-Please contact Shamsheer Chauhan (sschau@umich.edu) with any questions you have after reading the above paper and going through this example.
 
 The goal of the wingbox model is to allow more realistic preliminary structural sizing for commuter to long-range transport-type aircraft which typically have wingbox structures.
 Since more realistic sizing is one of the goals of the wingbox model, this example also shows how to use it with a multipoint optimization.
@@ -127,6 +126,7 @@ If we did not want to add point masses, we would omit this option (do not set it
 Next, we specify the density of the fuel (used to compute fuel volume from fuel mass) and also specify how much fuel we are carrying as reserves.
 This reserve fuel weight is added to the weight of the aircraft for performance calculations as well as computing the loads from the fuel on the wing when using the `distributed_fuel_weight` option.
 With these two final options, we are done with the surface dictionary and add it to a list called surfaces (here we only have one surface, but in general we might have multiple).
+Documentation on the surface dictionary can also be found in :ref:`Mesh and Surface Dict`.
 
 .. literalinclude:: wingbox_mpt_opt_example.py
   :start-after: checkpoint 8
@@ -315,6 +315,6 @@ For example, to use it for this example problem, from the example script's (wing
 
   python ../utils/plot_wingbox.py aerostruct.db
 
-.. image:: wingbox_opt.png
+.. image:: /figures/wingbox_opt.png
 
 This plotting script currently only works for two-flight-point problems like the one described in this walkthrough.

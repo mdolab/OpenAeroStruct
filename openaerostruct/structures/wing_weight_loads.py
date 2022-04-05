@@ -185,7 +185,7 @@ class StructureWeightLoads(om.ExplicitComponent):
 
         # Assume weight coincides with the elastic axis
         z_forces_for_each = struct_weights / 2.0
-        z_moments_for_each = struct_weights / 12.0 * (del0 ** 2 + del1 ** 2) ** 0.5
+        z_moments_for_each = struct_weights / 12.0 * (del0**2 + del1**2) ** 0.5
 
         loads = outputs["struct_weight_loads"]
         loads *= 0  # need to zero it out, since we're accumulating onto it
@@ -221,13 +221,13 @@ class StructureWeightLoads(om.ExplicitComponent):
         del1 = deltas[:, 1]
 
         # Assume weight coincides with the elastic axis
-        z_moments_for_each = struct_weights / 12.0 * (del0 ** 2 + del1 ** 2) ** 0.5
+        z_moments_for_each = struct_weights / 12.0 * (del0**2 + del1**2) ** 0.5
 
         dzf__dew = 0.5 * inputs["load_factor"][0]
         dzf__dlf = inputs["element_mass"] / 2.0
 
-        dzm__dew = diags((del0 ** 2 + del1 ** 2) ** 0.5 / 12 * inputs["load_factor"])
-        dzm__dlf = (del0 ** 2 + del1 ** 2) ** 0.5 / 12.0 * inputs["element_mass"]
+        dzm__dew = diags((del0**2 + del1**2) ** 0.5 / 12 * inputs["load_factor"])
+        dzm__dlf = (del0**2 + del1**2) ** 0.5 / 12.0 * inputs["element_mass"]
 
         dbm3__dzm = diags(del1 / element_lengths)
         dbm4__dzm = diags(del0 / element_lengths)
@@ -260,20 +260,20 @@ class StructureWeightLoads(om.ExplicitComponent):
         data = np.hstack((-raw_data, raw_data)).flatten()
         self.del__dnodes.data = data
 
-        dzm_dnodes = diags(struct_weights / 12 * (del0 ** 2 + del1 ** 2) ** -0.5) * (
+        dzm_dnodes = diags(struct_weights / 12 * (del0**2 + del1**2) ** -0.5) * (
             diags(del0) * self.ddel0__dnodes + diags(del1) * self.ddel1__dnodes
         )
 
         dbm3_dnodes = (
             diags(del1 / element_lengths) * dzm_dnodes
             + diags(z_moments_for_each / element_lengths) * self.ddel1__dnodes
-            - diags(z_moments_for_each * del1 / element_lengths ** 2) * self.del__dnodes
+            - diags(z_moments_for_each * del1 / element_lengths**2) * self.del__dnodes
         )
 
         dbm4_dnodes = (
             diags(del0 / element_lengths) * dzm_dnodes
             + diags(z_moments_for_each / element_lengths) * self.ddel0__dnodes
-            - diags(z_moments_for_each * del0 / element_lengths ** 2) * self.del__dnodes
+            - diags(z_moments_for_each * del0 / element_lengths**2) * self.del__dnodes
         )
 
         # this is kind of dumb, but I need lil cause I have to re-index to preserve order

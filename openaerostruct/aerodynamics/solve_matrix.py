@@ -53,7 +53,7 @@ class SolveMatrix(om.ImplicitComponent):
             "circulations",
             "mtx",
             rows=np.outer(np.arange(system_size), np.ones(system_size, int)).flatten(),
-            cols=np.arange(system_size ** 2),
+            cols=np.arange(system_size**2),
         )
         self.declare_partials(
             "circulations",

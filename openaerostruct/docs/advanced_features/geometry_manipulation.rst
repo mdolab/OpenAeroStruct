@@ -25,7 +25,7 @@ For example, in the figure below, we control the green points as our design vari
 The blue curve is interpolated from the green points and the blue curve is what would modify the aerodynamic mesh.
 In this way we can choose the number of design variables independently of the fidelity of the aerodynamic mesh.
 
-.. image:: bspline.svg
+.. image:: /advanced_features/figs/bspline.svg
 
 In each of the images below, the left wing is the initial rectangular wing and the right wing is the perturbed wing based on the specific design variable.
 
@@ -42,7 +42,7 @@ The taper design variable is the taper ratio of the wing which linearly varies t
 A value of 1.0 corresponds to a straight rectangular wing, whereas a value less than 1 corresponds to a tapered wing.
 Values greater than 1 are possible.
 
-.. image:: taper.svg
+.. image:: /advanced_features/figs/taper.svg
 
 Sweep
 ~~~~~
@@ -50,7 +50,7 @@ Sweep
 The sweep design variable performs shearing sweep in which the planform area and the y-coordinate extents remain constant.
 Positive angles sweep back.
 
-.. image:: sweep.svg
+.. image:: /advanced_features/figs/sweep.svg
 
 Dihedral
 ~~~~~~~~
@@ -58,14 +58,14 @@ Dihedral
 Positive dihedral rotates the wing such that the tip is higher than the root.
 As with taper and sweep, this linearly varies across the span.
 
-.. image:: dihedral.svg
+.. image:: /advanced_features/figs/dihedral.svg
 
 Chord
 ~~~~~
 
 Whereas taper ratio can only vary the chord linearly across the span, the chord design variable allows for arbitrary chord distributions, as shown below.
 
-.. image:: chord.svg
+.. image:: /advanced_features/figs/chord.svg
 
 X Shear
 ~~~~~~~
@@ -74,7 +74,7 @@ This design variable changes the x-coordinate at each certain spanwise location,
 It can be any arbitrary distribution.
 This is a more general form of the sweep variable.
 
-.. image:: xshear.svg
+.. image:: /advanced_features/figs/xshear.svg
 
 Z Shear
 ~~~~~~~
@@ -83,7 +83,7 @@ This design variable changes the z-coordinate at each certain spanwise location,
 It can be any arbitrary distribution.
 This is a more general form of the dihedral variable.
 
-.. image:: zshear.svg
+.. image:: /advanced_features/figs/zshear.svg
 
 Twist
 ~~~~~
@@ -91,7 +91,7 @@ Twist
 Below we show a wing with linear twist variation along the span.
 OpenAeroStruct is capable of arbitrary twist distributions.
 
-.. image:: twist.svg
+.. image:: /advanced_features/figs/twist.svg
 
 Thickness
 ~~~~~~~~~
@@ -102,7 +102,7 @@ constraint when optimizing that limits the thickness so it does not go past the 
 of a solid cylinder.
 Here we can't reliably see thickness changes, so the color of the spar corresponds to thickness.
 
-.. image:: thickness.svg
+.. image:: /advanced_features/figs/thickness.svg
 
 Radius
 ~~~~~~
@@ -113,7 +113,7 @@ that the spar is not larger than the thickness of the airfoil.
 You can set this manually when you set the design variable or you can use the experimental
 `SparWithinWing` component.
 
-.. image:: radius.svg
+.. image:: /advanced_features/figs/radius.svg
 
 Multiple lifting surfaces
 -------------------------
@@ -121,7 +121,7 @@ Multiple lifting surfaces
 So far we have only discussed cases with a single lifting surface, though OpenAeroStruct can handle multiple surfaces.
 For example, you could have a case with a main wing surface and a tail surface as shown below.
 
-.. image:: wing_and_tail.png
+.. image:: /advanced_features/figs/wing_and_tail.png
 
 Most components operate only on one lifting surface without regard for the others in the problem.
 Only two components need to have information from all lifting surfaces -- `AssembleAIC` and `VLMForces`.

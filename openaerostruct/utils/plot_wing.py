@@ -347,7 +347,7 @@ class Display(object):
                     self.lift_ell.append(lift_ell)
 
                     wingspan = np.abs(m_vals[0, -1, 1] - m_vals[0, 0, 1])
-                    self.AR.append(wingspan ** 2 / self.S_ref[i * n_names + j])
+                    self.AR.append(wingspan**2 / self.S_ref[i * n_names + j])
 
             # recenter def_mesh points for better viewing
             for i in range(self.num_iters):

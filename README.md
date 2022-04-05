@@ -2,7 +2,7 @@ OpenAeroStruct
 ==============
 
 ![GitHub Actions Status](https://github.com/mdolab/OpenAeroStruct/workflows/OAS%20build/badge.svg)
-[![codecov](https://codecov.io/gh/mdolab/OpenAeroStruct/branch/master/graph/badge.svg?token=yOxeH7rT2H)](https://codecov.io/gh/mdolab/OpenAeroStruct)
+[![codecov](https://codecov.io/gh/mdolab/OpenAeroStruct/branch/main/graph/badge.svg?token=yOxeH7rT2H)](https://codecov.io/gh/mdolab/OpenAeroStruct)
 [![Documentation Status](https://readthedocs.com/projects/mdolab-openaerostruct/badge/?version=latest)](https://mdolab-openaerostruct.readthedocs-hosted.com/en/latest/?badge=latest)
 
 OpenAeroStruct is a lightweight tool that performs aerostructural optimization using OpenMDAO.
@@ -11,10 +11,10 @@ These simulations are wrapped with an optimizer using NASA's OpenMDAO framework.
 The analysis and optimization results can be visualized using included tools, producing figures such as these:
 
 *With a tubular structure*
-![Example](openaerostruct/docs/example.png)
+![Example](openaerostruct/docs/figures/example.png)
 
 *With a wingbox structure*
-![Example2](openaerostruct/docs/wingbox_fine.png)
+![Example2](openaerostruct/docs/figures/wingbox_fine.png)
 
 Please note that this repository is provided as is without any guaranteed support.
 If you would like to highlight issues, ask questions, or make changes, please do so using GitHub Issues and Pull Requests.

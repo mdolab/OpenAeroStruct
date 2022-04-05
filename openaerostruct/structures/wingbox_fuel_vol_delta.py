@@ -4,7 +4,7 @@ import openmdao.api as om
 
 
 def norm(vec):
-    return np.sqrt(np.sum(vec ** 2))
+    return np.sqrt(np.sum(vec**2))
 
 
 class WingboxFuelVolDelta(om.ExplicitComponent):
