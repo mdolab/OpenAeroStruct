@@ -4,8 +4,8 @@ OpenVSP-generated Mesh Example
 ==============================
 
 OpenAeroStruct also has the ability to generate VLM meshes from an OpenVSP ``.vsp3`` file.
-In order to use this feature users must have the OpenVSP Python API installed in their python environment.
-For instructions on how to install OpenVSP's python API see `here <https://github.com/tadkollar/RevHack2020/blob/master/problems/oas_stability_derivs/openmdao_with_vsp.md>`_.
+In order to use this feature, users must have the OpenVSP Python API installed in their python environment.
+For instructions on how to install OpenVSP's Python API see `here <https://github.com/tadkollar/RevHack2020/blob/master/problems/oas_stability_derivs/openmdao_with_vsp.md>`_.
 
 Here is an example script with a aero surface mesh generated for Boeing 777 aircraft defined in an OpenVSP model.
 This should help you understand how meshes are defined in OpenAeroStruct and how to create them for your own custom planform shapes.
