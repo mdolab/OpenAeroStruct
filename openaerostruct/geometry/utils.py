@@ -733,7 +733,7 @@ def generate_vsp_surfaces(vsp_file, symmetry=False, include=None):
     """
 
     if vsp is None:
-        raise ImportError("The OpenVSP Python API is required in order to use generate_vsp_mesh")
+        raise ImportError("The OpenVSP Python API is required in order to use generate_vsp_surfaces")
 
     # Read in file
     vsp.ReadVSPFile(vsp_file)
