@@ -11,17 +11,8 @@ Aerodynamic Optimization Example
 --------------------------------
 We optimize the aircraft at two cruise flight conditions below.
 
-.. literalinclude:: /../tests/test_multipoint_aero.py
-    :start-after: checkpoint 0
-    :end-before: checkpoint 1
-    :dedent: 8
-
-.. code-block:: python
-
-    print(prob["aero_point_0.wing_perf.CL"][0])
-    print(prob["aero_point_0.wing_perf.CD"][0])
-    print(prob["aero_point_1.wing_perf.CL"][0])
-    print(prob["aero_point_1.wing_perf.CD"][0])
+.. embed-code::
+    openaerostruct.tests.test_multipoint_aero.Test.test
 
 
 Aerostructural Optimization Example (Q400)

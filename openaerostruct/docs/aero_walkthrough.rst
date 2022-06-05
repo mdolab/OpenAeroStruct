@@ -54,7 +54,8 @@ Alternatively, if you want to create your own custom mesh, see :ref:`Custom_Mesh
 
 In the code block shown below, we call the helper function to define a mesh and get a starting twist distribution.
 
-.. literalinclude:: aero_walkthrough/part_1.py
+.. embed-code::
+  aero_walkthrough/part_1.py
 
 There are many options for each surface, and they are loosely organized into the following categories:
 
@@ -65,7 +66,8 @@ There are many options for each surface, and they are loosely organized into the
 - Structural properties (E, G, yield stress, location of spar, etc)
 - Options for constraints (KS aggregation, monotonic design variables)
 
-.. literalinclude:: aero_walkthrough/part_2.py
+.. embed-code::
+  aero_walkthrough/part_2.py
 
 For more details about ``mesh_dict`` and ``surface``, see :ref:`Mesh and Surface Dict`.
 
@@ -76,7 +78,8 @@ In a more complex model, these flow conditions might come from a different OpenM
 Set the values for these parameters that you want to use here.
 We then add this component to the OpenMDAO model.
 
-.. literalinclude:: aero_walkthrough/part_3.py
+.. embed-code::
+  aero_walkthrough/part_3.py
 
 We now need to provide the geometry and analysis groups to the OpenMDAO problem.
 
@@ -90,7 +93,8 @@ This means that the values in our IndepVarComp can pass data into this `AeroPoin
 We need to connect some of the variables from the `Geometry` group into the `AeroPoint` group.
 These connections allow information about the mesh to flow through the model correctly.
 
-.. literalinclude:: aero_walkthrough/part_4.py
+.. embed-code::
+  aero_walkthrough/part_4.py
 
 3. Add your design variables, constraints, and objective
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -131,7 +135,8 @@ Common objectives include:
 We also tell the OpenMDAO problem to record information about each optimization iteration.
 This will allow us to visualize the history during and after the optimization.
 
-.. literalinclude:: aero_walkthrough/part_5.py
+.. embed-code::
+  aero_walkthrough/part_5.py
 
 1. Set up and run the optimization problem
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -141,20 +146,12 @@ If you only wanted to perform analysis, not optimization, you could use `prob.ru
 
 The code below find the lowest `CD` value while providing a certain amount of lift by constraining `CL`.
 
-.. literalinclude:: aero_walkthrough/part_6.py
+.. embed-code::
+   aero_walkthrough/part_6.py
 
-.. code-block::
-
-    Optimization terminated successfully    (Exit mode 0)
-            Current function value: [333.89699872]
-            Iterations: 18
-            Function evaluations: 18
-            Gradient evaluations: 18
-    Optimization Complete
-    -----------------------------------
-    0.0333896998716508
-    0.49999999999999695
-    -1.7885550372372387
+.. embed-code::
+  openaerostruct.tests.test_aero.Test.test
+  :layout: output
 
 
 
@@ -164,7 +161,7 @@ Investigation of the problem structure -- N2 diagram
 We'll now take a moment to explain the organization of the aerodynamic model.
 
 .. embed-n2::
-    aero_walkthrough/generate_n2.py
+  aero_walkthrough/generate_n2.py
 
 Mouse over components and parameters to see the data-passing connections between them.
 You can expand this view, click on boxes to zoom in, or right-click to collapse boxes.

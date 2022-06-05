@@ -5,7 +5,7 @@ import os
 import sys
 import importlib
 from unittest.mock import Mock
-from openaerostruct.docs._exts import embed_n2
+from sphinx_mdolab_theme.ext import embed_n2, embed_code, embed_compare
 from openaerostruct.docs._utils.generate_sourcedocs import generate_docs
 from sphinx_mdolab_theme.config import *
 
@@ -35,6 +35,8 @@ extensions = [
     "sphinx.ext.githubpages",
     "numpydoc",
     "sphinx_copybutton",
+    "embed_code",
+    "embed_compare",
     "embed_n2",
 ]
 
