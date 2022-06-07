@@ -130,3 +130,7 @@ jobs:
       run: |
         pip install black==22.3.0
         black openaerostruct --check --diff -l 120 --target-version py38
+
+  # --- publish to PyPI
+  pypi:
+    uses: mdolab/.github/.github/workflows/pypi.yaml
