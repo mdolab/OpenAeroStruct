@@ -5,7 +5,7 @@ OpenAeroStruct
 [![codecov](https://codecov.io/gh/mdolab/OpenAeroStruct/branch/main/graph/badge.svg?token=yOxeH7rT2H)](https://codecov.io/gh/mdolab/OpenAeroStruct)
 [![Documentation Status](https://readthedocs.com/projects/mdolab-openaerostruct/badge/?version=latest)](https://mdolab-openaerostruct.readthedocs-hosted.com/en/latest/?badge=latest)
 [![PyPI](https://img.shields.io/pypi/v/openaerostruct)](https://pypi.org/project/openaerostruct/)
-![PyPI - Downloads][https://img.shields.io/pypi/dm/openaerostruct](https://pypi.org/project/openaerostruct/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/openaerostruct)](https://pypi.org/project/openaerostruct/)
 
 OpenAeroStruct is a lightweight tool that performs aerostructural optimization using OpenMDAO.
 It couples a vortex-lattice method (VLM) and a 6 degrees of freedom 3-dimensional spatial beam model to simulate aerodynamic and structural analyses using lifting surfaces.
