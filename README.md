@@ -13,10 +13,10 @@ These simulations are wrapped with an optimizer using NASA's OpenMDAO framework.
 The analysis and optimization results can be visualized using included tools, producing figures such as these:
 
 *With a tubular structure*
-![Example](openaerostruct/docs/figures/example.png)
+![Example](https://raw.githubusercontent.com/mdolab/OpenAeroStruct/main/openaerostruct/docs/figures/example.png)
 
 *With a wingbox structure*
-![Example2](openaerostruct/docs/figures/wingbox_fine.png)
+![Example2](https://raw.githubusercontent.com/mdolab/OpenAeroStruct/main/openaerostruct/docs/figures/wingbox_fine.png)
 
 Please note that this repository is provided as is without any guaranteed support.
 If you would like to highlight issues, ask questions, or make changes, please do so using GitHub Issues and Pull Requests.
