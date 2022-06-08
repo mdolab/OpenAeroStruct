@@ -4,6 +4,8 @@ OpenAeroStruct
 ![GitHub Actions Status](https://github.com/mdolab/OpenAeroStruct/workflows/OAS%20build/badge.svg)
 [![codecov](https://codecov.io/gh/mdolab/OpenAeroStruct/branch/main/graph/badge.svg?token=yOxeH7rT2H)](https://codecov.io/gh/mdolab/OpenAeroStruct)
 [![Documentation Status](https://readthedocs.com/projects/mdolab-openaerostruct/badge/?version=latest)](https://mdolab-openaerostruct.readthedocs-hosted.com/en/latest/?badge=latest)
+[![PyPI](https://img.shields.io/pypi/v/openaerostruct)](https://pypi.org/project/OpenAeroStruct/)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/OpenAeroStruct)
 
 OpenAeroStruct is a lightweight tool that performs aerostructural optimization using OpenMDAO.
 It couples a vortex-lattice method (VLM) and a 6 degrees of freedom 3-dimensional spatial beam model to simulate aerodynamic and structural analyses using lifting surfaces.
@@ -20,7 +22,11 @@ Please note that this repository is provided as is without any guaranteed suppor
 If you would like to highlight issues, ask questions, or make changes, please do so using GitHub Issues and Pull Requests.
 The developers will address them at their discretion.
 
-Install OpenAeroStruct by cloning this repository and entering the folder it generates.
+The easiest way to get started is by installing OpenAeroStruct via the Python Package Index with
+
+`pip install openaerostruct`
+
+If you'd like easier access to the examples and source code, install OpenAeroStruct by cloning this repository and entering the folder it generates.
 Then do:
 
 `pip install -e .`

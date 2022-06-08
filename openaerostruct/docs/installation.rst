@@ -5,7 +5,13 @@ Installation
 
 To use OpenAeroStruct, you must first install Python 3.
 
-Next, clone the OpenAeroStruct repository:
+The easiest way to get started is to install OpenAeroStruct from PyPI :
+
+.. code-block:: bash
+
+    pip install openaerostruct
+
+If you'd like easier access to the examples and source code, you can also install OpenAeroStruct by cloning the OpenAeroStruct repository:
 
 .. code-block:: bash
 
@@ -18,7 +24,7 @@ Then from within the OpenAeroStruct folder, pip install the package:
 	cd openaerostruct
 	pip install -e .
 
-This will automatically install the dependencies: numpy, scipy, matplotlib, and OpenMDAO.
+Both methods will automatically install the dependencies: numpy, scipy, matplotlib, and OpenMDAO.
 
 The latest version of OpenAeroStruct supports OpenMDAO version 3.2.0 to 3.16.0; 3.16.0 is recommended.
 If you wish to install a specific version of OpenMDAO, follow the instructions at https://github.com/OpenMDAO/OpenMDAO/.
