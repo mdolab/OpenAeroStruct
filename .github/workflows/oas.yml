@@ -9,6 +9,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - v*.*.*
 
 jobs:
   # --- run OAS unit and regression tests ---
@@ -133,4 +135,6 @@ jobs:
 
   # --- publish to PyPI
   pypi:
-    uses: mdolab/.github/.github/workflows/pypi.yaml
+    needs: [test, flake8, black]
+    uses: mdolab/.github/.github/workflows/pypi.yaml@main
+    secrets: inherit
