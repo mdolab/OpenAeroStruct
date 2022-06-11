@@ -9,6 +9,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - v*.*.*
 
 jobs:
   # --- run OAS unit and regression tests ---
@@ -130,3 +132,9 @@ jobs:
       run: |
         pip install black==22.3.0
         black openaerostruct --check --diff -l 120 --target-version py38
+
+  # --- publish to PyPI
+  pypi:
+    needs: [test, flake8, black]
+    uses: mdolab/.github/.github/workflows/pypi.yaml@main
+    secrets: inherit

@@ -1,6 +1,7 @@
 from setuptools import setup
 
 import re
+import os
 
 __version__ = re.findall(
     r"""__version__ = ["']+([0-9\.]*)["']+""",
@@ -17,10 +18,20 @@ optional_dependencies["all"] = sorted(
     [dependency for dependencies in optional_dependencies.values() for dependency in dependencies]
 )
 
+this_directory = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(this_directory, "README.md"), encoding="utf-8") as f:
+    long_description = f.read()
+
 setup(
     name="openaerostruct",
     version=__version__,
     description="OpenAeroStruct",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url="https://github.com/mdolab/OpenAeroStruct",
+    keywords="",
+    author="",
+    author_email="",
     license="BSD-3",
     packages=[
         "openaerostruct",
