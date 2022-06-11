@@ -37,7 +37,6 @@ setup(
         "openaerostruct",
         "openaerostruct/docs",
         "openaerostruct/docs/_utils",
-        "openaerostruct/docs/_exts",
         "openaerostruct/geometry",
         "openaerostruct/structures",
         "openaerostruct/aerodynamics",
