@@ -51,8 +51,8 @@ setup(
     package_data={"openaerostruct": ["tests/*.py", "*/tests/*.py", "*/*/tests/*.py"]},
     install_requires=[
         "openmdao>=3.2, <=3.16.0",  # don't forget to update OM versions in README.md and docs/installation.rst
-        "numpy",
-        "scipy",
+        "numpy>=1.14.0",
+        "scipy>=1.0.0",
         "matplotlib",
     ],
     extras_require=optional_dependencies,
