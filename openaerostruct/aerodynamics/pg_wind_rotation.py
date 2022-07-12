@@ -166,10 +166,10 @@ class RotateToWindFrame(om.ExplicitComponent):
         alpha = inputs["alpha"]
         beta = inputs["beta"]
 
-        cosa = np.asscalar(np.cos(alpha))
-        sina = np.asscalar(np.sin(alpha))
-        cosb = np.asscalar(np.cos(beta))
-        sinb = np.asscalar(np.sin(beta))
+        cosa = np.cos(alpha).item()
+        sina = np.sin(alpha).item()
+        cosb = np.cos(beta).item()
+        sinb = np.sin(beta).item()
 
         # Define aero->wind rotation matrix
         Tw = np.array(
@@ -200,10 +200,10 @@ class RotateToWindFrame(om.ExplicitComponent):
         alpha = inputs["alpha"]
         beta = inputs["beta"]
 
-        cosa = np.asscalar(np.cos(alpha))
-        sina = np.asscalar(np.sin(alpha))
-        cosb = np.asscalar(np.cos(beta))
-        sinb = np.asscalar(np.sin(beta))
+        cosa = np.cos(alpha).item()
+        sina = np.sin(alpha).item()
+        cosb = np.cos(beta).item()
+        sinb = np.sin(beta).item()
 
         num_eval_pts = inputs["bound_vecs"].shape[0]
 
@@ -306,10 +306,10 @@ class RotateFromWindFrame(om.ExplicitComponent):
         alpha = inputs["alpha"]
         beta = inputs["beta"]
 
-        cosa = np.asscalar(np.cos(alpha))
-        sina = np.asscalar(np.sin(alpha))
-        cosb = np.asscalar(np.cos(beta))
-        sinb = np.asscalar(np.sin(beta))
+        cosa = np.cos(alpha).item()
+        sina = np.sin(alpha).item()
+        cosb = np.cos(beta).item()
+        sinb = np.sin(beta).item()
 
         # Define aero->wind rotation matrix
         # wind->aero rotation matrix is given by transpose
@@ -329,10 +329,10 @@ class RotateFromWindFrame(om.ExplicitComponent):
         alpha = inputs["alpha"]
         beta = inputs["beta"]
 
-        cosa = np.asscalar(np.cos(alpha))
-        sina = np.asscalar(np.sin(alpha))
-        cosb = np.asscalar(np.cos(beta))
-        sinb = np.asscalar(np.sin(beta))
+        cosa = np.cos(alpha).item()
+        sina = np.sin(alpha).item()
+        cosb = np.cos(beta).item()
+        sinb = np.sin(beta).item()
 
         # Define aero->wind rotation matrix
         Tw = np.array(

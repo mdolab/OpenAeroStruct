@@ -164,7 +164,7 @@ class CoupledPerformance(om.Group):
                 "sec_forces",
                 "t_over_c",
             ],
-            promotes_outputs=["CDv", "L", "D", "CL1", "CDi", "CD", "CL"],
+            promotes_outputs=["CDv", "CDw", "L", "D", "CL1", "CDi", "CD", "CL", "Cl"],
         )
 
         if surface["fem_model_type"] == "tube":
