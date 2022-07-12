@@ -16,7 +16,7 @@ We'll first go through individual sets of commands then present a full example s
 Instantiate the problem
 -----------------------
 
-.. content-container ::
+.. content-container::
 
   .. embed-compare::
       openaerostruct.tests.test_v1_aero_opt.Test.test
@@ -40,7 +40,7 @@ Instantiate the problem
 Create the surface and add it to the problem
 --------------------------------------------
 
-.. content-container ::
+.. content-container::
 
   .. embed-compare::
       openaerostruct.tests.test_v1_aero_opt.Test.test
@@ -61,7 +61,7 @@ Create the surface and add it to the problem
 Set up the problem, add design variables, and run the optimization
 ------------------------------------------------------------------
 
-.. content-container ::
+.. content-container::
 
   .. embed-compare::
       openaerostruct.tests.test_v1_aero_opt.Test.test
@@ -82,7 +82,7 @@ Set up the problem, add design variables, and run the optimization
 Full run scripts
 ----------------
 
-.. content-container ::
+.. content-container::
 
   .. embed-compare::
       openaerostruct.tests.test_v1_aero_opt.Test.test
