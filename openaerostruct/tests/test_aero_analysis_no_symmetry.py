@@ -99,11 +99,6 @@ class Test(unittest.TestCase):
 
                 prob.model.connect(name + ".t_over_c", point_name + "." + name + "_perf." + "t_over_c")
 
-        recorder = om.SqliteRecorder("aero_analysis_no_sym.db")
-        prob.driver.add_recorder(recorder)
-        prob.driver.recording_options["record_derivatives"] = True
-        prob.driver.recording_options["includes"] = ["*"]
-
         # Set up the problem
         prob.setup()
 

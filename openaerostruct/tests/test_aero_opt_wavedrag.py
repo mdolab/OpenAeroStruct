@@ -102,11 +102,6 @@ class Test(unittest.TestCase):
         prob.driver = om.ScipyOptimizeDriver()
         prob.driver.options["tol"] = 1e-9
 
-        recorder = om.SqliteRecorder("aero_opt_wavedrag.db")
-        prob.driver.add_recorder(recorder)
-        prob.driver.recording_options["record_derivatives"] = True
-        prob.driver.recording_options["includes"] = ["*"]
-
         # Setup problem and add design variables, constraint, and objective
         prob.model.add_design_var("wing.twist_cp", lower=-10.0, upper=15.0)
         prob.model.add_constraint(point_name + ".wing_perf.CL", equals=0.5)

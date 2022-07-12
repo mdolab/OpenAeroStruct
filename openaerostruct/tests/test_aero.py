@@ -94,11 +94,6 @@ class Test(unittest.TestCase):
         prob.driver = om.ScipyOptimizeDriver()
         prob.driver.options["tol"] = 1e-9
 
-        recorder = om.SqliteRecorder("aero.db")
-        prob.driver.add_recorder(recorder)
-        prob.driver.recording_options["record_derivatives"] = True
-        prob.driver.recording_options["includes"] = ["*"]
-
         # Setup problem and add design variables, constraint, and objective
         prob.model.add_design_var("wing.twist_cp", lower=-10.0, upper=15.0)
         prob.model.add_constraint(point_name + ".wing_perf.CL", equals=0.5)
@@ -114,7 +109,6 @@ class Test(unittest.TestCase):
         assert_near_equal(prob["aero_point_0.wing_perf.CD"][0], 0.033389699871650073, 1e-6)
         assert_near_equal(prob["aero_point_0.wing_perf.CL"][0], 0.5, 1e-6)
         assert_near_equal(prob["aero_point_0.CM"][1], -1.7885550372372376, 1e-6)
-
 
 if __name__ == "__main__":
     unittest.main()

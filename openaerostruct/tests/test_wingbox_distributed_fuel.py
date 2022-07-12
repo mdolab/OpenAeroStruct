@@ -420,7 +420,6 @@ class Test(unittest.TestCase):
         prob.driver.options["tol"] = 1e-9
 
         # prob.driver = om.pyOptSparseDriver()
-        # prob.driver.add_recorder(om.SqliteRecorder("cases.sql"))
         # prob.driver.options['optimizer'] = "SNOPT"
         # prob.driver.opt_settings['Major optimality tolerance'] = 1e-6
         # prob.driver.opt_settings['Major feasibility tolerance'] = 1e-8

@@ -149,11 +149,6 @@ class Test(unittest.TestCase):
         prob.driver.options["tol"] = 1e-9
         prob.driver.options["maxiter"] = 2
 
-        recorder = om.SqliteRecorder("morphing_aerostruct.db")
-        prob.driver.add_recorder(recorder)
-        prob.driver.recording_options["record_derivatives"] = True
-        prob.driver.recording_options["includes"] = ["*"]
-
         # Setup problem and add design variables, constraint, and objective
         prob.model.add_design_var("twist_cp_0", lower=-10.0, upper=15.0)
         prob.model.add_design_var("twist_cp_1", lower=-10.0, upper=15.0)

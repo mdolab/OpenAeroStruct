@@ -402,10 +402,6 @@ class Test(unittest.TestCase):
         # prob.driver.opt_settings['Major feasibility tolerance'] = 1e-8
         # prob.driver.opt_settings['Major iterations limit'] = 200
 
-        # prob.driver.add_recorder(om.SqliteRecorder("wingbox.db"))
-        # prob.driver.recording_options['record_derivatives'] = True
-        # prob.driver.recording_options['includes'] = ['*']
-
         prob.model.add_objective("AS_point_0.fuelburn", scaler=1e-5)
 
         # prob.model.add_design_var('alpha', lower=-15., upper=15.)

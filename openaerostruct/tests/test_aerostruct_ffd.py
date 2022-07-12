@@ -153,11 +153,6 @@ class Test(unittest.TestCase):
         # it, which defaults to an SLSQP optimization method
         prob.driver = om.ScipyOptimizeDriver()
 
-        recorder = om.SqliteRecorder("aerostruct_ffd.db")
-        prob.driver.add_recorder(recorder)
-        prob.driver.recording_options["record_derivatives"] = True
-        prob.driver.recording_options["includes"] = ["*"]
-
         # Setup problem and add design variables, constraint, and objective
         prob.model.add_design_var("wing.shape", lower=-3, upper=2)
         prob.model.add_design_var("wing.thickness_cp", lower=0.01, upper=0.5, scaler=1e2)
