@@ -13,6 +13,7 @@ We optimize the aircraft at two cruise flight conditions below.
 
 .. embed-code::
     openaerostruct.tests.test_multipoint_aero.Test.test
+    :layout: output
 
 
 Aerostructural Optimization Example (Q400)

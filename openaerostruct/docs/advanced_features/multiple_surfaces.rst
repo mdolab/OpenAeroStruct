@@ -8,3 +8,4 @@ The most straightforward example is a wing and a tail for a conventional airplan
 
 .. embed-code::
     openaerostruct.tests.test_multiple_aero_analysis.Test.test
+    :layout: output
