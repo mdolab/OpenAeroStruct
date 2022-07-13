@@ -164,30 +164,11 @@ class Test(unittest.TestCase):
         prob.model.add_constraint("AS_point_0.L_equals_W", equals=0.0)
         prob.model.add_objective("AS_point_0.fuelburn", scaler=1e-5)
 
-        # iprofile.setup()
-        # iprofile.start()
-
         # Set up the problem
         prob.setup()
 
-        # om.view_model(prob, outfile='aerostruct_ffd', show_browser=False)
-
         # prob.run_model()
         prob.run_driver()
-
-        # prob.check_partials(compact_print=True)
-
-        # print("\nWing CL:", prob['aero_point_0.wing_perf.CL'])
-        # print("Wing CD:", prob['aero_point_0.wing_perf.CD'])
-
-        # from helper import plot_3d_points
-        #
-        # mesh = prob['aero_point_0.wing.def_mesh']
-        # plot_3d_points(mesh)
-        #
-        # filename = mesh_dict['wing_type'] + '_' + str(mesh_dict['num_x']) + '_' + str(mesh_dict['num_y'])
-        # filename += '_' + str(surf_dict['mx']) + '_' + str(surf_dict['my']) + '.mesh'
-        # np.save(filename, mesh)
 
         assert_near_equal(prob["AS_point_0.fuelburn"][0], 97680.8964568375, 1e-3)
 

@@ -68,9 +68,6 @@ class Test(unittest.TestCase):
         # Set up the problem
         prob.setup(force_alloc_complex=False)
 
-        # prob.run_model()
-        # prob.check_partials(compact_print=False, method='fd')
-        # exit()
         prob.run_driver()
 
         assert_near_equal(prob["wing.structural_mass"][0], 71088.4682399, 1e-8)

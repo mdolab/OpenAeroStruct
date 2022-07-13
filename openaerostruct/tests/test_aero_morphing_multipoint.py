@@ -122,8 +122,6 @@ class Test(unittest.TestCase):
                     point_name + "." + name + "_geom.t_over_c", point_name + "." + name + "_perf." + "t_over_c"
                 )
 
-                # prob.model.connect(point_name + '.' + name + '_geom.span', 'span_diff_comp.span_' + str(i))
-
         # Connect geometric design variables to each point
         prob.model.connect("t_over_c_cp", "aero_point_0.wing_geom.t_over_c_cp")
         prob.model.connect("t_over_c_cp", "aero_point_1.wing_geom.t_over_c_cp")

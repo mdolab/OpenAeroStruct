@@ -103,8 +103,6 @@ class Test(unittest.TestCase):
         # Set up the problem
         prob.setup()
 
-        # om.view_model(prob)
-
         prob.run_driver()
 
         assert_near_equal(prob["aero_point_0.wing_perf.CD"][0], 0.038041969673747206, 1e-6)

@@ -135,9 +135,6 @@ class Test(unittest.TestCase):
         # Set up the problem
         prob.setup()
 
-        # om.view_model(prob, outfile='aero.html', show_browser=False)
-
-        # prob.run_model()
         prob.run_driver()
 
         assert_near_equal(prob["aero_point_0.wing_perf.CD"][0], 0.03398038, 1e-6)

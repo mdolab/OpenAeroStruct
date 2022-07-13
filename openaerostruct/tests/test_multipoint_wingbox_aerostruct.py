@@ -432,12 +432,6 @@ class Test(unittest.TestCase):
         prob.driver = om.ScipyOptimizeDriver()
         prob.driver.options["tol"] = 1e-9
 
-        # prob.driver = om.pyOptSparseDriver()
-        # prob.driver.options['optimizer'] = "SNOPT"
-        # prob.driver.opt_settings['Major optimality tolerance'] = 5e-6
-        # prob.driver.opt_settings['Major feasibility tolerance'] = 1e-8
-        # prob.driver.opt_settings['Major iterations limit'] = 200
-
         prob.model.add_objective("AS_point_0.fuelburn", scaler=1e-5)
 
         prob.model.add_design_var("wing.twist_cp", lower=-15.0, upper=15.0, scaler=0.1)
@@ -457,18 +451,13 @@ class Test(unittest.TestCase):
         # =======================================================================================
         prob.model.add_constraint("fuel_vol_delta.fuel_vol_delta", lower=0.0)
         prob.model.add_constraint("fuel_diff", equals=0.0)
-        # prob.model.add_constraint('fuel_diff_25', equals=0.)
         # =======================================================================================
         # =======================================================================================
 
         # Set up the problem
         prob.setup()
 
-        # om.view_model(prob)
-
         prob.run_driver()
-
-        # prob.check_partials(form='central', compact_print=True)
 
         print(prob["AS_point_0.fuelburn"][0])
         print(prob["wing.structural_mass"][0] / 1.25)

@@ -108,8 +108,7 @@ class Test(unittest.TestCase):
 
         # Set up and run the optimization problem
         prob.setup()
-        # prob.check_partials(compact_print=True)
-        # exit()
+
         prob.run_driver()
 
         assert_near_equal(prob["aero_point_0.wing_perf.CD"][0], 0.03092736603125073, 1e-6)

@@ -77,8 +77,6 @@ class Test(unittest.TestCase):
         # Set up the problem
         prob.setup()
 
-        # om.view_model(prob)
-
         prob.run_model()
 
         assert_near_equal(prob["wing.structural_mass"][0], 100.727314456, 1e-4)

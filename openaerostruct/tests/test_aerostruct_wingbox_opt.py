@@ -396,15 +396,8 @@ class Test(unittest.TestCase):
         prob.driver = om.ScipyOptimizeDriver()
         prob.driver.options["tol"] = 1e-9
 
-        # prob.driver = om.pyOptSparseDriver()
-        # prob.driver.options['optimizer'] = "SNOPT"
-        # prob.driver.opt_settings['Major optimality tolerance'] = 1e-6
-        # prob.driver.opt_settings['Major feasibility tolerance'] = 1e-8
-        # prob.driver.opt_settings['Major iterations limit'] = 200
-
         prob.model.add_objective("AS_point_0.fuelburn", scaler=1e-5)
 
-        # prob.model.add_design_var('alpha', lower=-15., upper=15.)
         prob.model.add_design_var("wing.twist_cp", lower=-15.0, upper=15.0, scaler=0.1)
         prob.model.add_design_var("wing.spar_thickness_cp", lower=0.003, upper=0.1, scaler=1e2)
         prob.model.add_design_var("wing.skin_thickness_cp", lower=0.003, upper=0.1, scaler=1e2)
@@ -412,22 +405,12 @@ class Test(unittest.TestCase):
         prob.model.add_design_var("wing.geometry.span", lower=55.0, upper=60.0, scaler=2e-2)
 
         prob.model.add_constraint("AS_point_0.CL", equals=0.5)
-        # prob.model.add_constraint('AS_point_0.L_equals_W', equals=0.)
         prob.model.add_constraint("AS_point_0.wing_perf.failure", upper=0.0)
-        # prob.model.add_constraint('coupled.wing_loads.fuel_vol_delta', lower=0.)
 
         # Set up the problem
         prob.setup()
 
-        # om.view_model(prob)
-
         prob.run_driver()
-
-        # prob.check_partials(form='central', compact_print=True)
-
-        # print(prob['AS_point_0.fuelburn'][0])
-        # print(prob['wing.structural_mass'][0]/1.25)
-        # print(prob['wing.geometry.span'])
         assert_near_equal(prob["AS_point_0.fuelburn"][0], 84387.962001, 1e-5)
         assert_near_equal(prob["wing.structural_mass"][0] / 1.25, 13974.684240, 1e-5)
         assert_near_equal(prob["wing.geometry.span"][0], 60.0, 1e-5)

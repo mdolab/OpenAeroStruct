@@ -429,12 +429,6 @@ class Test(unittest.TestCase):
         prob.driver.options["tol"] = 1e-9
         prob.driver.options["maxiter"] = 5
 
-        # prob.driver = om.pyOptSparseDriver()
-        # prob.driver.options['optimizer'] = "SNOPT"
-        # prob.driver.opt_settings['Major optimality tolerance'] = 1e-6
-        # prob.driver.opt_settings['Major feasibility tolerance'] = 1e-8
-        # prob.driver.opt_settings['Major iterations limit'] = 200
-
         prob.model.add_objective("AS_point_0.fuelburn", scaler=1e-5)
 
         prob.model.add_design_var("wing.twist_cp", lower=-15.0, upper=15.0, scaler=0.1)

@@ -140,8 +140,6 @@ class Test(unittest.TestCase):
         # Set up the problem
         prob.setup()
 
-        # om.view_model(prob)
-
         prob.run_model()
 
         assert_near_equal(prob["AS_point_0.CL"][0], 1.6217443031469607, 1e-6)
