@@ -28,7 +28,8 @@ The following shows a visualization of the mesh.
 
 The complete script for the aerodynamic analysis is as follows.
 
-.. literalinclude:: /advanced_features/scripts/run_vsp_777.py
+.. embed-code::
+   advanced_features/scripts/run_vsp_777.py
 
 The user may have noticed that the VLM mesh density is never explicitly defined in the script.
 The discretization of the VLM is based on the tessellation refinement define in OpenVSP model.
