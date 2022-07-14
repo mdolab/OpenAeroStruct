@@ -11,4 +11,3 @@ This allows for more general design shape changes and helps sync up geometry cha
 
 .. embed-code::
   openaerostruct.tests.test_aerostruct_ffd.Test.test
-  :layout: output

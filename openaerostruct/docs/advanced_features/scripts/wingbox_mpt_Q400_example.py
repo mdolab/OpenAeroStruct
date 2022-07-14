@@ -295,12 +295,7 @@ prob.model.add_constraint("fuel_diff", equals=0.0)
 # Set up the problem
 prob.setup()
 
-# om.view_model(prob)
-
-# prob.check_partials(form='central', compact_print=True)
-
 prob.run_driver()
-# prob.run_model()
 
 print("The fuel burn value is", prob["AS_point_0.fuelburn"][0], "[kg]")
 print(

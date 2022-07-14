@@ -23,6 +23,7 @@ Make sure you go through the :ref:`Aerostructural_with_Wingbox_Walkthrough` befo
 
 .. embed-code::
    advanced_features/scripts/two_part_wing_custom_mesh.py
+   :layout: interleave
 
 There is plenty of room for improvement.
 A finer mesh and a tighter optimization tolerance should be used.
