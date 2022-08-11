@@ -189,7 +189,12 @@ class ViscousDrag(om.ExplicitComponent):
             partials["CDv", "S_ref"] = -D_over_q / S_ref**2
             partials["CDv", "cos_sweep"][0, :] = d_over_q / S_ref * (FF + 0.28 * k_FF * cos_sweep**0.28)
             partials["CDv", "t_over_c"] = (
-                d_over_q * widths_spanwise * 1.34 * M**0.18 * (0.6 / self.c_max_t + 400 * t_over_c**3) * cos_sweep**0.28
+                d_over_q
+                * widths_spanwise
+                * 1.34
+                * M**0.18
+                * (0.6 / self.c_max_t + 400 * t_over_c**3)
+                * cos_sweep**0.28
             ) / S_ref
 
             term = (-0.65 / (1 + 0.144 * M**2) ** 1.65) * 2 * 0.144 * M

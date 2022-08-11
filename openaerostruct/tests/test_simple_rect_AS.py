@@ -14,7 +14,7 @@ class Test(unittest.TestCase):
     def test(self):
         # Create a dictionary to store options about the surface
         # OM: vary 'num_y' and 'num_x' to change the size of the mesh
-        mesh_dict = {"num_y": 5, "num_x": 2, "wing_type": "rect", "symmetry": True, "span" : 40.0, "root_chord": 4.0}
+        mesh_dict = {"num_y": 5, "num_x": 2, "wing_type": "rect", "symmetry": True, "span": 40.0, "root_chord": 4.0}
 
         mesh = generate_mesh(mesh_dict)
 

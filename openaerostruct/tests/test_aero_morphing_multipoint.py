@@ -162,5 +162,5 @@ class Test(unittest.TestCase):
         assert_near_equal(prob["aero_point_1.wing_perf.CL"][0], 0.5, 1e-6)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
