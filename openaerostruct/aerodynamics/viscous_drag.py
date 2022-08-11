@@ -124,7 +124,6 @@ class ViscousDrag(om.ExplicitComponent):
 
             M = inputs["Mach_number"]
             S_ref = inputs["S_ref"]
-            widths = inputs["widths"]
             widths_spanwise = inputs["cos_sweep"]
             lengths = inputs["lengths"]
             cos_sweep = inputs["cos_sweep"] / inputs["widths"]

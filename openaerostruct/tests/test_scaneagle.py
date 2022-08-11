@@ -204,10 +204,10 @@ class Test(unittest.TestCase):
         # Actually run the optimization problem
         prob.run_driver()
 
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 4.734596439931736, 1e-6)
-        assert_near_equal(prob["wing.twist_cp"], np.array([2.52737808, 10.62041433, 5.0]), 1e-6)
-        assert_near_equal(prob["wing.sweep"][0], 18.84598985, 1e-6)
-        assert_near_equal(prob["alpha"][0], 1.97414017, 1e-6)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 4.636493097976387, 1e-6)
+        assert_near_equal(prob["wing.twist_cp"], np.array([2.25753856, 10.40060942,  5.]), 1e-6)
+        assert_near_equal(prob["wing.sweep"][0], 18.966354050377507, 1e-6)
+        assert_near_equal(prob["alpha"][0], 2.036452200686511, 1e-6)
 
 
 if __name__ == "__main__":

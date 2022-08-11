@@ -105,7 +105,7 @@ class Test(unittest.TestCase):
         prob.run_driver()
 
         assert_near_equal(prob["aero_point_0.wing_perf.CL"][0], 0.4641915422309865, 1e-6)
-        assert_near_equal(prob["aero_point_0.wing_perf.CD"][0], 0.019503986624201042, 1e-6)
+        assert_near_equal(prob["aero_point_0.wing_perf.CD"][0], 0.017695390209861946, 1e-6)
         assert_near_equal(prob["aero_point_0.CM"][1], -1.5717101821556665, 1e-6)
 
 

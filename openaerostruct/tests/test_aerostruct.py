@@ -146,7 +146,7 @@ class Test(unittest.TestCase):
 
         prob.run_driver()
 
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 97696.33252514644, 1e-8)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 92369.79279575823, 1e-8)
 
 
 if __name__ == "__main__":

@@ -14,7 +14,7 @@ class Test(unittest.TestCase):
     def test(self):
         # Create a dictionary to store options about the surface
         # OM: vary 'num_y' and 'num_x' to change the size of the mesh
-        mesh_dict = {"num_y": 5, "num_x": 2, "wing_type": "rect", "symmetry": True}
+        mesh_dict = {"num_y": 5, "num_x": 2, "wing_type": "rect", "symmetry": True, "span" : 40.0, "root_chord": 4.0}
 
         mesh = generate_mesh(mesh_dict)
 
@@ -137,7 +137,7 @@ class Test(unittest.TestCase):
                 prob.model.connect(name + ".t_over_c", com_name + ".t_over_c")
 
         prob.driver = om.ScipyOptimizeDriver()
-        prob.driver.options["tol"] = 1e-9
+        prob.driver.options["tol"] = 1e-7
 
         # Setup problem and add design variables, constraint, and objective
         prob.model.add_design_var("wing.twist_cp", lower=-10.0, upper=15.0)
@@ -155,7 +155,7 @@ class Test(unittest.TestCase):
 
         prob.run_driver()
 
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 68345.6633812, 1e-5)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 73196.44377669816, 1e-5)
 
 
 if __name__ == "__main__":

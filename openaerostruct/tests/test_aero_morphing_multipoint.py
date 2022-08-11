@@ -157,6 +157,10 @@ class Test(unittest.TestCase):
 
         assert_near_equal(prob["aero_point_0.wing_perf.CL"][0], 0.45, 1e-6)
         assert_near_equal(prob["aero_point_1.wing_perf.CL"][0], 0.5, 1e-6)
-        assert_near_equal(prob["twist_cp_0"], np.array([8.0, -1.21207749, -2.42415497, -1.21207749, -1.0821358]), 1e-6)
-        assert_near_equal(prob["twist_cp_1"], np.array([8.0, -0.02049115, -0.0409823, -0.02049115, 0.77903674]), 1e-6)
+        assert_near_equal(prob["twist_cp_0"], np.array([8.0, -1.28899415, -2.57798831, -1.28899415, -0.96161429]), 1e-6)
+        assert_near_equal(prob["twist_cp_1"], np.array([8.0, -0.02636487, -0.05272973, -0.02636487, 0.7889681]), 1e-6)
         assert_near_equal(prob["aero_point_1.wing_perf.CL"][0], 0.5, 1e-6)
+
+
+if __name__ == '__main__':
+    unittest.main()

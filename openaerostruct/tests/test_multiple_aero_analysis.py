@@ -138,7 +138,7 @@ class Test(unittest.TestCase):
 
         prob.run_model()
 
-        assert_near_equal(prob["aero_point_0.wing_perf.CD"][0], 0.037210478659832125, 1e-6)
+        assert_near_equal(prob["aero_point_0.wing_perf.CD"][0], 0.03539775778518085, 1e-6)
         assert_near_equal(prob["aero_point_0.wing_perf.CL"][0], 0.5124736932248048, 1e-6)
         assert_near_equal(prob["aero_point_0.CM"][1], -1.7028233361964462, 1e-6)
 
