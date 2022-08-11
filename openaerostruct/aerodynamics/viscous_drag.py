@@ -70,9 +70,9 @@ class ViscousDrag(om.ExplicitComponent):
             re = inputs["re"]
             M = inputs["Mach_number"]
             S_ref = inputs["S_ref"]
-            widths = inputs["widths"]
+            widths_spanwise = inputs["cos_sweep"]
             lengths = inputs["lengths"]
-            cos_sweep = inputs["cos_sweep"] / widths
+            cos_sweep = inputs["cos_sweep"] / inputs["widths"]
             t_over_c = inputs["t_over_c"]
 
             # Take panel chord length to be average of its edge lengths
@@ -104,7 +104,7 @@ class ViscousDrag(om.ExplicitComponent):
             FF = k_FF * cos_sweep**0.28
 
             # Sum individual panel drags to get total drag
-            D_over_q = np.sum(d_over_q * widths * FF)
+            D_over_q = np.sum(d_over_q * widths_spanwise * FF)
 
             outputs["CDv"] = D_over_q / S_ref
 
@@ -124,10 +124,10 @@ class ViscousDrag(om.ExplicitComponent):
 
             M = inputs["Mach_number"]
             S_ref = inputs["S_ref"]
-
             widths = inputs["widths"]
+            widths_spanwise = inputs["cos_sweep"]
             lengths = inputs["lengths"]
-            cos_sweep = inputs["cos_sweep"] / widths
+            cos_sweep = inputs["cos_sweep"] / inputs["widths"]
 
             # Take panel chord length to be average of its edge lengths
             chords = (lengths[1:] + lengths[:-1]) / 2.0
@@ -158,7 +158,7 @@ class ViscousDrag(om.ExplicitComponent):
             FF = k_FF * cos_sweep**0.28
 
             # Sum individual panel drags to get total drag
-            D_over_q = np.sum(d_over_q * widths * FF)
+            D_over_q = np.sum(d_over_q * widths_spanwise * FF)
 
             chords = (lengths[1:] + lengths[:-1]) / 2.0
             Re_c = re * chords
@@ -182,15 +182,15 @@ class ViscousDrag(om.ExplicitComponent):
 
             cd_Re = (cdl_Re - cdt_Re) * self.k_lam + cdT_Re
 
-            CDv_lengths = 2 * widths * FF / S_ref * (d_over_q / 4 / chords + chords * cd_Re * re / 2.0)
+            CDv_lengths = 2 * widths_spanwise * FF / S_ref * (d_over_q / 4 / chords + chords * cd_Re * re / 2.0)
 
             partials["CDv", "lengths"][0, 1:] += CDv_lengths
             partials["CDv", "lengths"][0, :-1] += CDv_lengths
-            partials["CDv", "widths"][0, :] = d_over_q * FF / S_ref * 0.72
+            partials["CDv", "widths"][0, :] = d_over_q / S_ref * (-0.28 * k_FF * cos_sweep**1.28)
             partials["CDv", "S_ref"] = -D_over_q / S_ref**2
-            partials["CDv", "cos_sweep"][0, :] = 0.28 * k_FF * d_over_q / S_ref / cos_sweep**0.72
+            partials["CDv", "cos_sweep"][0, :] = d_over_q / S_ref * (FF + 0.28 * k_FF * cos_sweep**0.28)
             partials["CDv", "t_over_c"] = (
-                d_over_q * widths * 1.34 * M**0.18 * (0.6 / self.c_max_t + 400 * t_over_c**3) * cos_sweep**0.28
+                d_over_q * widths_spanwise * 1.34 * M**0.18 * (0.6 / self.c_max_t + 400 * t_over_c**3) * cos_sweep**0.28
             ) / S_ref
 
             term = (-0.65 / (1 + 0.144 * M**2) ** 1.65) * 2 * 0.144 * M
@@ -208,7 +208,7 @@ class ViscousDrag(om.ExplicitComponent):
             dk_ff__dM = 1.34 * 0.18 * M**-0.82 * (1.0 + 0.6 * t_over_c / self.c_max_t + 100 * t_over_c**4)
             dFF__dM = dk_ff__dM * cos_sweep**0.28
 
-            dD_over_q__dM = np.sum(widths * (dd_over_q__dM * FF + dFF__dM * d_over_q))
+            dD_over_q__dM = np.sum(widths_spanwise * (dd_over_q__dM * FF + dFF__dM * d_over_q))
 
             partials["CDv", "Mach_number"] = dD_over_q__dM / S_ref
 
@@ -233,7 +233,7 @@ class ViscousDrag(om.ExplicitComponent):
                 dcd__dRe = 0.0
             ddoq__dRe = 2 * chords * dcd__dRe
 
-            dDoq__dRe = np.sum(widths * ddoq__dRe * FF)
+            dDoq__dRe = np.sum(widths_spanwise * ddoq__dRe * FF)
 
             partials["CDv", "re"] = dDoq__dRe / S_ref
 
