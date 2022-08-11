@@ -45,7 +45,7 @@ class GeometryMesh(om.ExplicitComponent):
         self.DVGeo.addRefAxis("wing_axis", xFraction=0.25, alignIndex="i")
 
         # Now add local (shape) variables
-        self.DVGeo.addGeoDVLocal("shape", lower=-0.5, upper=0.5, axis="z")
+        self.DVGeo.addLocalDV("shape", lower=-0.5, upper=0.5, axis="z")
 
         pts = surface["mesh"].reshape(-1, 3)
 
