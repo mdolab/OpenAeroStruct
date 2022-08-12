@@ -34,7 +34,7 @@ class Test(unittest.TestCase):
 
         assert_near_equal(symm_prob["flight_condition_0.Wing_perf.CD"][0], 0.010722632534543076, 1e-6)
         assert_near_equal(symm_prob["flight_condition_0.Wing_perf.CL"][0], 0.5246182619241868, 1e-6)
-        assert_near_equal(symm_prob["flight_condition_0.CM"][1], -0.5304298364679864, 1e-6)
+        assert_near_equal(symm_prob["flight_condition_0.CM"][1], -0.591626120207946, 1e-6)
 
         assert_near_equal(
             symm_prob["flight_condition_0.Wing_perf.CD"][0], full_prob["flight_condition_0.Wing_perf.CD"][0], 1e-6
