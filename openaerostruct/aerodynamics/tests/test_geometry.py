@@ -191,8 +191,8 @@ class Test(unittest.TestCase):
         prob.setup()
         prob.run_model()
 
-        assert_near_equal(prob["widths"], np.array([11.95624787, 11.90425878, 11.44086572]), 1e-6)
-        assert_near_equal(prob["cos_sweep"], np.array([9.7938336, 9.79384207, 9.79385053]), 1e-6)
+        assert_near_equal(prob["lengths_spanwise"], np.array([11.95624787, 11.90425878, 11.44086572]), 1e-6)
+        assert_near_equal(prob["widths"], np.array([9.7938336, 9.79384207, 9.79385053]), 1e-6)
         assert_near_equal(prob["S_ref"], np.array([415.02211208]), 1e-6)
         assert_near_equal(prob["chords"], np.array([2.72796, 5.1252628, 7.8891638, 13.6189974]), 1e-6)
         assert_near_equal(prob["lengths"], np.array([2.72796, 5.1252628, 7.8891638, 13.6189974]), 1e-6)

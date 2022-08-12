@@ -45,14 +45,14 @@ class VLMFunctionals(om.Group):
         self.add_subsystem(
             "viscousdrag",
             ViscousDrag(surface=surface),
-            promotes_inputs=["Mach_number", "re", "widths", "cos_sweep", "lengths", "S_ref", "t_over_c"],
+            promotes_inputs=["Mach_number", "re", "widths", "lengths_spanwise", "lengths", "S_ref", "t_over_c"],
             promotes_outputs=["CDv"],
         )
 
         self.add_subsystem(
             "wavedrag",
             WaveDrag(surface=surface),
-            promotes_inputs=["Mach_number", "cos_sweep", "widths", "CL", "chords", "t_over_c"],
+            promotes_inputs=["Mach_number", "lengths_spanwise", "widths", "CL", "chords", "t_over_c"],
             promotes_outputs=["CDw"],
         )
 

@@ -166,7 +166,7 @@ class Test(unittest.TestCase):
         assert_near_equal(prob["AS_point_0.wing_perf.CL"][0], 0.4339794291648379, 1e-6)
         assert_near_equal(prob["AS_point_0.fuelburn"][0], 87393.27347123597, 1.5e-6)
         assert_near_equal(prob["AS_point_0.wing_perf.failure"][0], 0.0, 1e-6)
-        assert_near_equal(prob["AS_point_0.CM"][1], -1.3263823002927693, 1e-4)
+        assert_near_equal(prob["AS_point_0.CM"][1], -1.5690618184395095, 1e-4)
 
 
 if __name__ == "__main__":

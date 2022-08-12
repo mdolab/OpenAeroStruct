@@ -22,6 +22,10 @@ class VLMGeometry(om.ExplicitComponent):
         Bound points for the horseshoe vortices, found along the 1/4 chord.
     widths[ny-1] : numpy array
         The spanwise widths of each individual panel.
+    lengths_spanwise[ny-1] : numpy array
+        The the length of the quarter-chord line of each panels.
+        This is identical to `widths` if sweep angle is 0.
+        When wing is swept, `lengths_spanwise` is longer than `widths`.
     lengths[ny] : numpy array
         The chordwise length of the entire airfoil following the camber line.
     chords[ny] : numpy array
@@ -49,7 +53,7 @@ class VLMGeometry(om.ExplicitComponent):
         rng = np.random.default_rng(314)
         self.add_output("b_pts", val=rng.random((nx - 1, ny, 3)), units="m")
         self.add_output("widths", val=np.ones((ny - 1)), units="m")
-        self.add_output("cos_sweep", val=np.zeros((ny - 1)), units="m")
+        self.add_output("lengths_spanwise", val=np.ones((ny - 1)), units="m")
         self.add_output("lengths", val=np.zeros((ny)), units="m")
         self.add_output("chords", val=np.zeros((ny)), units="m")
         self.add_output("normals", val=np.zeros((nx - 1, ny - 1, 3)))
@@ -68,19 +72,19 @@ class VLMGeometry(om.ExplicitComponent):
         val[size:] = 0.25
         self.declare_partials("b_pts", "def_mesh", rows=rows, cols=cols, val=val)
 
-        # widths
+        # width
         size = ny - 1
         base = np.arange(size)
-        rows = np.tile(base, 12)
-        col = np.tile(3 * base, 6) + np.repeat(np.arange(6), len(base))
-        cols = np.tile(col, 2) + np.repeat([0, (nx - 1) * ny * 3], len(col))
-        self.declare_partials("widths", "def_mesh", rows=rows, cols=cols)
-
-        # cos_sweep
         rows = np.tile(base, 8)
         col = np.tile(3 * base, 4) + np.repeat([1, 2, 4, 5], len(base))
         cols = np.tile(col, 2) + np.repeat([0, (nx - 1) * ny * 3], len(col))
-        self.declare_partials("cos_sweep", "def_mesh", rows=rows, cols=cols)
+        self.declare_partials("widths", "def_mesh", rows=rows, cols=cols)
+
+        # length of panel in spanwise direction with sweep
+        rows = np.tile(base, 12)
+        col = np.tile(3 * base, 6) + np.repeat(np.arange(6), len(base))
+        cols = np.tile(col, 2) + np.repeat([0, (nx - 1) * ny * 3], len(col))
+        self.declare_partials("lengths_spanwise", "def_mesh", rows=rows, cols=cols)
 
         # lengths
         size = ny
@@ -116,16 +120,13 @@ class VLMGeometry(om.ExplicitComponent):
         # Compute the bound points at quarter-chord
         b_pts = mesh[:-1, :, :] * 0.75 + mesh[1:, :, :] * 0.25
 
-        # Compute the widths of each panel at the quarter-chord line
+        # Compute the length of the quarter-chord line of each panels
         quarter_chord = 0.25 * mesh[-1] + 0.75 * mesh[0]
-        widths = np.linalg.norm(quarter_chord[1:, :] - quarter_chord[:-1, :], axis=1)
+        lengths_spanwise = np.linalg.norm(quarter_chord[1:, :] - quarter_chord[:-1, :], axis=1)
 
-        # Compute the numerator of the cosine of the sweep angle of each panel
-        # (we need this for the viscous drag dependence on sweep, and we only compute
-        # the numerator because the denominator of the cosine fraction is the width,
-        # which we have already computed. They are combined in the viscous drag
-        # calculation.)
-        cos_sweep = np.linalg.norm(quarter_chord[1:, [1, 2]] - quarter_chord[:-1, [1, 2]], axis=1)
+        # Compute the widths of each panel.
+        # This is a projection of `lengths_spanwise` to the spanwise axis (y-axis)
+        widths = np.linalg.norm(quarter_chord[1:, [1, 2]] - quarter_chord[:-1, [1, 2]], axis=1)
 
         # Compute the length of each chordwise set of mesh points through the camber line.
         dx = mesh[1:, :, 0] - mesh[:-1, :, 0]
@@ -171,7 +172,7 @@ class VLMGeometry(om.ExplicitComponent):
         # Store each array in the outputs dict
         outputs["b_pts"] = b_pts
         outputs["widths"] = widths
-        outputs["cos_sweep"] = cos_sweep
+        outputs["lengths_spanwise"] = lengths_spanwise
         outputs["lengths"] = lengths
         outputs["normals"] = normals
         outputs["S_ref"] = S_ref
@@ -184,18 +185,18 @@ class VLMGeometry(om.ExplicitComponent):
         ny = self.ny
         mesh = inputs["def_mesh"]
 
-        # Compute the widths of each panel at the quarter-chord line
+        # Compute the length of the quarter-chord line of each panels
         quarter_chord = 0.25 * mesh[-1] + 0.75 * mesh[0]
-        widths = np.linalg.norm(quarter_chord[1:, :] - quarter_chord[:-1, :], axis=1)
+        lengths_spanwise = np.linalg.norm(quarter_chord[1:, :] - quarter_chord[:-1, :], axis=1)
 
-        # Compute the cosine of the sweep angle of each panel
-        cos_sweep_array = np.linalg.norm(quarter_chord[1:, [1, 2]] - quarter_chord[:-1, [1, 2]], axis=1)
+        # Compute the widths of each panel.
+        widths = np.linalg.norm(quarter_chord[1:, [1, 2]] - quarter_chord[:-1, [1, 2]], axis=1)
 
         delta = np.diff(quarter_chord, axis=0).T
-        d1 = delta / widths
+        d1 = delta / lengths_spanwise
+        partials["lengths_spanwise", "def_mesh"] = np.outer([-0.75, 0.75, -0.25, 0.25], d1.flatten()).flatten()
+        d1 = delta[1:, :] / widths
         partials["widths", "def_mesh"] = np.outer([-0.75, 0.75, -0.25, 0.25], d1.flatten()).flatten()
-        d1 = delta[1:, :] / cos_sweep_array
-        partials["cos_sweep", "def_mesh"] = np.outer([-0.75, 0.75, -0.25, 0.25], d1.flatten()).flatten()
 
         partials["lengths", "def_mesh"][:] = 0.0
         dmesh = np.diff(mesh, axis=0)

@@ -107,7 +107,7 @@ class Test(unittest.TestCase):
 
         assert_near_equal(prob["aero_point_0.wing_perf.CD"][0], 0.0408276181072298, 1e-6)
         assert_near_equal(prob["aero_point_0.wing_perf.CL"][0], 0.7007529249715114, 1e-6)
-        assert_near_equal(prob["aero_point_0.CM"][1], -2.403067220302201, 1e-6)
+        assert_near_equal(prob["aero_point_0.CM"][1], -2.846194746138373, 1e-6)
 
 
 if __name__ == "__main__":

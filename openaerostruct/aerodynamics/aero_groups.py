@@ -44,7 +44,7 @@ class AeroPoint(om.Group):
             self.connect(name + ".widths", name + "_perf.widths")
             self.connect(name + ".chords", name + "_perf.chords")
             self.connect(name + ".lengths", name + "_perf.lengths")
-            self.connect(name + ".cos_sweep", name + "_perf.cos_sweep")
+            self.connect(name + ".lengths_spanwise", name + "_perf.lengths_spanwise")
 
             # Connect S_ref for performance calcs
             self.connect(name + ".S_ref", "total_perf." + name + "_S_ref")
