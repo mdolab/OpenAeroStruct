@@ -21,7 +21,7 @@ class VLMGeometry(om.ExplicitComponent):
     b_pts[nx-1, ny, 3] : numpy array
         Bound points for the horseshoe vortices, found along the 1/4 chord.
     widths[ny-1] : numpy array
-        The spanwise widths of each individual panel.
+        The widths of each individual panel along y-axis (spanwise direction with zero sweep).
     lengths_spanwise[ny-1] : numpy array
         The the length of the quarter-chord line of each panels.
         This is identical to `widths` if sweep angle is 0.
