@@ -11,6 +11,9 @@ on:
       - main
     tags:
       - v*.*.*
+  schedule:
+    # Run the tests at 7:23pm UTC on the 2nd and 17th of every month
+    - cron: '23 19 2,17 * *'
 
 jobs:
   # --- run OAS unit and regression tests ---
