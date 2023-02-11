@@ -97,7 +97,7 @@ class RotationalVelocity(om.ExplicitComponent):
         surfaces = self.options["surfaces"]
         idx = jdx = 0
         ii = self.system_size * 3
-        for j, surface in enumerate(surfaces):
+        for surface in surfaces:
             mesh = surface["mesh"]
             nx = mesh.shape[0]
             ny = mesh.shape[1]

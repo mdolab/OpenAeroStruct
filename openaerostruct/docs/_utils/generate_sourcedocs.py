@@ -7,7 +7,7 @@ IGNORE_LIST = ["docs", "tests", "devtools", "__pycache__", "code_review", "test_
 # of our source docs, as well as writing out each individual rst file.
 
 
-def generate_docs(dir, top, packages, project_name="openmdao"):
+def generate_docs(directory, top, packages, project_name="openmdao"):
     """
     generate_docs
 
@@ -45,7 +45,7 @@ Source Docs
    :maxdepth: 1
 """
 
-    docs_dir = os.path.dirname(dir)
+    docs_dir = os.path.dirname(directory)
 
     doc_dir = os.path.join(docs_dir, "_srcdocs")
     if os.path.isdir(doc_dir):
@@ -69,7 +69,7 @@ Source Docs
     # order the packages in this list explicitly. Any new ones that
     # are detected will show up at the end of the list.
 
-    # everything in openmdao dir that isn't discarded is appended as a source package.
+    # everything in openmdao directory that isn't discarded is appended as a source package.
     for listing in os.listdir(os.path.join(top)):
         if os.path.isdir(os.path.join("..", listing)):
             if listing not in IGNORE_LIST and listing not in packages:
@@ -88,9 +88,9 @@ Source Docs
         package_filename = os.path.join(packages_dir, project_name + "." + package + ".rst")
         package_name = project_name + "." + package
 
-        # the sub_listing is going into each package dir and listing what's in it
-        for sub_listing in sorted(os.listdir(os.path.join(dir, package.replace(".", "/")))):
-            # don't want to catalog files twice, nor use init files nor test dir
+        # the sub_listing is going into each package directory and listing what's in it
+        for sub_listing in sorted(os.listdir(os.path.join(directory, package.replace(".", "/")))):
+            # don't want to catalog files twice, nor use init files nor test directory
             if (os.path.isdir(sub_listing) and sub_listing != "tests") or (
                 sub_listing.endswith(".py") and not sub_listing.startswith("_")
             ):
