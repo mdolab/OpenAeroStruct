@@ -121,7 +121,6 @@ class ViscousDrag(om.ExplicitComponent):
         t_over_c = inputs["t_over_c"]
 
         if self.with_viscous:
-
             M = inputs["Mach_number"]
             S_ref = inputs["S_ref"]
             widths = inputs["widths"]
@@ -171,7 +170,6 @@ class ViscousDrag(om.ExplicitComponent):
             if self.k_lam == 0:
                 cdT_Re = 0.455 / (np.log10(Re_c)) ** 3.58 / B * -2.58 / np.log(10) / Re_c
             elif self.k_lam < 1.0:
-
                 cdl_Re = 1.328 / (Re_c * self.k_lam) ** 1.5 * -0.5 * self.k_lam
                 cdt_Re = 0.455 / (np.log10(Re_c * self.k_lam)) ** 3.58 / B * -2.58 / np.log(10) / Re_c
                 cdT_Re = 0.455 / (np.log10(Re_c)) ** 3.58 / B * -2.58 / np.log(10) / Re_c

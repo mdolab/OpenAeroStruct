@@ -347,7 +347,6 @@ prob.model.add_subsystem("prob_vars", indep_var_comp, promotes=["*"])
 
 # Loop over each surface in the surfaces list
 for surface in surfaces:
-
     # Get the surface name and create a group to contain components
     # only for this surface
     name = surface["name"]
@@ -359,7 +358,6 @@ for surface in surfaces:
 
 # Loop through and add a certain number of aerostruct points
 for i in range(2):
-
     point_name = "AS_point_{}".format(i)
     # Connect the parameters within the model for each aerostruct point
 
@@ -383,7 +381,6 @@ for i in range(2):
     prob.model.connect("fuel_mass", point_name + ".total_perf.CG.fuelburn")
 
     for surface in surfaces:
-
         name = surface["name"]
 
         if surf_dict["distributed_fuel_weight"]:

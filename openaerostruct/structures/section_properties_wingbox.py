@@ -100,7 +100,6 @@ class SectionPropertiesWingbox(om.ExplicitComponent):
         self.declare_partials("*", "*", method="cs")
 
     def compute(self, inputs, outputs):
-
         # NOTE: In the code below, the x- and y-axes correspond to the element
         # local z- and y-axes, respectively.
 

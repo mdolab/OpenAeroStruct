@@ -632,7 +632,6 @@ def get_default_geo_dict():
 
 
 def generate_mesh(input_dict):
-
     # Get defaults and update surface with the user-provided input
     surf_dict = get_default_geo_dict()
     surf_dict.update(input_dict)
@@ -686,7 +685,6 @@ def generate_mesh(input_dict):
         if surf_dict["symmetry"]:
             twist = np.interp(np.linspace(0, 1, num_twist), eta, surf_dict["crm_twist"])
         else:
-
             # If num_twist is odd, create the twist vector and mirror it
             # then stack the two together, but remove the duplicated twist
             # value.
@@ -703,7 +701,6 @@ def generate_mesh(input_dict):
         return mesh, twist
 
     else:
-
         return mesh
 
 
@@ -846,7 +843,6 @@ def generate_vsp_surfaces(vsp_file, symmetry=False, include=None):
 
 
 def write_FFD_file(surface, mx, my):
-
     mesh = surface["mesh"]
     nx, ny = mesh.shape[:2]
 

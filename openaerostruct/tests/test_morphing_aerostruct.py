@@ -104,7 +104,6 @@ class Test(unittest.TestCase):
         prob.model.connect("twist_cp_1", "AS_point_1.wing.geometry.twist_cp")
 
         for point in range(2):
-
             name = "wing"
 
             point_name = "AS_point_{}".format(point)

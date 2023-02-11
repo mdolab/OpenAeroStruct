@@ -12,7 +12,6 @@ from openaerostruct.utils.constants import grav_constant
 
 class Test(unittest.TestCase):
     def test(self):
-
         # Total number of nodes to use in the spanwise (num_y) and
         # chordwise (num_x) directions. Vary these to change the level of fidelity.
         num_y = 21

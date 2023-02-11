@@ -9,7 +9,6 @@ from openaerostruct.utils.testing import run_test, get_default_surfaces
 
 class Test(unittest.TestCase):
     def test(self):
-
         wing_dict = {"name": "wing", "mesh": np.zeros((2, 7)), "symmetry": True}
         tail_dict = {"name": "tail", "mesh": np.zeros((3, 5)), "symmetry": False}
 

@@ -63,7 +63,6 @@ class BreguetRange(om.ExplicitComponent):
         self.set_check_partial_options(wrt="*", method="cs", step=1e-30)
 
     def compute(self, inputs, outputs):
-
         CT = inputs["CT"]
         a = inputs["speed_of_sound"]
         R = inputs["R"]
@@ -83,7 +82,6 @@ class BreguetRange(om.ExplicitComponent):
         outputs["fuelburn"] = (W0 + Ws) * (np.exp(R * CT / a / M * CD / CL) - 1)
 
     def compute_partials(self, inputs, partials):
-
         CT = inputs["CT"]
         a = inputs["speed_of_sound"]
         R = inputs["R"]

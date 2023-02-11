@@ -73,7 +73,6 @@ class MeshPointForces(om.ExplicitComponent):
         le_wt = self.options["le_wt"]
         te_wt = self.options["te_wt"]
         for surface in surfaces:
-
             name = surface["name"]
             sec_forces_name = "{}_sec_forces".format(name)
             mesh_point_forces_name = "{}_mesh_point_forces".format(name)

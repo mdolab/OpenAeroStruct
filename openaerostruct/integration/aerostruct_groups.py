@@ -219,7 +219,6 @@ class AerostructPoint(om.Group):
         coupled = om.Group()
 
         for surface in surfaces:
-
             name = surface["name"]
 
             # Connect the output of the loads component with the FEM

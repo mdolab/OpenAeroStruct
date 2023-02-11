@@ -11,7 +11,6 @@ import openmdao.api as om
 
 class Test(unittest.TestCase):
     def test(self):
-
         # Create a dictionary to store options about the surface
         mesh_dict = {"num_y": 7, "num_x": 2, "wing_type": "rect", "symmetry": True}
 
@@ -93,7 +92,6 @@ class Test(unittest.TestCase):
 
         # Loop over each surface in the surfaces list
         for surface in surfaces:
-
             geom_group = Geometry(surface=surface)
 
             # Add tmp_group to the problem as the name of the surface.
@@ -103,7 +101,6 @@ class Test(unittest.TestCase):
 
         # Loop through and add a certain number of aero points
         for i in range(1):
-
             # Create the aero point group and add it to the model
             aero_group = AeroPoint(surfaces=surfaces)
             point_name = "aero_point_{}".format(i)
@@ -119,7 +116,6 @@ class Test(unittest.TestCase):
 
             # Connect the parameters within the model for each aero point
             for surface in surfaces:
-
                 name = surface["name"]
 
                 # Connect the mesh from the geometry component to the analysis point

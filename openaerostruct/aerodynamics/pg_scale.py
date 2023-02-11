@@ -265,7 +265,6 @@ class ScaleFromPrandtlGlauert(om.ExplicitComponent):
         self.options.declare("surfaces", types=list)
 
     def setup(self):
-
         self.add_input("Mach_number", val=0.0)
 
         # We'll compute all of sensitivities associated with Mach number through

@@ -25,7 +25,6 @@ class MonotonicConstraint(om.ExplicitComponent):
         self.options.declare("surface", types=dict)
 
     def setup(self):
-
         self.surface = surface = self.options["surface"]
         self.var_name = self.options["var_name"]
         self.con_name = "monotonic_" + self.var_name

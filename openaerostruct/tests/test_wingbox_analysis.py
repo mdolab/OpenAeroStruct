@@ -233,7 +233,6 @@ lower_y = np.array(
 
 class Test(unittest.TestCase):
     def test(self):
-
         # Create a dictionary to store options about the surface
         mesh_dict = {"num_y": 7, "wing_type": "uCRM_based", "symmetry": True, "num_twist_cp": 5}
 

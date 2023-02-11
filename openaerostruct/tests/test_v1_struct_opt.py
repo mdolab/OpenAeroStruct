@@ -10,7 +10,6 @@ import openmdao.api as om
 
 class Test(unittest.TestCase):
     def test(self):
-
         # Create a dictionary to store options about the surface
         mesh_dict = {
             "num_y": 5,

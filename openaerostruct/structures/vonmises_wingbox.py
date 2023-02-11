@@ -96,7 +96,6 @@ class VonMisesWingbox(om.ExplicitComponent):
 
         num_elems = self.ny - 1
         for ielem in range(num_elems):
-
             P0 = nodes[ielem, :]
             P1 = nodes[ielem + 1, :]
             L = norm(P1 - P0)

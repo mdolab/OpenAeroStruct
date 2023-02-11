@@ -62,7 +62,7 @@ def _parse(self):
         msg = "Docstring contains both a Returns and Yields section."
         raise ValueError(msg)
 
-    for (section, content) in sections:
+    for section, content in sections:
         if not section.startswith(".."):
             section = (s.capitalize() for s in section.split(" "))
             section = " ".join(section)

@@ -54,7 +54,6 @@ def cross_d(a, b):
 
 
 def radii(mesh, t_c=0.15):
-
     """
     Obtain the radii of the FEM element based on local chord.
     """

@@ -75,7 +75,6 @@ class Weight(om.ExplicitComponent):
         outputs["element_mass"] = element_mass
 
     def compute_partials(self, inputs, partials):
-
         A = inputs["A"]
         nodes = inputs["nodes"]
         mrho = self.surface["mrho"]

@@ -32,7 +32,6 @@ matplotlib.rcParams["axes.linewidth"] = 0.5
 
 class Display(object):
     def __init__(self, args):
-
         self.db_name = args[1]
 
         try:
@@ -150,17 +149,14 @@ class Display(object):
 
         # loop to pull data out of case reader and organize it into arrays
         for i, case in enumerate(cr.get_cases()):
-
             if self.opt:
                 self.obj.append(case.outputs[self.obj_key])
 
             # Loop through each of the surfaces
             for name in names:
-
                 # Check if this is an aerostructual case; treat differently
                 # due to the way the problem is organized
                 if not self.aerostruct:
-
                     # A mesh exists for all types of cases
                     self.mesh.append(case.outputs[name + ".mesh"])
 
@@ -262,7 +258,6 @@ class Display(object):
             self.symmetry = False
 
         if self.symmetry:
-
             new_mesh = []
             if self.show_tube:
                 new_r = []
@@ -405,9 +400,7 @@ class Display(object):
             self.max_vm += diff
 
     def plot_sides(self):
-
         if self.show_wing:
-
             self.ax2.cla()
             self.ax2.locator_params(axis="y", nbins=5)
             self.ax2.locator_params(axis="x", nbins=3)
@@ -424,7 +417,6 @@ class Display(object):
             self.ax3.set_ylabel("lift", rotation="horizontal", ha="right")
 
         if self.show_tube:
-
             self.ax4.cla()
             self.ax4.locator_params(axis="y", nbins=4)
             self.ax4.locator_params(axis="x", nbins=3)
@@ -468,7 +460,6 @@ class Display(object):
                 self.ax5.plot(span_diff, vm_vals, lw=2, c="b")
 
     def plot_wing(self):
-
         n_names = len(self.names)
         self.ax.cla()
         az = self.ax.azim
@@ -538,7 +529,6 @@ class Display(object):
 
                 # Loop through each element in the FEM system
                 for i, thick in enumerate(t0):
-
                     # Get the radii describing the circles at each nodal point
                     r = np.array((r0[i], r0[i]))
                     R, P = np.meshgrid(r, p)

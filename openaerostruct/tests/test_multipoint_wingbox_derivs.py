@@ -333,7 +333,6 @@ class Test(unittest.TestCase):
 
         # Loop over each surface in the surfaces list
         for surface in surfaces:
-
             # Get the surface name and create a group to contain components
             # only for this surface
             name = surface["name"]
@@ -345,7 +344,6 @@ class Test(unittest.TestCase):
 
         # Loop through and add a certain number of aero points
         for i in range(2):
-
             point_name = "AS_point_{}".format(i)
             # Connect the parameters within the model for each aero point
 
@@ -370,7 +368,6 @@ class Test(unittest.TestCase):
             prob.model.connect("fuel_mass", point_name + ".total_perf.CG.fuelburn")
 
             for surface in surfaces:
-
                 prob.model.connect("load_factor", point_name + ".coupled.load_factor", src_indices=[i])
 
                 com_name = point_name + "." + name + "_perf."

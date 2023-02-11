@@ -69,7 +69,6 @@ class LiftCoeff2D(om.ExplicitComponent):
         self.declare_partials("Cl", "sec_forces", rows=rows, cols=cols)
 
     def compute(self, inputs, outputs):
-
         # Input parameters
         alpha = inputs["alpha"] * np.pi / 180.0
         cosa = np.cos(alpha)

@@ -80,7 +80,6 @@ class Equilibrium(om.ExplicitComponent):
         self.declare_partials("total_weight", "load_factor")
 
     def compute(self, inputs, outputs):
-
         g = grav_constant * inputs["load_factor"]
         W0 = inputs["W0"]
         rho = inputs["rho"]

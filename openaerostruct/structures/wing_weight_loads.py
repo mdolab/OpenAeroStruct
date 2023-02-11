@@ -171,7 +171,6 @@ class StructureWeightLoads(om.ExplicitComponent):
         self.set_check_partial_options(wrt="*", method="cs")
 
     def compute(self, inputs, outputs):
-
         struct_weights = inputs["element_mass"] * inputs["load_factor"] * grav_constant
         nodes = inputs["nodes"]
 
@@ -208,7 +207,6 @@ class StructureWeightLoads(om.ExplicitComponent):
         outputs["struct_weight_loads"] = loads
 
     def compute_partials(self, inputs, J):
-
         struct_weights = inputs["element_mass"] * inputs["load_factor"] * grav_constant
         nodes = inputs["nodes"]
 

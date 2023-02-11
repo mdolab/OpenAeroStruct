@@ -134,7 +134,6 @@ alphas = np.linspace(-5.0, 5.0, 11)
 
 # Loopo through each alpha
 for alpha in alphas:
-
     # Set the alpha in the problem and run analysis
     prob["alpha"] = alpha
     prob.run_model()

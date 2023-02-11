@@ -70,7 +70,6 @@ class WingboxGeometry(om.ExplicitComponent):
 
         # Loop over spanwise elements
         for ielem in range(mesh.shape[1] - 1):
-
             # Obtain the element nodes
             P0 = nodes[ielem, :]
             P1 = nodes[ielem + 1, :]
@@ -89,7 +88,6 @@ class WingboxGeometry(om.ExplicitComponent):
 
         # Loop over spanwise elements
         for ielem in range(mesh.shape[1] - 1):
-
             # The following is used to approximate the twist angle for the section normal to the FEM element
             mesh_vec_0 = mesh_vectors[ielem]
             temp_mesh_vectors_0 = mesh_vec_0.copy()

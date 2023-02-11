@@ -23,7 +23,6 @@ except ImportError:
 @unittest.skipUnless(openvsp_flag, "OpenVSP is required.")
 class Test(unittest.TestCase):
     def test(self):
-
         # Run a symmetric and full model aero case
         symm_prob = self.setup_prob(True)
         full_prob = self.setup_prob(False)

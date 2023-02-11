@@ -45,7 +45,6 @@ class CenterOfGravity(om.ExplicitComponent):
         self.options.declare("surfaces", types=list)
 
     def setup(self):
-
         arange = np.arange(3)
         for surface in self.options["surfaces"]:
             name = surface["name"]
@@ -70,7 +69,6 @@ class CenterOfGravity(om.ExplicitComponent):
         self.declare_partials("cg", "empty_cg", rows=arange, cols=arange)
 
     def compute(self, inputs, outputs):
-
         g = grav_constant * inputs["load_factor"]
         W0_cg = inputs["W0"] * inputs["empty_cg"]
 
@@ -87,7 +85,6 @@ class CenterOfGravity(om.ExplicitComponent):
         outputs["cg"] = (W0_cg + spar_cg) / (inputs["total_weight"] / g - inputs["fuelburn"])
 
     def compute_partials(self, inputs, partials):
-
         g = grav_constant * inputs["load_factor"]
         W0 = inputs["W0"]
         cg = inputs["empty_cg"]

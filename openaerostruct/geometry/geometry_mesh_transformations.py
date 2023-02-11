@@ -1041,7 +1041,6 @@ class Rotate(om.ExplicitComponent):
         partials["mesh", "in_mesh"][nn - nqc : nn] += 0.25 * d_qch
 
         if rotate_x:
-
             dmats_dthx = np.zeros((ny, 3, 3))
             dmats_dthx[:, 1, 0] = cos_rtx * sin_rty
             dmats_dthx[:, 1, 1] = -sin_rtx

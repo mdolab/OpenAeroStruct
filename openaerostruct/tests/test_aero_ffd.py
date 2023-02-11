@@ -14,7 +14,6 @@ except ModuleNotFoundError:
 @unittest.skipUnless(pygeo_flag, "pyGeo is required.")
 class Test(unittest.TestCase):
     def test(self):
-
         from openaerostruct.geometry.utils import generate_mesh, write_FFD_file
         from openaerostruct.geometry.geometry_group import Geometry
 
@@ -82,7 +81,6 @@ class Test(unittest.TestCase):
 
         # Loop over each surface in the surfaces list
         for surface in surfaces:
-
             filename = write_FFD_file(surface, surface["mx"], surface["my"])
             DVGeo = DVGeometry(filename)
             geom_group = Geometry(surface=surface, DVGeo=DVGeo)
@@ -94,7 +92,6 @@ class Test(unittest.TestCase):
 
         # Loop through and add a certain number of aero points
         for i in range(1):
-
             # Create the aero point group and add it to the model
             aero_group = AeroPoint(surfaces=surfaces)
             point_name = "aero_point_{}".format(i)
@@ -110,7 +107,6 @@ class Test(unittest.TestCase):
 
             # Connect the parameters within the model for each aero point
             for surface in surfaces:
-
                 name = surface["name"]
 
                 # Connect the mesh from the geometry component to the analysis point

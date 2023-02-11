@@ -741,7 +741,6 @@ class AtmosComp(om.ExplicitComponent):
         self.declare_partials("v", "Mach_number")
 
     def compute(self, inputs, outputs):
-
         outputs["T"] = T_interp(inputs["altitude"])
         outputs["P"] = P_interp(inputs["altitude"])
         outputs["rho"] = rho_interp(inputs["altitude"])
@@ -751,7 +750,6 @@ class AtmosComp(om.ExplicitComponent):
         outputs["v"] = outputs["speed_of_sound"] * inputs["Mach_number"]
 
     def compute_partials(self, inputs, partials):
-
         partials["T", "altitude"] = T_interp_deriv(inputs["altitude"])
         partials["P", "altitude"] = P_interp_deriv(inputs["altitude"])
         partials["rho", "altitude"] = rho_interp_deriv(inputs["altitude"])

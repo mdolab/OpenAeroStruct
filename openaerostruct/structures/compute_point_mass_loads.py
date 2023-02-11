@@ -60,7 +60,6 @@ class ComputePointMassLoads(om.ExplicitComponent):
 
         # Loop through each point mass location, incrementing idx
         for idx, point_mass_location in enumerate(inputs["point_mass_locations"]):
-
             # Get the vector between the nodes and the point mass location
             xyz_dist = point_mass_location - nodes
 

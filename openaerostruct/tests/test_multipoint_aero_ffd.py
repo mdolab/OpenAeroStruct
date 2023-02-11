@@ -13,7 +13,6 @@ except ModuleNotFoundError:
 @unittest.skipUnless(pygeo_flag, "pyGeo is required.")
 class Test(unittest.TestCase):
     def test(self):
-
         from openaerostruct.geometry.utils import generate_mesh, write_FFD_file
         from openaerostruct.geometry.geometry_group import Geometry
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
@@ -98,7 +97,6 @@ class Test(unittest.TestCase):
 
         # Loop through and add a certain number of aero points
         for i in range(n_points):
-
             # Create the aero point group and add it to the model
             aero_group = AeroPoint(surfaces=surfaces)
             point_name = "aero_point_{}".format(i)

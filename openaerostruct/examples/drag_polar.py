@@ -8,7 +8,6 @@ from openaerostruct.aerodynamics.aero_groups import AeroPoint
 
 
 def compute_drag_polar(Mach, alphas, surfaces, trimmed=False):
-
     if isinstance(surfaces, dict):
         surfaces = [
             surfaces,

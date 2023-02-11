@@ -77,7 +77,6 @@ class VonMisesTube(om.ExplicitComponent):
 
         num_elems = self.ny - 1
         for ielem in range(num_elems):
-
             P0 = nodes[ielem, :]
             P1 = nodes[ielem + 1, :]
             L = norm(P1 - P0)
@@ -104,7 +103,6 @@ class VonMisesTube(om.ExplicitComponent):
             outputs["vonmises"][ielem, 1] = np.sqrt(sxx1**2 + 3 * sxt**2)
 
     def compute_partials(self, inputs, partials):
-
         radius = inputs["radius"]
         disp = inputs["disp"]
         nodes = inputs["nodes"]
@@ -115,7 +113,6 @@ class VonMisesTube(om.ExplicitComponent):
 
         num_elems = self.ny - 1
         for ielem in range(num_elems):
-
             # Compute the coordinate delta between the two element end points
             P0 = nodes[ielem, :]
             P1 = nodes[ielem + 1, :]
