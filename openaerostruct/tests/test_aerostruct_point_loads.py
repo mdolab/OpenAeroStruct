@@ -121,7 +121,7 @@ class Test(unittest.TestCase):
             prob.model.connect("load_factor", point_name + ".load_factor")
             prob.model.connect("load_factor", point_name + ".coupled.load_factor")
 
-            for surface in surfaces:
+            for _surface in surfaces:
                 com_name = point_name + "." + name + "_perf"
                 prob.model.connect(
                     name + ".local_stiff_transformed", point_name + ".coupled." + name + ".local_stiff_transformed"

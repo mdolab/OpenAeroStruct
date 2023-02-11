@@ -368,7 +368,7 @@ class Test(unittest.TestCase):
             prob.model.connect("fuel_mass", point_name + ".total_perf.L_equals_W.fuelburn")
             prob.model.connect("fuel_mass", point_name + ".total_perf.CG.fuelburn")
 
-            for surface in surfaces:
+            for _surface in surfaces:
                 prob.model.connect("load_factor", point_name + ".coupled.load_factor", src_indices=[i])
 
                 com_name = point_name + "." + name + "_perf."

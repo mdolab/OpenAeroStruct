@@ -112,7 +112,7 @@ class Test(unittest.TestCase):
             prob.model.connect("empty_cg", point_name + ".empty_cg")
             prob.model.connect("load_factor", point_name + ".load_factor")
 
-            for surface in surfaces:
+            for _surface in surfaces:
                 com_name = point_name + "." + name + "_perf"
                 prob.model.connect(
                     name + ".local_stiff_transformed", point_name + ".coupled." + name + ".local_stiff_transformed"

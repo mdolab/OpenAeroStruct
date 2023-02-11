@@ -118,7 +118,7 @@ class Test(unittest.TestCase):
             prob.model.connect("cg", point_name + ".cg")
 
             # Connect the parameters within the model for each aero point
-            for surface in surfaces:
+            for _surface in surfaces:
                 name = surface["name"]
 
                 # Connect the mesh from the geometry component to the analysis point
