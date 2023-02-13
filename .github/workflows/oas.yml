@@ -29,12 +29,12 @@ jobs:
     - uses: actions/checkout@v2
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ first change for oldest vs. latest ~~~~~~~~~~~
     - name: Set up Python 3.8
-      if: ${{ matrix.om-version == "oldest" }}
+      if: ${{ matrix.dep-versions == 'oldest' }}
       uses: actions/setup-python@v2
       with:
         python-version: 3.8
     - name: Set up Python 3.10
-      if: ${{ matrix.om-version == "latest" }}
+      if: ${{ matrix.dep-versions == 'latest' }}
       uses: actions/setup-python@v2
       with:
         python-version: 3.10
@@ -42,13 +42,13 @@ jobs:
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ second change for oldest vs. latest ~~~~~~~~~~~
     # OAS dependencies are specified in setup.py.
     - name: Install OAS and its dependencies (oldest versions)
-      if: ${{ matrix.om-version == "oldest" }}
+      if: ${{ matrix.dep-versions == 'oldest' }}
       run: |
         python -m pip install --upgrade pip wheel
         pip install openmdao==3.2 numpy==1.20 scipy==1.6.0
         pip install .[test]
     - name: Install OAS and its dependencies (latest versions)
-      if: ${{ matrix.om-version == "latest" }}
+      if: ${{ matrix.dep-versions == 'latest' }}
       run: |
         python -m pip install --upgrade pip wheel
         pip install .[test]
