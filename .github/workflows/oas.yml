@@ -32,12 +32,12 @@ jobs:
       if: ${{ matrix.dep-versions == 'oldest' }}
       uses: actions/setup-python@v2
       with:
-        python-version: 3.8
+        python-version: '3.8'
     - name: Set up Python 3.10
       if: ${{ matrix.dep-versions == 'latest' }}
       uses: actions/setup-python@v2
       with:
-        python-version: 3.10
+        python-version: '3.10'
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ second change for oldest vs. latest ~~~~~~~~~~~
     # OAS dependencies are specified in setup.py.
