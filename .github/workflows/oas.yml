@@ -27,7 +27,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ first change for oldest vs. latest ~~~~~~~~~~~
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ first change for oldest vs. latest ~~~~~~~~~~~
     - name: Set up Python 3.8
       if: ${{ matrix.dep-versions == 'oldest' }}
       uses: actions/setup-python@v2
@@ -39,19 +39,19 @@ jobs:
       with:
         python-version: '3.10'
 
-    # # we need pySpline/pyGeo to run FFD tests.
-    # - name: Install pySpline and pyGeo
-    #   run: |
-    #     cd ..
-    #     sudo apt-get install openmpi-bin libopenmpi-dev
-    #     pip install mpi4py
-    #     git clone https://github.com/mdolab/pyspline.git
-    #     cd pyspline
-    #     cp config/defaults/config.LINUX_GFORTRAN.mk config/config.mk
-    #     make
-    #     pip install -e .
-    #     cd ..
-    #     pip install "pygeo[testing] @ git+https://github.com/mdolab/pygeo.git"
+    # we need pySpline/pyGeo to run FFD tests.
+    - name: Install pySpline and pyGeo
+      run: |
+        cd ..
+        sudo apt-get install openmpi-bin libopenmpi-dev
+        pip install mpi4py
+        git clone https://github.com/mdolab/pyspline.git
+        cd pyspline
+        cp config/defaults/config.LINUX_GFORTRAN.mk config/config.mk
+        make
+        pip install -e .
+        cd ..
+        pip install "pygeo[testing] @ git+https://github.com/mdolab/pygeo.git"
 
     # we need OpenVSP to run vsp tests.
     - name: Install OpenVSP
@@ -93,7 +93,7 @@ jobs:
         popd
         popd
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ second change for oldest vs. latest ~~~~~~~~~~~
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ second change for oldest vs. latest ~~~~~~~~~~~
     # OAS dependencies are specified in setup.py.
     - name: Install OAS and its dependencies (oldest versions)
       if: ${{ matrix.dep-versions == 'oldest' }}
