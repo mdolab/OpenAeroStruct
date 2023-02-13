@@ -80,7 +80,7 @@ The oldest and latest versions of the dependencies that we test regularly are th
 
 | Dependency | oldest | latest |
 | ---------- | ------ | ------ |
-| Python     | 3.8    | 3.10   |
+| Python     | 3.8    | 3.11   |
 | NumPy      | 1.20   | latest |
 | SciPy      | 1.6.0  | latest |
 | OpenMDAO   | 3.10   | latest |

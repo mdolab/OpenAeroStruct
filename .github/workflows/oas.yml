@@ -94,7 +94,7 @@ jobs:
         pip install .[test]
 
     # We need pySpline/pyGeo to run FFD tests.
-    - name: Install pySpline and pyGeo
+    - name: Install pySpline
       run: |
         cd ..
         sudo apt-get install openmpi-bin libopenmpi-dev
@@ -104,7 +104,13 @@ jobs:
         cp config/defaults/config.LINUX_GFORTRAN.mk config/config.mk
         make
         pip install -e .
-        cd ..
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ third change for oldest vs. latest ~~~~~~~~~~~
+    - name: Install pyGeo
+        if: ${{ matrix.dep-versions == 'oldest' }}
+        pip install "pygeo[testing] @ git+https://github.com/mdolab/pygeo.git@v1.11.2"
+    - name: Install pyGeo
+        if: ${{ matrix.dep-versions == 'latest' }}
         pip install "pygeo[testing] @ git+https://github.com/mdolab/pygeo.git"
 
     - name: List installed Python packages
