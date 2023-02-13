@@ -107,10 +107,12 @@ jobs:
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ third change for oldest vs. latest ~~~~~~~~~~~
     - name: Install pyGeo
-        if: ${{ matrix.dep-versions == 'oldest' }}
+      if: ${{ matrix.dep-versions == 'oldest' }}
+      run: |
         pip install "pygeo[testing] @ git+https://github.com/mdolab/pygeo.git@v1.11.2"
     - name: Install pyGeo
-        if: ${{ matrix.dep-versions == 'latest' }}
+      if: ${{ matrix.dep-versions == 'latest' }}
+      run: |
         pip install "pygeo[testing] @ git+https://github.com/mdolab/pygeo.git"
 
     - name: List installed Python packages
