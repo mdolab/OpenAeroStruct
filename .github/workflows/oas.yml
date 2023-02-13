@@ -24,6 +24,12 @@ jobs:
     strategy:
       matrix:
         dep-versions: ["oldest", "latest"]
+        vsp-version: ["3.20.1", "3.27.1"]
+        exclude:
+          - dep-versions: "oldest"
+            vsp-version: "3.27.1"
+          - dep-versions: "latest"
+            vsp-version: "3.20.1"
 
     steps:
     - uses: actions/checkout@v2
@@ -84,9 +90,9 @@ jobs:
         cd OpenVSP
         mkdir build buildlibs
         # Download source code
-        wget -q https://github.com/OpenVSP/OpenVSP/archive/refs/tags/OpenVSP_${VSP_VERSION}.tar.gz
-        tar -xf OpenVSP_${VSP_VERSION}.tar.gz
-        mv OpenVSP-OpenVSP_${VSP_VERSION} repo
+        wget -q https://github.com/OpenVSP/OpenVSP/archive/refs/tags/OpenVSP_${{ matrix.vsp-version }}.tar.gz
+        tar -xf OpenVSP_${{ matrix.vsp-version }}.tar.gz
+        mv OpenVSP-OpenVSP_${{ matrix.vsp-version }} repo
         # Build dependency libs
         cd buildlibs
         cmake -DVSP_USE_SYSTEM_LIBXML2=true -DVSP_USE_SYSTEM_FLTK=true -DVSP_USE_SYSTEM_GLM=true \
@@ -104,7 +110,7 @@ jobs:
         make -j8
         make package
         # Install python interface
-        pushd _CPack_Packages/Linux/ZIP/OpenVSP-${VSP_VERSION}-Linux/python
+        pushd _CPack_Packages/Linux/ZIP/OpenVSP-${{ matrix.vsp-version }}-Linux/python
         pip install -r requirements.txt
         pushd ..
         cp vspaero vspscript vspslicer $INST_PREFIX/bin
