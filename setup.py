@@ -50,8 +50,9 @@ setup(
     # Test files
     package_data={"openaerostruct": ["tests/*.py", "*/tests/*.py", "*/*/tests/*.py"]},
     install_requires=[
-        "openmdao>=3.2",  # remember to update the oldest versions in the GitHub Actions build
-        "numpy>1.19",
+        # Remember to update the oldest versions in the GitHub Actions build!
+        "openmdao>=3.10",  # update the oldest version in the readme and in docs/installation.rst
+        "numpy>=1.20",
         "scipy>=1.6.0",
         "matplotlib",
     ],

@@ -45,7 +45,7 @@ jobs:
       if: ${{ matrix.dep-versions == 'oldest' }}
       run: |
         python -m pip install --upgrade pip wheel
-        pip install openmdao==3.2 numpy==1.20 scipy==1.6.0
+        pip install numpy==1.20 scipy==1.6.0 openmdao==3.10
         pip install .[test]
     - name: Install OAS and its dependencies (latest versions)
       if: ${{ matrix.dep-versions == 'latest' }}
@@ -106,6 +106,10 @@ jobs:
         cp vspaero vspscript vspslicer $INST_PREFIX/bin
         popd
         popd
+
+    - name: List installed Python packages
+      run: |
+        pip list -v
 
     - name: Run tests
       env:
