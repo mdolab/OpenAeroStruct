@@ -28,16 +28,16 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ first change for oldest vs. latest ~~~~~~~~~~~
-    - name: Set up Python 3.9
+    - name: Set up Python 3.10
       if: ${{ matrix.dep-versions == 'oldest' }}
       uses: actions/setup-python@v2
       with:
-        python-version: '3.9'
-    - name: Set up Python 3.10
+        python-version: '3.10'
+    - name: Set up Python 3.11
       if: ${{ matrix.dep-versions == 'latest' }}
       uses: actions/setup-python@v2
       with:
-        python-version: '3.10'
+        python-version: '3.11'
 
     # # we need OpenVSP to run vsp tests.
     # - name: Install OpenVSP
