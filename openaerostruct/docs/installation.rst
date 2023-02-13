@@ -26,20 +26,33 @@ Then from within the OpenAeroStruct folder, pip install the package:
 
 Both methods will automatically install the dependencies: numpy, scipy, matplotlib, and OpenMDAO.
 
-The latest version of OpenAeroStruct supports OpenMDAO versions 3.10.0 or newer; the newest is recommended as it is tested regularly.
-If you wish to install a specific version of OpenMDAO, follow the instructions at https://github.com/OpenMDAO/OpenMDAO/.
+The oldest and latest versions of the dependencies that we test regularly are the following (other versions may work, but no guarantees):
+
+========== ====== ======
+Dependency oldest latest
+========== ====== ======
+Python     3.8    3.10
+NumPy      1.20   latest
+SciPy      1.6.0  latest
+OpenMDAO   3.10   latest
+Matplotlib latest latest
+========== ====== ======
 
 If you are unfamiliar with OpenMDAO and wish to modify the internals of OpenAeroStruct, you should examine the OpenMDAO documentation at http://openmdao.org/twodocs/versions/latest/index.html. The tutorials provided with OpenMDAO are helpful to understand the basics of using OpenMDAO to solve an optimization problem.
 
 Advanced Options
 ~~~~~~~~~~~~~~~~
 
-To run the tests on your machine, use the [test] option. This will install the `testflo <https://github.com/OpenMDAO/testflo>`_ package.
+To run the tests on your machine, use the [test] option. This will install the pytest package.
 
 .. code-block:: bash
 
     pip install -e .[test]
 
+Then run the tests from the OpenAeroStruct root directory by calling:
+
+.. code-block:: bash
+    pytest -v .
 
 To install the dependencies to build the documentation locally, run:
 
