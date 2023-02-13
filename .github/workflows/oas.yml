@@ -67,6 +67,10 @@ jobs:
     #     cd ..
     #     pip install "pygeo[testing] @ git+https://github.com/mdolab/pygeo.git"
 
+    - name: List installed Python packages
+      run: |
+        pip list -v
+
     # we need OpenVSP to run vsp tests.
     - name: Install OpenVSP
       run: |
