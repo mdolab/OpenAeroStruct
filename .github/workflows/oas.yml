@@ -24,12 +24,6 @@ jobs:
     strategy:
       matrix:
         dep-versions: ["oldest", "latest"]
-        vsp-version: ["3.20.1", "3.27.1"]
-        exclude:
-          - dep-versions: "oldest"
-            vsp-version: "3.27.1"
-          - dep-versions: "latest"
-            vsp-version: "3.20.1"
 
     steps:
     - uses: actions/checkout@v2
@@ -45,20 +39,6 @@ jobs:
       with:
         python-version: '3.10'
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ second change for oldest vs. latest ~~~~~~~~~~~
-    # OAS dependencies are specified in setup.py.
-    - name: Install OAS and its dependencies (oldest versions)
-      if: ${{ matrix.dep-versions == 'oldest' }}
-      run: |
-        python -m pip install --upgrade pip wheel
-        pip install numpy==1.20 scipy==1.6.0 openmdao==3.10
-        pip install .[test]
-    - name: Install OAS and its dependencies (latest versions)
-      if: ${{ matrix.dep-versions == 'latest' }}
-      run: |
-        python -m pip install --upgrade pip wheel
-        pip install .[test]
-
     # # we need pySpline/pyGeo to run FFD tests.
     # - name: Install pySpline and pyGeo
     #   run: |
@@ -73,10 +53,6 @@ jobs:
     #     cd ..
     #     pip install "pygeo[testing] @ git+https://github.com/mdolab/pygeo.git"
 
-    - name: List installed Python packages
-      run: |
-        pip list -v
-
     # we need OpenVSP to run vsp tests.
     - name: Install OpenVSP
       run: |
@@ -90,9 +66,9 @@ jobs:
         cd OpenVSP
         mkdir build buildlibs
         # Download source code
-        wget -q https://github.com/OpenVSP/OpenVSP/archive/refs/tags/OpenVSP_${{ matrix.vsp-version }}.tar.gz
-        tar -xf OpenVSP_${{ matrix.vsp-version }}.tar.gz
-        mv OpenVSP-OpenVSP_${{ matrix.vsp-version }} repo
+        wget -q https://github.com/OpenVSP/OpenVSP/archive/refs/tags/OpenVSP_${VSP_VERSION}.tar.gz
+        tar -xf OpenVSP_${VSP_VERSION}.tar.gz
+        mv OpenVSP-OpenVSP_${VSP_VERSION} repo
         # Build dependency libs
         cd buildlibs
         cmake -DVSP_USE_SYSTEM_LIBXML2=true -DVSP_USE_SYSTEM_FLTK=true -DVSP_USE_SYSTEM_GLM=true \
@@ -110,12 +86,26 @@ jobs:
         make -j8
         make package
         # Install python interface
-        pushd _CPack_Packages/Linux/ZIP/OpenVSP-${{ matrix.vsp-version }}-Linux/python
+        pushd _CPack_Packages/Linux/ZIP/OpenVSP-${VSP_VERSION}-Linux/python
         pip install -r requirements.txt
         pushd ..
         cp vspaero vspscript vspslicer $INST_PREFIX/bin
         popd
         popd
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ second change for oldest vs. latest ~~~~~~~~~~~
+    # OAS dependencies are specified in setup.py.
+    - name: Install OAS and its dependencies (oldest versions)
+      if: ${{ matrix.dep-versions == 'oldest' }}
+      run: |
+        python -m pip install --upgrade pip wheel
+        pip install numpy==1.20 scipy==1.6.0 openmdao==3.10
+        pip install .[test]
+    - name: Install OAS and its dependencies (latest versions)
+      if: ${{ matrix.dep-versions == 'latest' }}
+      run: |
+        python -m pip install --upgrade pip wheel
+        pip install .[test]
 
     - name: List installed Python packages
       run: |
