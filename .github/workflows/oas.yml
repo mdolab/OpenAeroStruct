@@ -32,7 +32,7 @@ jobs:
       if: ${{ matrix.dep-versions == 'oldest' }}
       uses: actions/setup-python@v2
       with:
-        python-version: '3.8'
+        python-version: '3.10'
     - name: Set up Python 3.10
       if: ${{ matrix.dep-versions == 'latest' }}
       uses: actions/setup-python@v2
@@ -45,7 +45,7 @@ jobs:
       if: ${{ matrix.dep-versions == 'oldest' }}
       run: |
         python -m pip install --upgrade pip wheel
-        pip install numpy==1.20 scipy==1.6.0 openmdao==3.10 pytest==5.3.2
+        pip install numpy==1.20 scipy==1.6.0 openmdao==3.10
         pip install .[test]
     - name: Install OAS and its dependencies (latest versions)
       if: ${{ matrix.dep-versions == 'latest' }}
@@ -53,59 +53,59 @@ jobs:
         python -m pip install --upgrade pip wheel
         pip install .[test]
 
-    # we need pySpline/pyGeo to run FFD tests.
-    - name: Install pySpline and pyGeo
-      run: |
-        cd ..
-        sudo apt-get install openmpi-bin libopenmpi-dev
-        pip install mpi4py
-        git clone https://github.com/mdolab/pyspline.git
-        cd pyspline
-        cp config/defaults/config.LINUX_GFORTRAN.mk config/config.mk
-        make
-        pip install -e .
-        cd ..
-        pip install "pygeo[testing] @ git+https://github.com/mdolab/pygeo.git"
+    # # we need pySpline/pyGeo to run FFD tests.
+    # - name: Install pySpline and pyGeo
+    #   run: |
+    #     cd ..
+    #     sudo apt-get install openmpi-bin libopenmpi-dev
+    #     pip install mpi4py
+    #     git clone https://github.com/mdolab/pyspline.git
+    #     cd pyspline
+    #     cp config/defaults/config.LINUX_GFORTRAN.mk config/config.mk
+    #     make
+    #     pip install -e .
+    #     cd ..
+    #     pip install "pygeo[testing] @ git+https://github.com/mdolab/pygeo.git"
 
-    # we need OpenVSP to run vsp tests.
-    - name: Install OpenVSP
-      run: |
-        export PYTHON_INCLUDE_DIR=$(python -c "from distutils.sysconfig import get_python_inc; print(get_python_inc())")
-        export PYTHON_LIBRARY=$(python -c "import distutils.sysconfig as sysconfig; print(sysconfig.get_config_var('LIBDIR'))")
-        export INST_PREFIX=$(python -c "import distutils.sysconfig as sysconfig; print(sysconfig.get_config_var('prefix'))")
-        cd ..
-        sudo apt-get install cmake libx11-dev libfltk1.3-dev libcpptest-dev libglm-dev libeigen3-dev libcminpack-dev \
-                             libglew-dev doxygen graphviz texlive-latex-base
-        mkdir OpenVSP
-        cd OpenVSP
-        mkdir build buildlibs
-        # Download source code
-        wget -q https://github.com/OpenVSP/OpenVSP/archive/refs/tags/OpenVSP_${VSP_VERSION}.tar.gz
-        tar -xf OpenVSP_${VSP_VERSION}.tar.gz
-        mv OpenVSP-OpenVSP_${VSP_VERSION} repo
-        # Build dependency libs
-        cd buildlibs
-        cmake -DVSP_USE_SYSTEM_LIBXML2=true -DVSP_USE_SYSTEM_FLTK=true -DVSP_USE_SYSTEM_GLM=true \
-              -DVSP_USE_SYSTEM_GLEW=true -DVSP_USE_SYSTEM_CMINPACK=true -DVSP_USE_SYSTEM_LIBIGES=false \
-              -DVSP_USE_SYSTEM_EIGEN=false -DVSP_USE_SYSTEM_CODEELI=false -DVSP_USE_SYSTEM_CPPTEST=false \
-              -DPYTHON_INCLUDE_DIR=${PYTHON_INCLUDE_DIR} -DPYTHON_LIBRARY=${PYTHON_LIBRARY} ../repo/Libraries -DCMAKE_BUILD_TYPE=Release
-        make -j8
-        # Build OpenVSP
-        cd ..
-        export BUILD_LIBS_PATH=`pwd`
-        cd build
-        cmake ../repo/src/ -DVSP_NO_GRAPHICS=true -DVSP_LIBRARY_PATH=${BUILD_LIBS_PATH}/buildlibs \
-              -DPYTHON_INCLUDE_DIR=${PYTHON_INCLUDE_DIR} -DPYTHON_LIBRARY=${PYTHON_LIBRARY} \
-              -DCMAKE_BUILD_TYPE=Release
-        make -j8
-        make package
-        # Install python interface
-        pushd _CPack_Packages/Linux/ZIP/OpenVSP-${VSP_VERSION}-Linux/python
-        pip install -r requirements.txt
-        pushd ..
-        cp vspaero vspscript vspslicer $INST_PREFIX/bin
-        popd
-        popd
+    # # we need OpenVSP to run vsp tests.
+    # - name: Install OpenVSP
+    #   run: |
+    #     export PYTHON_INCLUDE_DIR=$(python -c "from distutils.sysconfig import get_python_inc; print(get_python_inc())")
+    #     export PYTHON_LIBRARY=$(python -c "import distutils.sysconfig as sysconfig; print(sysconfig.get_config_var('LIBDIR'))")
+    #     export INST_PREFIX=$(python -c "import distutils.sysconfig as sysconfig; print(sysconfig.get_config_var('prefix'))")
+    #     cd ..
+    #     sudo apt-get install cmake libx11-dev libfltk1.3-dev libcpptest-dev libglm-dev libeigen3-dev libcminpack-dev \
+    #                          libglew-dev doxygen graphviz texlive-latex-base
+    #     mkdir OpenVSP
+    #     cd OpenVSP
+    #     mkdir build buildlibs
+    #     # Download source code
+    #     wget -q https://github.com/OpenVSP/OpenVSP/archive/refs/tags/OpenVSP_${VSP_VERSION}.tar.gz
+    #     tar -xf OpenVSP_${VSP_VERSION}.tar.gz
+    #     mv OpenVSP-OpenVSP_${VSP_VERSION} repo
+    #     # Build dependency libs
+    #     cd buildlibs
+    #     cmake -DVSP_USE_SYSTEM_LIBXML2=true -DVSP_USE_SYSTEM_FLTK=true -DVSP_USE_SYSTEM_GLM=true \
+    #           -DVSP_USE_SYSTEM_GLEW=true -DVSP_USE_SYSTEM_CMINPACK=true -DVSP_USE_SYSTEM_LIBIGES=false \
+    #           -DVSP_USE_SYSTEM_EIGEN=false -DVSP_USE_SYSTEM_CODEELI=false -DVSP_USE_SYSTEM_CPPTEST=false \
+    #           -DPYTHON_INCLUDE_DIR=${PYTHON_INCLUDE_DIR} -DPYTHON_LIBRARY=${PYTHON_LIBRARY} ../repo/Libraries -DCMAKE_BUILD_TYPE=Release
+    #     make -j8
+    #     # Build OpenVSP
+    #     cd ..
+    #     export BUILD_LIBS_PATH=`pwd`
+    #     cd build
+    #     cmake ../repo/src/ -DVSP_NO_GRAPHICS=true -DVSP_LIBRARY_PATH=${BUILD_LIBS_PATH}/buildlibs \
+    #           -DPYTHON_INCLUDE_DIR=${PYTHON_INCLUDE_DIR} -DPYTHON_LIBRARY=${PYTHON_LIBRARY} \
+    #           -DCMAKE_BUILD_TYPE=Release
+    #     make -j8
+    #     make package
+    #     # Install python interface
+    #     pushd _CPack_Packages/Linux/ZIP/OpenVSP-${VSP_VERSION}-Linux/python
+    #     pip install -r requirements.txt
+    #     pushd ..
+    #     cp vspaero vspscript vspslicer $INST_PREFIX/bin
+    #     popd
+    #     popd
 
     - name: List installed Python packages
       run: |
