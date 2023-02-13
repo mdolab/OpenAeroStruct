@@ -109,7 +109,7 @@ jobs:
     - name: Install pyGeo v1.11.2
       if: ${{ matrix.dep-versions == 'oldest' }}
       run: |
-        pip install "pygeo[testing] @ git+https://github.com/mdolab/pygeo.git@v1.12.2"
+        pip install "pygeo[testing] @ git+https://github.com/mdolab/pygeo.git"
     - name: Install pyGeo latest
       if: ${{ matrix.dep-versions == 'latest' }}
       run: |
