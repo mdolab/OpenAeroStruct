@@ -28,11 +28,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ first change for oldest vs. latest ~~~~~~~~~~~
-    - name: Set up Python 3.8
+    - name: Set up Python 3.10
       if: ${{ matrix.dep-versions == 'oldest' }}
       uses: actions/setup-python@v2
       with:
-        python-version: '3.8'
+        python-version: '3.10'
     - name: Set up Python 3.10
       if: ${{ matrix.dep-versions == 'latest' }}
       uses: actions/setup-python@v2
@@ -85,6 +85,7 @@ jobs:
       if: ${{ matrix.dep-versions == 'oldest' }}
       run: |
         python -m pip install --upgrade pip wheel
+        pip install setuptools==56.0.0
         # pip install numpy==1.20 scipy==1.6.0 openmdao==3.10
         pip install .[test]
     - name: Install OAS and its dependencies (latest versions)
