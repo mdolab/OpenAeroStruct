@@ -21,16 +21,34 @@ jobs:
     runs-on: ubuntu-latest
     env:
       VSP_VERSION: 3.27.1
+    strategy:
+      matrix:
+        dep-versions: ["oldest", "latest"]
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python 3.10
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ first change for oldest vs. latest ~~~~~~~~~~~
+    - name: Set up Python 3.8
+      if: ${{ matrix.om-version == "oldest" }}
       uses: actions/setup-python@v2
       with:
-        python-version: '3.10'
+        python-version: 3.8
+    - name: Set up Python 3.10
+      if: ${{ matrix.om-version == "latest" }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.10
 
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ second change for oldest vs. latest ~~~~~~~~~~~
     # OAS dependencies are specified in setup.py.
-    - name: Install OAS and its dependencies
+    - name: Install OAS and its dependencies (oldest versions)
+      if: ${{ matrix.om-version == "oldest" }}
+      run: |
+        python -m pip install --upgrade pip wheel
+        pip install openmdao==3.2 numpy==1.20 scipy==1.6.0
+        pip install .[test]
+    - name: Install OAS and its dependencies (latest versions)
+      if: ${{ matrix.om-version == "latest" }}
       run: |
         python -m pip install --upgrade pip wheel
         pip install .[test]
