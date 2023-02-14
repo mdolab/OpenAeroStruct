@@ -90,12 +90,12 @@ jobs:
       run: |
         python -m pip install --upgrade pip wheel
         pip install numpy==${{ matrix.NUMPY_VERSION_OLDEST }} scipy==${{ matrix.SCIPY_VERSION_OLDEST }} openmdao==${{ matrix.OPENMDAO_VERSION_OLDEST }}
-        pip install .[test]
+        pip install -e .[test]
     - name: Install OAS and its dependencies (latest versions)
       if: ${{ matrix.dep-versions == 'latest' }}
       run: |
         python -m pip install --upgrade pip wheel
-        pip install .[test]
+        pip install -e .[test]
 
     # We need pySpline/pyGeo to run FFD tests.
     - name: Install pySpline
@@ -112,7 +112,7 @@ jobs:
     - name: Install pyGeo ${{ matrix.PYGEO_VERSION_OLDEST }}
       if: ${{ matrix.dep-versions == 'oldest' }}
       run: |
-        pip install "pygeo[testing] @ git+https://github.com/mdolab/pygeo.git@v${{ matrix.PYGEO_VERSION_OLDEST }}"
+        pip install "pygeo[testing] @ git+https://github.com/mdolab/pygeo.git"
     - name: Install pyGeo latest
       if: ${{ matrix.dep-versions == 'latest' }}
       run: |
