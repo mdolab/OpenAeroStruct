@@ -85,7 +85,7 @@ jobs:
       if: ${{ matrix.dep-versions == 'oldest' }}
       run: |
         python -m pip install --upgrade pip wheel
-        pip install numpy==1.20 scipy==1.6.0 matplotlib==3.4 openmdao==3.10
+        pip install numpy==1.20 scipy==1.6.0 openmdao==3.10
         pip install .[test]
     - name: Install OAS and its dependencies (latest versions)
       if: ${{ matrix.dep-versions == 'latest' }}
