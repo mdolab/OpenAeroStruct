@@ -19,7 +19,6 @@ jobs:
   # --- run OAS unit and regression tests ---
   test:
     runs-on: ubuntu-latest
-    env:
     strategy:
       matrix:
         dep-versions: ["oldest", "latest"]
