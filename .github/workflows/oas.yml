@@ -20,24 +20,30 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      VSP_VERSION: 3.27.1
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Set versions to test here ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      PYTHON_VERSION_OLDEST: '3.8'
+      PYTHON_VERSION_LATEST: '3.11'
+      NUMPY_VERSION_OLDEST: '1.20'  # latest is most recent on PyPI
+      SCIPY_VERSION_OLDEST: '1.6.0'  # latest is most recent on PyPI
+      OPENMDAO_VERSION_OLDEST: '3.10'  # latest is most recent on PyPI
+      PYGEO_VERSION_OLDEST: '1.12.2'  # latest is pulled from main branch, for some reason anything after 1.12.2 seg faults on the old build
+      VSP_VERSION: '3.27.1'  # used for both builds
     strategy:
       matrix:
         dep-versions: ["oldest", "latest"]
 
     steps:
     - uses: actions/checkout@v2
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ first change for oldest vs. latest ~~~~~~~~~~~
-    - name: Set up Python 3.8
+    - name: Set up Python ${{ PYTHON_VERSION_OLDEST }}
       if: ${{ matrix.dep-versions == 'oldest' }}
       uses: actions/setup-python@v2
       with:
-        python-version: '3.8'
-    - name: Set up Python 3.11
+        python-version:  ${{ PYTHON_VERSION_OLDEST }}
+    - name: Set up Python ${{ PYTHON_VERSION_LATEST }}
       if: ${{ matrix.dep-versions == 'latest' }}
       uses: actions/setup-python@v2
       with:
-        python-version: '3.11'
+        python-version:  ${{ PYTHON_VERSION_LATEST }}
 
     # we need OpenVSP to run vsp tests.
     - name: Install OpenVSP
@@ -79,13 +85,12 @@ jobs:
         popd
         popd
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ second change for oldest vs. latest ~~~~~~~~~~~
     # OAS dependencies are specified in setup.py.
     - name: Install OAS and its dependencies (oldest versions)
       if: ${{ matrix.dep-versions == 'oldest' }}
       run: |
         python -m pip install --upgrade pip wheel
-        pip install numpy==1.20 scipy==1.6.0 openmdao==3.10
+        pip install numpy==${NUMPY_VERSION_OLDEST} scipy==${SCIPY_VERSION_OLDEST} openmdao==${OPENMDAO_VERSION_OLDEST}
         pip install .[test]
     - name: Install OAS and its dependencies (latest versions)
       if: ${{ matrix.dep-versions == 'latest' }}
@@ -105,11 +110,10 @@ jobs:
         make
         pip install -e .
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ third change for oldest vs. latest ~~~~~~~~~~~
-    - name: Install pyGeo v1.11.2
+    - name: Install pyGeo ${{ PYGEO_VERSION_OLDEST }}
       if: ${{ matrix.dep-versions == 'oldest' }}
       run: |
-        pip install "pygeo[testing] @ git+https://github.com/mdolab/pygeo.git@v1.12.2"  # for some reason, anything beyond 1.12.2 seg faults
+        pip install "pygeo[testing] @ git+https://github.com/mdolab/pygeo.git@v${PYGEO_VERSION_OLDEST}"
     - name: Install pyGeo latest
       if: ${{ matrix.dep-versions == 'latest' }}
       run: |

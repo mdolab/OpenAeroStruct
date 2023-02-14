@@ -36,6 +36,8 @@ NumPy      1.20   latest
 SciPy      1.6.0  latest
 OpenMDAO   3.10   latest
 Matplotlib latest latest
+pyGeo (optional) 1.12.2 latest
+OpenVSP (optional) 3.27.1 3.27.1
 ========== ====== ======
 
 If you are unfamiliar with OpenMDAO and wish to modify the internals of OpenAeroStruct, you should examine the OpenMDAO documentation at http://openmdao.org/twodocs/versions/latest/index.html. The tutorials provided with OpenMDAO are helpful to understand the basics of using OpenMDAO to solve an optimization problem.
