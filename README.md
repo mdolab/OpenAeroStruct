@@ -85,7 +85,7 @@ The oldest and latest versions of the dependencies that we test regularly are th
 | SciPy      | 1.6.0  | latest |
 | OpenMDAO   | 3.10   | latest |
 | Matplotlib | latest | latest |
-| pyGeo (optional) | 1.12.2 | latest |
+| pyGeo (optional) | 1.6.0 | latest |
 | OpenVSP (optional) | 3.27.1 | 3.27.1 |
 
 If you are looking to use the previous version of OpenAeroStruct which uses OpenMDAO 1.7.4, use OpenAeroStruct 1.0 from [here](https://github.com/mdolab/OpenAeroStruct/releases).

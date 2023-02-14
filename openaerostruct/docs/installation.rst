@@ -50,7 +50,7 @@ The oldest and latest versions of the dependencies that we test regularly are th
       - latest
       - latest
     * - pyGeo (optional)
-      - 1.12.2
+      - 1.6.0
       - latest
     * - OpenVSP (optional)
       - 3.27.1
