@@ -25,6 +25,8 @@ def compute_dot(array1, array2):
 
 def compute_dot_deriv(array, deriv_array):
     """
+    Compute the derivative of the dot product.
+
     Parameters
     ----------
     array : numpy array[..., 3]
@@ -41,6 +43,8 @@ def compute_dot_deriv(array, deriv_array):
 
 def compute_cross(array1, array2):
     """
+    Compute the cross product of two arrays.
+
     Parameters
     ----------
     array1 : numpy array[..., 3]
@@ -53,6 +57,8 @@ def compute_cross(array1, array2):
 
 def compute_cross_deriv1(deriv_array, array):
     """
+    Compute the derivative of the cross product with respect to the first cross product argument.
+
     Parameters
     ----------
     deriv_array : numpy array[..., 3, 3]
@@ -68,6 +74,8 @@ def compute_cross_deriv1(deriv_array, array):
 
 def compute_cross_deriv2(array, deriv_array):
     """
+    Compute the derivative of the cross product with respect to the second cross product argument.
+
     Parameters
     ----------
     array : numpy array[..., 3]
@@ -83,6 +91,8 @@ def compute_cross_deriv2(array, deriv_array):
 
 def compute_norm(array):
     """
+    Compute the 2-norm of an array.
+
     Parameters
     ----------
     array : numpy array[..., 3]
@@ -93,6 +103,8 @@ def compute_norm(array):
 
 def compute_norm_deriv(array, deriv_array):
     """
+    Compute the derivative of the 2-norm of an array.
+
     Parameters
     ----------
     array : numpy array[..., 3]
