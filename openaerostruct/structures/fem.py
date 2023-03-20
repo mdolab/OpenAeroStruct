@@ -35,7 +35,7 @@ class FEM(om.ImplicitComponent):
 
         Parameters
         ----------
-        **kwargs : dict of keyword arguments
+        kwargs : dict of keyword arguments
             Keyword arguments that will be mapped into the Component options.
         """
         super(FEM, self).__init__(**kwargs)
