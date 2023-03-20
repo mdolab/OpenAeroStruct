@@ -11,6 +11,8 @@ def add_ones_axis(array):
 
 def compute_dot(array1, array2):
     """
+    Compute the dot product of two arrays.
+
     Parameters
     ----------
     array1 : numpy array[..., 3]
