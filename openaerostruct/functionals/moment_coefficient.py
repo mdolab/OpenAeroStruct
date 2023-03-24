@@ -56,7 +56,7 @@ class MomentCoefficient(om.ExplicitComponent):
         self.add_input("cg", val=np.ones((3)), units="m", tags=["mphys_input"])
         self.add_input("v", val=10.0, units="m/s", tags=["mphys_input"])
         self.add_input("rho", val=3.0, units="kg/m**3", tags=["mphys_input"])
-        self.add_input("S_ref_total", val=1.0, units="m**2", tags=["mphys_result"])
+        self.add_input("S_ref_total", val=1.0, units="m**2", tags=["mphys_input"])
 
         self.add_output("CM", val=np.ones((3)), tags=["mphys_result"])
 

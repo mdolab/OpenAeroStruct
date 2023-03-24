@@ -46,7 +46,7 @@ class TotalLiftDrag(om.ExplicitComponent):
             self.declare_partials(["CL", "L"], name + "_S_ref")
             self.declare_partials(["CD", "D"], name + "_S_ref")
 
-        self.add_input("S_ref_total", val=1.0, units="m**2", tags=["mphys_result"])
+        self.add_input("S_ref_total", val=1.0, units="m**2", tags=["mphys_input"])
         self.add_input("rho", val=1.0, units="kg/m**3", tags=["mphys_input"])
         self.add_input("v", val=1.0, units="m/s", tags=["mphys_input"])
         self.add_output("CL", val=1.0, tags=["mphys_result"])

@@ -27,7 +27,7 @@ class SumAreas(om.ExplicitComponent):
             name = surface["name"]
             self.add_input(name + "_S_ref", val=1.0, units="m**2")
 
-        self.add_output("S_ref_total", val=0.0, units="m**2")
+        self.add_output("S_ref_total", val=0.0, units="m**2", tags=["mphys_result"])
 
         self.declare_partials("*", "*", val=1.0)
 

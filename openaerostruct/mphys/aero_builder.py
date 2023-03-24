@@ -16,8 +16,11 @@ from openaerostruct.mphys.aero_funcs_group import AeroFuncsGroup
 try:
     from mphys.builder import Builder
     from mphys.distributed_converter import DistributedConverter, DistributedVariableDescription
+
+    mphys_found = True
 except ImportError:
-    pass
+    mphys_found = False
+    Builder = object
 
 
 class AeroCouplingGroup(om.Group):
@@ -98,6 +101,11 @@ class AeroBuilder(Builder):
     def_options = {"user_specified_Sref": False, "compressible": True, "output_dir": "./", "write_solution": True}
 
     def __init__(self, surfaces, options=None):
+        if not mphys_found:
+            raise ImportError(
+                "MPhys is required in order to use the OpenAeroStruct mphys module. "
+                + "Ensure MPhys is installed properly and can be found on your path."
+            )
         self.surfaces = surfaces
         # Copy default options
         self.options = copy.deepcopy(self.def_options)
