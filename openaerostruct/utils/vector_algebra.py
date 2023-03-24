@@ -11,28 +11,28 @@ def add_ones_axis(array):
 
 def compute_dot(array1, array2):
     """
+    Compute the dot product of two arrays.
+
     Parameters
     ----------
     array1 : numpy array[..., 3]
-        First argument in the dot product.
-        The dot product axis is the last one.
+        First argument in the dot product. The dot product axis is the last one.
     array2 : numpy array[..., 3]
-        Second argument in the dot product.
-        The dot product axis is the last one.
+        Second argument in the dot product. The dot product axis is the last one.
     """
     return np.einsum("...,i->...i", np.einsum("...i,...i->...", array1, array2), np.ones(3))
 
 
 def compute_dot_deriv(array, deriv_array):
     """
+    Compute the derivative of the dot product.
+
     Parameters
     ----------
     array : numpy array[..., 3]
-        The argument in the dot product we are not taking the derivatives for.
-        The dot product axis is the last one.
+        The argument in the dot product we are not taking the derivatives for. The dot product axis is the last one.
     deriv_array : numpy array[..., 3, 3]
-        The derivatives of the argument in the dot product of interest.
-        The dot product axis is the last one.
+        The derivatives of the argument in the dot product of interest. The dot product axis is the last one.
     """
     return np.einsum(
         "...j,i->...ij",
@@ -43,28 +43,28 @@ def compute_dot_deriv(array, deriv_array):
 
 def compute_cross(array1, array2):
     """
+    Compute the cross product of two arrays.
+
     Parameters
     ----------
     array1 : numpy array[..., 3]
-        First argument in the cross product (order matters).
-        The cross product axis is the last one.
+        First argument in the cross product (order matters). The cross product axis is the last one.
     array2 : numpy array[..., 3]
-        Second argument in the cross product (order matters).
-        The cross product axis is the last one.
+        Second argument in the cross product (order matters). The cross product axis is the last one.
     """
     return np.cross(array1, array2, axis=-1)
 
 
 def compute_cross_deriv1(deriv_array, array):
     """
+    Compute the derivative of the cross product with respect to the first cross product argument.
+
     Parameters
     ----------
     deriv_array : numpy array[..., 3, 3]
-        Derivatives of the first argument in the cross product.
-        The cross product axis is the second last one.
+        Derivatives of the first argument in the cross product. The cross product axis is the second last one.
     array : numpy array[..., 3]
-        Second argument in the cross product (order matters).
-        The cross product axis is the last one.
+        Second argument in the cross product (order matters). The cross product axis is the last one.
     """
     tmp_0 = np.einsum("...i,j->...ij", compute_cross(deriv_array[..., 0], array), np.array([1.0, 0.0, 0.0]))
     tmp_1 = np.einsum("...i,j->...ij", compute_cross(deriv_array[..., 1], array), np.array([0.0, 1.0, 0.0]))
@@ -74,14 +74,14 @@ def compute_cross_deriv1(deriv_array, array):
 
 def compute_cross_deriv2(array, deriv_array):
     """
+    Compute the derivative of the cross product with respect to the second cross product argument.
+
     Parameters
     ----------
     array : numpy array[..., 3]
-        First argument in the cross product (order matters).
-        The cross product axis is the last one.
+        First argument in the cross product (order matters). The cross product axis is the last one.
     deriv_array : numpy array[..., 3, 3]
-        Derivatives of the second argument in the cross product.
-        The cross product axis is the second last one.
+        Derivatives of the second argument in the cross product. The cross product axis is the second last one.
     """
     tmp_0 = np.einsum("...i,j->...ij", compute_cross(array, deriv_array[..., 0]), np.array([1.0, 0.0, 0.0]))
     tmp_1 = np.einsum("...i,j->...ij", compute_cross(array, deriv_array[..., 1]), np.array([0.0, 1.0, 0.0]))
@@ -91,6 +91,8 @@ def compute_cross_deriv2(array, deriv_array):
 
 def compute_norm(array):
     """
+    Compute the 2-norm of an array.
+
     Parameters
     ----------
     array : numpy array[..., 3]
@@ -101,6 +103,8 @@ def compute_norm(array):
 
 def compute_norm_deriv(array, deriv_array):
     """
+    Compute the derivative of the 2-norm of an array.
+
     Parameters
     ----------
     array : numpy array[..., 3]
