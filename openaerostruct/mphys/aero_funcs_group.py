@@ -3,6 +3,7 @@ import openmdao.api as om
 from openaerostruct.aerodynamics.functionals import VLMFunctionals
 from openaerostruct.functionals.total_aero_performance import TotalAeroPerformance
 from openaerostruct.mphys.surface_contours import SurfaceContour
+from openaerostruct.mphys.lift_distribution import LiftDistribution
 
 
 class AeroFuncsGroup(om.Group):
@@ -71,9 +72,19 @@ class AeroFuncsGroup(om.Group):
             proms_in.append((surf_name + "_sec_forces", surf_name + ".sec_forces"))
 
         if self.options["write_solution"]:
-            self.add_subsystem(
-                "solution_writer",
+            sol_writer = self.add_subsystem("solution_writer", om.Group(), promotes=["*"])
+            sol_writer.add_subsystem(
+                "contour_writer",
                 SurfaceContour(
+                    surfaces=self.surfaces,
+                    base_name=self.options["scenario_name"],
+                    output_dir=self.options["output_dir"],
+                ),
+                promotes_inputs=proms_in + ["*"],
+            )
+            sol_writer.add_subsystem(
+                "distribution_writer",
+                LiftDistribution(
                     surfaces=self.surfaces,
                     base_name=self.options["scenario_name"],
                     output_dir=self.options["output_dir"],
