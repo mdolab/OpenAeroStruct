@@ -6,9 +6,10 @@ import os
 
 class LiftDistribution(ExplicitComponent):
     """This is a post-processing component for writing out the normalized lift
-        distribution over all lifting surfaces in a Tecplot format.
+    distribution over all lifting surfaces in a Tecplot format.
     The purpose of this component is to write visualization files, as such it
     has no output variables or sensitivities.
+
     Parameters
     ----------
     def_mesh[nx, ny, 3] : numpy array
