@@ -1,5 +1,5 @@
-OpenAeroStruct
-==============
+OpenAeroStruct (dummy PR to test codecov, DON'T MERGE!)
+=======================================================
 
 ![GitHub Actions Status](https://github.com/mdolab/OpenAeroStruct/workflows/OAS%20build/badge.svg)
 [![codecov](https://codecov.io/gh/mdolab/OpenAeroStruct/branch/main/graph/badge.svg?token=yOxeH7rT2H)](https://codecov.io/gh/mdolab/OpenAeroStruct)
