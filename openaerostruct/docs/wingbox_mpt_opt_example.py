@@ -331,6 +331,10 @@ prob.driver.recording_options["record_inputs"] = True
 # Set up the problem
 prob.setup()
 
+# change linear solver for aerostructural coupled adjoint
+prob.model.AS_point_0.coupled.linear_solver = om.LinearBlockGS(iprint=0, maxiter=30, use_aitken=True)
+prob.model.AS_point_1.coupled.linear_solver = om.LinearBlockGS(iprint=0, maxiter=30, use_aitken=True)
+
 # om.view_model(prob)
 
 # prob.check_partials(form='central', compact_print=True)
