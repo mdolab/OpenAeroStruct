@@ -98,12 +98,16 @@ jobs:
         python -m pip install --upgrade pip wheel
         pip install -e .[test,mphys]
 
+    - name: Install MPI and PETSc
+      run: |
+        sudo apt-get install openmpi-bin libopenmpi-dev
+        pip install mpi4py
+        pip install petsc4py
+
     # We need pySpline/pyGeo to run FFD tests.
     - name: Install pySpline
       run: |
         cd ..
-        sudo apt-get install openmpi-bin libopenmpi-dev
-        pip install mpi4py
         git clone https://github.com/mdolab/pyspline.git
         cd pyspline
         cp config/defaults/config.LINUX_GFORTRAN.mk config/config.mk
