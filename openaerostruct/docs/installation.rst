@@ -78,5 +78,3 @@ To install the dependencies to build the documentation locally, run:
 .. code-block:: bash
 
     pip install -e .[docs]
-
-The documentation build requires OpenMDAO 3.9.2 or older.

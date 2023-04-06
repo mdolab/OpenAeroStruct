@@ -6,18 +6,18 @@ import unittest
 from openmdao.utils.assert_utils import assert_near_equal
 
 from openmdao.utils.mpi import MPI
+
 try:
     from openmdao.vectors.petsc_vector import PETScVector
 except ImportError:
     PETScVector = None
 
+
 @unittest.skipUnless(MPI and PETScVector, "MPI and PETSc are required.")
 class Test(unittest.TestCase):
-
     N_PROCS = 2
 
     def test(self):
-
         import numpy as np
         import time
 
@@ -154,7 +154,7 @@ class Test(unittest.TestCase):
 
         # ------ modification for parallel multipoint analysis -----
         # add a ParallelGroup to parallelize AS_point_0 and AS_point_1
-        parallel = prob.model.add_subsystem('parallel', om.ParallelGroup(), promotes=['*'], min_procs=1, max_procs=2)
+        parallel = prob.model.add_subsystem("parallel", om.ParallelGroup(), promotes=["*"], min_procs=1, max_procs=2)
 
         # Loop through and add a certain number of aerostruct points.
         for i in range(2):
@@ -202,7 +202,9 @@ class Test(unittest.TestCase):
                 # Connect performance calculation variables
                 prob.model.connect(name + ".nodes", com_name + "nodes")
                 prob.model.connect(name + ".cg_location", point_name + "." + "total_perf." + name + "_cg_location")
-                prob.model.connect(name + ".structural_mass", point_name + "." + "total_perf." + name + "_structural_mass")
+                prob.model.connect(
+                    name + ".structural_mass", point_name + "." + "total_perf." + name + "_structural_mass"
+                )
 
                 # Connect wingbox properties to von Mises stress calcs
                 prob.model.connect(name + ".Qz", com_name + "Qz")
@@ -235,8 +237,7 @@ class Test(unittest.TestCase):
         prob.model.add_subsystem("fuel_diff", comp, promotes_inputs=["fuel_mass"], promotes_outputs=["fuel_diff"])
         prob.model.connect("AS_point_0.fuelburn", "fuel_diff.fuelburn")
 
-
-        ## Use these settings if you do not have pyOptSparse or SNOPT
+        # Use these settings if you do not have pyOptSparse or SNOPT
         prob.driver = om.ScipyOptimizeDriver()
         prob.driver.options["optimizer"] = "SLSQP"
         prob.driver.options["tol"] = 1e-4
@@ -300,20 +301,25 @@ class Test(unittest.TestCase):
 
         # ------ modification for parallel multipoint analysis -----
         # We have 6 functions (objective + constraints), which would require 6 linear solves for reverse-mode derivative computations in series.
-        # Among these functions (outputs), 4 depends only on AS_point_0, and 2 depends only on AS_point_1. Therefore we can form 2 pairs and perform linear solves in parallel. This is done by assigning the same parallel_deriv_color.
+        # Among these functions (outputs), 4 depends only on AS_point_0, and 2 depends only on AS_point_1.
+        # Therefore we can form 2 pairs and perform linear solves in parallel. This is done by assigning the same parallel_deriv_color.
         if MPI.COMM_WORLD.size == 1:  # serial
             color1 = None
             color2 = None
         else:  # parallel
-            color1 = "parcon1"   # this will parallelize AS_point_0.CL and AS_point_1.L_equals_W derivative computation
+            # color1 will parallelize AS_point_0.fuelburn and AS_point_1.L_equals_W derivative computation
+            color1 = "parcon1"
+            # color2 will parallelize AS_point_0.CL and AS_point_1.wing_perf.failure derivative computation
             color2 = "parcon2"
 
-        prob.model.add_objective("AS_point_0.fuelburn", scaler=1e-5, parallel_deriv_color=color1)   # depends only on AS_point_0
-        prob.model.add_constraint("AS_point_0.CL", equals=0.6, parallel_deriv_color=color2)   # depends only on AS_point_0
-        prob.model.add_constraint("AS_point_1.L_equals_W", equals=0.0, parallel_deriv_color=color1)   # depends only on AS_point_1
-        prob.model.add_constraint("AS_point_1.wing_perf.failure", upper=0.0, parallel_deriv_color=color2)   # depends only on AS_point_1
-        prob.model.add_constraint("fuel_vol_delta.fuel_vol_delta", lower=0.0, parallel_deriv_color=None)   # depends only on AS_point_0
-        prob.model.add_constraint("fuel_diff", equals=0.0, parallel_deriv_color=None)   # depends only on AS_point_0
+        # AS_point_0.fuelburn, AS_point_0.CL, fuel_vol_delta.fuel_vol_delta, fuel_diff depend only on AS_point_0
+        # AS_point_1.L_equals_W and AS_point_1.wing_perf.failure depend only on AS_point_1
+        prob.model.add_objective("AS_point_0.fuelburn", scaler=1e-5, parallel_deriv_color=color1)
+        prob.model.add_constraint("AS_point_0.CL", equals=0.6, parallel_deriv_color=color2)
+        prob.model.add_constraint("AS_point_1.L_equals_W", equals=0.0, parallel_deriv_color=color1)
+        prob.model.add_constraint("AS_point_1.wing_perf.failure", upper=0.0, parallel_deriv_color=color2)
+        prob.model.add_constraint("fuel_vol_delta.fuel_vol_delta", lower=0.0, parallel_deriv_color=None)
+        prob.model.add_constraint("fuel_diff", equals=0.0, parallel_deriv_color=None)
 
         # We will consider another dummy constraint on the sum of fuel burns from AS_point_0 and AS_point_1
         # (This constraint doesn't make any physical sense, but we do this to explain how parallel group works for reverse-mode derivatives)
@@ -321,7 +327,8 @@ class Test(unittest.TestCase):
         prob.model.add_subsystem("fuel_sum", fuel_sum_comp, promotes_outputs=["fuel_sum"])
         prob.model.connect("AS_point_0.fuelburn", "fuel_sum.fuelburn1")
         prob.model.connect("AS_point_1.fuelburn", "fuel_sum.fuelburn2")
-        prob.model.add_constraint("fuel_sum", lower=0, upper=1e10, scaler=1e-5)   # this depends on both AS_point_0 and AS_point_1. Linear solves for point_0 and point_1 will be parallelized.
+        prob.model.add_constraint("fuel_sum", lower=0, upper=1e10, scaler=1e-5)
+        # fuel_sum depends on both AS_point_0 and AS_point_1. Linear solves for point_0 and point_1 will be parallelized.
 
         # Set up the problem
         prob.setup()
@@ -329,16 +336,26 @@ class Test(unittest.TestCase):
         # change linear solvers.
         if MPI.COMM_WORLD.size == 1:
             # serial
-            prob.model.parallel.AS_point_1.coupled.linear_solver = om.LinearBlockGS(iprint=2, maxiter=30, use_aitken=True)
-            prob.model.parallel.AS_point_0.coupled.linear_solver = om.LinearBlockGS(iprint=2, maxiter=30, use_aitken=True)
-            prob.model.parallel.AS_point_1.coupled.linear_solver = om.LinearBlockGS(iprint=2, maxiter=30, use_aitken=True)
+            prob.model.parallel.AS_point_1.coupled.linear_solver = om.LinearBlockGS(
+                iprint=2, maxiter=30, use_aitken=True
+            )
+            prob.model.parallel.AS_point_0.coupled.linear_solver = om.LinearBlockGS(
+                iprint=2, maxiter=30, use_aitken=True
+            )
+            prob.model.parallel.AS_point_1.coupled.linear_solver = om.LinearBlockGS(
+                iprint=2, maxiter=30, use_aitken=True
+            )
 
         elif MPI.COMM_WORLD.size == 2:
             # parallel. let each proc set the linear solver for their AS point
             if MPI.COMM_WORLD.rank == 0:
-                prob.model.parallel.AS_point_0.coupled.linear_solver = om.LinearBlockGS(iprint=2, maxiter=30, use_aitken=True)
+                prob.model.parallel.AS_point_0.coupled.linear_solver = om.LinearBlockGS(
+                    iprint=2, maxiter=30, use_aitken=True
+                )
             if MPI.COMM_WORLD.rank == 1:
-                prob.model.parallel.AS_point_1.coupled.linear_solver = om.LinearBlockGS(iprint=2, maxiter=30, use_aitken=True)
+                prob.model.parallel.AS_point_1.coupled.linear_solver = om.LinearBlockGS(
+                    iprint=2, maxiter=30, use_aitken=True
+                )
 
         # run aerostructural analysis
         start_time = time.time()
@@ -358,7 +375,11 @@ class Test(unittest.TestCase):
 
         assert_near_equal(MPI.COMM_WORLD.size, 2, 1e-8)
         assert_near_equal(prob.get_val("fuel_sum.fuel_sum", units="kg"), 5649.1290836, 1e-5)
-        assert_near_equal(totals[("fuel_sum.fuel_sum", "wing.spar_thickness_cp")], np.array([[1712.12137573, 2237.99650867, 3036.45032547, 5065.16727605]]), 1e-5)
+        assert_near_equal(
+            totals[("fuel_sum.fuel_sum", "wing.spar_thickness_cp")],
+            np.array([[1712.12137573, 2237.99650867, 3036.45032547, 5065.16727605]]),
+            1e-5,
+        )
 
 
 if __name__ == "__main__":
