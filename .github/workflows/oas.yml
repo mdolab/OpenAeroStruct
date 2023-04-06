@@ -46,44 +46,44 @@ jobs:
         python-version:  ${{ matrix.PYTHON_VERSION_LATEST }}
 
     # we need OpenVSP to run vsp tests.
-    # - name: Install OpenVSP
-    #   run: |
-    #     export PYTHON_INCLUDE_DIR=$(python -c "from distutils.sysconfig import get_python_inc; print(get_python_inc())")
-    #     export PYTHON_LIBRARY=$(python -c "import distutils.sysconfig as sysconfig; print(sysconfig.get_config_var('LIBDIR'))")
-    #     export INST_PREFIX=$(python -c "import distutils.sysconfig as sysconfig; print(sysconfig.get_config_var('prefix'))")
-    #     cd ..
-    #     sudo apt-get install cmake libx11-dev libfltk1.3-dev libcpptest-dev libglm-dev libeigen3-dev libcminpack-dev \
-    #                          libglew-dev doxygen graphviz texlive-latex-base
-    #     mkdir OpenVSP
-    #     cd OpenVSP
-    #     mkdir build buildlibs
-    #     # Download source code
-    #     wget -q https://github.com/OpenVSP/OpenVSP/archive/refs/tags/OpenVSP_${{ matrix.VSP_VERSION }}.tar.gz
-    #     tar -xf OpenVSP_${{ matrix.VSP_VERSION }}.tar.gz
-    #     mv OpenVSP-OpenVSP_${{ matrix.VSP_VERSION }} repo
-    #     # Build dependency libs
-    #     cd buildlibs
-    #     cmake -DVSP_USE_SYSTEM_LIBXML2=true -DVSP_USE_SYSTEM_FLTK=true -DVSP_USE_SYSTEM_GLM=true \
-    #           -DVSP_USE_SYSTEM_GLEW=true -DVSP_USE_SYSTEM_CMINPACK=true -DVSP_USE_SYSTEM_LIBIGES=false \
-    #           -DVSP_USE_SYSTEM_EIGEN=false -DVSP_USE_SYSTEM_CODEELI=false -DVSP_USE_SYSTEM_CPPTEST=false \
-    #           -DPYTHON_INCLUDE_DIR=${PYTHON_INCLUDE_DIR} -DPYTHON_LIBRARY=${PYTHON_LIBRARY} ../repo/Libraries -DCMAKE_BUILD_TYPE=Release
-    #     make -j8
-    #     # Build OpenVSP
-    #     cd ..
-    #     export BUILD_LIBS_PATH=`pwd`
-    #     cd build
-    #     cmake ../repo/src/ -DVSP_NO_GRAPHICS=true -DVSP_LIBRARY_PATH=${BUILD_LIBS_PATH}/buildlibs \
-    #           -DPYTHON_INCLUDE_DIR=${PYTHON_INCLUDE_DIR} -DPYTHON_LIBRARY=${PYTHON_LIBRARY} \
-    #           -DCMAKE_BUILD_TYPE=Release
-    #     make -j8
-    #     make package
-    #     # Install python interface
-    #     pushd _CPack_Packages/Linux/ZIP/OpenVSP-${{ matrix.VSP_VERSION }}-Linux/python
-    #     pip install -r requirements.txt
-    #     pushd ..
-    #     cp vspaero vspscript vspslicer $INST_PREFIX/bin
-    #     popd
-    #     popd
+    - name: Install OpenVSP
+      run: |
+        export PYTHON_INCLUDE_DIR=$(python -c "from distutils.sysconfig import get_python_inc; print(get_python_inc())")
+        export PYTHON_LIBRARY=$(python -c "import distutils.sysconfig as sysconfig; print(sysconfig.get_config_var('LIBDIR'))")
+        export INST_PREFIX=$(python -c "import distutils.sysconfig as sysconfig; print(sysconfig.get_config_var('prefix'))")
+        cd ..
+        sudo apt-get install cmake libx11-dev libfltk1.3-dev libcpptest-dev libglm-dev libeigen3-dev libcminpack-dev \
+                             libglew-dev doxygen graphviz texlive-latex-base
+        mkdir OpenVSP
+        cd OpenVSP
+        mkdir build buildlibs
+        # Download source code
+        wget -q https://github.com/OpenVSP/OpenVSP/archive/refs/tags/OpenVSP_${{ matrix.VSP_VERSION }}.tar.gz
+        tar -xf OpenVSP_${{ matrix.VSP_VERSION }}.tar.gz
+        mv OpenVSP-OpenVSP_${{ matrix.VSP_VERSION }} repo
+        # Build dependency libs
+        cd buildlibs
+        cmake -DVSP_USE_SYSTEM_LIBXML2=true -DVSP_USE_SYSTEM_FLTK=true -DVSP_USE_SYSTEM_GLM=true \
+              -DVSP_USE_SYSTEM_GLEW=true -DVSP_USE_SYSTEM_CMINPACK=true -DVSP_USE_SYSTEM_LIBIGES=false \
+              -DVSP_USE_SYSTEM_EIGEN=false -DVSP_USE_SYSTEM_CODEELI=false -DVSP_USE_SYSTEM_CPPTEST=false \
+              -DPYTHON_INCLUDE_DIR=${PYTHON_INCLUDE_DIR} -DPYTHON_LIBRARY=${PYTHON_LIBRARY} ../repo/Libraries -DCMAKE_BUILD_TYPE=Release
+        make -j8
+        # Build OpenVSP
+        cd ..
+        export BUILD_LIBS_PATH=`pwd`
+        cd build
+        cmake ../repo/src/ -DVSP_NO_GRAPHICS=true -DVSP_LIBRARY_PATH=${BUILD_LIBS_PATH}/buildlibs \
+              -DPYTHON_INCLUDE_DIR=${PYTHON_INCLUDE_DIR} -DPYTHON_LIBRARY=${PYTHON_LIBRARY} \
+              -DCMAKE_BUILD_TYPE=Release
+        make -j8
+        make package
+        # Install python interface
+        pushd _CPack_Packages/Linux/ZIP/OpenVSP-${{ matrix.VSP_VERSION }}-Linux/python
+        pip install -r requirements.txt
+        pushd ..
+        cp vspaero vspscript vspslicer $INST_PREFIX/bin
+        popd
+        popd
 
     # OAS dependencies are specified in setup.py.
     - name: Install OAS and its dependencies (oldest versions)
@@ -99,25 +99,25 @@ jobs:
         pip install -e .[test,mphys]
 
     # We need pySpline/pyGeo to run FFD tests.
-    # - name: Install pySpline
-    #   run: |
-    #     cd ..
-    #     sudo apt-get install openmpi-bin libopenmpi-dev
-    #     pip install mpi4py
-    #     git clone https://github.com/mdolab/pyspline.git
-    #     cd pyspline
-    #     cp config/defaults/config.LINUX_GFORTRAN.mk config/config.mk
-    #     make
-    #     pip install -e .
+    - name: Install pySpline
+      run: |
+        cd ..
+        sudo apt-get install openmpi-bin libopenmpi-dev
+        pip install mpi4py
+        git clone https://github.com/mdolab/pyspline.git
+        cd pyspline
+        cp config/defaults/config.LINUX_GFORTRAN.mk config/config.mk
+        make
+        pip install -e .
 
-    # - name: Install pyGeo ${{ matrix.PYGEO_VERSION_OLDEST }}
-    #   if: ${{ matrix.dep-versions == 'oldest' }}
-    #   run: |
-    #     pip install "pygeo[testing] @ git+https://github.com/mdolab/pygeo.git@v${{ matrix.PYGEO_VERSION_OLDEST }}"
-    # - name: Install pyGeo latest
-    #   if: ${{ matrix.dep-versions == 'latest' }}
-    #   run: |
-    #     pip install "pygeo[testing] @ git+https://github.com/mdolab/pygeo.git"
+    - name: Install pyGeo ${{ matrix.PYGEO_VERSION_OLDEST }}
+      if: ${{ matrix.dep-versions == 'oldest' }}
+      run: |
+        pip install "pygeo[testing] @ git+https://github.com/mdolab/pygeo.git@v${{ matrix.PYGEO_VERSION_OLDEST }}"
+    - name: Install pyGeo latest
+      if: ${{ matrix.dep-versions == 'latest' }}
+      run: |
+        pip install "pygeo[testing] @ git+https://github.com/mdolab/pygeo.git"
 
     - name: List installed Python packages
       run: |
@@ -130,7 +130,7 @@ jobs:
         pwd
         cd openaerostruct
         pwd
-        testflo -n 2 openaerostruct --coverage --coverpkg openaerostruct --cover-omit \*tests/\* --cover-omit \*docs/\*
+        testflo -n 2 -v openaerostruct --coverage --coverpkg openaerostruct --cover-omit \*tests/\* --cover-omit \*docs/\*
 
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@v2
