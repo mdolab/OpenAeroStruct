@@ -126,12 +126,13 @@ jobs:
     - name: List installed Python packages
       run: |
         pip list -v
+        python -c "import numpy as np; print(np.show_config())"
 
     - name: Run tests
       env:
         OMPI_MCA_btl: ^openib   # prevent OpenMPI warning messages
       run: |
-        testflo -n 2 -v openaerostruct --coverage --coverpkg openaerostruct
+        testflo -n 2 -v --timeout 300 openaerostruct --coverage --coverpkg openaerostruct
         coverage xml
 
     - name: Upload Coverage to Codecov
