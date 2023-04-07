@@ -71,7 +71,7 @@ Then run the tests from the OpenAeroStruct root directory by calling:
 
 .. code-block:: bash
   
-    pytest -v .
+    testflo -v .
 
 To install the dependencies to build the documentation locally, run:
 

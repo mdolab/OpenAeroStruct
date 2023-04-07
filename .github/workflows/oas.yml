@@ -131,19 +131,8 @@ jobs:
       env:
         OMPI_MCA_btl: ^openib   # prevent OpenMPI warning messages
       run: |
-        echo "============================================================="
-        pwd
-        ls
-        echo "============================================================="
         testflo -n 2 -v openaerostruct --coverage --coverpkg openaerostruct
-        echo "============================================================="
-        ls
-        ls openaerostruct
-        echo "============================================================="
         coverage xml
-        echo "============================================================="
-        ls
-        ls openaerostruct
 
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@v3
