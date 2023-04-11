@@ -9,10 +9,13 @@ build:
   apt_packages:
     - openmpi-bin
     - libopenmpi-dev
+  commands:
+    - pip install mpi4py
+    - pip install petsc petsc4py
 
 python:
   install:
-    - requirements: openaerostruct/docs/requirements.txt
+    # - requirements: openaerostruct/docs/requirements.txt
     - method: pip
       path: .
       extra_requirements:
