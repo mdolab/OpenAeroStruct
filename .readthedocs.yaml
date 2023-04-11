@@ -6,13 +6,13 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.11"
-  # apt_packages:
-  #   - openmpi-bin
-  #   - libopenmpi-dev
-  commands:
-    - apt-get install openmpi-bin libopenmpi-dev
-    - pip install mpi4py
-    - pip install petsc petsc4py
+  apt_packages:
+    - openmpi-bin
+    - libopenmpi-dev
+  jobs:
+    post_install:
+      - pip install mpi4py
+      - pip install petsc petsc4py
 
 python:
   install:
