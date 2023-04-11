@@ -9,6 +9,11 @@ build:
   apt_packages:
     - openmpi-bin
     - libopenmpi-dev
+
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.11"
   commands:
     - pip install mpi4py
     - pip install petsc petsc4py
