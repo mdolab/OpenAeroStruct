@@ -10,7 +10,7 @@ build:
   #   - openmpi-bin
   #   - libopenmpi-dev
   commands:
-    - sudo apt-get install openmpi-bin libopenmpi-dev
+    - apt-get install openmpi-bin libopenmpi-dev
     - pip install mpi4py
     - pip install petsc petsc4py
 
