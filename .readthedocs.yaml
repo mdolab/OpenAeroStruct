@@ -9,9 +9,16 @@ build:
 
 python:
   install:
-    - requirements: openaerostruct/docs/requirements.txt
+    # - requirements: openaerostruct/docs/requirements.txt
     - method: pip
       path: .
       extra_requirements:
         - docs
+    - method: pip
+      path: mpi4py
+    - method: setuptools
+      path: petsc
+    - method: setuptools
+      path: petsc4py
+
   system_packages: true

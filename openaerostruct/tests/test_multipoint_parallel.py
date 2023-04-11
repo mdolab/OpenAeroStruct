@@ -7,10 +7,10 @@ from openmdao.utils.assert_utils import assert_near_equal
 
 from openmdao.utils.mpi import MPI
 
-try:
-    from openmdao.vectors.petsc_vector import PETScVector
-except ImportError:
-    PETScVector = None
+# try:
+#     from openmdao.vectors.petsc_vector import PETScVector
+# except ImportError:
+#     PETScVector = None
 
 
 @unittest.skipUnless(MPI and PETScVector, "MPI and PETSc are required.")
