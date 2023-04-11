@@ -2,6 +2,11 @@
 
 version: 2
 
+build:
+  apt_packages:
+    - openmpi-bin
+    - libopenmpi-dev
+
 python:
   install:
     - requirements: openaerostruct/docs/requirements.txt
