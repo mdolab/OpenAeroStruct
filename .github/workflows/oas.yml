@@ -23,7 +23,7 @@ jobs:
       matrix:
         dep-versions: ["oldest", "latest"]
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Set versions to test here ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        PYTHON_VERSION_OLDEST: ['3.10']
+        PYTHON_VERSION_OLDEST: ['3.9']
         PYTHON_VERSION_LATEST: ['3.11']
         NUMPY_VERSION_OLDEST: ['1.20']  # latest is most recent on PyPI
         SCIPY_VERSION_OLDEST: ['1.6.0']  # latest is most recent on PyPI
