@@ -310,7 +310,6 @@ class AerostructPoint(om.Group):
         # coupled.linear_solver = ScipyKrylov()
         # coupled.linear_solver.precon = om.LinearRunOnce()
 
-        # nonlinear solver for aerostructural coupling
         coupled.nonlinear_solver = om.NonlinearBlockGS(use_aitken=True)
         coupled.nonlinear_solver.options["maxiter"] = 100
         coupled.nonlinear_solver.options["atol"] = 1e-7
@@ -318,20 +317,13 @@ class AerostructPoint(om.Group):
         coupled.nonlinear_solver.options["iprint"] = 2
         coupled.nonlinear_solver.options["err_on_non_converge"] = True
 
-        # another option would be Newton, but usually Block Gauss-Seidal works better
-        # coupled.nonlinear_solver = om.NewtonSolver(solve_subsystems=True)
-        # coupled.nonlinear_solver.options['maxiter'] = 50
+        # coupled.linear_solver = om.DirectSolver()
 
-        # linear solver for computing total derivatives.
-        # NOTE: DirectSolver works the best for a coarse mesh. You may want to switch to the Block Gauss-Seidel or a Krylov solver for a fine mesh.
         coupled.linear_solver = om.DirectSolver(assemble_jac=True)
         coupled.options["assembled_jac_type"] = "csc"
-        
-        # coupled.linear_solver = om.LinearBlockGS(iprint=1, maxiter=10, use_aitken=True)
 
-        # coupled.linear_solver = om.PETScKrylov(assemble_jac=True)
-        # coupled.options["assembled_jac_type"] = "csc"
-        # coupled.linear_solver.precon = om.LinearRunOnce()
+        # coupled.nonlinear_solver = om.NewtonSolver(solve_subsystems=True)
+        # coupled.nonlinear_solver.options['maxiter'] = 50
 
         """
         ### End change of solver settings ###

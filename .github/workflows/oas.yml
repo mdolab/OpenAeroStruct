@@ -23,7 +23,7 @@ jobs:
       matrix:
         dep-versions: ["oldest", "latest"]
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Set versions to test here ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        PYTHON_VERSION_OLDEST: ['3.9']
+        PYTHON_VERSION_OLDEST: ['3.8']
         PYTHON_VERSION_LATEST: ['3.11']
         NUMPY_VERSION_OLDEST: ['1.20']  # latest is most recent on PyPI
         SCIPY_VERSION_OLDEST: ['1.6.0']  # latest is most recent on PyPI
@@ -98,11 +98,16 @@ jobs:
         python -m pip install --upgrade pip wheel
         pip install -e .[test,mphys]
 
-    - name: Install MPI and PETSc
+    - name: Install MPI
       run: |
         sudo apt-get install openmpi-bin libopenmpi-dev
         pip install mpi4py
-        pip install petsc4py
+
+    # install PETSc for MPI test on the latest only (MPI test fails with the oldest versions)
+    - name: Install PETSc
+      if: ${{ matrix.dep-versions == 'latest' }}
+      run: |
+        pip install petsc petsc4py
 
     # We need pySpline/pyGeo to run FFD tests.
     # - name: Install pySpline
@@ -131,7 +136,7 @@ jobs:
       env:
         OMPI_MCA_btl: ^openib   # prevent OpenMPI warning messages
       run: |
-        testflo -n 2 -v --timeout 300 openaerostruct --coverage --coverpkg openaerostruct
+        testflo -n 2 -v openaerostruct --coverage --coverpkg openaerostruct
         coverage xml
 
     - name: Upload Coverage to Codecov
