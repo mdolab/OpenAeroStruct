@@ -9,6 +9,8 @@ build:
   apt_packages:
     - openmpi-bin
     - libopenmpi-dev
+    - libblas-dev
+    - liblapack-dev
   jobs:
     post_install:
       - python -m pip install mpi4py
