@@ -6,16 +6,6 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.11"
-  # install MPI and PETSc to run MPI code embedded in the docs
-  apt_packages:
-    - openmpi-bin
-    - libopenmpi-dev
-    - libblas-dev
-    - liblapack-dev
-  jobs:
-    post_install:
-      - python -m pip install mpi4py
-      - python -m pip install petsc petsc4py
 
 python:
   install:

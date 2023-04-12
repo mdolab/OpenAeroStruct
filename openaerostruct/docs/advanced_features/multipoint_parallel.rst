@@ -115,24 +115,23 @@ This step is not necessary and not directly relevant to parallelization, but ``L
 
 Complete runscript
 ------------------
-To run this example in parallel with two processors, use the following command:
 
-.. code-block:: bash
-
-    $ mpirun -n 2 python wingbox_mpt_Q400_example_parallel.py
 
 Here is the complete runscript.
 
 .. embed-code::
-    openaerostruct.tests.test_multipoint_parallel.Test.test
-    :layout: interleave
+    openaerostruct.tests.test_multipoint_parallel.Test.test_multipoint_MPI
 
-The printout is a little mess, but you can see that both nonlinear and linear solvers are parallelized between two processors (rank0 and rank1).
+To run this example in parallel with two processors, use the following command:
+
+.. code-block:: bash
+
+    $ mpirun -n 2 python <name of script>.py
 
 Solver Outputs
 --------------
-If you run the above example on a computer, the stdout would look like the following.
-This gives us a better understanding of how solvers are parallelized for analysis and total derivative computations.
+The stdout of the above script would look like the following.
+The solver outputs help us understand how solvers are parallelized for analysis and total derivative computations.
 
 .. code-block:: bash
 

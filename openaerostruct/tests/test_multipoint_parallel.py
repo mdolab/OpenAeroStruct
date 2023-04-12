@@ -7,21 +7,24 @@ from openmdao.utils.assert_utils import assert_near_equal
 
 try:
     from petsc4py import PETSc  # noqa: F401
+
     petsc_installed = True
 except ModuleNotFoundError:
     petsc_installed = False
 
 try:
     from mpi4py import MPI  # noqa: F401
+
     mpi_installed = True
 except ModuleNotFoundError:
     mpi_installed = False
+
 
 @unittest.skipUnless(petsc_installed and mpi_installed, "MPI and PETSc are required.")
 class Test(unittest.TestCase):
     N_PROCS = 2
 
-    def test(self):
+    def test_multipoint_MPI(self):
         import numpy as np
         import time
 

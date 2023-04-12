@@ -103,7 +103,7 @@ jobs:
         sudo apt-get install openmpi-bin libopenmpi-dev
         pip install mpi4py
 
-    # install PETSc for MPI test on the latest only (MPI test fails with the oldest versions)
+    # install PETSc on the latest for MPI tests
     - name: Install PETSc
       if: ${{ matrix.dep-versions == 'latest' }}
       run: |
@@ -135,8 +135,17 @@ jobs:
     - name: Run tests
       env:
         OMPI_MCA_btl: ^openib   # prevent OpenMPI warning messages
+      if: ${{ matrix.dep-versions == 'latest' }}
       run: |
         testflo -n 2 -v openaerostruct --coverage --coverpkg openaerostruct
+        coverage xml
+    # skip MPI tests on the oldest
+    - name: Run tests
+      env:
+        OMPI_MCA_btl: ^openib   # prevent OpenMPI warning messages
+      if: ${{ matrix.dep-versions == 'oldest' }}
+      run: |
+        testflo -n 2 -v --exclude \*MPI\* openaerostruct --coverage --coverpkg openaerostruct
         coverage xml
 
     - name: Upload Coverage to Codecov
