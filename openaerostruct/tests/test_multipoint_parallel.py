@@ -160,20 +160,21 @@ class Test(unittest.TestCase):
             prob.model.add_subsystem(name, aerostruct_group)
 
         # ------ modification for parallel multipoint analysis -----
-        # add a ParallelGroup to parallelize AS_point_0 and AS_point_1
+        # [rst Setup ParallelGroup (beg)]
+        # Add a ParallelGroup to parallelize AS_point_0 and AS_point_1.
+        # We now set max_procs=2, but you may want to increase it if you have more than 2 AS points.
         parallel = prob.model.add_subsystem("parallel", om.ParallelGroup(), promotes=["*"], min_procs=1, max_procs=2)
 
         # Loop through and add a certain number of aerostruct points.
         for i in range(2):
             point_name = "AS_point_{}".format(i)
-            # Connect the parameters within the model for each aerostruct point
 
             # Create the aero point group and add it to the model
             AS_point = AerostructPoint(surfaces=surfaces, internally_connect_fuelburn=False)
 
-            # ------ modification for parallel multipoint analysis -----
             # Now, add each point under the parallel group (instead of directly under prob.model)
             parallel.add_subsystem(point_name, AS_point)
+            # [rst Setup ParallelGroup (end)]
 
             # Connect flow properties to the analysis point
             prob.model.connect("v", point_name + ".v", src_indices=[i])
@@ -308,8 +309,9 @@ class Test(unittest.TestCase):
 
         # ------ modification for parallel multipoint analysis -----
         # We have 6 functions (objective + constraints), which would require 6 linear solves for reverse-mode derivative computations in series.
-        # Among these functions (outputs), 4 depends only on AS_point_0, and 2 depends only on AS_point_1.
+        # Among these functions (outputs), 4 depend only on AS_point_0, and 2 depend only on AS_point_1.
         # Therefore we can form 2 pairs and perform linear solves in parallel. This is done by assigning the same parallel_deriv_color.
+        # [rst Parallel deriv color setup 1 (beg)]
         if MPI.COMM_WORLD.size == 1:  # serial
             color1 = None
             color2 = None
@@ -319,7 +321,7 @@ class Test(unittest.TestCase):
             # color2 will parallelize AS_point_0.CL and AS_point_1.wing_perf.failure derivative computation
             color2 = "parcon2"
 
-        # AS_point_0.fuelburn, AS_point_0.CL, fuel_vol_delta.fuel_vol_delta, fuel_diff depend only on AS_point_0
+        # AS_point_0.fuelburn, AS_point_0.CL, fuel_vol_delta.fuel_vol_delta, and fuel_diff depend only on AS_point_0
         # AS_point_1.L_equals_W and AS_point_1.wing_perf.failure depend only on AS_point_1
         prob.model.add_objective("AS_point_0.fuelburn", scaler=1e-5, parallel_deriv_color=color1)
         prob.model.add_constraint("AS_point_0.CL", equals=0.6, parallel_deriv_color=color2)
@@ -327,20 +329,24 @@ class Test(unittest.TestCase):
         prob.model.add_constraint("AS_point_1.wing_perf.failure", upper=0.0, parallel_deriv_color=color2)
         prob.model.add_constraint("fuel_vol_delta.fuel_vol_delta", lower=0.0, parallel_deriv_color=None)
         prob.model.add_constraint("fuel_diff", equals=0.0, parallel_deriv_color=None)
+        # [rst Parallel deriv color setup 1 (end)]
 
         # We will consider another dummy constraint on the sum of fuel burns from AS_point_0 and AS_point_1
         # (This constraint doesn't make any physical sense, but we do this to explain how parallel group works for reverse-mode derivatives)
+        # fuel_sum depends on both AS_point_0 and AS_point_1. Linear solves for point_0 and point_1 will be parallelized.
+        # [rst Parallel deriv color setup 2 (beg)]
         fuel_sum_comp = om.ExecComp("fuel_sum = fuelburn1 + fuelburn2", units="kg", shape=(1))
         prob.model.add_subsystem("fuel_sum", fuel_sum_comp, promotes_outputs=["fuel_sum"])
         prob.model.connect("AS_point_0.fuelburn", "fuel_sum.fuelburn1")
         prob.model.connect("AS_point_1.fuelburn", "fuel_sum.fuelburn2")
         prob.model.add_constraint("fuel_sum", lower=0, upper=1e10, scaler=1e-5)
-        # fuel_sum depends on both AS_point_0 and AS_point_1. Linear solves for point_0 and point_1 will be parallelized.
+        # [rst Parallel deriv color setup 2 (end)]
 
         # Set up the problem
         prob.setup()
 
         # change linear solvers.
+        # [rst Change linear solver (beg)]
         if MPI.COMM_WORLD.size == 1:
             # serial
             prob.model.parallel.AS_point_1.coupled.linear_solver = om.LinearBlockGS(
@@ -363,6 +369,7 @@ class Test(unittest.TestCase):
                 prob.model.parallel.AS_point_1.coupled.linear_solver = om.LinearBlockGS(
                     iprint=2, maxiter=30, use_aitken=True
                 )
+        # [rst Change linear solver (end)]
 
         # run aerostructural analysis
         start_time = time.time()

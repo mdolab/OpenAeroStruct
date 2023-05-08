@@ -29,7 +29,7 @@ The name of environment variable may be different depending on the system.
     import os
     os.environ['OPENBLAS_NUM_THREADS'] = '1'
 
-Next, we need to add AS_points under a ``ParallelGroup`` instead of directly under the ``prob.model``.
+Then, let's set up the problem in the same way as the serial runscript.
 
 .. code-block::
     
@@ -41,22 +41,12 @@ Next, we need to add AS_points under a ``ParallelGroup`` instead of directly und
     # Add AerostructGeometry to the model
     ...
 
-    # Add a ParallelGroup to parallelize AS_point_0 and AS_point_1.
-    # We now set max_procs=2, but you may want to increase it if you have more than 2 AS points.
-    parallel = prob.model.add_subsystem("parallel", om.ParallelGroup(), promotes=['*'], min_procs=1, max_procs=2)
+Next, we need to add AS_points under a ``ParallelGroup`` instead of directly under the ``prob.model``.
 
-    # Loop through and add a certain number of aerostruct points.
-    for i in range(2):
-        point_name = "AS_point_{}".format(i)
-
-
-        # Create the aerostruct point group and add it to the model
-        AS_point = AerostructPoint(surfaces=surfaces, internally_connect_fuelburn=False)
-
-        # Now, add each point under the parallel group (instead of directly under prob.model)
-        parallel.add_subsystem(point_name, AS_point)
-
-        ...
+.. literalinclude:: ../../tests/test_multipoint_parallel.py
+    :dedent: 8
+    :start-after: # [rst Setup ParallelGroup (beg)]
+    :end-before: # [rst Setup ParallelGroup (end)]
 
 After establishing variable connections and setting up the driver, we define the optimization objective and constraints.
 Here, we will setup the parallel derivative computations.
@@ -65,52 +55,27 @@ Among 6 functions, 4 depend only on AS_point_0, and 2 depend only on AS_point_1.
 Therefore, we can form 2 pairs and perform linear solves in parallel.
 We specify ``parallel_deriv_color`` to tell OpenMDAO which function's derivatives can be solved for in parallel.
 
-.. code-block::
-
-    if MPI.COMM_WORLD.size == 1:
-        # serial
-        color1 = None
-        color2 = None
-    else:
-        # parallel
-        color1 = "parcon1"   # this will parallelize AS_point_0.fuelburn and AS_point_1.L_equals_W derivative computations
-        color2 = "parcon2"   # this will parallelize AS_point_0.CL and AS_point_1.wing_perf.failure derivative computations
-
-    prob.model.add_objective("AS_point_0.fuelburn", scaler=1e-5, parallel_deriv_color=color1)   # depends only on AS_point_0
-    prob.model.add_constraint("AS_point_0.CL", equals=0.6, parallel_deriv_color=color2)   # depends only on AS_point_0
-    prob.model.add_constraint("AS_point_1.L_equals_W", equals=0.0, parallel_deriv_color=color1)   # depends only on AS_point_1
-    prob.model.add_constraint("AS_point_1.wing_perf.failure", upper=0.0, parallel_deriv_color=color2)   # depends only on AS_point_1
-    prob.model.add_constraint("fuel_vol_delta.fuel_vol_delta", lower=0.0, parallel_deriv_color=None)   # depends only on AS_point_0
-    prob.model.add_constraint("fuel_diff", equals=0.0, parallel_deriv_color=None)   # depends only on AS_point_0
+.. literalinclude:: ../../tests/test_multipoint_parallel.py
+    :dedent: 8
+    :start-after: # [rst Parallel deriv color setup 1 (beg)]
+    :end-before: # [rst Parallel deriv color setup 1 (end)]
 
 Furthermore, we will add another dummy (nonsense) constraint to explain how parallelization works for reverse-mode derivatives.
 This dummy constraint (sum of the fuel burns from AS_point_0 and AS_point_1) depends on both AS points.
 In this case, the linear solves of AS_point_0 and AS_point_1 will be parallelized.
 
-.. code-block::
-
-    fuel_sum_comp = om.ExecComp("fuel_sum = fuelburn1 + fuelburn2", units="kg", shape=(1))
-    prob.model.add_subsystem("fuel_sum", fuel_sum_comp, promotes_outputs=["fuel_sum"])
-    prob.model.connect("AS_point_0.fuelburn", "fuel_sum.fuelburn1")
-    prob.model.connect("AS_point_1.fuelburn", "fuel_sum.fuelburn2")
-    prob.model.add_constraint("fuel_sum", lower=0, upper=1e10, scaler=1e-5)   # this depends on both AS_point_0 and AS_point_1.
+.. literalinclude:: ../../tests/test_multipoint_parallel.py
+    :dedent: 8
+    :start-after: # [rst Parallel deriv color setup 2 (beg)]
+    :end-before: # [rst Parallel deriv color setup 2 (end)]
 
 Finally, let's change the linear solver from default.
 This step is not necessary and not directly relevant to parallelization, but the ``LinearBlockGS`` solver works better on a fine mesh than the default ``DirectSolver``.
 
-.. code-block::
-
-    if MPI.COMM_WORLD.size == 1:
-        # serial
-        prob.model.parallel.AS_point_0.coupled.linear_solver = om.LinearBlockGS(iprint=2, maxiter=30, use_aitken=True)
-        prob.model.parallel.AS_point_1.coupled.linear_solver = om.LinearBlockGS(iprint=2, maxiter=30, use_aitken=True)
-
-    elif MPI.COMM_WORLD.size == 2:
-        # parallel. let each proc set the linear solver for their AS point
-        if MPI.COMM_WORLD.rank == 0:
-            prob.model.parallel.AS_point_0.coupled.linear_solver = om.LinearBlockGS(iprint=2, maxiter=30, use_aitken=True)
-        if MPI.COMM_WORLD.rank == 1:
-            prob.model.parallel.AS_point_1.coupled.linear_solver = om.LinearBlockGS(iprint=2, maxiter=30, use_aitken=True)
+.. literalinclude:: ../../tests/test_multipoint_parallel.py
+    :dedent: 8
+    :start-after: # [rst Change linear solver (beg)]
+    :end-before: # [rst Change linear solver (end)]
 
 
 Complete runscript
