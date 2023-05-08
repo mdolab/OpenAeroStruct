@@ -90,7 +90,7 @@ jobs:
       if: ${{ matrix.dep-versions == 'oldest' }}
       run: |
         # use old pip
-        python -m pip install --upgrade wheel
+        python -m pip install pip==23.0.1 --upgrade wheel
         pip install numpy==${{ matrix.NUMPY_VERSION_OLDEST }} scipy==${{ matrix.SCIPY_VERSION_OLDEST }} openmdao==${{ matrix.OPENMDAO_VERSION_OLDEST }} mphys==${{ matrix.MPHYS_VERSION_OLDEST }}
         pip install -e .[test]
     - name: Install OAS and its dependencies (latest versions)
