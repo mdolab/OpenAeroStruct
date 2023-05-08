@@ -6,9 +6,9 @@ Parallel Multipoint Optimization using MPI
 ==========================================
 
 Multipoint analysis or optimization can be parallelized to reduce the runtime.
-Because each flight conditions (or points) are independent, it is `embarassingly parallel`, meaning that we can easily parallelize these analyses.
+Because each flight condition (or point) is independent, it is `embarassingly parallel`, meaning that we can easily parallelize these analyses.
 
-Here, we will parallelize the :ref:`previous multipoint aerostructural example (Q400)`<Multipoint Optimization>`.
+Here, we will parallelize the :ref:`previous multipoint aerostructural example (Q400)<Multipoint Optimization>`.
 This requires a little modification to the original serial runscript.
 
 Runscript modifications
@@ -41,7 +41,7 @@ Next, we need to add AS_points under a ``ParallelGroup`` instead of directly und
     # Add AerostructGeometry to the model
     ...
 
-    # Wdd a ParallelGroup to parallelize AS_point_0 and AS_point_1.
+    # Add a ParallelGroup to parallelize AS_point_0 and AS_point_1.
     # We now set max_procs=2, but you may want to increase it if you have more than 2 AS points.
     parallel = prob.model.add_subsystem("parallel", om.ParallelGroup(), promotes=['*'], min_procs=1, max_procs=2)
 
@@ -61,8 +61,8 @@ Next, we need to add AS_points under a ``ParallelGroup`` instead of directly und
 After establishing variable connections and setting up the driver, we define the optimization objective and constraints.
 Here, we will setup the parallel derivative computations.
 In this example, we have 6 functions of interest (1 objective and 5 constraints), which would require 6 linear solves for reverse-mode derivatives in series.
-Among 6 functions, 4 depends only on AS_point_0, and 2 depends only on AS_point_1.
-Therefore, we can form 2 paris and perform linear solves in parallel.
+Among 6 functions, 4 depend only on AS_point_0, and 2 depend only on AS_point_1.
+Therefore, we can form 2 pairs and perform linear solves in parallel.
 We specify ``parallel_deriv_color`` to tell OpenMDAO which function's derivatives can be solved for in parallel.
 
 .. code-block::
@@ -96,7 +96,7 @@ In this case, the linear solves of AS_point_0 and AS_point_1 will be parallelize
     prob.model.add_constraint("fuel_sum", lower=0, upper=1e10, scaler=1e-5)   # this depends on both AS_point_0 and AS_point_1.
 
 Finally, let's change the linear solver from default.
-This step is not necessary and not directly relevant to parallelization, but ``LinearBlockGS`` solver works better on a fine mesh than the default ``DirectSolver``.
+This step is not necessary and not directly relevant to parallelization, but the ``LinearBlockGS`` solver works better on a fine mesh than the default ``DirectSolver``.
 
 .. code-block::
 
@@ -115,9 +115,6 @@ This step is not necessary and not directly relevant to parallelization, but ``L
 
 Complete runscript
 ------------------
-
-
-Here is the complete runscript.
 
 .. embed-code::
     openaerostruct.tests.test_multipoint_parallel.Test.test_multipoint_MPI
@@ -249,7 +246,7 @@ The solver outputs help us understand how solvers are parallelized for analysis 
 Comparing Runtime
 -----------------
 How much speedup can we get by parallelization?
-Here, we compared the runtime for the example above (but with a finer mesh of `nx=3` and `ny=61`)
+Here, we compared the runtime for the example above (but with a finer mesh of `nx=3` and `ny=61`).
 In this case, we achieved decent speedup in nonlinear analysis, but not so much in derivative computation.
 The actual speedup you can get depends on your problem setups, such as number of points (flight conditions) and functions of interest.
 

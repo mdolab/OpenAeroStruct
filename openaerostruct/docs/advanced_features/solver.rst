@@ -2,7 +2,7 @@
 
 Solver Settings
 ===============
-Users can use any of the OpenMDAO's solvers for aerostructural analysis and derivative computation.
+Users can use any of OpenMDAO's solvers for aerostructural analysis and derivative computation.
 This does not means that all solvers are guaranteed to converge.
 Details about the OpenMDAO's solvers can be found in the `OpenMDAO documentation <https://openmdao.org/newdocs/versions/latest/features/building_blocks/solvers/solvers.html>`_.
 
@@ -10,17 +10,17 @@ Details about the OpenMDAO's solvers can be found in the `OpenMDAO documentation
 Default Solvers
 ---------------
 The default nonlinear solver for aerostructural coupling is ``NonlinearBlockGS``.
-For underling aerodynamic and structural analysis, we use Scipy's LU factorization to solve linear systems (``scipy.sparse.linal.splu`` for structural FEM, and ``scipy.linalg.lu_factor/lu_solve`` for VLM).
+For underlying aerodynamic and structural analysis, we use Scipy's LU factorization to solve linear systems (``scipy.sparse.linal.splu`` for structural FEM, and ``scipy.linalg.lu_factor/lu_solve`` for VLM).
 
-The default linear solver for computing derivatives is ``DirectSolver``, which uses LU factorization and back substituaion.
+The default linear solver for computing derivatives is ``DirectSolver``, which uses LU factorization and back substitution.
 The default settings are defined in ``openaerostruct/integration/aerostruct_groups.py``.
 
 
 Recommendations
 ---------------
-For aerostructural nonlinear solver, we recommend the default ``NonlinearBlockGS`` solver.
+For the aerostructural nonlinear solver, we recommend the default ``NonlinearBlockGS`` solver.
 This solver is suitable for the circular dependency between aerodynamics and structure.
-More detailed discussion on the solver selection can be found in the `this paper <http://websites.umich.edu/~mdolaboratory/pdf/Chauhan2018a.pdf>`_.
+A more detailed discussion on the solver selection can be found in `this paper <http://websites.umich.edu/~mdolaboratory/pdf/Chauhan2018a.pdf>`_.
 
 For derivative computation, the default ``DirectSolver`` works well when the mesh is coarse.
 If your mesh is large (say, `nx=5` and `ny=15` or more), you may want to consider a different solver, such as ``LinearBlockGS`` or ``PETScKrylov``.
