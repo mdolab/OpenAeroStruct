@@ -82,9 +82,10 @@ class Display(object):
         names = []
 
         # Aero or aerostructural
-        for key in cr.system_options.keys():
+        sys_options = cr.list_model_options(out_stream=None)
+        for key in sys_options.keys():
             try:
-                surfaces = cr.system_options[key]["component_options"]["surfaces"]
+                surfaces = sys_options[key]["surfaces"]
                 for surface in surfaces:
                     names.append(surface["name"])
                 break
@@ -93,9 +94,9 @@ class Display(object):
 
         # Structural-only
         if not names:
-            for key in cr.system_options.keys():
+            for key in sys_options.keys():
                 try:
-                    surface = cr.system_options[key]["component_options"]["surface"]
+                    surface = sys_options[key]["surfaces"]
                     names = [surface["name"]]
                 except KeyError:
                     pass
@@ -746,4 +747,4 @@ def disp_plot(args=sys.argv):
 
 
 if __name__ == "__main__":
-    disp_plot()
+    disp_plot(["", "aero.db"])
