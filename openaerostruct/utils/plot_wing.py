@@ -96,7 +96,7 @@ class Display(object):
         if not names:
             for key in sys_options.keys():
                 try:
-                    surface = sys_options[key]["surfaces"]
+                    surface = sys_options[key]["surface"]
                     names = [surface["name"]]
                 except KeyError:
                     pass
