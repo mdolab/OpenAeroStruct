@@ -747,4 +747,4 @@ def disp_plot(args=sys.argv):
 
 
 if __name__ == "__main__":
-    disp_plot(["", "aero.db"])
+    disp_plot()
