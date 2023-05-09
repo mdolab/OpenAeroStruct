@@ -22,4 +22,4 @@ src/adjoint/tempForward/
 openaerostruct.egg-info/ 
 .vscode
 *.plt
-.pre-commit-config.yaml 
+
