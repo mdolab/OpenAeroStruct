@@ -6,4 +6,3 @@ extend-exclude =
     openaerostruct/docs/_utils/docutil.py,
     openaerostruct/docs/_utils/patch.py,
     openaerostruct/utils/plot_*.py,
-
