@@ -81,13 +81,13 @@ class GeometryMesh(om.Group):
             promotes = ["chord"]
             if "chord_scaling_pos" in surface:
                 gamma = surface["chord_scaling_pos"]
-            else : 
-                gamma = 0.25 #if no scaling position is specified : chord scaling w.r.t quarter of chord
+            else:
+                gamma = 0.25  # if no scaling position is specified : chord scaling w.r.t quarter of chord
         else:
             promotes = []
             gamma = 0.25
 
-        self.add_subsystem("scale_x", ScaleX(val=val, mesh_shape=mesh_shape, gamma = gamma), promotes_inputs=promotes)
+        self.add_subsystem("scale_x", ScaleX(val=val, mesh_shape=mesh_shape, gamma=gamma), promotes_inputs=promotes)
 
         # 3. Sweep
 
