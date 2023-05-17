@@ -109,8 +109,6 @@ jobs:
       if: ${{ matrix.dep-versions == 'latest' }}
       run: |
         cd ..
-        pwd
-        ls
         pip download petsc==${{ matrix.PETSC_VERSION_LATEST }}
         tar -xf petsc-${{ matrix.PETSC_VERSION_LATEST }}.tar.gz
         cd petsc-${{ matrix.PETSC_VERSION_LATEST }}
@@ -118,15 +116,12 @@ jobs:
         export PETSC_DIR=`pwd`
         ./configure --PETSC_ARCH=$PETSC_ARCH --download-fblaslapack
         make PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH all
-        make PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH check
         pip install petsc4py==${{ matrix.PETSC_VERSION_LATEST }}
 
     # We need pySpline/pyGeo to run FFD tests.
     - name: Install pySpline
       run: |
         cd ..
-        pwd
-        ls
         git clone https://github.com/mdolab/pyspline.git
         cd pyspline
         cp config/defaults/config.LINUX_GFORTRAN.mk config/config.mk
@@ -151,8 +146,6 @@ jobs:
         OMPI_MCA_btl: ^openib   # prevent OpenMPI warning messages
       if: ${{ matrix.dep-versions == 'latest' }}
       run: |
-        pwd
-        ls
         testflo -n 2 -v openaerostruct --coverage --coverpkg openaerostruct
         coverage xml
     # skip MPI tests on the oldest
