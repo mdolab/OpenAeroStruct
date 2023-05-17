@@ -31,6 +31,7 @@ jobs:
         MPHYS_VERSION_OLDEST: ['1.0.0']  # latest is most recent on PyPI
         PYGEO_VERSION_OLDEST: ['1.6.0']  # latest is pulled from main branch, for some reason anything after 1.12.2 seg faults on the old build
         VSP_VERSION: ['3.27.1']  # used for both builds
+        PETSC_VERSION_LATEST: ['3.19.1']
 
     steps:
     - uses: actions/checkout@v2
@@ -108,24 +109,24 @@ jobs:
     - name: Install PETSc
       if: ${{ matrix.dep-versions == 'latest' }}
       run: |
+        cd ..
         pwd
-        pip download petsc==3.19.1
-        tar -xvaf petsc-3.19.1.tar.gz
-        cd petsc-3.19.1
-        pwd
-        echo $HOME
+        ls
+        pip download petsc==${{ matrix.PETSC_VERSION_LATEST }}
+        tar -xf petsc-${{ matrix.PETSC_VERSION_LATEST }}.tar.gz
+        cd petsc-${{ matrix.PETSC_VERSION_LATEST }}
         export PETSC_ARCH=real-debug
         export PETSC_DIR=`pwd`
-        echo $PETSC_DIR
         ./configure --PETSC_ARCH=$PETSC_ARCH --download-fblaslapack
         make PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH all
-        make PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH check
-        pip install petsc4py
+        pip install petsc4py==${{ matrix.PETSC_VERSION_LATEST }}
 
     # We need pySpline/pyGeo to run FFD tests.
     - name: Install pySpline
       run: |
         cd ..
+        pwd
+        ls
         git clone https://github.com/mdolab/pyspline.git
         cd pyspline
         cp config/defaults/config.LINUX_GFORTRAN.mk config/config.mk
@@ -150,6 +151,8 @@ jobs:
         OMPI_MCA_btl: ^openib   # prevent OpenMPI warning messages
       if: ${{ matrix.dep-versions == 'latest' }}
       run: |
+        pwd
+        ls
         testflo -n 2 -v openaerostruct --coverage --coverpkg openaerostruct
         coverage xml
     # skip MPI tests on the oldest
@@ -158,6 +161,8 @@ jobs:
         OMPI_MCA_btl: ^openib   # prevent OpenMPI warning messages
       if: ${{ matrix.dep-versions == 'oldest' }}
       run: |
+        pwd
+        ls
         testflo -n 2 -v --exclude \*MPI\* openaerostruct --coverage --coverpkg openaerostruct
         coverage xml
 
