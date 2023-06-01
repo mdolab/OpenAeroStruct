@@ -132,6 +132,27 @@ class Test(unittest.TestCase):
         check = prob.check_partials(compact_print=True, abs_err_tol=1e-5, rel_err_tol=1e-5)
         assert_check_partials(check, atol=1e-6, rtol=1e-6)
 
+    def test_scalex_chord_scaling_pos(self):
+        symmetry = False
+        mesh = get_mesh(symmetry)
+
+        prob = om.Problem()
+        group = prob.model
+
+        val = self.rng.random(NY)
+        for c in np.linspace(-1, 5, num=20):
+            comp = ScaleX(val=val, mesh_shape=mesh.shape, chord_scaling_pos=c)
+            group.add_subsystem("comp", comp)
+
+            prob.setup()
+
+            prob["comp.in_mesh"] = mesh
+
+            prob.run_model()
+
+            check = prob.check_partials(compact_print=True, abs_err_tol=1e-5, rel_err_tol=1e-5)
+            assert_check_partials(check, atol=1e-6, rtol=1e-6)
+
     def test_sweep(self):
         symmetry = False
         mesh = get_mesh(symmetry)

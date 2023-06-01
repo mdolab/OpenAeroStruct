@@ -21,6 +21,7 @@ class Test(unittest.TestCase):
         # The way this is currently set up, we don't actually use the values here
         surface["twist_cp"] = np.zeros((5))
         surface["chord_cp"] = np.zeros((5))
+        surface["chord_scaling_pos"] = 0.25
         surface["xshear_cp"] = np.zeros((5))
         surface["yshear_cp"] = np.zeros((5))
         surface["zshear_cp"] = np.zeros((5))

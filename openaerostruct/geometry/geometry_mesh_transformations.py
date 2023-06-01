@@ -132,15 +132,15 @@ class ScaleX(om.ExplicitComponent):
         self.options.declare("val", desc="Initial value for chord lengths")
         self.options.declare("mesh_shape", desc="Tuple containing mesh shape (nx, ny).")
         self.options.declare(
-            "gamma",
+            "chord_scaling_pos",
             default=0.25,
-            desc="float in [0.,1.] which indicates the chord fraction where to do the chord scaling. 1. is trailing edge, 0. is leading edge",
+            desc="float which indicates the chord fraction where to do the chord scaling. 1. is trailing edge, 0. is leading edge",
         )
 
     def setup(self):
         mesh_shape = self.options["mesh_shape"]
         val = self.options["val"]
-        self.gamma = self.options["gamma"]
+        self.chord_scaling_pos = self.options["chord_scaling_pos"]
         self.add_input("chord", units="m", val=val)
         self.add_input("in_mesh", shape=mesh_shape, units="m")
 
@@ -171,9 +171,9 @@ class ScaleX(om.ExplicitComponent):
 
         te = mesh[-1]
         le = mesh[0]
-        gamma_chord = self.gamma * te + (1 - self.gamma) * le
+        chord_pos = self.chord_scaling_pos * te + (1 - self.chord_scaling_pos) * le
 
-        outputs["mesh"] = np.einsum("ijk,j->ijk", mesh - gamma_chord, chord_dist) + gamma_chord
+        outputs["mesh"] = np.einsum("ijk,j->ijk", mesh - chord_pos, chord_dist) + chord_pos
 
     def compute_partials(self, inputs, partials):
         mesh = inputs["in_mesh"]
@@ -181,9 +181,9 @@ class ScaleX(om.ExplicitComponent):
 
         te = mesh[-1]
         le = mesh[0]
-        gamma_chord = self.gamma * te + (1 - self.gamma) * le
+        chord_pos = self.chord_scaling_pos * te + (1 - self.chord_scaling_pos) * le
 
-        partials["mesh", "chord"] = (mesh - gamma_chord).flatten()
+        partials["mesh", "chord"] = (mesh - chord_pos).flatten()
 
         nx, ny, _ = mesh.shape
         nn = nx * ny * 3
@@ -192,12 +192,12 @@ class ScaleX(om.ExplicitComponent):
 
         d_qc = (np.einsum("ij,i->ij", np.ones((ny, 3)), 1.0 - chord_dist)).flatten()
         nnq = (nx - 1) * ny * 3
-        partials["mesh", "in_mesh"][nn : nn + nnq] = np.tile(self.gamma * d_qc, nx - 1)
-        partials["mesh", "in_mesh"][nn + nnq :] = np.tile((1 - self.gamma) * d_qc, nx - 1)
+        partials["mesh", "in_mesh"][nn : nn + nnq] = np.tile(self.chord_scaling_pos * d_qc, nx - 1)
+        partials["mesh", "in_mesh"][nn + nnq :] = np.tile((1 - self.chord_scaling_pos) * d_qc, nx - 1)
 
         nnq = ny * 3
-        partials["mesh", "in_mesh"][nn - nnq : nn] += self.gamma * d_qc
-        partials["mesh", "in_mesh"][:nnq] += (1 - self.gamma) * d_qc
+        partials["mesh", "in_mesh"][nn - nnq : nn] += self.chord_scaling_pos * d_qc
+        partials["mesh", "in_mesh"][:nnq] += (1 - self.chord_scaling_pos) * d_qc
 
 
 class Sweep(om.ExplicitComponent):

@@ -57,6 +57,7 @@ surface = {
     "S_ref_type": "projected",  # how we compute the wing area,
     # can be 'wetted' or 'projected'
     "chord_cp": np.ones(3),  # Define chord using 3 B-spline cp's
+    "chord_scaling_pos": 0.25,  # Define the chord scaling position. 0 is the leading edge, 1 is the trailing edge.
     # distributed along span
     "mesh": mesh,
     # Aerodynamic performance of the lifting surface at
