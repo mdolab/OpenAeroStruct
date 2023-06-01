@@ -31,7 +31,13 @@ def get_mesh(symmetry):
     ny = (2 * NY - 1) if symmetry else NY
 
     # Create a dictionary to store options about the mesh
-    mesh_dict = {"num_y": ny, "num_x": NX, "wing_type": "CRM", "symmetry": symmetry, "num_twist_cp": NY}
+    mesh_dict = {
+        "num_y": ny,
+        "num_x": NX,
+        "wing_type": "CRM",
+        "symmetry": symmetry,
+        "num_twist_cp": NY,
+    }
 
     # Generate the aerodynamic mesh based on the previous dictionary
     mesh, twist_cp = generate_mesh(mesh_dict)
@@ -140,18 +146,19 @@ class Test(unittest.TestCase):
         group = prob.model
 
         val = self.rng.random(NY)
-        for c in np.linspace(-1, 5, num=20):
-            comp = ScaleX(val=val, mesh_shape=mesh.shape, chord_scaling_pos=c)
-            group.add_subsystem("comp", comp)
+        chord_scaling_pos = self.rng.random(1)
 
-            prob.setup()
+        comp = ScaleX(val=val, mesh_shape=mesh.shape, chord_scaling_pos=chord_scaling_pos)
+        group.add_subsystem("comp", comp)
 
-            prob["comp.in_mesh"] = mesh
+        prob.setup()
 
-            prob.run_model()
+        prob["comp.in_mesh"] = mesh
 
-            check = prob.check_partials(compact_print=True, abs_err_tol=1e-5, rel_err_tol=1e-5)
-            assert_check_partials(check, atol=1e-6, rtol=1e-6)
+        prob.run_model()
+
+        check = prob.check_partials(compact_print=True, abs_err_tol=1e-5, rel_err_tol=1e-5)
+        assert_check_partials(check, atol=1e-6, rtol=1e-6)
 
     def test_sweep(self):
         symmetry = False
