@@ -32,6 +32,7 @@ jobs:
         MPHYS_VERSION_OLDEST: ['1.0.0']  # latest is most recent on PyPI
         PYGEO_VERSION_OLDEST: ['1.6.0']  # latest is pulled from main branch, for some reason anything after 1.12.2 seg faults on the old build
         VSP_VERSION: ['3.27.1']  # used for both builds
+        PETSC_VERSION_LATEST: ['3.19.1']
 
     steps:
     - uses: actions/checkout@v2
@@ -99,12 +100,29 @@ jobs:
         python -m pip install --upgrade pip wheel
         pip install -e .[test,mphys]
 
+    - name: Install MPI
+      run: |
+        sudo apt-get install openmpi-bin libopenmpi-dev
+        pip install mpi4py
+
+    # install PETSc on the latest for MPI tests
+    - name: Install PETSc
+      if: ${{ matrix.dep-versions == 'latest' }}
+      run: |
+        cd ..
+        pip download petsc==${{ matrix.PETSC_VERSION_LATEST }}
+        tar -xf petsc-${{ matrix.PETSC_VERSION_LATEST }}.tar.gz
+        cd petsc-${{ matrix.PETSC_VERSION_LATEST }}
+        export PETSC_ARCH=real-debug
+        export PETSC_DIR=`pwd`
+        ./configure --PETSC_ARCH=$PETSC_ARCH --download-fblaslapack
+        make PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH all
+        pip install petsc4py==${{ matrix.PETSC_VERSION_LATEST }}
+
     # We need pySpline/pyGeo to run FFD tests.
     - name: Install pySpline
       run: |
         cd ..
-        sudo apt-get install openmpi-bin libopenmpi-dev
-        pip install mpi4py
         git clone https://github.com/mdolab/pyspline.git
         cd pyspline
         cp config/defaults/config.LINUX_GFORTRAN.mk config/config.mk
@@ -124,17 +142,29 @@ jobs:
       run: |
         pip list -v
 
-    - name: Run tests
+    - name: Run tests (latest)
       env:
         OMPI_MCA_btl: ^openib   # prevent OpenMPI warning messages
+      if: ${{ matrix.dep-versions == 'latest' }}
       run: |
-        python -m pytest --cov-config=.coveragerc --cov=openaerostruct --cov-report=xml
+        testflo -n 2 -v openaerostruct --coverage --coverpkg openaerostruct
+        coverage xml
+    # skip MPI tests on the oldest
+    - name: Run tests (oldest)
+      env:
+        OMPI_MCA_btl: ^openib   # prevent OpenMPI warning messages
+      if: ${{ matrix.dep-versions == 'oldest' }}
+      run: |
+        testflo -n 2 -v --exclude \*MPI\* openaerostruct --coverage --coverpkg openaerostruct
+        coverage xml
 
     - name: Upload Coverage to Codecov
-      uses: codecov/codecov-action@v2
+      uses: codecov/codecov-action@v3
       with:
         fail_ci_if_error: true
         token: ${{ secrets.CODECOV_TOKEN }}
+        verbose: true
+        
   # --- linting and formatting ---
   black:
     uses: mdolab/.github/.github/workflows/black.yaml@main

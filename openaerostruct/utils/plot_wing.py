@@ -82,9 +82,10 @@ class Display(object):
         names = []
 
         # Aero or aerostructural
-        for key in cr.system_options.keys():
+        sys_options = cr.list_model_options(out_stream=None)
+        for key in sys_options.keys():
             try:
-                surfaces = cr.system_options[key]["component_options"]["surfaces"]
+                surfaces = sys_options[key]["surfaces"]
                 for surface in surfaces:
                     names.append(surface["name"])
                 break
@@ -93,9 +94,9 @@ class Display(object):
 
         # Structural-only
         if not names:
-            for key in cr.system_options.keys():
+            for key in sys_options.keys():
                 try:
-                    surface = cr.system_options[key]["component_options"]["surface"]
+                    surface = sys_options[key]["surface"]
                     names = [surface["name"]]
                 except KeyError:
                     pass
@@ -239,7 +240,7 @@ class Display(object):
 
         if self.show_tube:
             for name in names:
-                surface = cr.system_options[name]["component_options"]["surface"]
+                surface = sys_options[name]["surface"]
                 self.yield_stress_dict[name + "_yield_stress"] = surface["yield"]
                 self.fem_origin_dict[name + "_fem_origin"] = surface["fem_origin"]
 

@@ -23,7 +23,7 @@ Here is a list of the keys and default values of the ``mesh_dict``, which is use
     * - num_y
       - 5
       - 
-      - Number of spanwise vertices for the entire wing. When ``symmetry = True``, the numbe of vertices for a half wing will be ``(num_y + 1) / 2.
+      - Number of spanwise vertices for the entire wing. When ``symmetry = True``, the number of vertices for a half wing will be ``(num_y + 1) / 2``.
     * - span
       - 10.0
       - m

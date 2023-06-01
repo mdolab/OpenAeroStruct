@@ -213,5 +213,8 @@ prob.setup()
 # Use this if you just want to run analysis and not optimization
 # prob.run_model()
 
+# change linear solver for aerostructural coupled adjoint
+prob.model.AS_point_0.coupled.linear_solver = om.LinearBlockGS(iprint=0, maxiter=30, use_aitken=True)
+
 # Actually run the optimization problem
 prob.run_driver()

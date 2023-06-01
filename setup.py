@@ -10,7 +10,7 @@ __version__ = re.findall(
 
 optional_dependencies = {
     "docs": ["sphinx_mdolab_theme"],
-    "test": ["pytest", "pytest-cov", "coverage"],
+    "test": ["testflo"],
     "ffd": ["pygeo>=1.6.0"],
     "mphys": ["mphys>=1.0.0"],
 }
