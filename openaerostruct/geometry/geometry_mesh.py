@@ -85,7 +85,9 @@ class GeometryMesh(om.Group):
                 chord_scaling_pos = surface["chord_scaling_pos"]
         else:
             if "chord_scaling_pos" in surface:
-                warnings.warn("Chord_scaling_pos has been specified but no chord design variable available")
+                warnings.warn(
+                    "Chord_scaling_pos has been specified but no chord design variable available", stacklevel=2
+                )
             promotes = []
 
         self.add_subsystem(
