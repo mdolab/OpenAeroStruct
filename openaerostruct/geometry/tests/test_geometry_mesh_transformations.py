@@ -4,7 +4,7 @@ import numpy as np
 import unittest
 
 import openmdao.api as om
-from openmdao.utils.assert_utils import assert_check_partials
+from openmdao.utils.assert_utils import assert_check_partials, assert_near_equal
 
 from openaerostruct.geometry.geometry_mesh_transformations import (
     Taper,
@@ -142,6 +142,7 @@ class Test(unittest.TestCase):
         symmetry = False
         mesh = get_mesh(symmetry)
 
+        # Test for random values of chord_scaling_pos, check derivatives
         prob = om.Problem()
         group = prob.model
 
@@ -159,6 +160,23 @@ class Test(unittest.TestCase):
 
         check = prob.check_partials(compact_print=True, abs_err_tol=1e-5, rel_err_tol=1e-5)
         assert_check_partials(check, atol=1e-6, rtol=1e-6)
+
+        # Test for random values of chord_scaling_pos, check derivatives
+        prob = om.Problem()
+        group = prob.model
+
+        val = self.rng.random(NY)
+
+        comp = ScaleX(val=val, mesh_shape=mesh.shape, chord_scaling_pos=1)
+        group.add_subsystem("comp", comp)
+
+        prob.setup()
+
+        prob["comp.in_mesh"] = mesh
+
+        prob.run_model()
+        # If chord_scaling_pos = 1, TE should not move
+        assert_near_equal(mesh[-1, :, :], prob["comp.mesh"][-1, :, :], tolerance=1e-10)
 
     def test_sweep(self):
         symmetry = False

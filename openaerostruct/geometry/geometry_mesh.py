@@ -15,6 +15,7 @@ from openaerostruct.geometry.geometry_mesh_transformations import (
     ShearZ,
     Rotate,
 )
+import warnings
 
 
 class GeometryMesh(om.Group):
@@ -84,7 +85,7 @@ class GeometryMesh(om.Group):
                 chord_scaling_pos = surface["chord_scaling_pos"]
         else:
             if "chord_scaling_pos" in surface:
-                print("WARNING: chord_scaling_pos has been specified but no chord design variable available")
+                warnings.warn("Chord_scaling_pos has been specified but no chord design variable available")
             promotes = []
 
         self.add_subsystem(
