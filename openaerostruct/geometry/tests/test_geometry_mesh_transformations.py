@@ -138,7 +138,7 @@ class Test(unittest.TestCase):
         check = prob.check_partials(compact_print=True, abs_err_tol=1e-5, rel_err_tol=1e-5)
         assert_check_partials(check, atol=1e-6, rtol=1e-6)
 
-    def test_scalex_chord_scaling_pos(self):
+    def test_scalex_chord_scaling_pos_random(self):
         symmetry = False
         mesh = get_mesh(symmetry)
 
@@ -161,7 +161,11 @@ class Test(unittest.TestCase):
         check = prob.check_partials(compact_print=True, abs_err_tol=1e-5, rel_err_tol=1e-5)
         assert_check_partials(check, atol=1e-6, rtol=1e-6)
 
-        # Test for random values of chord_scaling_pos, check derivatives
+    def test_scalex_chord_scaling_pos_trailing_edge(self):
+        symmetry = True
+        mesh = get_mesh(symmetry)
+
+        # Test for chord_scaling_pos at trailing edge
         prob = om.Problem()
         group = prob.model
 
@@ -175,6 +179,7 @@ class Test(unittest.TestCase):
         prob["comp.in_mesh"] = mesh
 
         prob.run_model()
+
         # If chord_scaling_pos = 1, TE should not move
         assert_near_equal(mesh[-1, :, :], prob["comp.mesh"][-1, :, :], tolerance=1e-10)
 
