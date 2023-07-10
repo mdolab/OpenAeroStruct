@@ -15,7 +15,6 @@ from openaerostruct.geometry.geometry_mesh_transformations import (
     ShearZ,
     Rotate,
 )
-import warnings
 
 
 class GeometryMesh(om.Group):
