@@ -31,6 +31,7 @@ class Top(Multipoint):
             "S_ref_type": "wetted",  # how we compute the wing area,
             # can be 'wetted' or 'projected'
             "twist_cp": np.zeros(3),  # Define twist using 3 B-spline cp's
+            "ref_axis_pos": 0.25,  # Define the reference axis position. 0 is the leading edge, 1 is the trailing edge.
             # Aerodynamic performance of the lifting surface at
             # an angle of attack of 0 (alpha=0).
             # These CL0 and CD0 values are added to the CL and CD

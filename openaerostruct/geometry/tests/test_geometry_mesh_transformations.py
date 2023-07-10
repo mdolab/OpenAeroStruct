@@ -68,8 +68,9 @@ class Test(unittest.TestCase):
         group = prob.model
 
         val = self.rng.random(1)
+        ref_axis_pos = self.rng.random(1)
 
-        comp = Taper(val=val, mesh=mesh, symmetry=symmetry)
+        comp = Taper(val=val, mesh=mesh, symmetry=symmetry, ref_axis_pos=ref_axis_pos)
         group.add_subsystem("comp", comp)
 
         prob.setup()
@@ -86,8 +87,9 @@ class Test(unittest.TestCase):
         group = prob.model
 
         val = self.rng.random(1)
+        ref_axis_pos = self.rng.random(1)
 
-        comp = Taper(val=val, mesh=mesh, symmetry=symmetry)
+        comp = Taper(val=val, mesh=mesh, symmetry=symmetry, ref_axis_pos=ref_axis_pos)
         group.add_subsystem("comp", comp)
 
         prob.setup()
@@ -104,8 +106,9 @@ class Test(unittest.TestCase):
         group = prob.model
 
         val = self.rng.random(NY)
+        ref_axis_pos = self.rng.random(1)
 
-        comp = ScaleX(val=val, mesh_shape=mesh.shape)
+        comp = ScaleX(val=val, mesh_shape=mesh.shape, ref_axis_pos=ref_axis_pos)
         group.add_subsystem("comp", comp)
 
         prob.setup()
@@ -125,8 +128,9 @@ class Test(unittest.TestCase):
         group = prob.model
 
         val = self.rng.random(NY)
+        ref_axis_pos = self.rng.random(1)
 
-        comp = ScaleX(val=val, mesh_shape=mesh.shape)
+        comp = ScaleX(val=val, mesh_shape=mesh.shape, ref_axis_pos=ref_axis_pos)
         group.add_subsystem("comp", comp)
 
         prob.setup()
@@ -138,30 +142,7 @@ class Test(unittest.TestCase):
         check = prob.check_partials(compact_print=True, abs_err_tol=1e-5, rel_err_tol=1e-5)
         assert_check_partials(check, atol=1e-6, rtol=1e-6)
 
-    def test_scalex_chord_scaling_pos_random(self):
-        symmetry = False
-        mesh = get_mesh(symmetry)
-
-        # Test for random values of chord_scaling_pos, check derivatives
-        prob = om.Problem()
-        group = prob.model
-
-        val = self.rng.random(NY)
-        chord_scaling_pos = self.rng.random(1)
-
-        comp = ScaleX(val=val, mesh_shape=mesh.shape, chord_scaling_pos=chord_scaling_pos)
-        group.add_subsystem("comp", comp)
-
-        prob.setup()
-
-        prob["comp.in_mesh"] = mesh
-
-        prob.run_model()
-
-        check = prob.check_partials(compact_print=True, abs_err_tol=1e-5, rel_err_tol=1e-5)
-        assert_check_partials(check, atol=1e-6, rtol=1e-6)
-
-    def test_scalex_chord_scaling_pos_trailing_edge(self):
+    def test_scalex_ref_axis_trailing_edge(self):
         symmetry = True
         mesh = get_mesh(symmetry)
 
@@ -171,7 +152,7 @@ class Test(unittest.TestCase):
 
         val = self.rng.random(NY)
 
-        comp = ScaleX(val=val, mesh_shape=mesh.shape, chord_scaling_pos=1)
+        comp = ScaleX(val=val, mesh_shape=mesh.shape, ref_axis_pos=1)
         group.add_subsystem("comp", comp)
 
         prob.setup()
@@ -254,8 +235,9 @@ class Test(unittest.TestCase):
         group = prob.model
 
         val = self.rng.random(1)
+        ref_axis_pos = self.rng.random(1)
 
-        comp = Stretch(val=val, mesh_shape=mesh.shape, symmetry=symmetry)
+        comp = Stretch(val=val, mesh_shape=mesh.shape, symmetry=symmetry, ref_axis_pos=ref_axis_pos)
         group.add_subsystem("comp", comp)
 
         prob.setup()
@@ -275,8 +257,9 @@ class Test(unittest.TestCase):
         group = prob.model
 
         val = self.rng.random(1)
+        ref_axis_pos = self.rng.random(1)
 
-        comp = Stretch(val=val, mesh_shape=mesh.shape, symmetry=symmetry)
+        comp = Stretch(val=val, mesh_shape=mesh.shape, symmetry=symmetry, ref_axis_pos=ref_axis_pos)
         group.add_subsystem("comp", comp)
 
         prob.setup()
@@ -380,8 +363,9 @@ class Test(unittest.TestCase):
         group = prob.model
 
         val = self.rng.random(NY)
+        ref_axis_pos = self.rng.random(1)
 
-        comp = Rotate(val=val, mesh_shape=mesh.shape, symmetry=symmetry)
+        comp = Rotate(val=val, mesh_shape=mesh.shape, symmetry=symmetry, ref_axis_pos=ref_axis_pos)
         group.add_subsystem("comp", comp)
 
         prob.setup()
@@ -401,8 +385,9 @@ class Test(unittest.TestCase):
         group = prob.model
 
         val = self.rng.random(NY)
+        ref_axis_pos = self.rng.random(1)
 
-        comp = Rotate(val=val, mesh_shape=mesh.shape, symmetry=symmetry)
+        comp = Rotate(val=val, mesh_shape=mesh.shape, symmetry=symmetry, ref_axis_pos=ref_axis_pos)
         group.add_subsystem("comp", comp)
 
         prob.setup()
@@ -413,6 +398,27 @@ class Test(unittest.TestCase):
 
         check = prob.check_partials(compact_print=True, abs_err_tol=1e-5, rel_err_tol=1e-5)
         assert_check_partials(check, atol=1e-6, rtol=1e-6)
+
+    def test_rotate_trailing_edge(self):
+        symmetry = False
+        mesh = get_mesh(symmetry)
+
+        prob = om.Problem()
+        group = prob.model
+
+        val = self.rng.random(NY)
+
+        comp = Rotate(val=val, mesh_shape=mesh.shape, symmetry=symmetry, ref_axis_pos=1)
+        group.add_subsystem("comp", comp)
+
+        prob.setup()
+
+        prob["comp.in_mesh"] = mesh
+
+        prob.run_model()
+
+        # If chord_scaling_pos = 1, TE should not move
+        assert_near_equal(mesh[-1, :, :], prob["comp.mesh"][-1, :, :], tolerance=1e-10)
 
 
 if __name__ == "__main__":

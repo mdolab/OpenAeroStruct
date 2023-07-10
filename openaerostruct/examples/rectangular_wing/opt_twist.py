@@ -56,6 +56,7 @@ surface = {
     "S_ref_type": "projected",  # how we compute the wing area,
     # can be 'wetted' or 'projected'
     "twist_cp": np.zeros(3),  # Define twist using 3 B-spline cp's
+    "ref_axis_pos": 0.25,  # Define the reference axis position. 0 is the leading edge, 1 is the trailing edge.
     # distributed along span
     "mesh": mesh,
     # Aerodynamic performance of the lifting surface at

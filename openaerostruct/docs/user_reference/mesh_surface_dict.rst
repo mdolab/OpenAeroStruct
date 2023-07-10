@@ -95,10 +95,10 @@ The surface dict will be provided to Groups, including ``Geometry``, ``AeroPoint
       - np.array([0.1, 5])
       - m
       - B-spline control points for chord distribution. Array convention is the same than ``twist_cp``.
-    * - chord_scaling_pos
+    * - ref_axis_pos
       - 0.25
       - 
-      - Chord position at which the chord scaling factor is applied. 1 is the trailing edge, 0 is the leading edge.
+      - Chord fraction which defines the reference axis line. 1 is the trailing edge, 0 is the leading edge.
 
 .. list-table:: Aerodynamics definitions
     :widths: 20 20 5 55

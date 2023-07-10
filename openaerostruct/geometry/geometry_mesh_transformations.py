@@ -9,7 +9,7 @@ import openmdao.api as om
 class Taper(om.ExplicitComponent):
     """
     OpenMDAO component that manipulates the mesh by altering the spanwise chord linearly to produce
-    a tapered wing. Note that we apply taper around the quarter-chord line.
+    a tapered wing. Note that we apply taper around the reference axis line which is quarter of chord by default.
 
     Parameters
     ----------
@@ -31,10 +31,16 @@ class Taper(om.ExplicitComponent):
         self.options.declare(
             "symmetry", default=False, desc="Flag set to true if surface is reflected about y=0 plane."
         )
+        self.options.declare(
+            "ref_axis_pos",
+            default=0.25,
+            desc="Fraction of the chord that is use as the reference axis line",
+        )
 
     def setup(self):
         mesh = self.options["mesh"]
         val = self.options["val"]
+        self.ref_axis_pos = self.options["ref_axis_pos"]
 
         self.add_input("taper", val=val)
 
@@ -51,8 +57,8 @@ class Taper(om.ExplicitComponent):
         le = mesh[0]
         te = mesh[-1]
         num_x, num_y, _ = mesh.shape
-        quarter_chord = 0.25 * te + 0.75 * le
-        x = quarter_chord[:, 1]
+        ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
+        x = ref_axis[:, 1]
         span = x[-1] - x[0]
 
         # If symmetric, solve for the correct taper ratio, which is a linear
@@ -70,7 +76,7 @@ class Taper(om.ExplicitComponent):
         taper = np.interp(x.real, xp.real, fp.real)
 
         # Modify the mesh based on the taper amount computed per spanwise section
-        outputs["mesh"] = np.einsum("ijk,j->ijk", mesh - quarter_chord, taper) + quarter_chord
+        outputs["mesh"] = np.einsum("ijk,j->ijk", mesh - ref_axis, taper) + ref_axis
 
     def compute_partials(self, inputs, partials):
         mesh = self.options["mesh"]
@@ -81,8 +87,8 @@ class Taper(om.ExplicitComponent):
         le = mesh[0]
         te = mesh[-1]
         num_x, num_y, _ = mesh.shape
-        quarter_chord = 0.25 * te + 0.75 * le
-        x = quarter_chord[:, 1]
+        ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
+        x = ref_axis[:, 1]
         span = x[-1] - x[0]
 
         # If symmetric, solve for the correct taper ratio, which is a linear
@@ -104,7 +110,7 @@ class Taper(om.ExplicitComponent):
         else:
             dtaper = (1.0 - taper) / (1.0 - taper_ratio)
 
-        partials["mesh", "taper"] = np.einsum("ijk, j->ijk", mesh - quarter_chord, dtaper)
+        partials["mesh", "taper"] = np.einsum("ijk, j->ijk", mesh - ref_axis, dtaper)
 
 
 class ScaleX(om.ExplicitComponent):
@@ -132,15 +138,15 @@ class ScaleX(om.ExplicitComponent):
         self.options.declare("val", desc="Initial value for chord lengths")
         self.options.declare("mesh_shape", desc="Tuple containing mesh shape (nx, ny).")
         self.options.declare(
-            "chord_scaling_pos",
+            "ref_axis_pos",
             default=0.25,
-            desc="float which indicates the chord fraction where to do the chord scaling. 1. is trailing edge, 0. is leading edge",
+            desc="Fraction of the chord that is use as the reference axis line",
         )
 
     def setup(self):
         mesh_shape = self.options["mesh_shape"]
         val = self.options["val"]
-        self.chord_scaling_pos = self.options["chord_scaling_pos"]
+        self.ref_axis_pos = self.options["ref_axis_pos"]
         self.add_input("chord", units="m", val=val)
         self.add_input("in_mesh", shape=mesh_shape, units="m")
 
@@ -171,9 +177,9 @@ class ScaleX(om.ExplicitComponent):
 
         te = mesh[-1]
         le = mesh[0]
-        chord_pos = self.chord_scaling_pos * te + (1 - self.chord_scaling_pos) * le
+        ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
 
-        outputs["mesh"] = np.einsum("ijk,j->ijk", mesh - chord_pos, chord_dist) + chord_pos
+        outputs["mesh"] = np.einsum("ijk,j->ijk", mesh - ref_axis, chord_dist) + ref_axis
 
     def compute_partials(self, inputs, partials):
         mesh = inputs["in_mesh"]
@@ -181,9 +187,9 @@ class ScaleX(om.ExplicitComponent):
 
         te = mesh[-1]
         le = mesh[0]
-        chord_pos = self.chord_scaling_pos * te + (1 - self.chord_scaling_pos) * le
+        ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
 
-        partials["mesh", "chord"] = (mesh - chord_pos).flatten()
+        partials["mesh", "chord"] = (mesh - ref_axis).flatten()
 
         nx, ny, _ = mesh.shape
         nn = nx * ny * 3
@@ -192,12 +198,12 @@ class ScaleX(om.ExplicitComponent):
 
         d_qc = (np.einsum("ij,i->ij", np.ones((ny, 3)), 1.0 - chord_dist)).flatten()
         nnq = (nx - 1) * ny * 3
-        partials["mesh", "in_mesh"][nn : nn + nnq] = np.tile(self.chord_scaling_pos * d_qc, nx - 1)
-        partials["mesh", "in_mesh"][nn + nnq :] = np.tile((1 - self.chord_scaling_pos) * d_qc, nx - 1)
+        partials["mesh", "in_mesh"][nn : nn + nnq] = np.tile(self.ref_axis_pos * d_qc, nx - 1)
+        partials["mesh", "in_mesh"][nn + nnq :] = np.tile((1 - self.ref_axis_pos) * d_qc, nx - 1)
 
         nnq = ny * 3
-        partials["mesh", "in_mesh"][nn - nnq : nn] += self.chord_scaling_pos * d_qc
-        partials["mesh", "in_mesh"][:nnq] += (1 - self.chord_scaling_pos) * d_qc
+        partials["mesh", "in_mesh"][nn - nnq : nn] += self.ref_axis_pos * d_qc
+        partials["mesh", "in_mesh"][:nnq] += (1 - self.ref_axis_pos) * d_qc
 
 
 class Sweep(om.ExplicitComponent):
@@ -425,10 +431,16 @@ class Stretch(om.ExplicitComponent):
         self.options.declare(
             "symmetry", default=False, desc="Flag set to true if surface is reflected about y=0 plane."
         )
+        self.options.declare(
+            "ref_axis_pos",
+            default=0.25,
+            desc="Fraction of the chord that is use as the reference axis line",
+        )
 
     def setup(self):
         mesh_shape = self.options["mesh_shape"]
         val = self.options["val"]
+        self.ref_axis_pos = self.options["ref_axis_pos"]
 
         self.add_input("span", val=val, units="m")
         self.add_input("in_mesh", shape=mesh_shape, units="m")
@@ -475,7 +487,7 @@ class Stretch(om.ExplicitComponent):
         # Set the span along the quarter-chord line
         le = mesh[0]
         te = mesh[-1]
-        quarter_chord = 0.25 * te + 0.75 * le
+        ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
 
         # The user always deals with the full span, so if they input a specific
         # span value and have symmetry enabled, we divide this value by 2.
@@ -484,8 +496,8 @@ class Stretch(om.ExplicitComponent):
 
         # Compute the previous span and determine the scalar needed to reach the
         # desired span
-        prev_span = quarter_chord[-1, 1] - quarter_chord[0, 1]
-        s = quarter_chord[:, 1] / prev_span
+        prev_span = ref_axis[-1, 1] - ref_axis[0, 1]
+        s = ref_axis[:, 1] / prev_span
 
         outputs["mesh"][:] = mesh
         outputs["mesh"][:, :, 1] = s * span
@@ -499,7 +511,7 @@ class Stretch(om.ExplicitComponent):
         # Set the span along the quarter-chord line
         le = mesh[0]
         te = mesh[-1]
-        quarter_chord = 0.25 * te + 0.75 * le
+        ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
 
         # The user always deals with the full span, so if they input a specific
         # span value and have symmetry enabled, we divide this value by 2.
@@ -508,10 +520,10 @@ class Stretch(om.ExplicitComponent):
 
         # Compute the previous span and determine the scalar needed to reach the
         # desired span
-        prev_span = quarter_chord[-1, 1] - quarter_chord[0, 1]
-        s = quarter_chord[:, 1] / prev_span
+        prev_span = ref_axis[-1, 1] - ref_axis[0, 1]
+        s = ref_axis[:, 1] / prev_span
 
-        d_prev_span = -quarter_chord[:, 1] / prev_span**2
+        d_prev_span = -ref_axis[:, 1] / prev_span**2
         d_prev_span_qc0 = np.zeros((ny,))
         d_prev_span_qc1 = np.zeros((ny,))
         d_prev_span_qc0[0] = d_prev_span_qc1[-1] = 1.0 / prev_span
@@ -525,17 +537,21 @@ class Stretch(om.ExplicitComponent):
         partials["mesh", "in_mesh"][:nn] = 1.0
 
         nn2 = nx * ny
-        partials["mesh", "in_mesh"][nn : nn + nn2] = np.tile(-0.75 * span * (d_prev_span - d_prev_span_qc0), nx)
+        partials["mesh", "in_mesh"][nn : nn + nn2] = np.tile(
+            -(1 - self.ref_axis_pos) * span * (d_prev_span - d_prev_span_qc0), nx
+        )
         nn3 = nn + nn2 * 2
-        partials["mesh", "in_mesh"][nn + nn2 : nn3] = np.tile(0.75 * span * (d_prev_span + d_prev_span_qc1), nx)
+        partials["mesh", "in_mesh"][nn + nn2 : nn3] = np.tile(
+            (1 - self.ref_axis_pos) * span * (d_prev_span + d_prev_span_qc1), nx
+        )
         nn4 = nn3 + nn2
-        partials["mesh", "in_mesh"][nn3:nn4] = np.tile(-0.25 * span * (d_prev_span - d_prev_span_qc0), nx)
+        partials["mesh", "in_mesh"][nn3:nn4] = np.tile(-self.ref_axis_pos * span * (d_prev_span - d_prev_span_qc0), nx)
         nn5 = nn4 + nn2
-        partials["mesh", "in_mesh"][nn4:nn5] = np.tile(0.25 * span * (d_prev_span + d_prev_span_qc1), nx)
+        partials["mesh", "in_mesh"][nn4:nn5] = np.tile(self.ref_axis_pos * span * (d_prev_span + d_prev_span_qc1), nx)
 
         nn6 = nn5 + nx * (ny - 2)
-        partials["mesh", "in_mesh"][nn5:nn6] = 0.75 * span / prev_span
-        partials["mesh", "in_mesh"][nn6:] = 0.25 * span / prev_span
+        partials["mesh", "in_mesh"][nn5:nn6] = (1 - self.ref_axis_pos) * span / prev_span
+        partials["mesh", "in_mesh"][nn6:] = self.ref_axis_pos * span / prev_span
 
 
 class ShearY(om.ExplicitComponent):
@@ -825,10 +841,16 @@ class Rotate(om.ExplicitComponent):
             "always be applied perpendicular to the wing (say, in the case of "
             "a winglet).",
         )
+        self.options.declare(
+            "ref_axis_pos",
+            default=0.25,
+            desc="Fraction of the chord that is use as the reference axis line",
+        )
 
     def setup(self):
         mesh_shape = self.options["mesh_shape"]
         val = self.options["val"]
+        self.ref_axis_pos = self.options["ref_axis_pos"]
 
         self.add_input("twist", val=val, units="deg")
         self.add_input("in_mesh", shape=mesh_shape, units="m")
@@ -904,26 +926,26 @@ class Rotate(om.ExplicitComponent):
 
         te = mesh[-1]
         le = mesh[0]
-        quarter_chord = 0.25 * te + 0.75 * le
+        ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
 
         _, ny, _ = mesh.shape
 
         if rotate_x:
             # Compute spanwise z displacements along quarter chord
             if symmetry:
-                dz_qc = quarter_chord[:-1, 2] - quarter_chord[1:, 2]
-                dy_qc = quarter_chord[:-1, 1] - quarter_chord[1:, 1]
+                dz_qc = ref_axis[:-1, 2] - ref_axis[1:, 2]
+                dy_qc = ref_axis[:-1, 1] - ref_axis[1:, 1]
                 theta_x = np.arctan(dz_qc / dy_qc)
 
                 # Prepend with 0 so that root is not rotated
                 rad_theta_x = np.append(theta_x, 0.0)
             else:
                 root_index = int((ny - 1) / 2)
-                dz_qc_left = quarter_chord[:root_index, 2] - quarter_chord[1 : root_index + 1, 2]
-                dy_qc_left = quarter_chord[:root_index, 1] - quarter_chord[1 : root_index + 1, 1]
+                dz_qc_left = ref_axis[:root_index, 2] - ref_axis[1 : root_index + 1, 2]
+                dy_qc_left = ref_axis[:root_index, 1] - ref_axis[1 : root_index + 1, 1]
                 theta_x_left = np.arctan(dz_qc_left / dy_qc_left)
-                dz_qc_right = quarter_chord[root_index + 1 :, 2] - quarter_chord[root_index:-1, 2]
-                dy_qc_right = quarter_chord[root_index + 1 :, 1] - quarter_chord[root_index:-1, 1]
+                dz_qc_right = ref_axis[root_index + 1 :, 2] - ref_axis[root_index:-1, 2]
+                dy_qc_right = ref_axis[root_index + 1 :, 1] - ref_axis[root_index:-1, 1]
                 theta_x_right = np.arctan(dz_qc_right / dy_qc_right)
 
                 # Concatenate thetas
@@ -950,7 +972,7 @@ class Rotate(om.ExplicitComponent):
         mats[:, 2, 1] = sin_rtx
         mats[:, 2, 2] = cos_rtx * cos_rty
 
-        outputs["mesh"] = np.einsum("ikj, mij -> mik", mats, mesh - quarter_chord) + quarter_chord
+        outputs["mesh"] = np.einsum("ikj, mij -> mik", mats, mesh - ref_axis) + ref_axis
 
     def compute_partials(self, inputs, partials):
         symmetry = self.options["symmetry"]
@@ -960,15 +982,15 @@ class Rotate(om.ExplicitComponent):
 
         te = mesh[-1]
         le = mesh[0]
-        quarter_chord = 0.25 * te + 0.75 * le
+        ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
 
         nx, ny, _ = mesh.shape
 
         if rotate_x:
             # Compute spanwise z displacements along quarter chord
             if symmetry:
-                dz_qc = quarter_chord[:-1, 2] - quarter_chord[1:, 2]
-                dy_qc = quarter_chord[:-1, 1] - quarter_chord[1:, 1]
+                dz_qc = ref_axis[:-1, 2] - ref_axis[1:, 2]
+                dy_qc = ref_axis[:-1, 1] - ref_axis[1:, 1]
                 theta_x = np.arctan(dz_qc / dy_qc)
 
                 # Prepend with 0 so that root is not rotated
@@ -982,11 +1004,11 @@ class Rotate(om.ExplicitComponent):
 
             else:
                 root_index = int((ny - 1) / 2)
-                dz_qc_left = quarter_chord[:root_index, 2] - quarter_chord[1 : root_index + 1, 2]
-                dy_qc_left = quarter_chord[:root_index, 1] - quarter_chord[1 : root_index + 1, 1]
+                dz_qc_left = ref_axis[:root_index, 2] - ref_axis[1 : root_index + 1, 2]
+                dy_qc_left = ref_axis[:root_index, 1] - ref_axis[1 : root_index + 1, 1]
                 theta_x_left = np.arctan(dz_qc_left / dy_qc_left)
-                dz_qc_right = quarter_chord[root_index + 1 :, 2] - quarter_chord[root_index:-1, 2]
-                dy_qc_right = quarter_chord[root_index + 1 :, 1] - quarter_chord[root_index:-1, 1]
+                dz_qc_right = ref_axis[root_index + 1 :, 2] - ref_axis[root_index:-1, 2]
+                dy_qc_right = ref_axis[root_index + 1 :, 1] - ref_axis[root_index:-1, 1]
                 theta_x_right = np.arctan(dz_qc_right / dy_qc_right)
 
                 # Concatenate thetas
@@ -1031,7 +1053,7 @@ class Rotate(om.ExplicitComponent):
         dmats_dthy[:, 2, 0] = -cos_rtx * cos_rty * deg2rad
         dmats_dthy[:, 2, 2] = -cos_rtx * sin_rty * deg2rad
 
-        d_dthetay = np.einsum("ikj, mij -> mik", dmats_dthy, mesh - quarter_chord)
+        d_dthetay = np.einsum("ikj, mij -> mik", dmats_dthy, mesh - ref_axis)
         partials["mesh", "twist"] = d_dthetay.flatten()
 
         nn = nx * ny * 9
@@ -1042,8 +1064,8 @@ class Rotate(om.ExplicitComponent):
         d_qch = (eye - mats).flatten()
 
         nqc = ny * 9
-        partials["mesh", "in_mesh"][:nqc] += 0.75 * d_qch
-        partials["mesh", "in_mesh"][nn - nqc : nn] += 0.25 * d_qch
+        partials["mesh", "in_mesh"][:nqc] += (1 - self.ref_axis_pos) * d_qch
+        partials["mesh", "in_mesh"][nn - nqc : nn] += self.ref_axis_pos * d_qch
 
         if rotate_x:
             dmats_dthx = np.zeros((ny, 3, 3))
@@ -1054,7 +1076,7 @@ class Rotate(om.ExplicitComponent):
             dmats_dthx[:, 2, 1] = cos_rtx
             dmats_dthx[:, 2, 2] = -sin_rtx * cos_rty
 
-            d_dthetax = np.einsum("ikj, mij -> mik", dmats_dthx, mesh - quarter_chord)
+            d_dthetax = np.einsum("ikj, mij -> mik", dmats_dthx, mesh - ref_axis)
             d_dq = np.einsum("ijk, jm -> ijkm", d_dthetax, dthx_dq)
 
             d_dq_flat = d_dq.flatten()
@@ -1062,18 +1084,18 @@ class Rotate(om.ExplicitComponent):
             del_n = nn - 9 * ny
             nn2 = nn + del_n
             nn3 = nn2 + del_n
-            partials["mesh", "in_mesh"][nn:nn2] = 0.75 * d_dq_flat[-del_n:]
-            partials["mesh", "in_mesh"][nn2:nn3] = 0.25 * d_dq_flat[:del_n]
+            partials["mesh", "in_mesh"][nn:nn2] = (1 - self.ref_axis_pos) * d_dq_flat[-del_n:]
+            partials["mesh", "in_mesh"][nn2:nn3] = self.ref_axis_pos * d_dq_flat[:del_n]
 
             # Contribution back to main diagonal.
             del_n = 9 * ny
-            partials["mesh", "in_mesh"][:nqc] += 0.75 * d_dq_flat[:del_n]
-            partials["mesh", "in_mesh"][nn - nqc : nn] += 0.25 * d_dq_flat[-del_n:]
+            partials["mesh", "in_mesh"][:nqc] += (1 - self.ref_axis_pos) * d_dq_flat[:del_n]
+            partials["mesh", "in_mesh"][nn - nqc : nn] += self.ref_axis_pos * d_dq_flat[-del_n:]
 
             # Quarter chord direct contribution.
             d_qch_od = np.tile(d_qch.flatten(), nx - 1)
-            partials["mesh", "in_mesh"][nn:nn2] += 0.75 * d_qch_od
-            partials["mesh", "in_mesh"][nn2:nn3] += 0.25 * d_qch_od
+            partials["mesh", "in_mesh"][nn:nn2] += (1 - self.ref_axis_pos) * d_qch_od
+            partials["mesh", "in_mesh"][nn2:nn3] += self.ref_axis_pos * d_qch_od
 
             # off-off diagonal pieces
             if symmetry:
@@ -1081,9 +1103,9 @@ class Rotate(om.ExplicitComponent):
 
                 del_n = nn - 9 * nx
                 nn4 = nn3 + del_n
-                partials["mesh", "in_mesh"][nn3:nn4] = -0.75 * d_dq_flat
+                partials["mesh", "in_mesh"][nn3:nn4] = -(1 - self.ref_axis_pos) * d_dq_flat
                 nn5 = nn4 + del_n
-                partials["mesh", "in_mesh"][nn4:nn5] = -0.25 * d_dq_flat
+                partials["mesh", "in_mesh"][nn4:nn5] = -self.ref_axis_pos * d_dq_flat
 
             else:
                 d_dq_flat1 = d_dq[:, :root_index, :, :].flatten()
@@ -1091,10 +1113,10 @@ class Rotate(om.ExplicitComponent):
 
                 del_n = nx * root_index * 9
                 nn4 = nn3 + del_n
-                partials["mesh", "in_mesh"][nn3:nn4] = -0.75 * d_dq_flat1
+                partials["mesh", "in_mesh"][nn3:nn4] = -(1 - self.ref_axis_pos) * d_dq_flat1
                 nn5 = nn4 + del_n
-                partials["mesh", "in_mesh"][nn4:nn5] = -0.75 * d_dq_flat2
+                partials["mesh", "in_mesh"][nn4:nn5] = -(1 - self.ref_axis_pos) * d_dq_flat2
                 nn6 = nn5 + del_n
-                partials["mesh", "in_mesh"][nn5:nn6] = -0.25 * d_dq_flat1
+                partials["mesh", "in_mesh"][nn5:nn6] = -self.ref_axis_pos * d_dq_flat1
                 nn7 = nn6 + del_n
-                partials["mesh", "in_mesh"][nn6:nn7] = -0.25 * d_dq_flat2
+                partials["mesh", "in_mesh"][nn6:nn7] = -self.ref_axis_pos * d_dq_flat2

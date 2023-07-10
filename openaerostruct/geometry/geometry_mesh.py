@@ -55,6 +55,11 @@ class GeometryMesh(om.Group):
     def setup(self):
         surface = self.options["surface"]
 
+        if "ref_axis_pos" in surface:
+            ref_axis_pos = surface["ref_axis_pos"]
+        else:
+            ref_axis_pos = 0.25  # if no reference axis line is specified : it is the quarter of chord
+
         mesh = surface["mesh"]
         ny = mesh.shape[1]
         mesh_shape = mesh.shape
@@ -73,26 +78,21 @@ class GeometryMesh(om.Group):
             val = 1.0
             promotes = []
 
-        self.add_subsystem("taper", Taper(val=val, mesh=mesh, symmetry=symmetry), promotes_inputs=promotes)
+        self.add_subsystem(
+            "taper", Taper(val=val, mesh=mesh, symmetry=symmetry, ref_axis_pos=ref_axis_pos), promotes_inputs=promotes
+        )
 
         # 2. Scale X
 
         val = np.ones(ny)
-        chord_scaling_pos = 0.25  # if no scaling position is specified : chord scaling w.r.t quarter of chord
         if "chord_cp" in surface:
             promotes = ["chord"]
-            if "chord_scaling_pos" in surface:
-                chord_scaling_pos = surface["chord_scaling_pos"]
         else:
-            if "chord_scaling_pos" in surface:
-                warnings.warn(
-                    "Chord_scaling_pos has been specified but no chord design variable available", stacklevel=2
-                )
             promotes = []
 
         self.add_subsystem(
             "scale_x",
-            ScaleX(val=val, mesh_shape=mesh_shape, chord_scaling_pos=chord_scaling_pos),
+            ScaleX(val=val, mesh_shape=mesh_shape, ref_axis_pos=ref_axis_pos),
             promotes_inputs=promotes,
         )
 
@@ -124,15 +124,17 @@ class GeometryMesh(om.Group):
             val = surface["span"]
         else:
             # Compute span. We need .real to make span to avoid OpenMDAO warnings.
-            quarter_chord = 0.25 * mesh[-1, :, :] + 0.75 * mesh[0, :, :]
-            span = max(quarter_chord[:, 1]).real - min(quarter_chord[:, 1]).real
+            ref_axis = ref_axis_pos * mesh[-1, :, :] + (1 - ref_axis_pos) * mesh[0, :, :]
+            span = max(ref_axis[:, 1]).real - min(ref_axis[:, 1]).real
             if symmetry:
                 span *= 2.0
             val = span
             promotes = []
 
         self.add_subsystem(
-            "stretch", Stretch(val=val, mesh_shape=mesh_shape, symmetry=symmetry), promotes_inputs=promotes
+            "stretch",
+            Stretch(val=val, mesh_shape=mesh_shape, symmetry=symmetry, ref_axis_pos=ref_axis_pos),
+            promotes_inputs=promotes,
         )
 
         # 6. Shear Y
@@ -179,7 +181,7 @@ class GeometryMesh(om.Group):
 
         self.add_subsystem(
             "rotate",
-            Rotate(val=val, mesh_shape=mesh_shape, symmetry=symmetry),
+            Rotate(val=val, mesh_shape=mesh_shape, symmetry=symmetry, ref_axis_pos=ref_axis_pos),
             promotes_inputs=promotes,
             promotes_outputs=["mesh"],
         )
