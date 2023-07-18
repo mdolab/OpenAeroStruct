@@ -98,7 +98,7 @@ The surface dict will be provided to Groups, including ``Geometry``, ``AeroPoint
     * - ref_axis_pos
       - 0.25
       - 
-      - Chord fraction which defines the reference axis line. 1 is the trailing edge, 0 is the leading edge.
+      - Position of reference axis along the chord about which to apply twist, chord, taper, and span geometry transformations. 1 is the trailing edge, 0 is the leading edge.
 
 .. list-table:: Aerodynamics definitions
     :widths: 20 20 5 55

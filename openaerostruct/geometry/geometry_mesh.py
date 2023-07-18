@@ -57,7 +57,7 @@ class GeometryMesh(om.Group):
         if "ref_axis_pos" in surface:
             ref_axis_pos = surface["ref_axis_pos"]
         else:
-            ref_axis_pos = 0.25  # if no reference axis line is specified : it is the quarter of chord
+            ref_axis_pos = 0.25  # if no reference axis line is specified : it is the quarter-chord
 
         mesh = surface["mesh"]
         ny = mesh.shape[1]

@@ -9,7 +9,7 @@ import openmdao.api as om
 class Taper(om.ExplicitComponent):
     """
     OpenMDAO component that manipulates the mesh by altering the spanwise chord linearly to produce
-    a tapered wing. Note that we apply taper around the reference axis line which is quarter of chord by default.
+    a tapered wing. Note that we apply taper around the reference axis line which is the quarter-chord by default.
 
     Parameters
     ----------
@@ -34,7 +34,7 @@ class Taper(om.ExplicitComponent):
         self.options.declare(
             "ref_axis_pos",
             default=0.25,
-            desc="Fraction of the chord that is use as the reference axis line",
+            desc="Fraction of the chord to use as the reference axis",
         )
 
     def setup(self):
@@ -140,7 +140,7 @@ class ScaleX(om.ExplicitComponent):
         self.options.declare(
             "ref_axis_pos",
             default=0.25,
-            desc="Fraction of the chord that is use as the reference axis line",
+            desc="Fraction of the chord to use as the reference axis",
         )
 
     def setup(self):
@@ -434,7 +434,7 @@ class Stretch(om.ExplicitComponent):
         self.options.declare(
             "ref_axis_pos",
             default=0.25,
-            desc="Fraction of the chord that is use as the reference axis line",
+            desc="Fraction of the chord to use as the reference axis",
         )
 
     def setup(self):
@@ -844,7 +844,7 @@ class Rotate(om.ExplicitComponent):
         self.options.declare(
             "ref_axis_pos",
             default=0.25,
-            desc="Fraction of the chord that is use as the reference axis line",
+            desc="Fraction of the chord to use as the reference axis",
         )
 
     def setup(self):
