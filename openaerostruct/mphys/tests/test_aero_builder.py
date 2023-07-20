@@ -32,15 +32,15 @@ class Test(unittest.TestCase):
 
         with self.subTest(case="tail"):
             tail_inds = self.aero_builder.get_tagged_indices(["tail"])
-            np.testing.assert_equal(tail_inds, np.arange(wing_nnodes, wing_nnodes+tail_nnodes))
+            np.testing.assert_equal(tail_inds, np.arange(wing_nnodes, wing_nnodes + tail_nnodes))
 
         with self.subTest(case="wing+tail"):
             wt_inds = self.aero_builder.get_tagged_indices(["wing", "tail"])
-            np.testing.assert_equal(wt_inds, np.arange(0, wing_nnodes+tail_nnodes))
+            np.testing.assert_equal(wt_inds, np.arange(0, wing_nnodes + tail_nnodes))
 
         with self.subTest(case="all"):
             wt_inds = self.aero_builder.get_tagged_indices(-1)
-            np.testing.assert_equal(wt_inds, np.arange(0, wing_nnodes+tail_nnodes))
+            np.testing.assert_equal(wt_inds, np.arange(0, wing_nnodes + tail_nnodes))
 
 
 if __name__ == "__main__":
