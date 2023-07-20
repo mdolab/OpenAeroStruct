@@ -4,7 +4,6 @@ Class definition for the Mphys builder for the aero solver.
 
 import copy
 
-import numpy as np
 import openmdao.api as om
 
 from openaerostruct.mphys.utils import get_number_of_nodes, get_node_indices

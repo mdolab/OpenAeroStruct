@@ -48,6 +48,7 @@ def get_src_indices(surfaces):
         nindices += mesh.size
     return src_indices
 
+
 def get_node_indices(surfaces):
     """
     Get node indices for each surface that define the ordering of each node for all surfaces.
