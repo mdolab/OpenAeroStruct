@@ -1,4 +1,5 @@
 import unittest
+import importlib
 import numpy as np
 
 from openaerostruct.mphys import AeroBuilder
@@ -7,14 +8,15 @@ from openaerostruct.utils.testing import run_test, get_default_surfaces
 # check if mphys/mpi4py is available
 try:
     from mpi4py import MPI
-    import mphys
 
-    mphys_mpi_flag = True
+    mpi_flag = True
 except ImportError:
-    mphys_mpi_flag = False
+    mpi_flag = False
+
+mphys_flag = importlib.util.find_spec("mphys") is not None
 
 
-@unittest.skipUnless(mphys_mpi_flag, "mphys/mpi4py is required.")
+@unittest.skipUnless(mphys_flag and mpi_flag, "mphys/mpi4py is required.")
 class Test(unittest.TestCase):
     def setUp(self):
         self.surfaces = get_default_surfaces()
