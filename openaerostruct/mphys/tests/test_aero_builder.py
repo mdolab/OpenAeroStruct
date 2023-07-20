@@ -3,7 +3,7 @@ import importlib
 import numpy as np
 
 from openaerostruct.mphys import AeroBuilder
-from openaerostruct.utils.testing import run_test, get_default_surfaces
+from openaerostruct.utils.testing import get_default_surfaces
 
 # check if mphys/mpi4py is available
 try:
