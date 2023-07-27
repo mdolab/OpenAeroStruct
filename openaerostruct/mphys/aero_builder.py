@@ -3,6 +3,7 @@ Class definition for the Mphys builder for the aero solver.
 """
 
 import copy
+import warnings
 
 import openmdao.api as om
 
@@ -154,6 +155,7 @@ class AeroBuilder(Builder):
         Parameters
         ----------
         tags : list[str]
+            list of surface names from which to pull the gridIDs
 
         Returns
         -------
@@ -170,5 +172,10 @@ class AeroBuilder(Builder):
                     if tag in all_surf_indices:
                         surf_indices = all_surf_indices[tag].flatten()
                         tagged_indices.extend(list(surf_indices))
+                    else:
+                        warnings.warn(
+                            f'Tag name "{tag}" not found in list of added surfaces. Skipping tag.',
+                            category=RuntimeWarning,
+                        )
                 return tagged_indices
         return []
