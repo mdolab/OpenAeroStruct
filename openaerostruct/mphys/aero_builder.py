@@ -176,6 +176,7 @@ class AeroBuilder(Builder):
                         warnings.warn(
                             f'Tag name "{tag}" not found in list of added surfaces. Skipping tag.',
                             category=RuntimeWarning,
+                            stacklevel=2,
                         )
                 return tagged_indices
         return []
