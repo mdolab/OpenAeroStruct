@@ -33,6 +33,7 @@ jobs:
         PYGEO_VERSION_OLDEST: ['1.6.0']  # latest is pulled from main branch, for some reason anything after 1.12.2 seg faults on the old build
         VSP_VERSION: ['3.27.1']  # used for both builds
         PETSC_VERSION_LATEST: ['3.19.1']
+        CYTHON_VERSION: ['0.29']  # used for both builds
 
     steps:
     - uses: actions/checkout@v2
@@ -118,7 +119,7 @@ jobs:
         ./configure --PETSC_ARCH=$PETSC_ARCH --download-fblaslapack
         make PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH all
         # Cython 3.0.0 break petsc4py install
-        pip install cython<3.0.0
+        pip install cython==${{ matrix.CYTHON_VERSION }}
         pip install petsc4py==${{ matrix.PETSC_VERSION_LATEST }}
 
     # We need pySpline/pyGeo to run FFD tests.
