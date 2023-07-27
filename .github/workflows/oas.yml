@@ -117,6 +117,8 @@ jobs:
         export PETSC_DIR=`pwd`
         ./configure --PETSC_ARCH=$PETSC_ARCH --download-fblaslapack
         make PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH all
+        # Cython 3.0.0 break petsc4py install
+        pip install cython<3.0.0
         pip install petsc4py==${{ matrix.PETSC_VERSION_LATEST }}
 
     # We need pySpline/pyGeo to run FFD tests.
