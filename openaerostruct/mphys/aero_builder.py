@@ -3,10 +3,11 @@ Class definition for the Mphys builder for the aero solver.
 """
 
 import copy
+import warnings
 
 import openmdao.api as om
 
-from openaerostruct.mphys.utils import get_number_of_nodes
+from openaerostruct.mphys.utils import get_number_of_nodes, get_node_indices
 from openaerostruct.mphys.aero_mesh import AeroMesh
 from openaerostruct.mphys.demux_surface_mesh import DemuxSurfaceMesh
 from openaerostruct.mphys.mux_surface_forces import MuxSurfaceForces
@@ -146,3 +147,36 @@ class AeroBuilder(Builder):
         if self.comm.rank == 0:
             return self.nnodes
         return 0
+
+    def get_tagged_indices(self, tags):
+        """
+        Method that returns grid IDs for a list of body/boundary tags.
+
+        Parameters
+        ----------
+        tags : list[str]
+            list of surface names from which to pull the gridIDs
+
+        Returns
+        -------
+        grid_ids : list[int]
+            list of grid IDs that correspond to given body/boundary tags
+        """
+        if self.comm.rank == 0:
+            if tags == -1 or tags == [-1]:
+                return list(range(self.nnodes))
+            else:
+                all_surf_indices = get_node_indices(self.surfaces)
+                tagged_indices = []
+                for tag in tags:
+                    if tag in all_surf_indices:
+                        surf_indices = all_surf_indices[tag].flatten()
+                        tagged_indices.extend(list(surf_indices))
+                    else:
+                        warnings.warn(
+                            f'Tag name "{tag}" not found in list of added surfaces. Skipping tag.',
+                            category=RuntimeWarning,
+                            stacklevel=2,
+                        )
+                return tagged_indices
+        return []
