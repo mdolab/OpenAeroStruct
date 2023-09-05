@@ -96,6 +96,63 @@ def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry):
 			tipStart = rootStart - (b/2)*np.tan(leLambda)
 			tipEnd = tipStart - tipC
 
+		#Generate Panels
+		#Descretize wing root and wing tip into N+1 points  
+		rootChordPoints = np.arange(rootStart,rootEnd,-(rootStart-rootEnd)/cPanels)
+		tipChordPoints = np.arange(tipStart,tipEnd,-(tipStart-tipEnd)/cPanels)
+
+		if not tipChordPoints.any():
+			tipChordPoints = np.arange(tipStart*np.ones(1,len(rootChordPoints)))
+
+		K = []
+		K.append(b/(2*bPanels))
+		if sec == 0:
+			panelGeomY = np.arange(-b/2,b/2,K[sec])
+		else:
+			panelGeomY = np.zeros(1,2*bPanels)
+			panelGeomY[0:bPanels-1] = np.arange( panelGY[sec-1][0]-(b/2), panelGY[sec-1][1]-K[sec], K[sec]  )
+
+
+		if sec == 0:
+			centreIndex = bPanels;
+		else:
+			centreIndex = bPanels - 1;
+
+		panelGeomX = np.zeros([len(rootChordPoints),len(panelGeomY)])
+		if sec == 0:
+			for i in range(len(rootChordPoints)):
+				#Left Wing
+				panelGeomX[i,0:centreIndex] = rootChordPoints[i] + ((tipChordPoints[i]-rootChordPoints[i])/(-b/2))*(panelGeomY[0:centreIndex])
+				#Right Wing
+				panelGeomX[i,centreIndex+1:] = rootChordPoints[i] + ((tipChordPoints[i]-rootChordPoints[i])/(b/2))*(panelGeomY[centreIndex+1:])
+
+		panelQuarterC = np.zeros([cPanels,len(panelGeomY)])
+		tquarterPointsX = np.zeros([cPanels,len(panelGeomY)])
+
+		for i in range(len(panelGeomY)):
+			for j in range(cPanels-1):
+				panelQuarterC[j,i] = panelGeomX[j,i] + (panelGeomX[j+1,i] - panelGeomX[j,i])/4
+				tquarterPointsX[j,i] = panelGeomX[j,i] + 1*(panelGeomX[j+1,i]-panelGeomX[j,i])/2
+
+		panelQC.append(panelQuarterC)
+		panelGY.append(panelGeomY)
+		tquartX.append(tquarterPointsX)
+		panelGX.append(panelGeomX)
+
+	#Stitch the results
+
+	for i in range(sections):
+		if i == 0:
+			mainQuarterC = panelQC[i]
+			mainPanelGeomY = panelGY[i]
+			mainPanelGeomX = panelGX[i]
+			maintquarterPointsX = tquartX[i]
+		else:
+			mainQuarterC = np.concatenate((panelQC[i][:,0:bPanelsL[i]-1],mainQuarterC,panelQC[i][:,bPanelsL[i]:]),axis=1)
+			maintquarterPointsX = np.concatenate((tquartX[i][:,0:bPanelsL[i]-1],maintquarterPointsX,tquartX[i][:,bPanelsL[i]:]),axis=1)
+			mainPanelGeomX = np.concatenate((panelGY[i][:,0:bPanelsL[i]-1],mainPanelGeomY,panelGY[i][:,bPanelsL[i]:]),axis=1)
+			mainPanelGeomY = np.concatenate((panelGX[i][:,0:bPanelsL[i]-1],mainPanelGeomX,panelGX[i][:,bPanelsL[i]:]),axis=1)
+
 
 	return span, rootStart, rootEnd, tipEnd, tipStart, rootStart, tipStart, tipEnd, rootEnd
 
