@@ -98,26 +98,26 @@ def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry):
 
 		#Generate Panels
 		#Descretize wing root and wing tip into N+1 points  
-		rootChordPoints = np.arange(rootStart,rootEnd,-(rootStart-rootEnd)/cPanels)
-		tipChordPoints = np.arange(tipStart,tipEnd,-(tipStart-tipEnd)/cPanels)
+		rootChordPoints = np.arange(rootStart,rootEnd-(rootStart-rootEnd)/cPanels,-(rootStart-rootEnd)/cPanels)
+		tipChordPoints = np.arange(tipStart,tipEnd-(tipStart-tipEnd)/cPanels,-(tipStart-tipEnd)/cPanels)
 
 		if not tipChordPoints.any():
-			tipChordPoints = np.arange(tipStart*np.ones(1,len(rootChordPoints)))
+			tipChordPoints = tipStart*np.ones(len(rootChordPoints))
 
 		K = []
 		K.append(b/(2*bPanels))
 		if sec == 0:
-			panelGeomY = np.arange(-b/2,b/2,K[sec])
+			panelGeomY = np.arange(-b/2,b/2+K[sec],K[sec])
 		else:
 			panelGeomY = np.zeros(1,2*bPanels)
-			panelGeomY[0:bPanels-1] = np.arange( panelGY[sec-1][0]-(b/2), panelGY[sec-1][1]-K[sec], K[sec]  )
+			panelGeomY[0:bPanels-1] = np.arange( panelGY[sec-1][0]-(b/2), panelGY[sec-1][1], K[sec]  )
 
 
 		if sec == 0:
 			centreIndex = bPanels;
 		else:
 			centreIndex = bPanels - 1;
-
+		#print(len(rootChordPoints))
 		panelGeomX = np.zeros([len(rootChordPoints),len(panelGeomY)])
 		if sec == 0:
 			for i in range(len(rootChordPoints)):
@@ -153,9 +153,28 @@ def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry):
 			mainPanelGeomX = np.concatenate((panelGY[i][:,0:bPanelsL[i]-1],mainPanelGeomY,panelGY[i][:,bPanelsL[i]:]),axis=1)
 			mainPanelGeomY = np.concatenate((panelGX[i][:,0:bPanelsL[i]-1],mainPanelGeomX,panelGX[i][:,bPanelsL[i]:]),axis=1)
 
+	#Use stiched geomtery to calculate control point locations and chord distribution
 
-	return span, rootStart, rootEnd, tipEnd, tipStart, rootStart, tipStart, tipEnd, rootEnd
+	mainControlPointsX = np.zeros([cPanels,2*np.sum(bPanelsL)])
+	mainVControlPointsX = np.zeros([cPanels,2*np.sum(bPanelsL)])
+	mainControlPointsY = np.zeros(2*np.sum(bPanelsL))
+	chordDistGeom = np.zeros(len(mainPanelGeomY))
+	chordDistCont = np.zeros(len(mainControlPointsY))
 
+	for i in range(len(mainPanelGeomY)):
+		chordDistGeom[i] = mainPanelGeomX[0,i] - mainPanelGeomX[-1,i]
+
+	for i in range(len(mainPanelGeomY)-1):
+		for j in range(cPanels):
+			mainControlPointsX[j,i] = (maintquarterPointsX[j,i+1]+maintquarterPointsX[j,i])/2
+			mainVControlPointsX[j,i] = (mainQuarterC[j,i+1]+mainQuarterC[j,i])/2
+		mainControlPointsY[i] = mainPanelGeomY[i] + (mainPanelGeomY[i+1]-mainPanelGeomY[i])/2
+		chordDistCont[i] = (chordDistGeom[i+1] + chordDistGeom[i])/2
+
+
+
+	#return span, rootStart, rootEnd, tipEnd, tipStart, rootStart, tipStart, tipEnd, rootEnd
+	return span, panelGX, panelGY
 
 
 #TEST
@@ -164,9 +183,32 @@ bPanels = np.array([8])
 cPanels = 8
 
 data = np.array([[1,1,10,0]])
-[b, rootStart, rootEnd, tipEnd, tipStart, rootStart, tipStart, tipEnd, rootEnd] = userGeom4(sections,data,bPanels,cPanels,'true',True)
+[b, panelGX, panelGY] = userGeom4(sections,data,bPanels,cPanels,'true',True)
 
-
+'''
 plt.figure(1)
 plt.plot(np.array([0,0,-b/2,-b/2,0,0,b/2,b/2,0]),np.array([rootStart,rootEnd,tipEnd,tipStart,rootStart,rootStart,tipStart,tipEnd,rootEnd ]))
+plt.show()
+'''
+
+for i in range(sections):
+	if i == 0:
+		rootEnd = panelGX[i][cPanels,bPanels[i]]
+		rootStart = panelGX[i][0,bPanels[i]]
+
+		tipStart = panelGX[i][0,0]
+		tipEnd = panelGX[i][cPanels,0]
+
+		#print(panelGY[i][0])
+		plt.plot([0,0,panelGY[i][0],panelGY[i][0],0],[rootStart,rootEnd,tipEnd,tipStart,rootStart])
+		plt.plot([0,panelGY[i][-1],panelGY[i][-1],0,0],[rootStart,tipStart,tipEnd,rootEnd,rootStart])
+
+
+		for j in range(len(panelGX[i][:,bPanels[i]])):
+			plt.plot([0,panelGY[i][0]],[panelGX[i][j,bPanels[i]],panelGX[i][j,0]],color='red')
+			plt.plot([0,panelGY[i][-1]],[panelGX[i][j,bPanels[i]],panelGX[i][j,0]],color='red')
+
+		for k in range(len(panelGY[i])):
+			plt.plot([panelGY[i][k],panelGY[i][k]],[panelGX[i][0,k],panelGX[i][-1,k]],color='red')		
+
 plt.show()
