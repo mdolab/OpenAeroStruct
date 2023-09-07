@@ -43,7 +43,7 @@ def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry):
 	panelQC = []
 	panelGY = []
 	panelGX = []
-
+	K = []
 
 	Stot = 0
 	span = 0
@@ -71,9 +71,9 @@ def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry):
 			taper = data[sec,0]
 			rootC = np.abs(panelGX[sec-1][0,0] - panelGX[sec-1][cPanels,0])
 			AR = data[sec,2]
-			tipC = rootc*taper;
+			tipC = rootC*taper;
 			S = AR*((tipC+rootC)/2)**2
-			b = sqrt(AR*S)
+			b = np.sqrt(AR*S)
 			leLambda = np.deg2rad(data[sec,3])
 			Stot = Stot + S;
 			span = span + b;
@@ -99,18 +99,23 @@ def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry):
 		#Generate Panels
 		#Descretize wing root and wing tip into N+1 points  
 		rootChordPoints = np.arange(rootStart,rootEnd-(rootStart-rootEnd)/cPanels,-(rootStart-rootEnd)/cPanels)
-		tipChordPoints = np.arange(tipStart,tipEnd-(tipStart-tipEnd)/cPanels,-(tipStart-tipEnd)/cPanels)
+		
 
-		if not tipChordPoints.any():
+		if tipStart == tipEnd:
 			tipChordPoints = tipStart*np.ones(len(rootChordPoints))
+		else:
+			tipChordPoints = np.arange(tipStart,tipEnd-(tipStart-tipEnd)/cPanels,-(tipStart-tipEnd)/cPanels)
 
-		K = []
+
+		
 		K.append(b/(2*bPanels))
 		if sec == 0:
 			panelGeomY = np.arange(-b/2,b/2+K[sec],K[sec])
 		else:
-			panelGeomY = np.zeros(1,2*bPanels)
-			panelGeomY[0:bPanels-1] = np.arange( panelGY[sec-1][0]-(b/2), panelGY[sec-1][1], K[sec]  )
+			panelGeomY = np.zeros(2*bPanels)
+			print(np.arange(panelGY[sec-1][-1]+K[sec],panelGY[sec-1][-1]+(b/2),K[sec]))
+			panelGeomY[0:bPanels] = np.arange( panelGY[sec-1][0]-(b/2), panelGY[sec-1][0], K[sec]  )
+			panelGeomY[bPanels:2*bPanels] = np.arange(panelGY[sec-1][-1]+K[sec],panelGY[sec-1][-1]+(b/2),K[sec])
 
 
 		if sec == 0:
@@ -122,7 +127,7 @@ def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry):
 		if sec == 0:
 			for i in range(len(rootChordPoints)):
 				#Left Wing
-				panelGeomX[i,0:centreIndex] = rootChordPoints[i] + ((tipChordPoints[i]-rootChordPoints[i])/(-b/2))*(panelGeomY[0:centreIndex])
+				panelGeomX[i,0:centreIndex+1] = rootChordPoints[i] + ((tipChordPoints[i]-rootChordPoints[i])/(-b/2))*(panelGeomY[0:centreIndex+1])
 				#Right Wing
 				panelGeomX[i,centreIndex+1:] = rootChordPoints[i] + ((tipChordPoints[i]-rootChordPoints[i])/(b/2))*(panelGeomY[centreIndex+1:])
 
@@ -133,6 +138,7 @@ def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry):
 			for j in range(cPanels-1):
 				panelQuarterC[j,i] = panelGeomX[j,i] + (panelGeomX[j+1,i] - panelGeomX[j,i])/4
 				tquarterPointsX[j,i] = panelGeomX[j,i] + 1*(panelGeomX[j+1,i]-panelGeomX[j,i])/2
+
 
 		panelQC.append(panelQuarterC)
 		panelGY.append(panelGeomY)
@@ -178,11 +184,12 @@ def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry):
 
 
 #TEST
-sections = 1
-bPanels = np.array([8])
+sections = 2
+bPanels = np.array([8,8])
 cPanels = 8
 
-data = np.array([[1,1,10,0]])
+#data = np.array([[0.3,20,9,33]])
+data = np.array([[0.3,20,9,33],[0.3,20,9,33]])
 [b, panelGX, panelGY] = userGeom4(sections,data,bPanels,cPanels,'true',True)
 
 '''
@@ -210,5 +217,7 @@ for i in range(sections):
 
 		for k in range(len(panelGY[i])):
 			plt.plot([panelGY[i][k],panelGY[i][k]],[panelGX[i][0,k],panelGX[i][-1,k]],color='red')		
+
+
 
 plt.show()
