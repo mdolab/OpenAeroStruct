@@ -32,7 +32,6 @@ def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry=True):
         Nodal mesh defining the aerodynamic surface.
     """	
 
-    #Data Initialization
 	if np.shape(data) != (sections,4):
 		raise Exception("Data mismatch")
 
@@ -83,7 +82,7 @@ def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry=True):
 
 		CAve = (maintipC + mainrootC)/2
 
-		#Generate geomtery
+
 		if sec == 0:
 			rootEnd = 0;
 			rootStart = rootC + rootEnd
@@ -148,7 +147,8 @@ def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry=True):
 		tquartX.append(tquarterPointsX)
 		panelGX.append(panelGeomX)
 
-	#Stitch the results into a mesh
+	#Stitch the results
+
 	for i in range(sections):
 		if i == 0:
 			mainQuarterC = panelQC[i]
@@ -201,72 +201,34 @@ cPanels = 16;
 [b, Stot, panelGX, panelGY] = userGeom4(sections,data,bPanels,cPanels,'true',True)
 print('The area of this planform is: {}'.format(Stot))
 
-#Dictionary Idea
-Np3SST = {sections: 4, 
-		  bPanels: [3,2,8,15], 
-		  cPanels: 16,
-		  taper: [0.648294,.698608,.345206,.205671],
-		  rootC: [187.23,121.37,84.79,29.27],
-		  LEsweep: [84.9578,82.3695,68,40],
-		  symmetry: True
-		  plotSymmetry: 'Left'}
 
 
-
-def plotPlanform(sections,panelGX,panelGY,plotSymmetry='Left'):
-	"""
-    The the outline of all definied planform sections.
-
-    Parameters
-    ----------
-    sections : int
-        Integer for number of wing section specified
-    panelGX: list[numpy array]
-    	Panel X-coordinate data
-    panelGY: list[numpy array]
-    	Panel Y-coordinate data
-	symmetry : string
-        Flag set to 'Left' if only y<=0 plotted
-        Flag set to 'Right' if only y>=0 plotted
-        default 'Left'
-
-    Returns
-    -------
-    Figure
-    """	
+def plotPlanform(sections,panelGX,panelGY):
 	np.random.seed(91)
 	colorSet = np.random.rand(sections,3)
 	plt.figure()
 	for i in range(sections):
 		if i == 0:
-			
 			rootEnd = panelGX[i][cPanels,bPanels[i]]
 			rootStart = panelGX[i][0,bPanels[i]]
-			#tipStart = panelGX[i][0,0]
-			#tipEnd = panelGX[i][cPanels,0]
-			
-			if plotSymmetry == 'Left':
-				plt.plot([ 0,0,panelGY[i][0],panelGY[i][0],0 ],[rootStart,rootEnd,panelGX[i][cPanels,0],panelGX[i][0,0],rootStart],c=colorSet[i,:])
-			elif plotSymmetry == 'Right':
-				plt.plot([ 0,panelGY[i][-1],panelGY[i][-1],0,0 ],[rootStart,rootEnd,panelGX[i][cPanels,0],panelGX[i][0,0],rootStart],c=colorSet[i,:])
-			else:
-				plt.plot([ 0,0,panelGY[i][0],panelGY[i][0],0 ],[rootStart,rootEnd,panelGX[i][cPanels,0],panelGX[i][0,0],rootStart],c=colorSet[i,:])
-				plt.plot([ 0,panelGY[i][-1],panelGY[i][-1],0,0 ],[rootStart,rootEnd,panelGX[i][cPanels,0],panelGX[i][0,0],rootStart],c=colorSet[i,:])
 
-		else:
-			
-			rootEnd = panelGX[i-1][cPanels,0]
-			rootStart = panelGX[i-1][0,0]
 			tipStart = panelGX[i][0,0]
 			tipEnd = panelGX[i][cPanels,0]
-			
-			if plotSymmetry == 'Left':
-				plt.plot([ panelGY[i-1][0],panelGY[i-1][0],panelGY[i][0],panelGY[i][0],panelGY[i-1][0] ],[ rootStart,rootEnd,panelGX[i][cPanels,0],panelGX[i][0,0],rootStart ],c=colorSet[i,:])
-			elif plotSymmetry == 'Right':
-				plt.plot([ panelGY[i-1][-1],panelGY[i][-1],panelGY[i][-1],panelGY[i-1][-1],panelGY[i-1][-1] ],[ rootStart,rootEnd,panelGX[i][cPanels,0],panelGX[i-1][cPanels,0],rootStart ],c=colorSet[i,:])
-			else:
-				plt.plot([ panelGY[i-1][0],panelGY[i-1][0],panelGY[i][0],panelGY[i][0],panelGY[i-1][0] ],[ rootStart,rootEnd,panelGX[i][cPanels,0],panelGX[i][0,0],rootStart ],c=colorSet[i,:])
-				plt.plot([ panelGY[i-1][-1],panelGY[i][-1],panelGY[i][-1],panelGY[i-1][-1],panelGY[i-1][-1] ],[ rootStart,rootEnd,panelGX[i][cPanels,0],panelGX[i-1][cPanels,0],rootStart ],c=colorSet[i,:])
+
+
+			plt.plot([0,0,panelGY[i][0],panelGY[i][0],0],[rootStart,rootEnd,tipEnd,tipStart,rootStart],c=colorSet[i,:])
+			plt.plot([0,panelGY[i][-1],panelGY[i][-1],0,0],[rootStart,tipStart,tipEnd,rootEnd,rootStart],c=colorSet[i,:])
+
+		else:
+			rootEnd = panelGX[i-1][cPanels,0]
+			rootStart = panelGX[i-1][0,0]
+
+			tipStart = panelGX[i][0,0]
+			tipEnd = panelGX[i][cPanels,0]
+
+			lineColor = np.random.rand(3,)
+			plt.plot([panelGY[i-1][0],panelGY[i-1][0],panelGY[i][0],panelGY[i][0],panelGY[i-1][0]],[rootStart,rootEnd,tipEnd,tipStart,rootStart],c=lineColor);
+			plt.plot([panelGY[i-1][-1],panelGY[i][-1],panelGY[i][-1],panelGY[i-1][-1],panelGY[i-1][-1]],[rootStart,tipStart,tipEnd,rootEnd,rootStart],c=lineColor);
 
 
 plotPlanform(sections,panelGX,panelGY)
@@ -288,6 +250,7 @@ def plotPanels(sections,panelGX,panelGY):
 			for j in range(len(panelGX[i-1][:,0])):
 				plt.plot([panelGY[i-1][0],panelGY[i][0]],[panelGX[i-1][j,0],panelGX[i][j,0]],c=colorSet[i,:])
 				plt.plot([panelGY[i-1][-1],panelGY[i][-1]],[panelGX[i-1][j,0],panelGX[i][j,0]],c=colorSet[i,:])
+
 
 			for k in range(len(panelGY[i])):
 				plt.plot([panelGY[i][k],panelGY[i][k]],[panelGX[i][0,k],panelGX[i][-1,k]],c=colorSet[i,:])
