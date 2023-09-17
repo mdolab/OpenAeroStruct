@@ -164,6 +164,40 @@ class Test(unittest.TestCase):
         # If chord_scaling_pos = 1, TE should not move
         assert_near_equal(mesh[-1, :, :], prob["comp.mesh"][-1, :, :], tolerance=1e-10)
 
+    def test_scalex_chord_value(self):
+        # test actual chord value of a rectangular wing
+
+        mesh_dict = {
+            "num_y": 5,
+            "num_x": 3,
+            "wing_type": "rect",
+            "symmetry": True,
+            "span": 2.0,
+            "root_chord": 0.2,
+        }
+        mesh_in = generate_mesh(mesh_dict)
+
+        # initial chord
+        chord_in = mesh_in[-1, 0, 0] - mesh_in[0, 0, 0]  # TE - LE
+
+        prob = om.Problem()
+        group = prob.model
+        comp = ScaleX(val=np.ones(3), mesh_shape=mesh_in.shape)
+        group.add_subsystem("comp", comp)
+
+        prob.setup()
+        chord_scaling = 1.3
+        prob.set_val("comp.chord", val=chord_scaling, units=None)  # apply chord scaling factor
+        prob.set_val("comp.in_mesh", val=mesh_in, units="m")
+
+        prob.run_model()
+
+        # chord after manipulation
+        mesh_out = prob.get_val("comp.mesh", units="m")
+        chord_out = mesh_out[-1, 0, 0] - mesh_out[0, 0, 0]  # TE - LE
+
+        assert_near_equal(chord_in * chord_scaling, chord_out, tolerance=1e-10)
+
     def test_sweep(self):
         symmetry = False
         mesh = get_mesh(symmetry)

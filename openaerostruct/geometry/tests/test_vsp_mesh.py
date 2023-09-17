@@ -25,7 +25,7 @@ class Test(unittest.TestCase):
             "wing_type": "rect",
             "symmetry": False,
             "span": 10.0,
-            "chord": 1,
+            "root_chord": 1,
             "span_cos_spacing": 0.0,
         }
 
@@ -44,7 +44,7 @@ class Test(unittest.TestCase):
             "wing_type": "rect",
             "symmetry": True,
             "span": 10.0,
-            "chord": 1,
+            "root_chord": 1,
             "span_cos_spacing": 0.0,
         }
 

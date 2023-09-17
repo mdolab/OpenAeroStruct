@@ -94,7 +94,7 @@ def scale_x(mesh, chord_dist):
     mesh[nx, ny, 3] : numpy array
         Nodal mesh defining the initial aerodynamic surface.
     chord_dist[ny] : numpy array
-        Chord length for each panel edge.
+        Spanwise distribution of the chord scaler.
 
     Returns
     -------

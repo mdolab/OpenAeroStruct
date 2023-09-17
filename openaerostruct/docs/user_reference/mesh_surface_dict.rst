@@ -93,8 +93,8 @@ The surface dict will be provided to Groups, including ``Geometry``, ``AeroPoint
       - B-spline control points for twist distribution. Array convention is ``[wing tip, ..., root]`` in symmetry cases, and ``[tip, ..., root, ... tip]`` when ``symmetry = False``.
     * - chord_cp
       - np.array([0.1, 5])
-      - m
-      - B-spline control points for chord distribution. Array convention is the same than ``twist_cp``.
+      - 
+      - B-spline control points for chord distribution. This is a chord scaler applied to the initial mesh, not the chord value [m] itself. Array convention is the same as ``twist_cp``.
     * - ref_axis_pos
       - 0.25
       - 
