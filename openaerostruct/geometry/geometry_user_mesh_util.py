@@ -202,14 +202,14 @@ cPanels = 16;
 print('The area of this planform is: {}'.format(Stot))
 
 #Dictionary Idea
-Np3SST = {sections: 4, 
-		  bPanels: [3,2,8,15], 
-		  cPanels: 16,
-		  taper: [0.648294,.698608,.345206,.205671],
-		  rootC: [187.23,121.37,84.79,29.27],
-		  LEsweep: [84.9578,82.3695,68,40],
-		  symmetry: True
-		  plotSymmetry: 'Left'}
+Np3SST = {'sections': 4, 
+		  'bPanels': [3,2,8,15], 
+		  'cPanels': 16,
+		  'taper': [0.648294,.698608,.345206,.205671],
+		  'rootC': [187.23,121.37,84.79,29.27],
+		  'LEsweep': [84.9578,82.3695,68,40],
+		  'symmetry': True,
+		  'plotSymmetry': 'Left'}
 
 
 
@@ -228,7 +228,6 @@ def plotPlanform(sections,panelGX,panelGY,plotSymmetry='Left'):
 	symmetry : string
         Flag set to 'Left' if only y<=0 plotted
         Flag set to 'Right' if only y>=0 plotted
-        default 'Left'
 
     Returns
     -------
@@ -248,28 +247,27 @@ def plotPlanform(sections,panelGX,panelGY,plotSymmetry='Left'):
 			if plotSymmetry == 'Left':
 				plt.plot([ 0,0,panelGY[i][0],panelGY[i][0],0 ],[rootStart,rootEnd,panelGX[i][cPanels,0],panelGX[i][0,0],rootStart],c=colorSet[i,:])
 			elif plotSymmetry == 'Right':
-				plt.plot([ 0,panelGY[i][-1],panelGY[i][-1],0,0 ],[rootStart,rootEnd,panelGX[i][cPanels,0],panelGX[i][0,0],rootStart],c=colorSet[i,:])
+				plt.plot([ 0,panelGY[i][-1],panelGY[i][-1],0,0 ],[rootEnd,panelGX[i][cPanels,0],panelGX[i][0,0],rootStart,rootStart],c=colorSet[i,:])
 			else:
-				plt.plot([ 0,0,panelGY[i][0],panelGY[i][0],0 ],[rootStart,rootEnd,panelGX[i][cPanels,0],panelGX[i][0,0],rootStart],c=colorSet[i,:])
-				plt.plot([ 0,panelGY[i][-1],panelGY[i][-1],0,0 ],[rootStart,rootEnd,panelGX[i][cPanels,0],panelGX[i][0,0],rootStart],c=colorSet[i,:])
+				plt.plot([ 0,panelGY[i][0],panelGY[i][0],0 ],[rootEnd,panelGX[i][cPanels,0],panelGX[i][0,0],rootStart],c=colorSet[i,:])
+				plt.plot([ 0,panelGY[i][-1],panelGY[i][-1],0],[rootEnd,panelGX[i][cPanels,0],panelGX[i][0,0],rootStart],c=colorSet[i,:])
 
 		else:
 			
 			rootEnd = panelGX[i-1][cPanels,0]
 			rootStart = panelGX[i-1][0,0]
-			tipStart = panelGX[i][0,0]
-			tipEnd = panelGX[i][cPanels,0]
+			#tipStart = panelGX[i][0,0]
+			#tipEnd = panelGX[i][cPanels,0]
 			
 			if plotSymmetry == 'Left':
 				plt.plot([ panelGY[i-1][0],panelGY[i-1][0],panelGY[i][0],panelGY[i][0],panelGY[i-1][0] ],[ rootStart,rootEnd,panelGX[i][cPanels,0],panelGX[i][0,0],rootStart ],c=colorSet[i,:])
 			elif plotSymmetry == 'Right':
-				plt.plot([ panelGY[i-1][-1],panelGY[i][-1],panelGY[i][-1],panelGY[i-1][-1],panelGY[i-1][-1] ],[ rootStart,rootEnd,panelGX[i][cPanels,0],panelGX[i-1][cPanels,0],rootStart ],c=colorSet[i,:])
+				plt.plot([ panelGY[i-1][-1],panelGY[i][-1],panelGY[i][-1],panelGY[i-1][-1],panelGY[i-1][-1] ],[ rootEnd,panelGX[i][cPanels,0],panelGX[i][0,0],rootStart, rootStart ],c=colorSet[i,:])
 			else:
 				plt.plot([ panelGY[i-1][0],panelGY[i-1][0],panelGY[i][0],panelGY[i][0],panelGY[i-1][0] ],[ rootStart,rootEnd,panelGX[i][cPanels,0],panelGX[i][0,0],rootStart ],c=colorSet[i,:])
-				plt.plot([ panelGY[i-1][-1],panelGY[i][-1],panelGY[i][-1],panelGY[i-1][-1],panelGY[i-1][-1] ],[ rootStart,rootEnd,panelGX[i][cPanels,0],panelGX[i-1][cPanels,0],rootStart ],c=colorSet[i,:])
+				plt.plot([ panelGY[i-1][-1],panelGY[i][-1],panelGY[i][-1],panelGY[i-1][-1],panelGY[i-1][-1] ],[ rootEnd,panelGX[i][cPanels,0],panelGX[i][0,0],rootStart, rootStart ],c=colorSet[i,:])
 
-
-plotPlanform(sections,panelGX,panelGY)
+plotPlanform(sections,panelGX,panelGY,'Left')
 
 
 def plotPanels(sections,panelGX,panelGY):
@@ -280,16 +278,16 @@ def plotPanels(sections,panelGX,panelGY):
 		if i == 0:
 			for j in range(len(panelGX[i][:,bPanels[i]])):
 				plt.plot([0,panelGY[i][0]],[panelGX[i][j,bPanels[i]],panelGX[i][j,0]],c=colorSet[i,:])
-				plt.plot([0,panelGY[i][-1]],[panelGX[i][j,bPanels[i]],panelGX[i][j,0]],c=colorSet[i,:])
+				#plt.plot([0,panelGY[i][-1]],[panelGX[i][j,bPanels[i]],panelGX[i][j,0]],c=colorSet[i,:])
 
-			for k in range(len(panelGY[i])):
+			for k in range(int(len(panelGY[i])/2)):
 				plt.plot([panelGY[i][k],panelGY[i][k]],[panelGX[i][0,k],panelGX[i][-1,k]],c=colorSet[i,:])		
 		else:
 			for j in range(len(panelGX[i-1][:,0])):
 				plt.plot([panelGY[i-1][0],panelGY[i][0]],[panelGX[i-1][j,0],panelGX[i][j,0]],c=colorSet[i,:])
-				plt.plot([panelGY[i-1][-1],panelGY[i][-1]],[panelGX[i-1][j,0],panelGX[i][j,0]],c=colorSet[i,:])
+				#plt.plot([panelGY[i-1][-1],panelGY[i][-1]],[panelGX[i-1][j,0],panelGX[i][j,0]],c=colorSet[i,:])
 
-			for k in range(len(panelGY[i])):
+			for k in range(int(len(panelGY[i])/2)):
 				plt.plot([panelGY[i][k],panelGY[i][k]],[panelGX[i][0,k],panelGX[i][-1,k]],c=colorSet[i,:])
 
 plotPanels(sections,panelGX,panelGY)
