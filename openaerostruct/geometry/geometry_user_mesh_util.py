@@ -215,7 +215,7 @@ Np3SST = {'sections': 4,
 
 def plotPlanform(sections,panelGX,panelGY,plotSymmetry='Left'):
 	"""
-    The the outline of all definied planform sections.
+    Plots the outline of all definied planform sections.
 
     Parameters
     ----------
@@ -225,7 +225,7 @@ def plotPlanform(sections,panelGX,panelGY,plotSymmetry='Left'):
     	Panel X-coordinate data
     panelGY: list[numpy array]
     	Panel Y-coordinate data
-	symmetry : string
+	plotSymmetry : string
         Flag set to 'Left' if only y<=0 plotted
         Flag set to 'Right' if only y>=0 plotted
 
@@ -270,26 +270,65 @@ def plotPlanform(sections,panelGX,panelGY,plotSymmetry='Left'):
 plotPlanform(sections,panelGX,panelGY,'Left')
 
 
-def plotPanels(sections,panelGX,panelGY):
+def plotPanels(sections,panelGX,panelGY,plotSymmetry='Left'):
+	"""
+    Plots the mesh(panels) of each planform section
+
+    Parameters
+    ----------
+    sections : int
+        Integer for number of wing section specified
+    panelGX: list[numpy array]
+    	Panel X-coordinate data
+    panelGY: list[numpy array]
+    	Panel Y-coordinate data
+	symmetry : string
+        Flag set to 'Left' if only y<=0 plotted
+        Flag set to 'Right' if only y>=0 plotted
+
+    Returns
+    -------
+    Figure
+    """	
 	np.random.seed(151)
 	colorSet = np.random.rand(sections,3)
 	plt.figure()
 	for i in range(sections):
 		if i == 0:
 			for j in range(len(panelGX[i][:,bPanels[i]])):
-				plt.plot([0,panelGY[i][0]],[panelGX[i][j,bPanels[i]],panelGX[i][j,0]],c=colorSet[i,:])
-				#plt.plot([0,panelGY[i][-1]],[panelGX[i][j,bPanels[i]],panelGX[i][j,0]],c=colorSet[i,:])
+				if plotSymmetry == 'Left':
+					plt.plot([0,panelGY[i][0]],[panelGX[i][j,bPanels[i]],panelGX[i][j,0]],c=colorSet[i,:])
+					for k in range(int(np.ceil(len(panelGY[i])/2))):
+						plt.plot([panelGY[i][k],panelGY[i][k]],[panelGX[i][0,k],panelGX[i][-1,k]],c=colorSet[i,:])
+				elif plotSymmetry == 'Right':
+					plt.plot([0,panelGY[i][-1]],[panelGX[i][j,bPanels[i]],panelGX[i][j,0]],c=colorSet[i,:])
+					for k in range(int(np.floor(len(panelGY[i])/2)) ,len(panelGY[i])):
+						plt.plot([panelGY[i][k],panelGY[i][k]],[panelGX[i][0,k],panelGX[i][-1,k]],c=colorSet[i,:])
+				else:
+					plt.plot([0,panelGY[i][0]],[panelGX[i][j,bPanels[i]],panelGX[i][j,0]],c=colorSet[i,:])
+					plt.plot([0,panelGY[i][-1]],[panelGX[i][j,bPanels[i]],panelGX[i][j,0]],c=colorSet[i,:])
+					for k in range(len(panelGY[i])):
+						plt.plot([panelGY[i][k],panelGY[i][k]],[panelGX[i][0,k],panelGX[i][-1,k]],c=colorSet[i,:])
 
-			for k in range(int(len(panelGY[i])/2)):
-				plt.plot([panelGY[i][k],panelGY[i][k]],[panelGX[i][0,k],panelGX[i][-1,k]],c=colorSet[i,:])		
 		else:
 			for j in range(len(panelGX[i-1][:,0])):
-				plt.plot([panelGY[i-1][0],panelGY[i][0]],[panelGX[i-1][j,0],panelGX[i][j,0]],c=colorSet[i,:])
-				#plt.plot([panelGY[i-1][-1],panelGY[i][-1]],[panelGX[i-1][j,0],panelGX[i][j,0]],c=colorSet[i,:])
+				if plotSymmetry == 'Left':
+					plt.plot([panelGY[i-1][0],panelGY[i][0]],[panelGX[i-1][j,0],panelGX[i][j,0]],c=colorSet[i,:])
+					plotRange = range(int(np.ceil(len(panelGY[i])/2)))
+					for k in plotRange:
+						plt.plot([panelGY[i][k],panelGY[i][k]],[panelGX[i][0,k],panelGX[i][-1,k]],c=colorSet[i,:])
+				elif plotSymmetry == 'Right':
+					plt.plot([panelGY[i-1][-1],panelGY[i][-1]],[panelGX[i-1][j,0],panelGX[i][j,0]],c=colorSet[i,:])
+					for k in range(int(np.floor(len(panelGY[i])/2)) ,len(panelGY[i])):
+						plt.plot([panelGY[i][k],panelGY[i][k]],[panelGX[i][0,k],panelGX[i][-1,k]],c=colorSet[i,:])
+				else:
+					plt.plot([panelGY[i-1][0],panelGY[i][0]],[panelGX[i-1][j,0],panelGX[i][j,0]],c=colorSet[i,:])
+					plt.plot([panelGY[i-1][-1],panelGY[i][-1]],[panelGX[i-1][j,0],panelGX[i][j,0]],c=colorSet[i,:])
+					for k in range(len(panelGY[i])):
+						plt.plot([panelGY[i][k],panelGY[i][k]],[panelGX[i][0,k],panelGX[i][-1,k]],c=colorSet[i,:])
 
-			for k in range(int(len(panelGY[i])/2)):
-				plt.plot([panelGY[i][k],panelGY[i][k]],[panelGX[i][0,k],panelGX[i][-1,k]],c=colorSet[i,:])
 
-plotPanels(sections,panelGX,panelGY)
+
+plotPanels(sections,panelGX,panelGY,'Left')
 
 plt.show()
