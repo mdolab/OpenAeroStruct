@@ -7,6 +7,34 @@ WIP
 #For testing
 import numpy as np
 import matplotlib.pyplot as plt
+'''
+import openmdao.api as om
+
+class UserGeomMesh(om.E):
+	"""
+	Generates an OpenAeroStruct based on defined section parameters
+	"""
+
+	def initialize(self):
+		self.options.declare(
+			"sections", 
+			default=1, 
+			types=int, 
+			desc="Number of planform sections")
+		self.options.declare(
+			"bPanelsL", 
+			default=10, 
+			types=(int, list, tuple, np.ndarray),
+			desc="Number of spanwise panels per section")
+		self.options.declare(
+			"cPanels",
+			default=3,
+			types=int,
+			desc="Number of streamwise panels")
+
+'''
+
+
 
 
 def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry=True):
@@ -156,10 +184,10 @@ def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry=True):
 			mainPanelGeomX = panelGX[i]
 			maintquarterPointsX = tquartX[i]
 		else:
-			mainQuarterC = np.concatenate((panelQC[i][:,0:bPanelsL[i]-1],mainQuarterC,panelQC[i][:,bPanelsL[i]:]),axis=1)
-			maintquarterPointsX = np.concatenate((tquartX[i][:,0:bPanelsL[i]-1],maintquarterPointsX,tquartX[i][:,bPanelsL[i]:]),axis=1)
-			mainPanelGeomY = np.concatenate((panelGY[i][0:bPanelsL[i]-1],mainPanelGeomY,panelGY[i][bPanelsL[i]:]))
-			mainPanelGeomX = np.concatenate((panelGX[i][:,0:bPanelsL[i]-1],mainPanelGeomX,panelGX[i][:,bPanelsL[i]:]),axis=1)
+			mainQuarterC = np.concatenate((panelQC[i][:,0:bPanelsL[i]],mainQuarterC,panelQC[i][:,bPanelsL[i]:]),axis=1)
+			maintquarterPointsX = np.concatenate((tquartX[i][:,0:bPanelsL[i]],maintquarterPointsX,tquartX[i][:,bPanelsL[i]:]),axis=1)
+			mainPanelGeomY = np.concatenate((panelGY[i][0:bPanelsL[i]],mainPanelGeomY,panelGY[i][bPanelsL[i]:]))
+			mainPanelGeomX = np.concatenate((panelGX[i][:,0:bPanelsL[i]],mainPanelGeomX,panelGX[i][:,bPanelsL[i]:]),axis=1)
 
 	#Use stiched geomtery to calculate control point locations and chord distribution
 
@@ -180,8 +208,18 @@ def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry=True):
 		chordDistCont[i] = (chordDistGeom[i+1] + chordDistGeom[i])/2
 
 	#Cut the planform if symmetry is set
+	if symmetry:
+		print(np.sum(bPanelsL))
+		print(mainPanelGeomX.shape)
+		mainPanelGeomX = mainPanelGeomX[:,0:np.sum(bPanelsL)]
+		mainPanelGeomY = mainPanelGeomY[0:np.sum(bPanelsL)]
+		mainPanelGeomY = np.broadcast_to(mainPanelGeomY,(cPanels+1,len(mainPanelGeomY)))
 
-	return span, Stot, panelGX, panelGY
+	# Output OAS mesh
+	mesh = np.zeros((cPanels+1,mainPanelGeomY.shape[1],3))
+	mesh[:,:,0] = mainPanelGeomX
+	mesh[:,:,1] = mainPanelGeomY
+	return span, Stot, panelGX, panelGY, mainPanelGeomX, mainPanelGeomY, mesh
 
 
 #TEST
@@ -198,7 +236,9 @@ cPanels = 16;
 
 #data = np.array([[0.3,20,9,33]])
 #data = np.array([[0.3,20,9,33],[0.3,20,9,50]])
-[b, Stot, panelGX, panelGY] = userGeom4(sections,data,bPanels,cPanels,'true',True)
+[b, Stot, panelGX, panelGY,mainPanelGeomX, mainPanelGeomY, mesh] = userGeom4(sections,data,bPanels,cPanels,'true',True)
+#plt.figure()
+#plt.scatter(mainPanelGeomY.flatten(),mainPanelGeomX.flatten())
 print('The area of this planform is: {}'.format(Stot))
 
 #Dictionary Idea
