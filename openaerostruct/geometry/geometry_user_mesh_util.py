@@ -62,10 +62,10 @@ def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry=True):
 
     #Data Initialization
 	if np.shape(data) != (sections,4):
-		raise Exception("Data mismatch")
+		raise Exception("Data not specified for every section")
 
 	if len(bPanelsL) != sections:
-		raise Exception("Define Panels")
+		raise Exception("Number of spanwise panels not specified for every section")
 
 
 	tquartX = []
@@ -81,8 +81,6 @@ def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry=True):
 	for sec in range(sections):
 		# Select panel number set
 		bPanels = bPanelsL[sec]
-
-		#GeomEngine Baseline
 
 		if sec == 0:
 			taper = data[sec,0]
@@ -213,13 +211,47 @@ def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry=True):
 		print(mainPanelGeomX.shape)
 		mainPanelGeomX = mainPanelGeomX[:,0:np.sum(bPanelsL)]
 		mainPanelGeomY = mainPanelGeomY[0:np.sum(bPanelsL)]
-		mainPanelGeomY = np.broadcast_to(mainPanelGeomY,(cPanels+1,len(mainPanelGeomY)))
+	
+	mainPanelGeomY = np.broadcast_to(mainPanelGeomY,(cPanels+1,len(mainPanelGeomY)))
 
 	# Output OAS mesh
 	mesh = np.zeros((cPanels+1,mainPanelGeomY.shape[1],3))
 	mesh[:,:,0] = mainPanelGeomX
 	mesh[:,:,1] = mainPanelGeomY
 	return span, Stot, panelGX, panelGY, mainPanelGeomX, mainPanelGeomY, mesh
+
+def stitchSectionGeometry(sections,panelGY,panelGX,bPanels,cPanels):
+	#Stitch the results into a mesh
+	for i in range(sections):
+		if i == 0:
+			panelGeomY = panelGY[i]
+			panelGeomX = panelGX[i]
+		else:
+			panelGeomY = np.concatenate((panelGY[i][0:bPanels[i]],panelGeomY,panelGY[i][bPanels[i]:]))
+			panelGeomX = np.concatenate((panelGX[i][:,0:bPanels[i]],panelGeomX,panelGX[i][:,bPanels[i]:]),axis=1)
+
+def stitchPanelChordGeometry(sections,panelQC,tquartX,bPanels,cPanels):
+	for i in range(sections):
+		if i == 0:
+			quarterC = panelQC[i]
+			tquarterPointsX = tquartX[i]
+		else:
+			quarterC = np.concatenate((panelQC[i][:,0:bPanels[i]],quarterC,panelQC[i][:,bPanels[i]:]),axis=1)
+			tquarterPointsX = np.concatenate((tquartX[i][:,0:bPanels[i]],tquarterPointsX,tquartX[i][:,bPanels[i]:]),axis=1)
+
+def planformSymmetric(panelGeomX,panelGeomY,bPanels,cPanels):
+	#print(np.sum(bPanelsL))
+	#print(mainPanelGeomX.shape)
+	panelGeomX = panelGeomX[:,0:np.sum(bPanelsL)]
+	panelGeomY = panelGeomY[0:np.sum(bPanelsL)]
+	return panelGeomX, panelGeomY
+
+def outputOASMesh(panelGeomX,panelGeomY,bPanels,cPanels):
+	panelGeomY = np.broadcast_to(panelGeomY,(cPanels+1,len(panelGeomY)))
+	mesh = np.zeros((cPanels+1,mainPanelGeomY.shape[1],3))
+	mesh[:,:,0] = panelGeomX
+	mesh[:,:,1] = panelGeomY
+	return mesh
 
 
 #TEST
