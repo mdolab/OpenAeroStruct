@@ -160,6 +160,7 @@ def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry=True):
 				panelGeomX[i,0:centreIndex+1] = rootChordPoints[i] + ((tipChordPoints[i]-rootChordPoints[i])/(-b/2))*((panelGeomY[0:centreIndex+1])-panelGY[sec-1][0])
 				#Right Wing
 				panelGeomX[i,centreIndex+1:] = rootChordPoints[i] + ((tipChordPoints[i]-rootChordPoints[i])/(b/2))*(panelGeomY[centreIndex+1:] - panelGY[sec-1][-1])
+		
 		panelQuarterC = np.zeros([cPanels,len(panelGeomY)])
 		tquarterPointsX = np.zeros([cPanels,len(panelGeomY)])
 
@@ -229,6 +230,7 @@ def stitchSectionGeometry(sections,panelGY,panelGX,bPanels,cPanels):
 		else:
 			panelGeomY = np.concatenate((panelGY[i][0:bPanels[i]],panelGeomY,panelGY[i][bPanels[i]:]))
 			panelGeomX = np.concatenate((panelGX[i][:,0:bPanels[i]],panelGeomX,panelGX[i][:,bPanels[i]:]),axis=1)
+	return panelGeomX, panelGeomY
 
 def stitchPanelChordGeometry(sections,panelQC,tquartX,bPanels,cPanels):
 	for i in range(sections):
@@ -238,6 +240,26 @@ def stitchPanelChordGeometry(sections,panelQC,tquartX,bPanels,cPanels):
 		else:
 			quarterC = np.concatenate((panelQC[i][:,0:bPanels[i]],quarterC,panelQC[i][:,bPanels[i]:]),axis=1)
 			tquarterPointsX = np.concatenate((tquartX[i][:,0:bPanels[i]],tquarterPointsX,tquartX[i][:,bPanels[i]:]),axis=1)
+	return quarterC, tquarterPointsX
+
+def calcControlPoints(sections,panelGeomY,panelGeomX,quarterC,tquarterPointsX):
+	controlPointsX = np.zeros([cPanels,2*np.sum(bPanelsL)])
+	vControlPointsX = np.zeros([cPanels,2*np.sum(bPanelsL)])
+	controlPointsY = np.zeros(2*np.sum(bPanelsL))
+	chordDistGeom = np.zeros(len(mainPanelGeomY))
+	chordDistCont = np.zeros(len(mainControlPointsY))
+
+	for i in range(len(mainPanelGeomY)):
+		chordDistGeom[i] = mainPanelGeomX[0,i] - mainPanelGeomX[-1,i]
+
+	for i in range(len(mainPanelGeomY)-1):
+		for j in range(cPanels):
+			controlPointsX[j,i] = (maintquarterPointsX[j,i+1]+maintquarterPointsX[j,i])/2
+			vControlPointsX[j,i] = (mainQuarterC[j,i+1]+mainQuarterC[j,i])/2
+		controlPointsY[i] = mainPanelGeomY[i] + (mainPanelGeomY[i+1]-mainPanelGeomY[i])/2
+		chordDistCont[i] = (chordDistGeom[i+1] + chordDistGeom[i])/2
+	return controlPointsX, vControlPointsX, controlPointsY, chordDistGeom, chordDistCont
+
 
 def planformSymmetric(panelGeomX,panelGeomY,bPanels,cPanels):
 	#print(np.sum(bPanelsL))
