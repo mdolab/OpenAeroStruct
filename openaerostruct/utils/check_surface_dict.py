@@ -74,4 +74,5 @@ def check_surface_dict_keys(surface):
             warnings.warn(
                 "Key `{}` in surface dict is (likely) not supported in OAS and will be ignored".format(key),
                 category=RuntimeWarning,
+                stacklevel=2,
             )

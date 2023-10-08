@@ -643,7 +643,9 @@ def generate_mesh(input_dict):
     for key in user_defined_keys:
         if key not in surf_dict:
             warnings.warn(
-                "Key `{}` in mesh_dict is not implemented and will be ignored".format(key), category=RuntimeWarning
+                "Key `{}` in mesh_dict is not implemented and will be ignored".format(key),
+                category=RuntimeWarning,
+                stacklevel=2,
             )
     # Warn if a user did not define important keys
     for key in ["num_x", "num_y", "wing_type", "symmetry"]:
@@ -651,6 +653,7 @@ def generate_mesh(input_dict):
             warnings.warn(
                 "Missing `{}` in mesh_dict. The default value of {} will be used.".format(key, surf_dict[key]),
                 category=RuntimeWarning,
+                stacklevel=2,
             )
 
     # Apply user-defined options
@@ -660,7 +663,9 @@ def generate_mesh(input_dict):
     if surf_dict["wing_type"] == "CRM":
         if "span" in user_defined_keys or "root_chord" in user_defined_keys:
             warnings.warn(
-                "`span` and `root_chord` in mesh_dict will be ignored for the CRM wing.", category=RuntimeWarning
+                "`span` and `root_chord` in mesh_dict will be ignored for the CRM wing.",
+                category=RuntimeWarning,
+                stacklevel=2,
             )
 
     num_x = surf_dict["num_x"]
