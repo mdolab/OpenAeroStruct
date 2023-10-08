@@ -12,7 +12,7 @@ def check_surface_dict_keys(surface):
         User-defined surface dict
     """
 
-    # NOTE: make sure this is consistend to the documentation's surface dict page
+    # NOTE: make sure this is consistent to the documentation's surface dict page
     keys_implemented = [
         # wing definition
         "name",
