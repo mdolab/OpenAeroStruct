@@ -111,15 +111,15 @@ The surface dict will be provided to Groups, including ``Geometry``, ``AeroPoint
       - np.array([0.1, 5])
       - 
       - B-spline control points for chord distribution. This is a chord scaler applied to the initial mesh, not the chord value [m] itself. Array convention is the same as ``twist_cp``.
-    * xshear_cp
+    * - xshear_cp
       - np.array([0.1, 0.2])
       - m
       - B-spline control points for the x-wise shear deformation of the wing.
-    * yshear_cp
+    * - yshear_cp
       - np.array([0.1, 0.2])
       - m
       - B-spline control points for the y-wise shear deformation of the wing.
-    * zshear_cp
+    * - zshear_cp
       - np.array([0.1, 0.2])
       - m
       - B-spline control points for the z-wise shear deformation of the wing.
@@ -268,7 +268,7 @@ The surface dict will be provided to Groups, including ``Geometry``, ``AeroPoint
       - 0.12
       - 
       - Thickness-over-chord ratio of airfoil provided for the wingbox cross-section.
-    * strength_factor _for_upper_skin
+    * - strength_factor _for_upper_skin
       - 1.0
       - 
       - A factor to adjust the yield strength of the upper skin relative to the lower skin.
