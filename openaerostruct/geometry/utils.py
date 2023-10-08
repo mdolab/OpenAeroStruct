@@ -1,5 +1,6 @@
 import numpy as np
 from numpy import cos, sin, tan
+import warnings
 
 # openvsp python interface
 try:
@@ -636,12 +637,34 @@ def get_default_geo_dict():
 def generate_mesh(input_dict):
     # Get defaults and update surface with the user-provided input
     surf_dict = get_default_geo_dict()
+
+    # Warn if a user provided a key that is not implemented
+    user_defined_keys = input_dict.keys()
+    for key in user_defined_keys:
+        if key not in surf_dict:
+            warnings.warn(
+                "Key `{}` in mesh_dict is not implemented and will be ignored".format(key), category=RuntimeWarning
+            )
+    # Warn if a user did not define important keys
+    for key in ["num_x", "num_y", "wing_type", "symmetry"]:
+        if key not in user_defined_keys:
+            warnings.warn(
+                "Missing `{}` in mesh_dict. The default value of {} will be used.".format(key, surf_dict[key]),
+                category=RuntimeWarning,
+            )
+
+    # Apply user-defined options
     surf_dict.update(input_dict)
+
+    # Warn if a user defined span and root_chord for CRM
+    if surf_dict["wing_type"] == "CRM":
+        if "span" in user_defined_keys or "root_chord" in user_defined_keys:
+            warnings.warn(
+                "`span` and `root_chord` in mesh_dict will be ignored for the CRM wing.", category=RuntimeWarning
+            )
 
     num_x = surf_dict["num_x"]
     num_y = surf_dict["num_y"]
-    span = surf_dict["span"]
-    chord = surf_dict["root_chord"]
     span_cos_spacing = surf_dict["span_cos_spacing"]
     chord_cos_spacing = surf_dict["chord_cos_spacing"]
 
@@ -655,6 +678,8 @@ def generate_mesh(input_dict):
 
     # Generate rectangular mesh
     if surf_dict["wing_type"] == "rect":
+        span = surf_dict["span"]
+        chord = surf_dict["root_chord"]
         mesh = gen_rect_mesh(num_x, num_y, span, chord, span_cos_spacing, chord_cos_spacing)
 
     # Generate CRM mesh. Note that this outputs twist information
