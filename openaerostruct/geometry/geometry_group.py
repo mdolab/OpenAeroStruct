@@ -1,6 +1,7 @@
 import numpy as np
 
 import openmdao.api as om
+from openaerostruct.utils.check_surface_dict import check_surface_dict_keys
 
 
 class Geometry(om.Group):
@@ -22,6 +23,9 @@ class Geometry(om.Group):
 
     def setup(self):
         surface = self.options["surface"]
+
+        # key validation of the surface dict
+        check_surface_dict_keys(surface)
 
         # Get the surface name and create a group to contain components
         # only for this surface
