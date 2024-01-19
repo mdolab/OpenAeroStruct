@@ -98,12 +98,12 @@ def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry=True):
 			taper = data[sec,0]
 			rootC = np.abs(panelGX[sec-1][0,0] - panelGX[sec-1][cPanels,0])
 			AR = data[sec,2]
-			tipC = rootC*taper;
+			tipC = rootC*taper
 			S = AR*((tipC+rootC)/2)**2
 			b = np.sqrt(AR*S)
 			leLambda = np.deg2rad(data[sec,3])
-			Stot = Stot + S;
-			span = span + b;
+			Stot = Stot + S
+			span = span + b
 			if sec == sections-1:
 				maintipC = tipC
 
@@ -125,7 +125,7 @@ def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry=True):
 
 		#Generate Panels
 		#Descretize wing root and wing tip into N+1 points  
-		rootChordPoints = np.arange(rootStart,rootEnd-(rootStart-rootEnd)/cPanels,-(rootStart-rootEnd)/cPanels)
+		#rootChordPoints = np.arange(rootStart,rootEnd-(rootStart-rootEnd)/cPanels,-(rootStart-rootEnd)/cPanels)
 		rootChordPoints = np.linspace(rootStart,rootEnd,cPanels+1)
 
 		if tipStart == tipEnd:
@@ -221,7 +221,59 @@ def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry=True):
 	mesh[:,:,1] = mainPanelGeomY
 	return span, Stot, panelGX, panelGY, mainPanelGeomX, mainPanelGeomY, mesh
 
-def stitchSectionGeometry(sections,panelGY,panelGX,bPanels,cPanels):
+
+def generateSectionGeometry(sections, data,bPanelsL,cPanels):
+	tquartX = []
+	panelQC = []
+	panelGY = []
+	panelGX = []
+	K = []
+
+	Stot = 0
+	span = 0
+	Npanels = 2*np.sum(bPanelsL)*cPanels
+
+	for sec in range(sections):
+		# Select panel number set
+		bPanels = bPanelsL[sec]
+
+		taper = data[sec,0]
+		AR = data[sec,2]
+		leLambda = np.deg2rad(data[sec,3])
+		if sec == 0:
+			rootC = data[sec,1]
+			mainrootC = rootC
+			maintipC = tipC
+		else:
+			rootC = np.abs(panelGX[sec-1][0,0] - panelGX[sec-1][cPanels,0])
+			if sec == sections-1:
+				maintipC = tipC
+
+		tipC = rootC*taper
+		S = AR*((tipC+rootC)/2)**2
+		b = np.sqrt(AR*S)
+		Stot = Stot + S
+		span = span + b
+
+		CAve = (maintipC + mainrootC)/2
+
+		#Generate geomtery
+		if sec == 0:
+			rootEnd = 0;
+			rootStart = rootC + rootEnd
+
+			tipStart = rootStart - (b/2)*np.tan(leLambda)
+			tipEnd = tipStart - tipC
+		else:
+			rootEnd = panelGX[sec-1][cPanels,0]
+			rootStart = rootC + rootEnd
+
+			tipStart = rootStart - (b/2)*np.tan(leLambda)
+			tipEnd = tipStart - tipC
+
+
+
+def stitchSectionGeometry(sections,panelGY,panelGX,bPanels):
 	#Stitch the results into a mesh
 	for i in range(sections):
 		if i == 0:
@@ -232,7 +284,7 @@ def stitchSectionGeometry(sections,panelGY,panelGX,bPanels,cPanels):
 			panelGeomX = np.concatenate((panelGX[i][:,0:bPanels[i]],panelGeomX,panelGX[i][:,bPanels[i]:]),axis=1)
 	return panelGeomX, panelGeomY
 
-def stitchPanelChordGeometry(sections,panelQC,tquartX,bPanels,cPanels):
+def stitchPanelChordGeometry(sections,panelQC,tquartX,bPanels):
 	for i in range(sections):
 		if i == 0:
 			quarterC = panelQC[i]
@@ -242,26 +294,27 @@ def stitchPanelChordGeometry(sections,panelQC,tquartX,bPanels,cPanels):
 			tquarterPointsX = np.concatenate((tquartX[i][:,0:bPanels[i]],tquarterPointsX,tquartX[i][:,bPanels[i]:]),axis=1)
 	return quarterC, tquarterPointsX
 
-def calcControlPoints(sections,panelGeomY,panelGeomX,quarterC,tquarterPointsX):
+def calcControlPoints(panelGeomY,panelGeomX,tquartX,panelQC,bPanelsL,cPanels):
 	controlPointsX = np.zeros([cPanels,2*np.sum(bPanelsL)])
-	vControlPointsX = np.zeros([cPanels,2*np.sum(bPanelsL)])
+	qControlPointsX = np.zeros_like(controlPointsX)
 	controlPointsY = np.zeros(2*np.sum(bPanelsL))
-	chordDistGeom = np.zeros(len(mainPanelGeomY))
-	chordDistCont = np.zeros(len(mainControlPointsY))
+	chordDistGeom = np.zeros_like(panelGeomY)
+	chordDistCont = np.zeros_like(controlPointsY)
 
-	for i in range(len(mainPanelGeomY)):
-		chordDistGeom[i] = mainPanelGeomX[0,i] - mainPanelGeomX[-1,i]
+	for i in range(len(panelGeomY)):
+		chordDistGeom[i] = panelGeomX[0,i] - panelGeomX[-1,i]
 
-	for i in range(len(mainPanelGeomY)-1):
+	for i in range(len(panelGeomY)-1):
 		for j in range(cPanels):
-			controlPointsX[j,i] = (maintquarterPointsX[j,i+1]+maintquarterPointsX[j,i])/2
-			vControlPointsX[j,i] = (mainQuarterC[j,i+1]+mainQuarterC[j,i])/2
-		controlPointsY[i] = mainPanelGeomY[i] + (mainPanelGeomY[i+1]-mainPanelGeomY[i])/2
+			controlPointsX[j,i] = (tquartX[j,i+1]+tquartX[j,i])/2
+			qControlPointsX[j,i] = (panelQC[j,i+1]+panelQC[j,i])/2
+		controlPointsY[i] = panelGeomY[i] + (panelGeomY[i+1]-panelGeomY[i])/2
 		chordDistCont[i] = (chordDistGeom[i+1] + chordDistGeom[i])/2
-	return controlPointsX, vControlPointsX, controlPointsY, chordDistGeom, chordDistCont
+
+	return controlPointsX, qControlPointsX, controlPointsY, chordDistGeom, chordDistCont
 
 
-def planformSymmetric(panelGeomX,panelGeomY,bPanels,cPanels):
+def planformSymmetric(panelGeomX,panelGeomY,bPanelsL):
 	#print(np.sum(bPanelsL))
 	#print(mainPanelGeomX.shape)
 	panelGeomX = panelGeomX[:,0:np.sum(bPanelsL)]
