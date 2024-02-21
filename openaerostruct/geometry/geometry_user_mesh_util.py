@@ -3,40 +3,12 @@ geomEngine3 straight port to Python for OAS
 by Safa Bakhshi
 WIP
 '''
-
 #For testing
 import numpy as np
 import matplotlib.pyplot as plt
-'''
-import openmdao.api as om
 
-class UserGeomMesh(om.E):
-	"""
-	Generates an OpenAeroStruct based on defined section parameters
-	"""
-
-	def initialize(self):
-		self.options.declare(
-			"sections", 
-			default=1, 
-			types=int, 
-			desc="Number of planform sections")
-		self.options.declare(
-			"bPanelsL", 
-			default=10, 
-			types=(int, list, tuple, np.ndarray),
-			desc="Number of spanwise panels per section")
-		self.options.declare(
-			"cPanels",
-			default=3,
-			types=int,
-			desc="Number of streamwise panels")
 
 '''
-
-
-
-
 def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry=True):
 	"""
     Quickly generates user mesh for analysis based on a few parameters
@@ -220,23 +192,90 @@ def userGeom4(sections,data,bPanelsL,cPanels,plotCont,symmetry=True):
 	mesh[:,:,0] = mainPanelGeomX
 	mesh[:,:,1] = mainPanelGeomY
 	return span, Stot, panelGX, panelGY, mainPanelGeomX, mainPanelGeomY, mesh
+'''
+
+def generateMesh(sections,data,bPanels,cPanels,plotCont,symmetry=True):
+	"""
+    Quickly generates user mesh for analysis based on a few parameters
+
+    Parameters
+    ----------
+    sections : int
+        Integer for number of wing sections specified
+    data : numpy array
+        sectionsx4 array consisting of taper, root chord length, aspect ratio, and leading edge sweep in column. Each row corresponds to each specified wing section.
+    bPanels: numpy array
+        1 x sections 1-D array consisting of integers that specify the number of spanwise panels corresponding to each wing section
+	cPanels: int
+        Integer for number of chord-wise panels
+	symmetry : boolean
+        Flag set to True if surface is reflected about y=0 plane.
+
+    Returns
+    -------
+    mesh[nx, ny, 3] : numpy array
+        Nodal mesh defining the aerodynamic surface.
+    """	
+
+    #Data Initialization
+	if np.shape(data) != (sections,4):
+		raise Exception("Data not specified for every section")
+
+	if len(bPanelsL) != sections:
+		raise Exception("Number of spanwise panels not specified for every section")
+	
+	panelGX, panelGY, panelQC, tquartX, Npanels = generateSectionGeometry(sections,data,bPanels,cPanels)
 
 
-def generateSectionGeometry(sections, data,bPanelsL,cPanels):
+
+
+
+def generateSectionGeometry(sections,data,bPanels,cPanels):
+	"""
+    Constructs the multi-section wing geometry specified by the user and generates a mesh for each section.
+
+    Parameters
+    ----------
+    sections : int
+        Integer for number of wing sections specified
+    data : numpy array
+        sectionsx4 array consisting of taper, root chord length, aspect ratio, and leading edge sweep in each column. Each row corresponds to each specified wing section.
+    bPanels: numpy array
+        1 x sections 1-D array consisting of integers that specify the number of spanwise panels corresponding to each wing section
+	cPanels: int
+        Integer for number of chord-wise panels
+
+
+    Returns
+    -------
+	panelGX : List
+	 	List containing the mesh x-coordinates for each section
+	panelGY : List
+		List containing the mesh y-coordinates for each section
+	panelQC : List
+	 	List containing the quarter chord x-positions along each panel edge. Not used by OAS but information is too good to get rid of at this point.
+	tquartX : : List
+	 	List containing the three-quarter chord x-positions along each panel edge. Not used by OAS but information is too good to get rid of at this point.
+    Npanels : int
+        Total number of panels in the mesh
+    """	
 	tquartX = []
 	panelQC = []
 	panelGY = []
 	panelGX = []
 	K = []
 
+
+	tipStart = []
+	tipEnd = []
+	rootStart = []
+	rootEnd = []
+
 	Stot = 0
 	span = 0
-	Npanels = 2*np.sum(bPanelsL)*cPanels
+	Npanels = 2*np.sum(bPanels)*cPanels
 
 	for sec in range(sections):
-		# Select panel number set
-		bPanels = bPanelsL[sec]
-
 		taper = data[sec,0]
 		AR = data[sec,2]
 		leLambda = np.deg2rad(data[sec,3])
@@ -259,22 +298,151 @@ def generateSectionGeometry(sections, data,bPanelsL,cPanels):
 
 		#Generate geomtery
 		if sec == 0:
-			rootEnd = 0;
-			rootStart = rootC + rootEnd
-
-			tipStart = rootStart - (b/2)*np.tan(leLambda)
-			tipEnd = tipStart - tipC
+			rootEnd = 0
 		else:
 			rootEnd = panelGX[sec-1][cPanels,0]
-			rootStart = rootC + rootEnd
+		rootStart = rootC + rootEnd
+		tipStart = rootStart - (b/2)*np.tan(leLambda)
+		tipEnd = tipStart - tipC
+	
+		secGeom = {}
+		secGeom['rootStart'] = rootStart
+		secGeom['rootEnd'] = rootEnd
+		secGeom['tipStart'] = tipStart
+		secGeom['tipEnd'] = tipEnd
 
-			tipStart = rootStart - (b/2)*np.tan(leLambda)
-			tipEnd = tipStart - tipC
+		panelGY,panelGX,tquartX,panelQC,K = generatePanelsSection(sec,secGeom,cPanels,bPanels[sec],panelGX,panelGY,tquartX,panelQC,K,b)
+
+	return panelGX, panelGY, panelQC, tquartX, Npanels
+
+def generatePanelsSection(sec,secGeom,cPanels,bPanels,panelGX,panelGY,tquartX,panelQC,K,b):
+	"""
+    Generates the mesh coordinates for a each wing section and appends them to the list of coordinates for each section.
+
+    Parameters
+    ----------
+    sec : int
+        The section number panels are being generated for
+    secGeom : Dict
+        Dictionary containing the rootStart, rootEnd, tipStart, and tipEnd x-coordinates 
+    bPanels: numpy array
+        1 x sections 1-D array consisting of integers that specify the number of spanwise panels corresponding to each wing section
+	cPanels: int
+        Integer for number of chord-wise panels
+	panelGX : List
+	 	List containing the mesh x-coordinates for each section
+	panelGY : List
+		List containing the mesh y-coordinates for each section
+	panelQC : List
+	 	List containing the quarter chord x-positions along each panel edge. Not used by OAS but information is too good to get rid of at this point.
+	tquartX : : List
+	 	List containing the three-quarter chord x-positions along each panel edge. Not used by OAS but information is too good to get rid of at this point.
+    K : numpy array
+        Array containing the panel widths for each section
+	b : float
+		Span length of the section(full span not half span)
+	
+
+    Returns
+    -------
+	panelGX : Dict
+	 	Dictionary containing the mesh x-coordinates for each section
+	panelGY : Dict
+		Dictionary containing the mesh y-coordinates for each section
+	panelQC : Dict
+	 	Dictionary containing the quarter chord x-positions along each panel edge. Not used by OAS but information is too good to get rid of at this point.
+	tquartX : : Dict
+	 	Dictionary containing the three-quarter chord x-positions along each panel edge. Not used by OAS but information is too good to get rid of at this point.
+    K : numpy array
+        Array containing the panel widths for each section
+    """	
+	#Generate Panels
+	#Descretize wing root and wing tip into N+1 points 
+	
+
+	rootStart = secGeom['rootStart']
+	rootEnd = secGeom['rootEnd']
+	tipStart = secGeom['tipStart']
+	tipEnd = secGeom['tipEnd']
 
 
+	#rootChordPoints = np.arange(rootStart,rootEnd-(rootStart-rootEnd)/cPanels,-(rootStart-rootEnd)/cPanels)
+	rootChordPoints = np.linspace(rootStart,rootEnd,cPanels+1)
+
+	if tipStart == tipEnd:
+		tipChordPoints = tipStart*np.ones(len(rootChordPoints))
+	else:
+		tipChordPoints = np.linspace(tipStart,tipEnd,len(rootChordPoints))
+
+	
+	K.append(b/(2*bPanels))
+	if sec == 0:
+		panelGeomY = np.arange(-b/2,b/2+K[sec],K[sec])
+	else:
+		panelGeomY = np.zeros(2*bPanels)
+		panelGeomY[0:bPanels] = np.linspace(panelGY[sec-1][0]-(b/2),panelGY[sec-1][0]-K[sec],bPanels)
+		panelGeomY[bPanels:2*bPanels] = np.linspace(panelGY[sec-1][-1]+K[sec],panelGY[sec-1][-1]+(b/2),bPanels)
+
+	if sec == 0:
+		centreIndex = bPanels
+	else:
+		centreIndex = bPanels -1
+
+	panelGeomX = np.zeros([len(rootChordPoints),len(panelGeomY)])
+	if sec == 0:
+		for i in range(len(rootChordPoints)):
+			#Left Wing
+			panelGeomX[i,0:centreIndex+1] = rootChordPoints[i] + ((tipChordPoints[i]-rootChordPoints[i])/(-b/2))*(panelGeomY[0:centreIndex+1])
+			#Right Wing
+			panelGeomX[i,centreIndex+1:] = rootChordPoints[i] + ((tipChordPoints[i]-rootChordPoints[i])/(b/2))*(panelGeomY[centreIndex+1:])
+	else:
+		for i in range(len(rootChordPoints)):
+			#Left Wing
+			panelGeomX[i,0:centreIndex+1] = rootChordPoints[i] + ((tipChordPoints[i]-rootChordPoints[i])/(-b/2))*((panelGeomY[0:centreIndex+1])-panelGY[sec-1][0])
+			#Right Wing
+			panelGeomX[i,centreIndex+1:] = rootChordPoints[i] + ((tipChordPoints[i]-rootChordPoints[i])/(b/2))*(panelGeomY[centreIndex+1:] - panelGY[sec-1][-1])
+			
+
+	panelQuarterC = np.zeros([cPanels,len(panelGeomY)])
+	tquarterPointsX = np.zeros([cPanels,len(panelGeomY)])
+
+	for i in range(len(panelGeomY)):
+		for j in range(cPanels-1):
+			panelQuarterC[j,i] = panelGeomX[j,i] + (panelGeomX[j+1,i] - panelGeomX[j,i])/4
+			tquarterPointsX[j,i] = panelGeomX[j,i] + 1*(panelGeomX[j+1,i]-panelGeomX[j,i])/2
+
+
+	panelQC.append(panelQuarterC)
+	panelGY.append(panelGeomY)
+	tquartX.append(tquarterPointsX)
+	panelGX.append(panelGeomX)
+
+	return panelGY,panelGX,tquartX,panelQC,K
 
 def stitchSectionGeometry(sections,panelGY,panelGX,bPanels):
-	#Stitch the results into a mesh
+	"""
+    Combines the split section array into singular unified mesh
+
+    Parameters
+    ----------
+    sections : int
+        Integer for number of wing sections specified
+	panelGX : List
+	 	List containing the mesh x-coordinates for each section
+	panelGY : List
+		List containing the mesh y-coordinates for each section
+    bPanels: numpy array
+        1 x sections 1-D array consisting of integers that specify the number of spanwise panels corresponding to each wing section
+	
+
+    Returns
+    -------
+	panelGeomX : numpy array
+	 	Array of the mesh x-coordinates
+	panelGeomY : numpy array
+		Array of the mesh y-coordinates
+    """	
+	#Stitch the results into a singular mesh
 	for i in range(sections):
 		if i == 0:
 			panelGeomY = panelGY[i]
@@ -285,6 +453,28 @@ def stitchSectionGeometry(sections,panelGY,panelGX,bPanels):
 	return panelGeomX, panelGeomY
 
 def stitchPanelChordGeometry(sections,panelQC,tquartX,bPanels):
+	"""
+    Combines the split section arrays for quarter chord and three-quarters chord x-coordintes into singular unified mesh
+
+    Parameters
+    ----------
+    sections : int
+        Integer for number of wing sections specified
+	panelQC : List
+	 	List containing the mesh quarter chord x-coordinates for each section
+	tquartX : List
+		List containing the mesh three-quarter chord x-coordinates for each section
+    bPanels: numpy array
+        1 x sections 1-D array consisting of integers that specify the number of spanwise panels corresponding to each wing section
+	
+
+    Returns
+    -------
+	quarterC : numpy array
+	 	Array of the quarter chord x-coordinates
+	tquarterPointsX : numpy array
+		Array of the three-quarter chord x-coordinates
+    """	
 	for i in range(sections):
 		if i == 0:
 			quarterC = panelQC[i]
@@ -294,10 +484,42 @@ def stitchPanelChordGeometry(sections,panelQC,tquartX,bPanels):
 			tquarterPointsX = np.concatenate((tquartX[i][:,0:bPanels[i]],tquarterPointsX,tquartX[i][:,bPanels[i]:]),axis=1)
 	return quarterC, tquarterPointsX
 
-def calcControlPoints(panelGeomY,panelGeomX,tquartX,panelQC,bPanelsL,cPanels):
-	controlPointsX = np.zeros([cPanels,2*np.sum(bPanelsL)])
+def calcControlPoints(panelGeomY,panelGeomX,tquartX,panelQC,bPanels,cPanels):
+	"""
+    Calculates the control point locations on each panel
+
+    Parameters
+    ----------
+    panelGeomX : numpy array
+	 	Array of the mesh x-coordinates
+	panelGeomY : numpy array
+		Array of the mesh y-coordinates
+    bPanels: numpy array
+        1 x sections 1-D array consisting of integers that specify the number of spanwise panels corresponding to each wing section
+	cPanels: int
+        Integer for number of chord-wise panels
+	panelQC : numpy array
+	 	Array of the quarter chord x-coordinates
+	tquartX : : numpy array
+	 	Array of the three-quarter chord x-coordinates
+	
+
+    Returns
+    -------
+	controlPointsX : numpy array
+	 	Array of the three-quarter chord control point x-coordinates
+	qControlPointsX : numpy array
+		Array of the quarter chord control point x-coordinates
+	controlPointsY : numpy array
+		Array of the control point y-coordinates
+	chordDistGeom : numpy array
+		The geometric chord distribution
+	chordDistCont : numpy array
+		Array of chord distribution at the control points
+    """	
+	controlPointsX = np.zeros([cPanels,2*np.sum(bPanels)])
 	qControlPointsX = np.zeros_like(controlPointsX)
-	controlPointsY = np.zeros(2*np.sum(bPanelsL))
+	controlPointsY = np.zeros(2*np.sum(bPanels))
 	chordDistGeom = np.zeros_like(panelGeomY)
 	chordDistCont = np.zeros_like(controlPointsY)
 
@@ -314,14 +536,54 @@ def calcControlPoints(panelGeomY,panelGeomX,tquartX,panelQC,bPanelsL,cPanels):
 	return controlPointsX, qControlPointsX, controlPointsY, chordDistGeom, chordDistCont
 
 
-def planformSymmetric(panelGeomX,panelGeomY,bPanelsL):
+def planformSymmetric(panelGeomX,panelGeomY,bPanels):
+	"""
+    Cuts the mesh in half is symmetry conditions are used
+
+    Parameters
+    ----------
+    panelGeomX : numpy array
+	 	Array of the mesh x-coordinates
+	panelGeomY : numpy array
+		Array of the mesh y-coordinates
+    bPanels: numpy array
+        1 x sections 1-D array consisting of integers that specify the number of spanwise panels corresponding to each wing section
+
+
+    Returns
+    -------
+	panelGeomX : numpy array
+	 	Array of the mesh x-coordinates
+	panelGeomY : numpy array
+		Array of the mesh y-coordinates
+    """
 	#print(np.sum(bPanelsL))
 	#print(mainPanelGeomX.shape)
-	panelGeomX = panelGeomX[:,0:np.sum(bPanelsL)]
-	panelGeomY = panelGeomY[0:np.sum(bPanelsL)]
+	panelGeomX = panelGeomX[:,0:np.sum(bPanels)]
+	panelGeomY = panelGeomY[0:np.sum(bPanels)]
 	return panelGeomX, panelGeomY
 
 def outputOASMesh(panelGeomX,panelGeomY,bPanels,cPanels):
+	"""
+    Outputs the mesh in OAS format
+
+    Parameters
+    ----------
+    panelGeomX : numpy array
+	 	Array of the mesh x-coordinates
+	panelGeomY : numpy array
+		Array of the mesh y-coordinates
+    bPanels: numpy array
+        1 x sections 1-D array consisting of integers that specify the number of spanwise panels corresponding to each wing section
+	cPanels: int
+        Integer for number of chord-wise panels
+
+
+    Returns
+    -------
+	mesh : numpy array
+	 	3-D array with the OAS format mesh
+    """	
 	panelGeomY = np.broadcast_to(panelGeomY,(cPanels+1,len(panelGeomY)))
 	mesh = np.zeros((cPanels+1,mainPanelGeomY.shape[1],3))
 	mesh[:,:,0] = panelGeomX
@@ -473,7 +735,6 @@ def plotPanels(sections,panelGX,panelGY,plotSymmetry='Left'):
 					plt.plot([panelGY[i-1][-1],panelGY[i][-1]],[panelGX[i-1][j,0],panelGX[i][j,0]],c=colorSet[i,:])
 					for k in range(len(panelGY[i])):
 						plt.plot([panelGY[i][k],panelGY[i][k]],[panelGX[i][0,k],panelGX[i][-1,k]],c=colorSet[i,:])
-
 
 
 plotPanels(sections,panelGX,panelGY,'Left')
