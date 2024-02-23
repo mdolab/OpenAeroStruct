@@ -1,6 +1,7 @@
 import numpy as np
 
 import openmdao.api as om
+from openaerostruct.utils.check_surface_dict import check_surface_dict_keys
 
 
 class Geometry(om.Group):
@@ -22,6 +23,9 @@ class Geometry(om.Group):
 
     def setup(self):
         surface = self.options["surface"]
+
+        # key validation of the surface dict
+        check_surface_dict_keys(surface)
 
         # Get the surface name and create a group to contain components
         # only for this surface
@@ -91,10 +95,10 @@ class Geometry(om.Group):
                     promotes_inputs=["chord_cp"],
                     promotes_outputs=["chord"],
                 )
-                comp.add_spline(y_cp_name="chord_cp", y_interp_name="chord", y_units="m")
+                comp.add_spline(y_cp_name="chord_cp", y_interp_name="chord", y_units=None)
                 bsp_inputs.append("chord")
                 if surface.get("chord_cp_dv", True):
-                    self.set_input_defaults("chord_cp", val=surface["chord_cp"], units="m")
+                    self.set_input_defaults("chord_cp", val=surface["chord_cp"], units=None)
 
             if "t_over_c_cp" in surface.keys():
                 n_cp = len(surface["t_over_c_cp"])

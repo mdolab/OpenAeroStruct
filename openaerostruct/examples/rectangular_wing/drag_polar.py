@@ -37,7 +37,7 @@ mesh_dict = {
     "wing_type": "rect",
     "symmetry": True,
     "span": 10.0,
-    "chord": 1,
+    "root_chord": 1,
     "span_cos_spacing": 1.0,
     "chord_cos_spacing": 1.0,
 }
