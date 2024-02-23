@@ -469,7 +469,6 @@ def plotPlanform(sections, panelGX, panelGY, plotSymmetry="Left", wingName="Cust
     plt.figure()
     for i in range(sections):
         if i == 0:
-
             rootEnd = panelGX[i][cPanels, bPanels[i]]
             rootStart = panelGX[i][0, bPanels[i]]
             # tipStart = panelGX[i][0,0]
@@ -500,7 +499,6 @@ def plotPlanform(sections, panelGX, panelGY, plotSymmetry="Left", wingName="Cust
                 )
 
         else:
-
             rootEnd = panelGX[i - 1][cPanels, 0]
             rootStart = panelGX[i - 1][0, 0]
             # tipStart = panelGX[i][0,0]
