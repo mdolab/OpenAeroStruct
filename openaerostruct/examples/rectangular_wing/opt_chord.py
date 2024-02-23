@@ -39,7 +39,7 @@ mesh_dict = {
     "wing_type": "rect",
     "symmetry": True,
     "span": 10.0,
-    "chord": 1,
+    "root_chord": 1,
     "span_cos_spacing": 1.0,
     "chord_cos_spacing": 1.0,
 }
@@ -105,8 +105,9 @@ prob.driver = om.ScipyOptimizeDriver()
 prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
 
 # Setup problem and add design variables, constraint, and objective
+# wing.chord_cp is the chord scaling applied to the initial mesh
 prob.model.add_design_var("alpha", lower=-10.0, upper=15.0)
-prob.model.add_design_var("wing.chord_cp", lower=1e-3, upper=5.0)
+prob.model.add_design_var("wing.chord_cp", lower=1e-3, upper=5.0, units=None)
 prob.model.add_constraint(point_name + ".wing_perf.CL", equals=0.5)
 prob.model.add_constraint(point_name + ".wing.S_ref", equals=10.0)
 prob.model.add_objective(point_name + ".wing_perf.CD", scaler=1e4)

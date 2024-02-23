@@ -87,14 +87,42 @@ The surface dict will be provided to Groups, including ``Geometry``, ``AeroPoint
       - 3D ndarray
       - m
       - ``x, y, z`` coordinates of the mesh vertices, can be created by ``generate_mesh``.
+    * - span
+      - 10.0
+      - m
+      - Wing span.
+    * - taper
+      - 0.5
+      - 
+      - Wing taper ratio.
+    * - sweep
+      - 10.0
+      - deg
+      - Wing sweep angle.
+    * - dihedral
+      - 5.0
+      - deg
+      - Wing dihedral.
     * - twist_cp
       - np.array([0, 5])
       - deg
       - B-spline control points for twist distribution. Array convention is ``[wing tip, ..., root]`` in symmetry cases, and ``[tip, ..., root, ... tip]`` when ``symmetry = False``.
     * - chord_cp
       - np.array([0.1, 5])
+      - 
+      - B-spline control points for chord distribution. This is a chord scaler applied to the initial mesh, not the chord value [m] itself. Array convention is the same as ``twist_cp``.
+    * - xshear_cp
+      - np.array([0.1, 0.2])
       - m
-      - B-spline control points for chord distribution. Array convention is the same than ``twist_cp``.
+      - B-spline control points for the x-wise shear deformation of the wing.
+    * - yshear_cp
+      - np.array([0.1, 0.2])
+      - m
+      - B-spline control points for the y-wise shear deformation of the wing.
+    * - zshear_cp
+      - np.array([0.1, 0.2])
+      - m
+      - B-spline control points for the z-wise shear deformation of the wing.
     * - ref_axis_pos
       - 0.25
       - 
@@ -240,6 +268,10 @@ The surface dict will be provided to Groups, including ``Geometry``, ``AeroPoint
       - 0.12
       - 
       - Thickness-over-chord ratio of airfoil provided for the wingbox cross-section.
+    * - strength_factor _for_upper_skin
+      - 1.0
+      - 
+      - A factor to adjust the yield strength of the upper skin relative to the lower skin.
     * - data_x_upper
       - 1D ndarray
       - 
@@ -257,5 +289,21 @@ The surface dict will be provided to Groups, including ``Geometry``, ``AeroPoint
       - 
       - ``y`` coordinates of the wingbox cross-section's lower surface
 
+.. list-table:: FFD parameters
+    :widths: 20 20 5 55
+    :header-rows: 1
+
+    * - Key
+      - Example value
+      - Units
+      - Description
+    * - mx
+      - 2
+      - 
+      - Number of the FFD control points in the x direction.
+    * - my
+      - 2
+      - 
+      - Number of the FFD control points in the y direction.
 ..
   TODO: list default values (if any), and whethre each key is required or optional.

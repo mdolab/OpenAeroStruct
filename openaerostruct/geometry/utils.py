@@ -1,5 +1,6 @@
 import numpy as np
 from numpy import cos, sin, tan
+import warnings
 
 # openvsp python interface
 try:
@@ -94,7 +95,7 @@ def scale_x(mesh, chord_dist):
     mesh[nx, ny, 3] : numpy array
         Nodal mesh defining the initial aerodynamic surface.
     chord_dist[ny] : numpy array
-        Chord length for each panel edge.
+        Spanwise distribution of the chord scaler.
 
     Returns
     -------
@@ -636,12 +637,39 @@ def get_default_geo_dict():
 def generate_mesh(input_dict):
     # Get defaults and update surface with the user-provided input
     surf_dict = get_default_geo_dict()
+
+    # Warn if a user provided a key that is not implemented
+    user_defined_keys = input_dict.keys()
+    for key in user_defined_keys:
+        if key not in surf_dict:
+            warnings.warn(
+                "Key `{}` in mesh_dict is not implemented and will be ignored".format(key),
+                category=RuntimeWarning,
+                stacklevel=2,
+            )
+    # Warn if a user did not define important keys
+    for key in ["num_x", "num_y", "wing_type", "symmetry"]:
+        if key not in user_defined_keys:
+            warnings.warn(
+                "Missing `{}` in mesh_dict. The default value of {} will be used.".format(key, surf_dict[key]),
+                category=RuntimeWarning,
+                stacklevel=2,
+            )
+
+    # Apply user-defined options
     surf_dict.update(input_dict)
+
+    # Warn if a user defined span and root_chord for CRM
+    if surf_dict["wing_type"] == "CRM":
+        if "span" in user_defined_keys or "root_chord" in user_defined_keys:
+            warnings.warn(
+                "`span` and `root_chord` in mesh_dict will be ignored for the CRM wing.",
+                category=RuntimeWarning,
+                stacklevel=2,
+            )
 
     num_x = surf_dict["num_x"]
     num_y = surf_dict["num_y"]
-    span = surf_dict["span"]
-    chord = surf_dict["root_chord"]
     span_cos_spacing = surf_dict["span_cos_spacing"]
     chord_cos_spacing = surf_dict["chord_cos_spacing"]
 
@@ -655,6 +683,8 @@ def generate_mesh(input_dict):
 
     # Generate rectangular mesh
     if surf_dict["wing_type"] == "rect":
+        span = surf_dict["span"]
+        chord = surf_dict["root_chord"]
         mesh = gen_rect_mesh(num_x, num_y, span, chord, span_cos_spacing, chord_cos_spacing)
 
     # Generate CRM mesh. Note that this outputs twist information
@@ -706,7 +736,7 @@ def generate_mesh(input_dict):
         return mesh
 
 
-def generate_vsp_surfaces(vsp_file, symmetry=False, include=None):
+def generate_vsp_surfaces(vsp_file, symmetry=False, include=None, scale=1.0):
     """
     Generate a series of VLM surfaces based on geometries in an OpenVSP model.
 
@@ -721,6 +751,10 @@ def generate_vsp_surfaces(vsp_file, symmetry=False, include=None):
     include : list[str]
         List of body names defined in OpenVSP model that should be included in VLM mesh output.
         Defaults to all bodies found in model.
+    scale: float
+        A global scale factor from the OpenVSP geometry to incoming VLM mesh
+        geometry. For example, if the OpenVSP model is in inches, and the VLM
+        in meters, scale=0.0254. Defaults to 1.0.
 
     Returns
     -------
@@ -832,6 +866,7 @@ def generate_vsp_surfaces(vsp_file, symmetry=False, include=None):
                     mesh[:, :, 0] = np.flipud(x.T)
                     mesh[:, :, 1] = np.flipud(y.T)
                     mesh[:, :, 2] = np.flipud(z.T)
+                    mesh *= scale
 
                     # Check if the surface has already been added (i.e. symmetry == False)
                     if surf_name not in surfaces:
@@ -856,7 +891,7 @@ def generate_vsp_surfaces(vsp_file, symmetry=False, include=None):
 
     # If a half-model was requested, go through and flag each surface as symmetrical
     # if a left and right surface was found.
-    # NOTE: We don't necesarilly want to mark every surface as symmetrical,
+    # NOTE: We don't necessarily want to mark every surface as symmetrical,
     # even if a half-model is requested, since some surfaces, like vertical tails,
     # might lie perfectly on the symmetry plane.
     if symmetry:
