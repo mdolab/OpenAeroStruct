@@ -29,14 +29,14 @@ def generateMesh(
         Flag set to True if planform and mesh plots should be created and saved.
     plotOptions: Dict
         Dictionary containing user options for plotting
-         'type': 'plan', 'mesh', 'all'
-            Plots the planform geometry only, mesh only, or both
-        'symmetry': 'Left', 'Right', 'Full
-            Plots the left, right, or full spans
-        'name': string
+            'type': 'plan', 'mesh', 'all'
+                Plots the planform geometry only, mesh only, or both
 
+            'symmetry': 'Left', 'Right', 'Full
+                Plots the left, right, or full spans
 
-
+            'name': string
+                Name of wing
 
     Returns
     -------
