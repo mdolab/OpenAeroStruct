@@ -591,6 +591,8 @@ class Display(object):
     def plot_wing(self):
         n_names = len(self.names)
         self.ax.cla()
+        az = self.ax.azim
+        el = self.ax.elev
 
         for j, name in enumerate(self.names):
             # for wingbox viz
@@ -755,7 +757,7 @@ class Display(object):
                 color="k",
             )
 
-        self.ax.view_init()  # Reproduce view
+        self.ax.view_init(elev=el, azim=az)  # Reproduce view
 
     def save_video(self):
         options = dict(title="Movie", artist="Matplotlib")
