@@ -168,6 +168,7 @@ jobs:
         fail_ci_if_error: true
         token: ${{ secrets.CODECOV_TOKEN }}
         verbose: true
+        version: "v0.1.15"  # codecov frequently has upload errors and this might help, see https://github.com/codecov/codecov-action/issues/598
         
   # --- linting and formatting ---
   black:
