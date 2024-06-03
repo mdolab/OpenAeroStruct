@@ -621,7 +621,7 @@ def get_default_geo_dict():
 
 def generate_mesh(input_dict):
     """
-    Generate an OAS mesh
+    Generate an OAS mesh.
 
     Parameters
     ----------
@@ -635,8 +635,7 @@ def generate_mesh(input_dict):
     mesh : numpy array
         Nodal coordinates defining the mesh.
         shape = (nx, ny, 3),
-        where nx is the number of chordwise discretization nodes;
-              ny is the number of spanwise discretization nodes.
+        where nx is the number of chordwise discretization nodes, ny is the number of spanwise discretization nodes.
         If input_dict["symmetry"] is True, mesh defines left half of wing.
     twist : numpy array, optional
         Only for CRM wing (input_dict["wing_type"] == "CRM").
