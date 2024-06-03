@@ -401,6 +401,7 @@ def gen_rect_mesh(num_x, num_y, span, chord, span_cos_spacing=0.0, chord_cos_spa
     uniform = np.linspace(-0.5, 0.5, num_x)   # uniform spacing
     # mixed spacing with chord_cos_spacing as a weighting factor
     wing_x = cosine * chord_cos_spacing + (1 - chord_cos_spacing) * uniform   # from -0.5 to 0.5
+    wing_x += 0.5  # offset by 0.5 so it goes 0 to 1 (leading edge = 0, trailing edge = 1)
     wing_x *= chord   # apply chord length
 
     # --- form 3D mesh array ---
