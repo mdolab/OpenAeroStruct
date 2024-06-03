@@ -37,7 +37,7 @@ class GeometryMesh(om.Group):
     twist[ny] : numpy array
         1-D array of rotation angles for each wing slice in degrees.
     chord_dist[ny] : numpy array
-        Chord length for each panel edge.
+        Spanwise distribution of the chord scaler.
     taper : float
         Taper ratio for the wing; 1 is untapered, 0 goes to a point at the tip.
 

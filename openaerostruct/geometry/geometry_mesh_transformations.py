@@ -123,7 +123,7 @@ class ScaleX(om.ExplicitComponent):
     mesh[nx, ny, 3] : numpy array
         Nodal mesh defining the initial aerodynamic surface.
     chord[ny] : numpy array
-        Chord length for each panel edge.
+        Spanwise distribution of the chord scaler.
 
     Returns
     -------
@@ -147,7 +147,7 @@ class ScaleX(om.ExplicitComponent):
         mesh_shape = self.options["mesh_shape"]
         val = self.options["val"]
         self.ref_axis_pos = self.options["ref_axis_pos"]
-        self.add_input("chord", units="m", val=val)
+        self.add_input("chord", units=None, val=val)
         self.add_input("in_mesh", shape=mesh_shape, units="m")
 
         self.add_output("mesh", shape=mesh_shape, units="m")

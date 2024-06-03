@@ -11,6 +11,7 @@ from openaerostruct.aerodynamics.states import VLMStates
 from openaerostruct.aerodynamics.compressible_states import CompressibleVLMStates
 from openaerostruct.structures.tube_group import TubeGroup
 from openaerostruct.structures.wingbox_group import WingboxGroup
+from openaerostruct.utils.check_surface_dict import check_surface_dict_keys
 
 import openmdao.api as om
 
@@ -25,6 +26,9 @@ class AerostructGeometry(om.Group):
         surface = self.options["surface"]
         DVGeo = self.options["DVGeo"]
         connect_geom_DVs = self.options["connect_geom_DVs"]
+
+        # key validation of the surface dict
+        check_surface_dict_keys(surface)
 
         geom_promotes_in = []
         geom_promotes_out = ["mesh"]
