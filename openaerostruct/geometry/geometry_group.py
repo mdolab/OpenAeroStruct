@@ -190,3 +190,58 @@ class Geometry(om.Group):
             self.add_subsystem(
                 "mesh", GeometryMesh(surface=surface), promotes_inputs=bsp_inputs, promotes_outputs=["mesh"]
             )
+
+class MultiSecGeometry(om.Group):
+    """
+    Group that contains all components needed for an OAS problem with a multisection geometry.
+
+    Because we use this general group, there's some logic to figure out which
+    components to add and which connections to make.
+    This is especially true for all of the geometric manipulation types, such
+    as twist, sweep, etc., in that we handle the creation of these parameters
+    differently if the user wants to have them vary in the optimization problem.
+    """
+
+    def initialize(self):
+        self.options.declare("surface", types=dict)
+        #self.options.declare("DVGeo", default=None)
+        #self.options.declare("connect_geom_DVs", default=True)
+        #DVGeo disabled for now
+        # The option "connect_geom_DVs" is no longer necessary, but we still keep it to be backward compatible.
+
+    def setup(self):
+        surface = self.options["surface"]
+
+        # key validation of the surface dict
+        #TO DO: Replace with check for multi section surfaces
+        check_surface_dict_keys(surface)
+
+        #Get number of sections
+        num_sections = surface["num_sections"]
+
+        # Get the surface name and create a group to contain components
+        # only for this surface
+        ny = surface["mesh"].shape[1]
+
+
+        from openaerostruct.geometry.geometry_mesh import GeometryMesh
+
+
+        #Loop through surfaces 
+        for i in range(num_sections):
+            #To Implement
+            continue
+            
+
+        self.add_subsystem(
+            "mesh", GeometryMesh(surface=surface), promotes_inputs=bsp_inputs, promotes_outputs=["mesh"]
+        )
+
+    def setup_section(num_section,surface_section):
+        #1: Process section data from surface data
+        #2. Create geom group for section and return it
+        return None # TO DO
+    
+    def connect_sections(self):
+        #1. Connect the root and tips of sections and constrain them to remain attached. Sets up off set of sections
+        return None #TO DO
