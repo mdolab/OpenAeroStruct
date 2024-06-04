@@ -398,11 +398,10 @@ def gen_rect_mesh(num_x, num_y, span, chord, span_cos_spacing=0.0, chord_cos_spa
         full_wing = np.hstack((-half_wing[:-1], half_wing[::-1])) * span
 
     # --- chordwise discretization ---
-    cosine = -0.5 + 0.5 * (1 - np.cos(np.linspace(0, np.pi, num_x)))  # cosine spacing from -0.5 to 0.5
-    uniform = np.linspace(-0.5, 0.5, num_x)  # uniform spacing
+    cosine = 0.5 * (1 - np.cos(np.linspace(0, np.pi, num_x)))  # cosine spacing from 0 to 1
+    uniform = np.linspace(0, 1, num_x)  # uniform spacing
     # mixed spacing with chord_cos_spacing as a weighting factor
-    wing_x = cosine * chord_cos_spacing + (1 - chord_cos_spacing) * uniform  # from -0.5 to 0.5
-    wing_x += 0.5  # offset by 0.5 so it goes 0 to 1 (leading edge = 0, trailing edge = 1)
+    wing_x = cosine * chord_cos_spacing + (1 - chord_cos_spacing) * uniform
     wing_x *= chord  # apply chord length
 
     # --- form 3D mesh array ---
@@ -555,11 +554,10 @@ def add_chordwise_panels(mesh, num_x, chord_cos_spacing):
     num_y = mesh.shape[1]
 
     # chordwise discretization
-    cosine = -0.5 + 0.5 * (1 - np.cos(np.linspace(0, np.pi, num_x)))  # cosine spacing from -0.5 to 0.5
-    uniform = np.linspace(-0.5, 0.5, num_x)  # uniform spacing
+    cosine = 0.5 * (1 - np.cos(np.linspace(0, np.pi, num_x)))  # cosine spacing from 0 to 1
+    uniform = np.linspace(0, 1, num_x)  # uniform spacing
     # mixed spacing with chord_cos_spacing as a weighting factor
-    wing_x = cosine * chord_cos_spacing + (1 - chord_cos_spacing) * uniform  # from -0.5 to 0.5
-    wing_x += 0.5  # offset by 0.5 so it goes 0 to 1
+    wing_x = cosine * chord_cos_spacing + (1 - chord_cos_spacing) * uniform
 
     # Obtain the leading and trailing edges
     le = mesh[0, :, :]
