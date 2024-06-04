@@ -465,7 +465,6 @@ class Display(object):
         self.ax.cla()
         az = self.ax.azim
         el = self.ax.elev
-        dist = self.ax.dist
 
         for j, name in enumerate(self.names):
             mesh0 = self.mesh[self.curr_pos * n_names + j].copy()
@@ -577,7 +576,6 @@ class Display(object):
             self.ax.text2D(0.15, 0.05, self.obj_key + ": {}".format(obj_val), transform=self.ax.transAxes, color="k")
 
         self.ax.view_init(elev=el, azim=az)  # Reproduce view
-        self.ax.dist = dist
 
     def save_video(self):
         options = dict(title="Movie", artist="Matplotlib")

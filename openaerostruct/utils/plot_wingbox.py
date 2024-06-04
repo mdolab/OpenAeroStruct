@@ -1,7 +1,10 @@
 """
-
+This is a custom script for visualizing the optimization results when using the wingbox structural model.
 This only works when using the wingbox model with MULTIPOINT analysis/optimization.
+Modifications will be necessary when moving away from the intended optimization problem formulation,
+and this can be used as a starting point.
 
+The usage, for example, if running a case from the `examples` directory would be `python ../utils/plot_wingbox.py aerostruct.db`.
 """
 
 
@@ -590,12 +593,6 @@ class Display(object):
         self.ax.cla()
         az = self.ax.azim
         el = self.ax.elev
-        dist = self.ax.dist
-
-        # for a planform view use:
-        # az = 270
-        # el = 0.
-        # dist = 15.
 
         for j, name in enumerate(self.names):
             # for wingbox viz
@@ -761,7 +758,6 @@ class Display(object):
             )
 
         self.ax.view_init(elev=el, azim=az)  # Reproduce view
-        self.ax.dist = dist
 
     def save_video(self):
         options = dict(title="Movie", artist="Matplotlib")

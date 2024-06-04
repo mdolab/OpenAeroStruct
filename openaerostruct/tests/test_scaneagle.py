@@ -115,7 +115,7 @@ class Test(unittest.TestCase):
         indep_var_comp.add_output("W0", val=10.0, units="kg")
         indep_var_comp.add_output("speed_of_sound", val=322.2, units="m/s")
         indep_var_comp.add_output("load_factor", val=1.0)
-        indep_var_comp.add_output("empty_cg", val=np.array([0.2, 0.0, 0.0]), units="m")
+        indep_var_comp.add_output("empty_cg", val=np.array([0.35, 0.0, 0.0]), units="m")
 
         prob.model.add_subsystem("prob_vars", indep_var_comp, promotes=["*"])
 

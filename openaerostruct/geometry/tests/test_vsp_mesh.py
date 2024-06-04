@@ -27,6 +27,7 @@ class Test(unittest.TestCase):
             "span": 10.0,
             "root_chord": 1,
             "span_cos_spacing": 0.0,
+            "offset": [-0.5, 0, 0],  # chordwise coordinate goes from -0.5 to 0.5
         }
 
         oas_mesh = generate_mesh(mesh_dict)
@@ -46,6 +47,7 @@ class Test(unittest.TestCase):
             "span": 10.0,
             "root_chord": 1,
             "span_cos_spacing": 0.0,
+            "offset": [-0.5, 0, 0],  # chordwise coordinate goes from -0.5 to 0.5
         }
 
         oas_mesh = generate_mesh(mesh_dict)

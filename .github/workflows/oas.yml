@@ -20,6 +20,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false  # continue other jobs even if one of the jobs in matrix fails 
       matrix:
         dep-versions: ["oldest", "latest"]
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Set versions to test here ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -163,12 +164,13 @@ jobs:
         coverage xml
 
     - name: Upload Coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         fail_ci_if_error: true
-        token: ${{ secrets.CODECOV_TOKEN }}
         verbose: true
-        
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
   # --- linting and formatting ---
   black:
     uses: mdolab/.github/.github/workflows/black.yaml@main
