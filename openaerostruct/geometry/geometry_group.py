@@ -246,6 +246,11 @@ class MultiSecGeometry(om.Group):
                 raise ValueError("A mesh needs to be provided for each section.")
             meshes = surface["meshes"]
 
+        if len(surface["sec_name"]) != num_sections:
+             raise ValueError("A name needs to be provided for each section.")
+        
+
+        
         # Get the surface name and create a group to contain components
         # only for this surface
         ny = surface["mesh"].shape[1]
@@ -253,16 +258,47 @@ class MultiSecGeometry(om.Group):
 
         from openaerostruct.geometry.geometry_mesh import GeometryMesh
 
-
         #Loop through surfaces 
         for i in range(num_sections):
-            #To Implement
-            continue
+            surface = {
+                # Wing definition
+                "name": surface["sec_name"][i],  # name of the surface
+                "type": "aero",
+                "symmetry": surface["symmetry"],  # if true, model one half of wing
+                # reflected across the plane y = 0
+                "S_ref_type": surface["S_ref_type"],  # how we compute the wing area,
+                # can be 'wetted' or 'projected'
+                "chord_cp": surface["sec_chord_cp"][i],  # Define chord using 3 B-spline cp's
+                "ref_axis_pos": 0.25,  # Define the reference axis position. 0 is the leading edge, 1 is the trailing edge.
+                # distributed along span
+                "mesh": meshes[i],
+                # Aerodynamic performance of the lifting surface at
+                # an angle of attack of 0 (alpha=0).
+                # These CL0 and CD0 values are added to the CL and CD
+                # obtained from aerodynamic analysis of the surface to get
+                # the total CL and CD.
+                # These CL0 and CD0 values do not vary wrt alpha.
+                "CL0": surface["sec_CL0"][i],  # CL of the surface at alpha=0
+                "CD0": surface["sec_CD0"][i],  # CD of the surface at alpha=0
+                # Airfoil properties for viscous drag calculation
+                "k_lam": 0.05,  # percentage of chord with laminar
+                # flow, used for viscous drag
+                "t_over_c": surface["sec_t_over_c"][i],  # thickness over chord ratio (NACA0015)
+                "c_max_t": surface["sec_c_max_t"][i],  # chordwise location of maximum (NACA0015)
+                # thickness
+                "with_viscous": surface["with_viscous"],  # if true, compute viscous drag,
+                "with_wave": surface["with_wave"],
+            }  # end of surface dictionary
+
+            name = surface["name"]
+
+            # Add geometry to the problem as the name of the surface.
+            # These groups are responsible for manipulating the geometry of the mesh,
+            # in this case spanwise twist.
+            geom_group = Geometry(surface=surface)
+            self.add_subsystem(name, geom_group)
             
 
-        self.add_subsystem(
-            "mesh", GeometryMesh(surface=surface), promotes_inputs=bsp_inputs, promotes_outputs=["mesh"]
-        )
 
     def setup_section(num_section,surface_section):
         #1: Process section data from surface data
@@ -274,7 +310,7 @@ class MultiSecGeometry(om.Group):
         return None #TO DO
     
     def gen_meshes(meshes,nx,ny):
-
+        #TO DO
         for i in range(len(meshes)):
             # Create a dictionary to store options about the surface
             mesh_dict = {

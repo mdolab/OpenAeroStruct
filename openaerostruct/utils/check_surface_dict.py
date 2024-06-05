@@ -93,6 +93,7 @@ def check_multi_sec_surface_dict_keys(surface):
     keys_implemented = [
         # wing definition
         "name",
+        "sec_name",
         "symmetry",
         "S_ref_type",
         "meshes",
