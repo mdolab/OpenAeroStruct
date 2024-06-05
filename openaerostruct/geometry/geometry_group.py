@@ -2,6 +2,8 @@ import numpy as np
 
 import openmdao.api as om
 from openaerostruct.utils.check_surface_dict import check_surface_dict_keys
+from openaerostruct.utils.check_surface_dict import check_multi_sec_surface_dict_keys
+import warnings
 
 
 class Geometry(om.Group):
@@ -200,6 +202,16 @@ class MultiSecGeometry(om.Group):
     This is especially true for all of the geometric manipulation types, such
     as twist, sweep, etc., in that we handle the creation of these parameters
     differently if the user wants to have them vary in the optimization problem.
+
+
+    Surface Dict def
+
+    num_sections: int
+
+
+
+
+
     """
 
     def initialize(self):
@@ -214,10 +226,25 @@ class MultiSecGeometry(om.Group):
 
         # key validation of the surface dict
         #TO DO: Replace with check for multi section surfaces
-        check_surface_dict_keys(surface)
+        check_multi_sec_surface_dict_keys(surface)
 
         #Get number of sections
         num_sections = surface["num_sections"]
+
+        if surface["meshes"] == "gen-meshes":
+            #Call mesh generation sub routine
+            if len(surface["sec_nx"]) != num_sections:
+                raise ValueError("Number of spanwise points needs to be provided for each section")
+            if len(surface["sec_ny"]) != num_sections:
+                raise ValueError("Number of chordwise points needs to be provided for each section")
+            
+            nx = surface["sec_nx"]
+            ny = surface["sec_ny"]
+            pass
+        else:
+            if len(surface["meshes"]) != num_sections:
+                raise ValueError("A mesh needs to be provided for each section.")
+            meshes = surface["meshes"]
 
         # Get the surface name and create a group to contain components
         # only for this surface
@@ -245,3 +272,18 @@ class MultiSecGeometry(om.Group):
     def connect_sections(self):
         #1. Connect the root and tips of sections and constrain them to remain attached. Sets up off set of sections
         return None #TO DO
+    
+    def gen_meshes(meshes,nx,ny):
+
+        for i in range(len(meshes)):
+            # Create a dictionary to store options about the surface
+            mesh_dict = {
+                "num_y": 35,
+                "num_x": 11,
+                "wing_type": "rect",
+                "symmetry": True,
+                "span": 10.0,
+                "root_chord": 1,
+                "span_cos_spacing": 1.0,
+                "chord_cos_spacing": 1.0,
+            }

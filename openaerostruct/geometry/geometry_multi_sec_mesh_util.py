@@ -9,7 +9,7 @@ def generateMesh(
     sections, data, bPanels, cPanels, symmetry=True, controlPoints=False, generatePlots=False, plotOptions={}
 ):
     """
-    Quickly generates user multi-section mesh for analysis based on a few parameters
+    Quickly generates user multi-section mesh based on a few parameters
 
     Parameters
     ----------
@@ -72,7 +72,19 @@ def generateMesh(
 
     mesh = outputOASMesh(panelGeomX, panelGeomY)
 
-    return mesh
+    #Produce meshes for each section
+    meshes = []
+    for section in range(sections):
+        if symmetry:
+            secX, secY = planformSymmetric(panelGX[section], panelGY[section], bPanels[section])
+        else:
+            secX = panelGX[section]
+            secY = panelGY[section]
+        secMesh = outputOASMesh(secX,secY)
+        meshes.append(secMesh)
+
+
+    return mesh, meshes
 
 
 def generateSectionGeometry(sections, data, bPanels, cPanels):
@@ -632,7 +644,7 @@ if __name__ == "__main__":
     data = np.array([[1, 1, 10, 0]])
     bPanels = np.array([16])
     cPanels = 16
-    mesh = generateMesh(sections, data, bPanels, cPanels, True, False, True, plotOptions)
+    mesh,meshes = generateMesh(sections, data, bPanels, cPanels, True, False, True, plotOptions)
 
     # Double Delta Wing 75/65
     plotOptions["name"] = "Double Delta Wing 75\\65"
@@ -641,7 +653,7 @@ if __name__ == "__main__":
     bPanels = np.array([6, 7])
     cPanels = 16
     data = np.array([[0.39319, 14.4533, 0.466822, 75], [0, 5.6829, 1.86524, 65]])
-    mesh = generateMesh(sections, data, bPanels, cPanels, True, False, True, plotOptions)
+    mesh,meshes = generateMesh(sections, data, bPanels, cPanels, True, False, True, plotOptions)
 
     # NASA N+3 SST
     plotOptions["name"] = "NASA N+3 SST"
@@ -657,5 +669,5 @@ if __name__ == "__main__":
     bPanels = np.array([3, 2, 8, 15])
     cPanels = 16
 
-    mesh = generateMesh(sections, data, bPanels, cPanels, True, False, True, plotOptions)
+    mesh,meshes = generateMesh(sections, data, bPanels, cPanels, True, False, True, plotOptions)
     plt.show()
