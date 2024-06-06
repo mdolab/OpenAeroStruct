@@ -103,6 +103,7 @@ def check_multi_sec_surface_dict_keys(surface):
         "sec_dihedral",
         "sec_twist_cp",
         "sec_chord_cp",
+        "sec_root_chord",
         "sec_xshear_cp",
         "sec_yshear_cp",
         "sec_zshear_cp",

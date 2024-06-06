@@ -3,7 +3,7 @@ import numpy as np
 import openmdao.api as om
 from openaerostruct.utils.check_surface_dict import check_surface_dict_keys
 from openaerostruct.utils.check_surface_dict import check_multi_sec_surface_dict_keys
-import warnings
+import openaerostruct.geometry.geometry_multi_sec_mesh as multiMesh
 
 
 class Geometry(om.Group):
@@ -208,10 +208,6 @@ class MultiSecGeometry(om.Group):
 
     num_sections: int
 
-
-
-
-
     """
 
     def initialize(self):
@@ -225,77 +221,82 @@ class MultiSecGeometry(om.Group):
         surface = self.options["surface"]
 
         # key validation of the surface dict
-        #TO DO: Replace with check for multi section surfaces
         check_multi_sec_surface_dict_keys(surface)
 
         #Get number of sections
         num_sections = surface["num_sections"]
 
         if surface["meshes"] == "gen-meshes":
-            #Call mesh generation sub routine
+            #Verify that all required inputs for automatic mesh generation are provided for each section
             if len(surface["sec_nx"]) != num_sections:
-                raise ValueError("Number of spanwise points needs to be provided for each section")
-            if len(surface["sec_ny"]) != num_sections:
                 raise ValueError("Number of chordwise points needs to be provided for each section")
+            if len(surface["sec_ny"]) != num_sections:
+                raise ValueError("Number of spanwise points needs to be provided for each section")
+            if len(surface["sec_taper"]) != num_sections:
+                raise ValueError("Taper needs to be provided for each section")
+            if len(surface["sec_root_chord"]) != num_sections:
+                raise ValueError("Root chord length needs to be provided for each section")
+            if len(surface["sec_span"]) != num_sections:
+                raise ValueError("Span needs to be provided for each section")
+            if len(surface["sec_sweep"]) != num_sections:
+                raise ValueError("Sweep needs to be provided for each section")
             
-            nx = surface["sec_nx"]
-            ny = surface["sec_ny"]
-            pass
+            #Get required data for section mesh generation
+            sec_nx = surface["sec_nx"]
+            sec_ny = surface["sec_ny"]
+            sec_taper = surface["sec_taper"]
+            sec_span = surface["sec_span"]
+            sec_root_chord = surface["sec_root_chord"]
+            sec_sweep = surface["sec_sweep"]
+
+            #Compute section aspect ratio
+            sec_S = sec_span*(sec_root_chord*(1+sec_taper))/2
+            sec_AR = sec_span**2/sec_S
+
+            #Create data array for mesh generator
+            sectionData = np.hstack([sec_taper[:,np.newaxis],sec_root_chord[:,np.newaxis],sec_AR[:,np.newaxis],sec_sweep[:,np.newaxis]])
+
+            symmetry  = surface["symmetry"]
+
+            #Generate unified and individual section meshes
+            mesh, sec_meshes = multiMesh.generateMesh(num_sections,sectionData,sec_ny,sec_nx,symmetry)
+            
         else:
+            #Allow user to provide mesh for each section
             if len(surface["meshes"]) != num_sections:
                 raise ValueError("A mesh needs to be provided for each section.")
-            meshes = surface["meshes"]
+            sec_meshes = surface["meshes"]
 
         if len(surface["sec_name"]) != num_sections:
              raise ValueError("A name needs to be provided for each section.")
         
-
-        
-        # Get the surface name and create a group to contain components
-        # only for this surface
-        ny = surface["mesh"].shape[1]
-
-
+        #Create individual geometry groups for each section
         from openaerostruct.geometry.geometry_mesh import GeometryMesh
 
         #Loop through surfaces 
         for i in range(num_sections):
-            surface = {
-                # Wing definition
+            section = {
                 "name": surface["sec_name"][i],  # name of the surface
-                "type": "aero",
-                "symmetry": surface["symmetry"],  # if true, model one half of wing
-                # reflected across the plane y = 0
-                "S_ref_type": surface["S_ref_type"],  # how we compute the wing area,
-                # can be 'wetted' or 'projected'
-                "chord_cp": surface["sec_chord_cp"][i],  # Define chord using 3 B-spline cp's
-                "ref_axis_pos": 0.25,  # Define the reference axis position. 0 is the leading edge, 1 is the trailing edge.
-                # distributed along span
-                "mesh": meshes[i],
-                # Aerodynamic performance of the lifting surface at
-                # an angle of attack of 0 (alpha=0).
-                # These CL0 and CD0 values are added to the CL and CD
-                # obtained from aerodynamic analysis of the surface to get
-                # the total CL and CD.
-                # These CL0 and CD0 values do not vary wrt alpha.
-                "CL0": surface["sec_CL0"][i],  # CL of the surface at alpha=0
-                "CD0": surface["sec_CD0"][i],  # CD of the surface at alpha=0
-                # Airfoil properties for viscous drag calculation
-                "k_lam": 0.05,  # percentage of chord with laminar
-                # flow, used for viscous drag
-                "t_over_c": surface["sec_t_over_c"][i],  # thickness over chord ratio (NACA0015)
-                "c_max_t": surface["sec_c_max_t"][i],  # chordwise location of maximum (NACA0015)
-                # thickness
-                "with_viscous": surface["with_viscous"],  # if true, compute viscous drag,
+                "symmetry": surface["symmetry"],  
+                "S_ref_type": surface["S_ref_type"], 
+                "mesh": sec_meshes[i],
+                "span":surface["sec_span"][i],
+                "taper":surface["sec_taper"][i],
+                "sweep":surface["sec_sweep"][i],
+                "chord_cp": surface["sec_chord_cp"][i],  
+                "ref_axis_pos": 0.25, 
+                "CL0": surface["sec_CL0"][i], 
+                "CD0": surface["sec_CD0"][i], 
+                "k_lam": surface["k_lam"], 
+                "t_over_c": surface["sec_t_over_c"][i], 
+                "c_max_t": surface["sec_c_max_t"][i],  
+                "with_viscous": surface["with_viscous"], 
                 "with_wave": surface["with_wave"],
+                "groundplane": surface["groundplane"],
             }  # end of surface dictionary
 
-            name = surface["name"]
-
-            # Add geometry to the problem as the name of the surface.
-            # These groups are responsible for manipulating the geometry of the mesh,
-            # in this case spanwise twist.
-            geom_group = Geometry(surface=surface)
+            name = section["name"]
+            geom_group = Geometry(surface=section)
             self.add_subsystem(name, geom_group)
             
 
@@ -308,18 +309,3 @@ class MultiSecGeometry(om.Group):
     def connect_sections(self):
         #1. Connect the root and tips of sections and constrain them to remain attached. Sets up off set of sections
         return None #TO DO
-    
-    def gen_meshes(meshes,nx,ny):
-        #TO DO
-        for i in range(len(meshes)):
-            # Create a dictionary to store options about the surface
-            mesh_dict = {
-                "num_y": 35,
-                "num_x": 11,
-                "wing_type": "rect",
-                "symmetry": True,
-                "span": 10.0,
-                "root_chord": 1,
-                "span_cos_spacing": 1.0,
-                "chord_cos_spacing": 1.0,
-            }

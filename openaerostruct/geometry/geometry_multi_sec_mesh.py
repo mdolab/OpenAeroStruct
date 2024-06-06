@@ -73,7 +73,7 @@ def generateMesh(
     mesh = outputOASMesh(panelGeomX, panelGeomY)
 
     #Produce meshes for each section
-    meshes = []
+    sec_meshes = []
     for section in range(sections):
         if symmetry:
             secX, secY = planformSymmetric(panelGX[section], panelGY[section], bPanels[section])
@@ -81,10 +81,10 @@ def generateMesh(
             secX = panelGX[section]
             secY = panelGY[section]
         secMesh = outputOASMesh(secX,secY)
-        meshes.append(secMesh)
+        sec_meshes.append(secMesh)
 
 
-    return mesh, meshes
+    return mesh, sec_meshes
 
 
 def generateSectionGeometry(sections, data, bPanels, cPanels):
