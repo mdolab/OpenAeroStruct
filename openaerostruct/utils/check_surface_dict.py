@@ -93,6 +93,7 @@ def check_multi_sec_surface_dict_keys(surface):
     keys_implemented = [
         # wing definition
         "name",
+        "num_sections",
         "sec_name",
         "symmetry",
         "S_ref_type",
@@ -107,6 +108,8 @@ def check_multi_sec_surface_dict_keys(surface):
         "sec_xshear_cp",
         "sec_yshear_cp",
         "sec_zshear_cp",
+        "sec_ny",
+        "nx",
         "ref_axis_pos",
         # aerodynamics
         "sec_CL0",

@@ -149,7 +149,7 @@ def generateSectionGeometry(sections, data, bPanels, cPanels):
 
         # Generate geomtery
         if sec == 0:
-            rootEnd = 0
+            rootEnd = 0.
         else:
             rootEnd = panelGX[sec - 1][cPanels, 0]
         rootStart = rootC + rootEnd
@@ -452,6 +452,8 @@ def outputOASMesh(panelGeomX, panelGeomY):
     mesh[:, :, 1] = panelGeomY
     return mesh
 
+def outputOASSectionMesh(panelGX,panelGY):
+    return None
 
 def plotPlanform(sections, panelGX, panelGY, plotSymmetry="Left", wingName="CustomUserWing"):
     """
@@ -637,7 +639,7 @@ if __name__ == "__main__":
     plotOptions["type"] = "all"
     plotOptions["symmetry"] = "Left"
     plotOptions["name"] = "Rectangular Wing"
-
+    '''
     # Simple rectangular wing
     # 32 x 16 mesh
     sections = 1
@@ -670,4 +672,13 @@ if __name__ == "__main__":
     cPanels = 16
 
     mesh,meshes = generateMesh(sections, data, bPanels, cPanels, True, False, True, plotOptions)
+    '''
+    # Simple rectangular wing 2 sections
+    # 32 x 16 mesh
+    sections = 2
+    data = np.array([[1, 1, 1, 0],[1, 1, 1, 0]])
+    bPanels = np.array([1,1])
+    cPanels = 1
+    mesh,meshes = generateMesh(sections, data, bPanels, cPanels, True, False, True, plotOptions)
+
     plt.show()

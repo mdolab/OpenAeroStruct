@@ -195,19 +195,13 @@ class Geometry(om.Group):
 
 class MultiSecGeometry(om.Group):
     """
-    Group that contains all components needed for an OAS problem with a multisection geometry.
-
-    Because we use this general group, there's some logic to figure out which
-    components to add and which connections to make.
-    This is especially true for all of the geometric manipulation types, such
-    as twist, sweep, etc., in that we handle the creation of these parameters
-    differently if the user wants to have them vary in the optimization problem.
+    Group that contains the section geometery groups for the multi-section surface
 
 
-    Surface Dict def
-
-    num_sections: int
-
+    This group handles the creation of each section geometry group based on parameters 
+    supplied in the multi-section surface dictionary. Meshes for each section can be 
+    provided by the user or automatically generated based on parameters supplied in the 
+    surface dictionary. 
     """
 
     def initialize(self):
@@ -228,8 +222,6 @@ class MultiSecGeometry(om.Group):
 
         if surface["meshes"] == "gen-meshes":
             #Verify that all required inputs for automatic mesh generation are provided for each section
-            if len(surface["sec_nx"]) != num_sections:
-                raise ValueError("Number of chordwise points needs to be provided for each section")
             if len(surface["sec_ny"]) != num_sections:
                 raise ValueError("Number of spanwise points needs to be provided for each section")
             if len(surface["sec_taper"]) != num_sections:
@@ -242,7 +234,7 @@ class MultiSecGeometry(om.Group):
                 raise ValueError("Sweep needs to be provided for each section")
             
             #Get required data for section mesh generation
-            sec_nx = surface["sec_nx"]
+            nx = surface["nx"]
             sec_ny = surface["sec_ny"]
             sec_taper = surface["sec_taper"]
             sec_span = surface["sec_span"]
@@ -250,7 +242,7 @@ class MultiSecGeometry(om.Group):
             sec_sweep = surface["sec_sweep"]
 
             #Compute section aspect ratio
-            sec_S = sec_span*(sec_root_chord*(1+sec_taper))/2
+            sec_S = sec_span*(sec_root_chord*(np.ones(num_sections)+sec_taper))/2
             sec_AR = sec_span**2/sec_S
 
             #Create data array for mesh generator
@@ -259,7 +251,7 @@ class MultiSecGeometry(om.Group):
             symmetry  = surface["symmetry"]
 
             #Generate unified and individual section meshes
-            mesh, sec_meshes = multiMesh.generateMesh(num_sections,sectionData,sec_ny,sec_nx,symmetry)
+            mesh, sec_meshes = multiMesh.generateMesh(num_sections,sectionData,sec_ny-np.ones(num_sections,dtype=np.int32),nx-num_sections,symmetry)
             
         else:
             #Allow user to provide mesh for each section
@@ -288,7 +280,7 @@ class MultiSecGeometry(om.Group):
                 "CL0": surface["sec_CL0"][i], 
                 "CD0": surface["sec_CD0"][i], 
                 "k_lam": surface["k_lam"], 
-                "t_over_c": surface["sec_t_over_c"][i], 
+                "t_over_c_cp": surface["sec_t_over_c_cp"][i], 
                 "c_max_t": surface["sec_c_max_t"][i],  
                 "with_viscous": surface["with_viscous"], 
                 "with_wave": surface["with_wave"],
@@ -298,14 +290,3 @@ class MultiSecGeometry(om.Group):
             name = section["name"]
             geom_group = Geometry(surface=section)
             self.add_subsystem(name, geom_group)
-            
-
-
-    def setup_section(num_section,surface_section):
-        #1: Process section data from surface data
-        #2. Create geom group for section and return it
-        return None # TO DO
-    
-    def connect_sections(self):
-        #1. Connect the root and tips of sections and constrain them to remain attached. Sets up off set of sections
-        return None #TO DO
