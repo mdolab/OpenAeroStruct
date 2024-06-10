@@ -32,7 +32,7 @@ surface = {
     "sec_CL0": np.array([0.0,0.0]),  # CL of the surface at alpha=0
     "sec_CD0": np.array([0.015,0.015]),  # CD of the surface at alpha=0
     "nx" : 2,
-    "sec_ny" : np.array([5,5]),
+    "sec_ny" : np.array([2,2]),
     "sec_root_chord" : np.array([1.0,1.0]),
     # Airfoil properties for viscous drag calculation
     "k_lam": 0.05,  # percentage of chord with laminar

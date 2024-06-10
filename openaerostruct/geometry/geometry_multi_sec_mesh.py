@@ -76,7 +76,7 @@ def generateMesh(
     sec_meshes = []
     for section in range(sections):
         if symmetry:
-            secX, secY = planformSymmetric(panelGX[section], panelGY[section], bPanels[section])
+            secX, secY = sectionSymmetric(panelGX[section], panelGY[section], bPanels[section])
         else:
             secX = panelGX[section]
             secY = panelGY[section]
@@ -218,7 +218,6 @@ def generatePanelsSection(sec, secGeom, cPanels, bPanels, panelGX, panelGY, tqua
     tipStart = secGeom["tipStart"]
     tipEnd = secGeom["tipEnd"]
 
-    # rootChordPoints = np.arange(rootStart,rootEnd-(rootStart-rootEnd)/cPanels,-(rootStart-rootEnd)/cPanels)
     rootChordPoints = np.linspace(rootStart, rootEnd, cPanels + 1)
 
     if tipStart == tipEnd:
@@ -230,16 +229,16 @@ def generatePanelsSection(sec, secGeom, cPanels, bPanels, panelGX, panelGY, tqua
     if sec == 0:
         panelGeomY = np.arange(-b / 2, b / 2 + K[sec], K[sec])
     else:
-        panelGeomY = np.zeros(2 * bPanels)
-        panelGeomY[0:bPanels] = np.linspace(panelGY[sec - 1][0] - (b / 2), panelGY[sec - 1][0] - K[sec], bPanels)
-        panelGeomY[bPanels : 2 * bPanels] = np.linspace(
-            panelGY[sec - 1][-1] + K[sec], panelGY[sec - 1][-1] + (b / 2), bPanels
+        panelGeomY = np.zeros(2 * (bPanels + 1))
+        panelGeomY[0:bPanels+1] = np.linspace(panelGY[sec - 1][0] - (b / 2), panelGY[sec - 1][0], bPanels + 1)
+        panelGeomY[bPanels + 1: ] = np.linspace(
+            panelGY[sec - 1][-1], panelGY[sec - 1][-1] + (b / 2), bPanels + 1
         )
 
     if sec == 0:
         centreIndex = bPanels
     else:
-        centreIndex = bPanels - 1
+        centreIndex = bPanels
 
     panelGeomX = np.zeros([len(rootChordPoints), len(panelGeomY)])
     if sec == 0:
@@ -263,17 +262,21 @@ def generatePanelsSection(sec, secGeom, cPanels, bPanels, panelGX, panelGY, tqua
                 (tipChordPoints[i] - rootChordPoints[i]) / (b / 2)
             ) * (panelGeomY[centreIndex + 1 :] - panelGY[sec - 1][-1])
 
-    panelQuarterC = np.zeros([cPanels, len(panelGeomY)])
-    tquarterPointsX = np.zeros([cPanels, len(panelGeomY)])
+    '''
+    Control Point computation disabled for now
+    panelQuarterC = np.zeros([cPanels, len(panelGeomY)-2])
+    tquarterPointsX = np.zeros([cPanels, len(panelGeomY)-2])
 
-    for i in range(len(panelGeomY)):
+    for i in range(len(panelGeomY)-2):
         for j in range(cPanels - 1):
             panelQuarterC[j, i] = panelGeomX[j, i] + (panelGeomX[j + 1, i] - panelGeomX[j, i]) / 4
             tquarterPointsX[j, i] = panelGeomX[j, i] + 1 * (panelGeomX[j + 1, i] - panelGeomX[j, i]) / 2
+   
 
     panelQC.append(panelQuarterC)
-    panelGY.append(panelGeomY)
     tquartX.append(tquarterPointsX)
+    '''
+    panelGY.append(panelGeomY)
     panelGX.append(panelGeomX)
 
     return panelGY, panelGX, tquartX, panelQC, K
@@ -308,9 +311,9 @@ def stitchSectionGeometry(sections, panelGY, panelGX, bPanels):
             panelGeomY = panelGY[i]
             panelGeomX = panelGX[i]
         else:
-            panelGeomY = np.concatenate((panelGY[i][0 : bPanels[i]], panelGeomY, panelGY[i][bPanels[i] :]))
+            panelGeomY = np.concatenate((panelGY[i][0 : bPanels[i]], panelGeomY, panelGY[i][bPanels[i]+2 :]))
             panelGeomX = np.concatenate(
-                (panelGX[i][:, 0 : bPanels[i]], panelGeomX, panelGX[i][:, bPanels[i] :]), axis=1
+                (panelGX[i][:, 0 : bPanels[i]], panelGeomX, panelGX[i][:, bPanels[i]+2 :]), axis=1
             )
     return panelGeomX, panelGeomY
 
@@ -348,6 +351,7 @@ def stitchPanelChordGeometry(sections, panelQC, tquartX, bPanels):
                 (tquartX[i][:, 0 : bPanels[i]], tquarterPointsX, tquartX[i][:, bPanels[i] :]), axis=1
             )
     return quarterC, tquarterPointsX
+
 
 
 def calcControlPoints(panelGeomY, panelGeomX, tquartX, panelQC, bPanels, cPanels):
@@ -423,8 +427,34 @@ def planformSymmetric(panelGeomX, panelGeomY, bPanels):
     panelGeomY : numpy array
         Array of the mesh y-coordinates
     """
-    panelGeomX = panelGeomX[:, 0 : np.sum(bPanels)]
-    panelGeomY = panelGeomY[0 : np.sum(bPanels)]
+    panelGeomX = panelGeomX[:, 0 : np.sum(bPanels)+1]
+    panelGeomY = panelGeomY[0 : np.sum(bPanels)+1]
+    return panelGeomX, panelGeomY
+
+
+def sectionSymmetric(panelGeomX, panelGeomY, bPanels):
+    """
+    Cuts sectiona meshes in half is symmetry conditions are used
+
+    Parameters
+    ----------
+    panelGeomX : numpy array
+         Array of the mesh x-coordinates
+    panelGeomY : numpy array
+        Array of the mesh y-coordinates
+    bPanels: numpy array
+        1 x sections 1-D array consisting of integers that specify the number of spanwise panels corresponding to each wing section
+
+
+    Returns
+    -------
+    panelGeomX : numpy array
+         Array of the mesh x-coordinates
+    panelGeomY : numpy array
+        Array of the mesh y-coordinates
+    """
+    panelGeomX = panelGeomX[:, 0 : np.sum(bPanels)+1]
+    panelGeomY = panelGeomY[0 : np.sum(bPanels)+1]
     return panelGeomX, panelGeomY
 
 
@@ -453,7 +483,28 @@ def outputOASMesh(panelGeomX, panelGeomY):
     return mesh
 
 def outputOASSectionMesh(panelGX,panelGY):
-    return None
+    """
+    Outputs the section meshes in OAS format
+
+    Parameters
+    ----------
+    panelGeomX : numpy array
+         Array of the mesh x-coordinates
+    panelGeomY : numpy array
+        Array of the mesh y-coordinates
+
+
+
+    Returns
+    -------
+    mesh : numpy array
+         3-D array with the OAS format mesh
+    """
+    panelGY = np.broadcast_to(panelGY, (panelGX.shape[0], len(panelGY)))
+    mesh = np.zeros((panelGX.shape[0], panelGY.shape[1], 3))
+    mesh[:, :, 0] = panelGX
+    mesh[:, :, 1] = panelGY
+    return mesh
 
 def plotPlanform(sections, panelGX, panelGY, plotSymmetry="Left", wingName="CustomUserWing"):
     """
@@ -637,7 +688,7 @@ if __name__ == "__main__":
 
     plotOptions = {}
     plotOptions["type"] = "all"
-    plotOptions["symmetry"] = "Left"
+    plotOptions["symmetry"] = "Both"
     plotOptions["name"] = "Rectangular Wing"
     '''
     # Simple rectangular wing
@@ -674,10 +725,9 @@ if __name__ == "__main__":
     mesh,meshes = generateMesh(sections, data, bPanels, cPanels, True, False, True, plotOptions)
     '''
     # Simple rectangular wing 2 sections
-    # 32 x 16 mesh
-    sections = 2
-    data = np.array([[1, 1, 1, 0],[1, 1, 1, 0]])
-    bPanels = np.array([1,1])
+    sections = 3
+    data = np.array([[1, 1, 1, 0],[1, 1, 1, 0],[1, 1, 1, 0]])
+    bPanels = np.array([1,1,1])
     cPanels = 1
     mesh,meshes = generateMesh(sections, data, bPanels, cPanels, True, False, True, plotOptions)
 

@@ -251,7 +251,7 @@ class MultiSecGeometry(om.Group):
             symmetry  = surface["symmetry"]
 
             #Generate unified and individual section meshes
-            mesh, sec_meshes = multiMesh.generateMesh(num_sections,sectionData,sec_ny-np.ones(num_sections,dtype=np.int32),nx-num_sections,symmetry)
+            mesh, sec_meshes = multiMesh.generateMesh(num_sections,sectionData,sec_ny-np.ones(num_sections,dtype=np.int32),nx-1,symmetry)
             
         else:
             #Allow user to provide mesh for each section
