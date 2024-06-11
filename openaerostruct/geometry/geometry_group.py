@@ -246,7 +246,7 @@ class MultiSecGeometry(om.Group):
             sec_AR = sec_span**2/sec_S
 
             #Create data array for mesh generator
-            sectionData = np.hstack([sec_taper[:,np.newaxis],sec_root_chord[:,np.newaxis],sec_AR[:,np.newaxis],sec_sweep[:,np.newaxis]])
+            sectionData = np.hstack([np.ones(num_sections)[:,np.newaxis],sec_root_chord[:,np.newaxis],sec_AR[:,np.newaxis],np.zeros(num_sections)[:,np.newaxis]])
 
             symmetry  = surface["symmetry"]
 
@@ -280,12 +280,13 @@ class MultiSecGeometry(om.Group):
                 "CL0": surface["sec_CL0"][i], 
                 "CD0": surface["sec_CD0"][i], 
                 "k_lam": surface["k_lam"], 
-                "t_over_c_cp": surface["sec_t_over_c_cp"][i], 
+                #"t_over_c_cp": surface["sec_t_over_c_cp"][i], 
                 "c_max_t": surface["sec_c_max_t"][i],  
                 "with_viscous": surface["with_viscous"], 
                 "with_wave": surface["with_wave"],
                 "groundplane": surface["groundplane"],
             }  # end of surface dictionary
+
 
             name = section["name"]
             geom_group = Geometry(surface=section)

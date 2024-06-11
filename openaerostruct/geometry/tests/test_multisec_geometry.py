@@ -4,7 +4,7 @@ import openmdao.api as om
 
 from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.geometry.geometry_group import MultiSecGeometry
-
+import matplotlib.pyplot as plt
 
 # Create a dictionary to store options about the mesh
 mesh_dict = {"num_y": 7, "num_x": 2, "wing_type": "rect", "symmetry": True}
@@ -27,7 +27,8 @@ surface = {
     "sec_taper": np.array([1.0,1.0]),
     "sec_span":np.array([1.0,1.0]),
     "sec_sweep":np.array([0.0,0.0]),
-    "sec_chord_cp": [np.ones((1)),np.ones((1))],
+    #"sec_chord_cp": [np.array([1,0.5,0.5]),np.array([1,0.2,0.5])],
+    "sec_chord_cp": [np.ones(1),2*np.ones(1)],
     "meshes": "gen-meshes",
     "sec_CL0": np.array([0.0,0.0]),  # CL of the surface at alpha=0
     "sec_CD0": np.array([0.015,0.015]),  # CD of the surface at alpha=0
@@ -99,11 +100,66 @@ prob.model.add_design_var("wing.zshear_cp", lower=-1.0, upper=1.0)
 prob.model.add_constraint(point_name + ".wing_perf.CL", equals=0.5)
 prob.model.add_objective(point_name + ".wing_perf.CD", scaler=1e4)
 '''
+
+
+#prob.model.add_design_var("surface.sec1.chord_cp", lower=0.1, upper=10.0, units=None)
+prob.model.add_design_var("surface.sec2.chord_cp", lower=0.1, upper=10.0, units=None)
+prob.model.add_design_var("alpha", lower=0.1, upper=10.0, units='deg')
+
+testConnect = om.ExecComp('dist = sum((edge1 - edge2)**2)**(1/2)',edge1={'units':'m','shape':(2,3)},edge2={'units':'m','shape':(2,3)},dist={'units':'m'})
+prob.model.add_subsystem('testConnect',testConnect)
+
+testObj = om.ExecComp('testOut = testIn',testIn={'units':'deg'})
+prob.model.add_subsystem('testObj',testObj)
+
+prob.model.connect('alpha','testObj.testIn')
+
+prob.model.connect("surface.sec1.mesh",'testConnect.edge1',src_indices = om.slicer[:,-1,:])
+prob.model.connect("surface.sec2.mesh",'testConnect.edge2',src_indices = om.slicer[:,-1,:])
+
+prob.model.add_constraint('testConnect.dist',equals=0.0)
+
+prob.model.add_objective('testObj.testOut')
+
+
+prob.driver = om.ScipyOptimizeDriver()
+prob.driver.options['optimizer'] = 'SLSQP'
+prob.driver.options['tol'] = 1e-3
+prob.driver.options['disp'] = True
+prob.driver.options['maxiter'] = 1000
+#prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
+
 # Set up and run the optimization problem
 prob.setup()
 om.n2(prob)
+#prob.run_model()
+prob.run_driver()
 
-#prob.run_driver()
+
+mesh1 = prob.get_val("surface.sec1.mesh", units="m")
+mesh2 = prob.get_val("surface.sec2.mesh", units="m")
+
+def plot_meshes(meshes):
+    """ this function plots to plot the mesh """
+    plt.figure(figsize=(6, 3))
+    for i,mesh in enumerate(meshes):
+        mesh_x = mesh[:, :, 0]
+        mesh_y = mesh[:, :, 1]
+        color = 'k'
+        for i in range(mesh_x.shape[0]):
+            plt.plot(mesh_y[i, :], mesh_x[i, :], color, lw=1)
+            plt.plot(-mesh_y[i, :], mesh_x[i, :], color, lw=1)   # plots the other side of symmetric wing
+        for j in range(mesh_x.shape[1]):
+            plt.plot(mesh_y[:, j], mesh_x[:, j], color, lw=1)
+            plt.plot(-mesh_y[:, j], mesh_x[:, j], color, lw=1)   # plots the other side of symmetric wing
+    plt.axis('equal')
+    plt.xlabel('span, m')
+    plt.ylabel('chord, m')
+    #plt.legend()
+    plt.show()
+
+plot_meshes([mesh1,mesh2])
+#
 
 #assert_near_equal(prob["aero_point_0.wing_perf.CD"][0], 0.02891508386825118, 1e-6)
 #assert_near_equal(prob["aero_point_0.wing_perf.CL"][0], 0.5, 1e-6)

@@ -726,7 +726,7 @@ if __name__ == "__main__":
     '''
     # Simple rectangular wing 2 sections
     sections = 3
-    data = np.array([[1, 1, 1, 0],[1, 1, 1, 0],[1, 1, 1, 0]])
+    data = np.array([[1, 1, 1, 0],[1, 1, 1, 0],[0.5, 1, 1, 0]])
     bPanels = np.array([1,1,1])
     cPanels = 1
     mesh,meshes = generateMesh(sections, data, bPanels, cPanels, True, False, True, plotOptions)
