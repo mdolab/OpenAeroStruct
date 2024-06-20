@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 import openmdao.api as om
 
 from openaerostruct.geometry.utils import generate_mesh
-
+from openaerostruct.aerodynamics.eval_mtx import _compute_finite_vortex
+from openaerostruct._SAFA_TEST.VORTEX import VORTEX
+from openaerostruct._SAFA_TEST.VORTEX import VORTEX2
 
 # Create a dictionary to store options about the mesh
 mesh_dict = {"num_y": 3, "num_x": 2, "wing_type": "rect", "symmetry": True,"span": 1.0,"root_chord": 1.,}
@@ -12,7 +14,7 @@ mesh_dict = {"num_y": 3, "num_x": 2, "wing_type": "rect", "symmetry": True,"span
 # Generate the aerodynamic mesh based on the previous dictionary
 mesh = generate_mesh(mesh_dict)
 
-print(mesh)
+#print(mesh)
 
 
 def plot_mesh(mesh):
@@ -34,4 +36,44 @@ def plot_mesh(mesh):
     plt.legend()
     plt.show()
 
-plot_mesh(mesh)
+
+
+#plot_mesh(mesh)
+
+'''
+#OAS Core Model Test
+
+
+#Distance Test
+dists = np.linspace(1e-1,1e-12,101)
+resultsOAS = []
+resultsKfid = []
+test = 1e-10
+
+
+for test in dists:
+    r1 = np.array([0.5,0,test])
+    r2 = np.array([-0.5,0,test]) 
+
+    result = _compute_finite_vortex(r1,r2)
+    #print('OAS MODEL',result)
+    resultsOAS.append(result[1])
+
+    result = VORTEX2(r1,r2)
+    #print('Kfid + Safa Model',result)
+    resultsKfid.append(result[1])
+
+
+plt.figure()
+plt.plot(dists,resultsOAS,label='OAS')
+plt.plot(dists,resultsKfid,label='OAS + Improved Core Model')
+plt.xlabel('r(meters)')
+plt.ylabel('Induced velocity(m/s)')
+plt.xscale('log')
+plt.grid()
+plt.legend()
+plt.savefig('CoreModelComparisonTol4.pdf')
+plt.show()
+
+'''
+
