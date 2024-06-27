@@ -64,6 +64,8 @@ def check_surface_dict_keys(surface):
         "data_y_upper",
         "data_x_lower",
         "data_y_lower",
+        # tsaiwu_wingbox structure
+        "composite_safetyfactor",
         # FFD
         "mx",
         "my",

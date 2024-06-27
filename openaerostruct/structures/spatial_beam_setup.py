@@ -46,3 +46,13 @@ class SpatialBeamSetup(om.Group):
                 promotes_inputs=["nodes", "A_int"],
                 promotes_outputs=["fuel_vols"],
             )
+        # ================================================
+        # Adding Tsai Wu wingbox here
+        # ================================================
+        elif surface["fem_model_type"] == "tsaiwu_wingbox":
+            self.add_subsystem(
+                "fuel_vol",
+                WingboxFuelVol(surface=surface),
+                promotes_inputs=["nodes", "A_int"],
+                promotes_outputs=["fuel_vols"],
+            )
