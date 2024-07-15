@@ -44,7 +44,7 @@ The oldest and latest versions of the dependencies that we test regularly are th
       - 1.9.0
       - latest
     * - OpenMDAO
-      - 3.20
+      - 3.22
       - latest
     * - Matplotlib
       - latest
