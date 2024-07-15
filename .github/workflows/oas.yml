@@ -26,11 +26,12 @@ jobs:
     container:
       image: mdolab/public:u22-gcc-ompi-${{ matrix.dockerImage }}-amd64
     steps:
-      - uses: actions/checkout@v2
-      - name: Install OAS
+      - name: Permissions hack
         run: |
-          source /home/mdolabuser/.bashrc
-          source /home/mdolabuser/.bashrc_mdolab
+          echo temppass | sudo -S mkdir -p /__w
+          echo temppass | sudo -S chmod 755 -R /__w
+          echo temppass | sudo -S umask 022
+      - uses: actions/checkout@v4
       - name: Install OAS
         run: |
           pip install -e .[test,mphys]
