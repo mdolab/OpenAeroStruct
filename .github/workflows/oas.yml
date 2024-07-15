@@ -30,7 +30,7 @@ jobs:
         run: |
           echo temppass | sudo -S mkdir -p /__w
           echo temppass | sudo -S chmod 755 -R /__w
-          echo temppass | sudo -S umask 022
+          umask 022
       - uses: actions/checkout@v4
       - name: Install OAS
         run: |
