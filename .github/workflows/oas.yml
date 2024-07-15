@@ -23,7 +23,9 @@ jobs:
         dockerImage: [stable, latest]
 
     runs-on: ubuntu-latest
-    container: mdolab/public:u22-gcc-ompi-${{ matrix.dockerImage }}-amd64
+    container:
+      image: mdolab/public:u22-gcc-ompi-${{ matrix.dockerImage }}-amd64
+      options: --user root
     steps:
       - uses: actions/checkout@v4
       - name: Install OAS
