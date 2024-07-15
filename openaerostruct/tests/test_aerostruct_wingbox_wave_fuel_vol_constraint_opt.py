@@ -428,9 +428,9 @@ class Test(unittest.TestCase):
         # Set up the problem
         prob.setup()
 
-        prob.run_driver()
+        optFailed = prob.run_driver()
 
-        self.assertEqual(prob.driver.get_exit_status(), "SUCCESS")
+        self.assertFalse(optFailed)
         assert_near_equal(prob["AS_point_0.fuelburn"][0], 85348.88283214, 1e-5)
         assert_near_equal(prob["wing.structural_mass"][0], 13029.71120634, 1e-5)
 
