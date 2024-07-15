@@ -28,7 +28,7 @@ jobs:
         PYTHON_VERSION_LATEST: ['3.11']
         NUMPY_VERSION_OLDEST: ['1.24']  # latest is most recent on PyPI
         SCIPY_VERSION_OLDEST: ['1.9']  # latest is most recent on PyPI
-        OPENMDAO_VERSION_OLDEST: ['3.15']  # latest is most recent on PyPI
+        OPENMDAO_VERSION_OLDEST: ['3.20']  # latest is most recent on PyPI
         MPHYS_VERSION_OLDEST: ['1.0.0']  # latest is most recent on PyPI
         PYGEO_VERSION_OLDEST: ['1.6.0']  # latest is pulled from main branch, for some reason anything after 1.12.2 seg faults on the old build
         VSP_VERSION: ['3.27.1']  # used for both builds
