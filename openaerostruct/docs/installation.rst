@@ -35,16 +35,16 @@ The oldest and latest versions of the dependencies that we test regularly are th
       - oldest
       - latest
     * - Python
-      - 3.8
+      - 3.9
       - 3.11
     * - NumPy
-      - 1.20
+      - 1.24
       - latest
     * - SciPy
-      - 1.6.0
+      - 1.9.0
       - latest
     * - OpenMDAO
-      - 3.15
+      - 3.20
       - latest
     * - Matplotlib
       - latest
@@ -70,7 +70,7 @@ To run the tests on your machine, use the [test] option. This will install the p
 Then run the tests from the OpenAeroStruct root directory by calling:
 
 .. code-block:: bash
-  
+
     testflo -v .
 
 To install the dependencies to build the documentation locally, run:
