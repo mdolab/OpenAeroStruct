@@ -25,9 +25,12 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: mdolab/public:u22-gcc-ompi-${{ matrix.dockerImage }}-amd64
-      options: --user root
     steps:
       - uses: actions/checkout@v4
+      - name: Install OAS
+        run: |
+          source /home/mdolabuser/.bashrc
+          source /home/mdolabuser/.bashrc_mdolab
       - name: Install OAS
         run: |
           pip install -e .[test,mphys]
