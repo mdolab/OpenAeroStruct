@@ -95,10 +95,10 @@ The oldest and latest versions of the dependencies that we test regularly are th
 
 | Dependency         | oldest | latest |
 | ------------------ | ------ | ------ |
-| Python             | 3.9    | 3.11   |
-| NumPy              | 1.24   | latest |
-| SciPy              | 1.9.0  | latest |
-| OpenMDAO           | 3.22   | latest |
+| Python             | 3.8    | 3.11   |
+| NumPy              | 1.20   | latest |
+| SciPy              | 1.6.0  | latest |
+| OpenMDAO           | 3.15   | latest |
 | MPhys              | 1.0.0  | latest |
 | Matplotlib         | latest | latest |
 | pyGeo (optional)   | 1.6.0  | latest |

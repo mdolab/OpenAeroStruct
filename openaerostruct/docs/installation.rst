@@ -35,16 +35,16 @@ The oldest and latest versions of the dependencies that we test regularly are th
       - oldest
       - latest
     * - Python
-      - 3.9
+      - 3.8
       - 3.11
     * - NumPy
-      - 1.24
+      - 1.20
       - latest
     * - SciPy
-      - 1.9.0
+      - 1.6.0
       - latest
     * - OpenMDAO
-      - 3.22
+      - 3.15
       - latest
     * - Matplotlib
       - latest
