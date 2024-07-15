@@ -198,12 +198,11 @@ class Test(unittest.TestCase):
         # We're trying to minimize fuel burn
         prob.model.add_objective("AS_point_0.fuelburn", scaler=0.1)
 
-        # Set up the problem
-        prob.setup()
-
         self.prob = prob
 
     def test_opt(self):
+        # Set up the problem
+        self.prob.setup()
         # Actually run the optimization problem
         self.prob.run_driver()
 
@@ -213,6 +212,8 @@ class Test(unittest.TestCase):
         assert_near_equal(self.prob["alpha"][0], 2.0366563718492547, 1e-5)
 
     def test_totals(self):
+        # Set up the problem
+        self.prob.setup()
         self.prob.run_model()
         totals = self.prob.check_totals(
             method="fd",
