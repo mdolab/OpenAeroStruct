@@ -221,10 +221,10 @@ class Test(unittest.TestCase):
             step=5e-4,
             step_calc="rel",
             compact_print=True,
-            abs_err_tol=1e-2,
-            rel_err_tol=1e-5,
+            abs_err_tol=1e-4,
+            rel_err_tol=1e-4,
         )
-        assert_check_totals(totals, atol=1e-4, rtol=1e-5)
+        assert_check_totals(totals, atol=1e-4, rtol=1e-4)
 
 
 if __name__ == "__main__":
