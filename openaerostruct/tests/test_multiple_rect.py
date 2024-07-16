@@ -44,7 +44,13 @@ class Test(unittest.TestCase):
         }
 
         # Create a dictionary to store options about the surface
-        mesh_dict = {"num_y": 5, "num_x": 3, "wing_type": "rect", "symmetry": True, "offset": np.array([50, 0.0, 0.0])}
+        mesh_dict = {
+            "num_y": 5,
+            "num_x": 3,
+            "wing_type": "rect",
+            "symmetry": True,
+            "offset": np.array([49.5, 0.0, 0.0]),
+        }
 
         mesh = generate_mesh(mesh_dict)
 
