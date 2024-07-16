@@ -289,7 +289,7 @@ class Test(unittest.TestCase):
             # Airfoil properties for viscous drag calculation
             "k_lam": 0.05,  # percentage of chord with laminar
             # flow, used for viscous drag
-            "t_over_c_cp": np.array([0.08, 0.08, 0.08, 0.10, 0.10, 0.08]),
+            "t_over_c_cp": 0.12 * np.ones(6),
             "original_wingbox_airfoil_t_over_c": 0.12,
             "c_max_t": 0.38,  # chordwise location of maximum thickness
             "with_viscous": True,
@@ -317,10 +317,11 @@ class Test(unittest.TestCase):
 
         # Add problem information as an independent variables component
         indep_var_comp = om.IndepVarComp()
-        indep_var_comp.add_output("v", val=0.85 * 295.07, units="m/s")
+        Mach = 0.77
+        indep_var_comp.add_output("v", val=Mach * 295.07, units="m/s")
         indep_var_comp.add_output("alpha", val=0.0, units="deg")
-        indep_var_comp.add_output("Mach_number", val=0.85)
-        indep_var_comp.add_output("re", val=0.348 * 295.07 * 0.85 * 1.0 / (1.43 * 1e-5), units="1/m")
+        indep_var_comp.add_output("Mach_number", val=Mach)
+        indep_var_comp.add_output("re", val=0.348 * 295.07 * Mach * 1.0 / (1.43 * 1e-5), units="1/m")
         indep_var_comp.add_output("rho", val=0.348, units="kg/m**3")
         indep_var_comp.add_output("CT", val=0.53 / 3600, units="1/s")
         indep_var_comp.add_output("R", val=14.307e6, units="m")
@@ -412,7 +413,7 @@ class Test(unittest.TestCase):
         prob.model.add_design_var("wing.twist_cp", lower=-15.0, upper=15.0, scaler=0.1)
         prob.model.add_design_var("wing.spar_thickness_cp", lower=0.003, upper=0.1, scaler=1e2)
         prob.model.add_design_var("wing.skin_thickness_cp", lower=0.003, upper=0.1, scaler=1e2)
-        prob.model.add_design_var("wing.geometry.t_over_c_cp", lower=0.07, upper=0.2, scaler=10.0)
+        prob.model.add_design_var("wing.geometry.t_over_c_cp", lower=0.06, upper=0.2, scaler=10.0)
 
         prob.model.add_constraint("AS_point_0.CL", equals=0.5)
         prob.model.add_constraint("AS_point_0.wing_perf.failure", upper=0.0)
@@ -427,10 +428,11 @@ class Test(unittest.TestCase):
         # Set up the problem
         prob.setup()
 
-        prob.run_driver()
+        optFailed = prob.run_driver()
 
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 78292.730861421, 1e-5)
-        assert_near_equal(prob["wing.structural_mass"][0] / 1.25, 16168.330307591294, 1e-5)
+        self.assertFalse(optFailed)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 85348.88283214, 1e-5)
+        assert_near_equal(prob["wing.structural_mass"][0], 13029.71120634, 1e-5)
 
 
 if __name__ == "__main__":

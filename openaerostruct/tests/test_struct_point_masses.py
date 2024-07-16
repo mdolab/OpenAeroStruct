@@ -11,7 +11,7 @@ import openmdao.api as om
 class Test(unittest.TestCase):
     def test(self):
         # Create a dictionary to store options about the surface
-        mesh_dict = {"num_y": 31, "wing_type": "rect", "span": 10, "symmetry": True}
+        mesh_dict = {"num_y": 31, "num_x": 3, "wing_type": "rect", "span": 10, "symmetry": True}
 
         mesh = generate_mesh(mesh_dict)
 
@@ -48,7 +48,7 @@ class Test(unittest.TestCase):
 
         point_masses = np.array([[10.0]])
 
-        point_mass_locations = np.array([[1.0, -10.0, 0.0]])
+        point_mass_locations = np.array([[1.5, -10.0, 0.0]])
 
         indep_var_comp.add_output("point_masses", val=point_masses, units="kg")
         indep_var_comp.add_output("point_mass_locations", val=point_mass_locations, units="m")
@@ -69,7 +69,7 @@ class Test(unittest.TestCase):
 
     def test_multiple_masses(self):
         # Create a dictionary to store options about the surface
-        mesh_dict = {"num_y": 31, "wing_type": "rect", "span": 10, "symmetry": True}
+        mesh_dict = {"num_y": 31, "num_x": 3, "wing_type": "rect", "span": 10, "symmetry": True}
 
         mesh = generate_mesh(mesh_dict)
 
@@ -106,7 +106,7 @@ class Test(unittest.TestCase):
 
         point_masses = np.array([[10.0, 20.0]])
 
-        point_mass_locations = np.array([[1.0, -1.0, 0.0], [1.0, -2.0, 0.0]])
+        point_mass_locations = np.array([[1.5, -1.0, 0.0], [1.5, -2.0, 0.0]])
 
         indep_var_comp.add_output("point_masses", val=point_masses, units="kg")
         indep_var_comp.add_output("point_mass_locations", val=point_mass_locations, units="m")

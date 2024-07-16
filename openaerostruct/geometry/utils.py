@@ -375,6 +375,7 @@ def gen_rect_mesh(num_x, num_y, span, chord, span_cos_spacing=0.0, chord_cos_spa
     mesh = np.zeros((num_x, num_y, 3))
     ny2 = (num_y + 1) // 2
 
+    # --- spanwise discretization ---
     # Hotfix a special case for spacing bunched at the root and tips
     if span_cos_spacing == 2.0:
         beta = np.linspace(0, np.pi, ny2)
@@ -396,23 +397,17 @@ def gen_rect_mesh(num_x, num_y, span, chord, span_cos_spacing=0.0, chord_cos_spa
         half_wing = cosine * span_cos_spacing + (1 - span_cos_spacing) * uniform
         full_wing = np.hstack((-half_wing[:-1], half_wing[::-1])) * span
 
-    nx2 = (num_x + 1) // 2
-    beta = np.linspace(0, np.pi / 2, nx2)
+    # --- chordwise discretization ---
+    cosine = 0.5 * (1 - np.cos(np.linspace(0, np.pi, num_x)))  # cosine spacing from 0 to 1
+    uniform = np.linspace(0, 1, num_x)  # uniform spacing
+    # mixed spacing with chord_cos_spacing as a weighting factor
+    wing_x = cosine * chord_cos_spacing + (1 - chord_cos_spacing) * uniform
+    wing_x *= chord  # apply chord length
 
-    # mixed spacing with span_cos_spacing as a weighting factor
-    # this is for the chordwise spacing
-    cosine = 0.5 * np.cos(beta)  # cosine spacing
-    uniform = np.linspace(0, 0.5, nx2)[::-1]  # uniform spacing
-    half_wing = cosine * chord_cos_spacing + (1 - chord_cos_spacing) * uniform
-    full_wing_x = np.hstack((-half_wing[:-1], half_wing[::-1])) * chord
-
-    # Special case if there are only 2 chordwise nodes
-    if num_x <= 2:
-        full_wing_x = np.array([0.0, chord])
-
+    # --- form 3D mesh array ---
     for ind_x in range(num_x):
         for ind_y in range(num_y):
-            mesh[ind_x, ind_y, :] = [full_wing_x[ind_x], full_wing[ind_y], 0]
+            mesh[ind_x, ind_y, :] = [wing_x[ind_x], full_wing[ind_y], 0]
 
     return mesh
 
@@ -557,24 +552,12 @@ def add_chordwise_panels(mesh, num_x, chord_cos_spacing):
 
     # Obtain mesh and num properties
     num_y = mesh.shape[1]
-    nx2 = (num_x + 1) // 2
 
-    # Create beta, an array of linear sampling points to pi/2
-    beta = np.linspace(0, np.pi / 2, nx2)
-
-    # Obtain the two spacings that we will use to blend
-    cosine = 0.5 * np.cos(beta)  # cosine spacing
-    uniform = np.linspace(0, 0.5, nx2)[::-1]  # uniform spacing
-
-    # Create half of the wing in the chordwise direction
-    half_wing = cosine * chord_cos_spacing + (1 - chord_cos_spacing) * uniform
-
-    if chord_cos_spacing == 0.0:
-        full_wing_x = np.linspace(0, 1.0, num_x)
-
-    else:
-        # Mirror this half wing into a full wing; offset by 0.5 so it goes 0 to 1
-        full_wing_x = np.hstack((-half_wing[:-1], half_wing[::-1])) + 0.5
+    # chordwise discretization
+    cosine = 0.5 * (1 - np.cos(np.linspace(0, np.pi, num_x)))  # cosine spacing from 0 to 1
+    uniform = np.linspace(0, 1, num_x)  # uniform spacing
+    # mixed spacing with chord_cos_spacing as a weighting factor
+    wing_x = cosine * chord_cos_spacing + (1 - chord_cos_spacing) * uniform
 
     # Obtain the leading and trailing edges
     le = mesh[0, :, :]
@@ -586,7 +569,7 @@ def add_chordwise_panels(mesh, num_x, chord_cos_spacing):
     new_mesh[-1, :, :] = te
 
     for i in range(1, num_x - 1):
-        w = full_wing_x[i]
+        w = wing_x[i]
         new_mesh[i, :, :] = (1 - w) * le + w * te
 
     return new_mesh
@@ -635,6 +618,29 @@ def get_default_geo_dict():
 
 
 def generate_mesh(input_dict):
+    """
+    Generate an OAS mesh.
+
+    Parameters
+    ----------
+    input_dict : dict
+        Dictionary containing user-provided parameters for the surface definition.
+        See the following for more information:
+        https://mdolab-openaerostruct.readthedocs-hosted.com/en/latest/user_reference/mesh_surface_dict.html#mesh-dict
+
+    Returns
+    -------
+    mesh : numpy array
+        Nodal coordinates defining the mesh.
+        shape = (nx, ny, 3),
+        where nx is the number of chordwise discretization nodes, ny is the number of spanwise discretization nodes.
+        If input_dict["symmetry"] is True, mesh defines left half of wing.
+    twist : numpy array, optional
+        Only for CRM wing (input_dict["wing_type"] == "CRM").
+        Twist values at the spanwise locations.
+
+    """
+
     # Get defaults and update surface with the user-provided input
     surf_dict = get_default_geo_dict()
 
@@ -676,10 +682,6 @@ def generate_mesh(input_dict):
     # Check to make sure that an odd number of spanwise points (num_y) was provided
     if not num_y % 2:
         raise ValueError("num_y must be an odd number.")
-
-    # Check to make sure that an odd number of chordwise points (num_x) was provided
-    if not num_x % 2 and not num_x == 2:
-        raise ValueError("num_x must be an odd number.")
 
     # Generate rectangular mesh
     if surf_dict["wing_type"] == "rect":

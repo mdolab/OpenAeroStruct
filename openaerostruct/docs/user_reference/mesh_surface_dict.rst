@@ -19,7 +19,7 @@ Here is a list of the keys and default values of the ``mesh_dict``, which is use
     * - num_x
       - 3
       - 
-      - Number of chordwise vertices. Needs to be 2 or an odd number.
+      - Number of chordwise vertices.
     * - num_y
       - 5
       - 
