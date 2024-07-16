@@ -289,7 +289,7 @@ class Test(unittest.TestCase):
             # Airfoil properties for viscous drag calculation
             "k_lam": 0.05,  # percentage of chord with laminar
             # flow, used for viscous drag
-            "t_over_c_cp": 0.12 * np.ones(6),  # np.array([0.08, 0.08, 0.08, 0.10, 0.10, 0.12]),
+            "t_over_c_cp": 0.12 * np.ones(6),
             "original_wingbox_airfoil_t_over_c": 0.12,
             "c_max_t": 0.38,  # chordwise location of maximum thickness
             "with_viscous": True,
