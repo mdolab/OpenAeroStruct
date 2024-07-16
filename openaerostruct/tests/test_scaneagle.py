@@ -8,10 +8,11 @@ from openmdao.utils.assert_utils import assert_near_equal
 from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
 from openaerostruct.utils.constants import grav_constant
+from openaerostruct.utils.testing import assert_check_totals
 
 
 class Test(unittest.TestCase):
-    def test(self):
+    def setUp(self):
         # Total number of nodes to use in the spanwise (num_y) and
         # chordwise (num_x) directions. Vary these to change the level of fidelity.
         num_y = 21
@@ -86,7 +87,7 @@ class Test(unittest.TestCase):
             "c_max_t": 0.303,  # chordwise location of maximum (NACA0015)
             # thickness
             "with_viscous": True,
-            "with_wave": False,  # if true, compute wave drag
+            "with_wave": True,  # if true, compute wave drag
             # Material properties taken from http://www.performance-composites.com/carbonfibre/mechanicalproperties_2.asp
             "E": 85.0e9,
             "G": 25.0e9,
@@ -197,16 +198,33 @@ class Test(unittest.TestCase):
         # We're trying to minimize fuel burn
         prob.model.add_objective("AS_point_0.fuelburn", scaler=0.1)
 
+        self.prob = prob
+
+    def test_opt(self):
         # Set up the problem
-        prob.setup()
-
+        self.prob.setup()
         # Actually run the optimization problem
-        prob.run_driver()
+        self.prob.run_driver()
 
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 4.6365011384888275, 1e-5)
-        assert_near_equal(prob["wing.twist_cp"], np.array([2.25819837, 10.39881572, 5.0]), 1e-5)
-        assert_near_equal(prob["wing.sweep"][0], 18.964409030629632, 1e-5)
-        assert_near_equal(prob["alpha"][0], 2.0366563718492547, 1e-5)
+        assert_near_equal(self.prob["AS_point_0.fuelburn"][0], 4.6365011384888275, 1e-5)
+        assert_near_equal(self.prob["wing.twist_cp"], np.array([2.25819837, 10.39881572, 5.0]), 1e-5)
+        assert_near_equal(self.prob["wing.sweep"][0], 18.964409030629632, 1e-5)
+        assert_near_equal(self.prob["alpha"][0], 2.0366563718492547, 1e-5)
+
+    def test_totals(self):
+        # Set up the problem
+        self.prob.setup()
+        self.prob.run_model()
+        totals = self.prob.check_totals(
+            method="fd",
+            form="central",
+            step=5e-4,
+            step_calc="rel",
+            compact_print=True,
+            abs_err_tol=1e-4,
+            rel_err_tol=1e-4,
+        )
+        assert_check_totals(totals, atol=1e-4, rtol=1e-4)
 
 
 if __name__ == "__main__":

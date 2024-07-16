@@ -67,14 +67,15 @@ class WaveDrag(om.ExplicitComponent):
             chords = inputs["chords"]
             CL = inputs["CL"]
 
-            mean_chords = (chords[:-1] + chords[1:]) / 2.0
-            panel_areas = mean_chords * widths
-            avg_cos_sweep = np.sum(cos_sweep * panel_areas) / np.sum(panel_areas)  # weighted average of 1/4 chord sweep
-            avg_t_over_c = np.sum(t_over_c * panel_areas) / np.sum(panel_areas)  # weighted average of streamwise t/c
+            panel_mid_chords = (chords[:-1] + chords[1:]) / 2.0
+            panel_areas = panel_mid_chords * widths
+            sum_panel_areas = np.sum(panel_areas)
+            avg_cos_sweep = np.sum(cos_sweep * panel_areas) / sum_panel_areas  # weighted average of 1/4 chord sweep
+            avg_t_over_c = np.sum(t_over_c * panel_areas) / sum_panel_areas  # weighted average of streamwise t/c
             MDD = self.ka / avg_cos_sweep - avg_t_over_c / avg_cos_sweep**2 - CL / (10 * avg_cos_sweep**3)
             Mcrit = MDD - (0.1 / 80.0) ** (1.0 / 3.0)
 
-            if M > Mcrit:
+            if np.real(M) > np.real(Mcrit):
                 outputs["CDw"] = 20 * (M - Mcrit) ** 4
             else:
                 outputs["CDw"] = 0.0
@@ -86,6 +87,14 @@ class WaveDrag(om.ExplicitComponent):
 
     def compute_partials(self, inputs, partials):
         """Jacobian for wave drag."""
+        # Explicitly zero out the partials to begin, we can't assume the input partials arrays contain zeros already
+        partials["CDw", "CL"][:] = 0.0
+        partials["CDw", "lengths_spanwise"][:] = 0.0
+        partials["CDw", "widths"][:] = 0.0
+        partials["CDw", "Mach_number"][:] = 0.0
+        partials["CDw", "chords"][:] = 0.0
+        partials["CDw", "t_over_c"][:] = 0.0
+
         if self.with_wave:
             ny = self.surface["mesh"].shape[1]
             t_over_c = inputs["t_over_c"]
@@ -96,16 +105,16 @@ class WaveDrag(om.ExplicitComponent):
             chords = inputs["chords"]
             CL = inputs["CL"]
 
-            chords = (chords[:-1] + chords[1:]) / 2.0
-            panel_areas = chords * widths
+            panel_mid_chords = (chords[:-1] + chords[1:]) / 2.0
+            panel_areas = panel_mid_chords * widths
             sum_panel_areas = np.sum(panel_areas)
             avg_cos_sweep = np.sum(cos_sweep * panel_areas) / sum_panel_areas
             avg_t_over_c = np.sum(t_over_c * panel_areas) / sum_panel_areas
 
-            MDD = 0.95 / avg_cos_sweep - avg_t_over_c / avg_cos_sweep**2 - CL / (10 * avg_cos_sweep**3)
+            MDD = self.ka / avg_cos_sweep - avg_t_over_c / avg_cos_sweep**2 - CL / (10 * avg_cos_sweep**3)
             Mcrit = MDD - (0.1 / 80.0) ** (1.0 / 3.0)
 
-            if M > Mcrit:
+            if np.real(M) > np.real(Mcrit):
                 dCDwdMDD = -80 * (M - Mcrit) ** 3
                 dMDDdCL = -1.0 / (10 * avg_cos_sweep**3)
                 dMDDdavg = (-10 * self.ka * avg_cos_sweep**2 + 20 * avg_t_over_c * avg_cos_sweep + 3 * CL) / (
@@ -114,14 +123,19 @@ class WaveDrag(om.ExplicitComponent):
                 dMDDdtoc = -1.0 / (avg_cos_sweep**2)
                 dtocavgdtoc = panel_areas / sum_panel_areas
 
-                ccos = np.sum(widths * chords)
-                ccos2w = np.sum(chords * widths**2 / lengths_spanwise)
+                ccos = np.sum(widths * panel_mid_chords)
+                ccos2w = np.sum(panel_mid_chords * widths**2 / lengths_spanwise)
 
-                davgdcos = 2 * chords * widths / lengths_spanwise / ccos - chords * ccos2w / ccos**2
-                dtocdcos = chords * t_over_c / ccos - chords * np.sum(chords * widths * t_over_c) / ccos**2
-                davgdw = -1 * chords * widths**2 / lengths_spanwise**2 / ccos
+                davgdcos = (
+                    2 * panel_mid_chords * widths / lengths_spanwise / ccos - panel_mid_chords * ccos2w / ccos**2
+                )
+                dtocdcos = (
+                    panel_mid_chords * t_over_c / ccos
+                    - panel_mid_chords * np.sum(panel_mid_chords * widths * t_over_c) / ccos**2
+                )
+                davgdw = -1 * panel_mid_chords * widths**2 / lengths_spanwise**2 / ccos
                 davgdc = widths**2 / lengths_spanwise / ccos - widths * ccos2w / ccos**2
-                dtocdc = t_over_c * widths / ccos - widths * np.sum(chords * widths * t_over_c) / ccos**2
+                dtocdc = t_over_c * widths / ccos - widths * np.sum(panel_mid_chords * widths * t_over_c) / ccos**2
 
                 dcdchords = np.zeros((ny - 1, ny))
                 i, j = np.indices(dcdchords.shape)

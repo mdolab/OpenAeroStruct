@@ -20,12 +20,13 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false  # continue other jobs even if one of the jobs in matrix fails 
+      fail-fast: false  # continue other jobs even if one of the jobs in matrix fails
       matrix:
         dep-versions: ["oldest", "latest"]
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Set versions to test here ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         PYTHON_VERSION_OLDEST: ['3.8']
         PYTHON_VERSION_LATEST: ['3.11']
+        PIP_VERSION_OLDEST: ['23.3.2'] # OpenMDAO 3.15 doesn't install with pip>=24
         WHEEL_VERSION_OLDEST: ['0.38.4']  # latest wheel cannot build the oldest OpenMDAO (3.17 or older)
         NUMPY_VERSION_OLDEST: ['1.20']  # latest is most recent on PyPI
         SCIPY_VERSION_OLDEST: ['1.6.0']  # latest is most recent on PyPI
@@ -94,6 +95,7 @@ jobs:
     - name: Install OAS and its dependencies (oldest versions)
       if: ${{ matrix.dep-versions == 'oldest' }}
       run: |
+        python -m pip install pip==${{ matrix.PIP_VERSION_OLDEST }}
         python -m pip install wheel==${{ matrix.WHEEL_VERSION_OLDEST }}
         pip install numpy==${{ matrix.NUMPY_VERSION_OLDEST }} scipy==${{ matrix.SCIPY_VERSION_OLDEST }} openmdao==${{ matrix.OPENMDAO_VERSION_OLDEST }} mphys==${{ matrix.MPHYS_VERSION_OLDEST }}
         pip install -e .[test]
