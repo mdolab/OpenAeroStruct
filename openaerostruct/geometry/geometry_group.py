@@ -193,6 +193,82 @@ class Geometry(om.Group):
                 "mesh", GeometryMesh(surface=surface), promotes_inputs=bsp_inputs, promotes_outputs=["mesh"]
             )
 
+#Function that constructs the individual section surface data dictionaries
+def build_sections(surface):
+    #Get number of sections
+    num_sections = surface["num_sections"]
+
+    if surface["meshes"] == "gen-meshes":
+        #Verify that all required inputs for automatic mesh generation are provided for each section
+        if len(surface["sec_ny"]) != num_sections:
+            raise ValueError("Number of spanwise points needs to be provided for each section")
+        if len(surface["sec_taper"]) != num_sections:
+            raise ValueError("Taper needs to be provided for each section")
+        if len(surface["sec_root_chord"]) != num_sections:
+            raise ValueError("Root chord length needs to be provided for each section")
+        if len(surface["sec_span"]) != num_sections:
+            raise ValueError("Span needs to be provided for each section")
+        if len(surface["sec_sweep"]) != num_sections:
+            raise ValueError("Sweep needs to be provided for each section")
+        
+        #Get required data for section mesh generation
+        nx = surface["nx"]
+        sec_ny = surface["sec_ny"]
+        sec_taper = surface["sec_taper"]
+        sec_span = surface["sec_span"]
+        sec_root_chord = surface["sec_root_chord"]
+        sec_sweep = surface["sec_sweep"]
+
+        #Compute section aspect ratio
+        sec_S = sec_span*(sec_root_chord*(np.ones(num_sections)+sec_taper))/2
+        sec_AR = sec_span**2/sec_S
+
+        #Create data array for mesh generator
+        sectionData = np.hstack([np.ones(num_sections)[:,np.newaxis],sec_root_chord[:,np.newaxis],sec_AR[:,np.newaxis],np.zeros(num_sections)[:,np.newaxis]])
+
+        symmetry  = surface["symmetry"]
+
+        #Generate unified and individual section meshes
+        mesh, sec_meshes = multiMesh.generateMesh(num_sections,sectionData,sec_ny-np.ones(num_sections,dtype=np.int32),nx-1,symmetry)
+        
+    else:
+        #Allow user to provide mesh for each section
+        if len(surface["meshes"]) != num_sections:
+            raise ValueError("A mesh needs to be provided for each section.")
+        sec_meshes = surface["meshes"]
+
+    if len(surface["sec_name"]) != num_sections:
+            raise ValueError("A name needs to be provided for each section.")
+    section_surfaces = []
+    for i in range(num_sections):
+        section = {
+            "name": surface["sec_name"][i],  # name of the surface
+            "symmetry": surface["symmetry"],  
+            "S_ref_type": surface["S_ref_type"], 
+            "mesh": sec_meshes[i],
+            "span":surface["sec_span"][i],
+            "taper":surface["sec_taper"][i],
+            "sweep":surface["sec_sweep"][i],
+            "chord_cp": surface["sec_chord_cp"][i],  
+            "ref_axis_pos": 0.25, 
+            "CL0": surface["sec_CL0"][i], 
+            "CD0": surface["sec_CD0"][i], 
+            "k_lam": surface["k_lam"], 
+            #"t_over_c_cp": surface["sec_t_over_c_cp"][i], 
+            "c_max_t": surface["sec_c_max_t"][i],  
+            "with_viscous": surface["with_viscous"], 
+            "with_wave": surface["with_wave"],
+            "groundplane": surface["groundplane"],
+        }  # end of surface dictionary
+
+        if i > 0:
+            section["outerSection"] = True
+        else:
+            section["outerSection"] = False
+
+        section_surfaces.append(section)
+    return section_surfaces
+
 class MultiSecGeometry(om.Group):
     """
     Group that contains the section geometery groups for the multi-section surface
@@ -206,88 +282,42 @@ class MultiSecGeometry(om.Group):
 
     def initialize(self):
         self.options.declare("surface", types=dict)
-        #self.options.declare("DVGeo", default=None)
-        #self.options.declare("connect_geom_DVs", default=True)
-        #DVGeo disabled for now
-        # The option "connect_geom_DVs" is no longer necessary, but we still keep it to be backward compatible.
+        self.options.declare("joining_comp",types=bool)
+        self.options.declare("dim_constr",types=list)
+
 
     def setup(self):
         surface = self.options["surface"]
+        joining_comp = self.options["joining_comp"]
+        dc = self.options["dim_constr"]
 
         # key validation of the surface dict
         check_multi_sec_surface_dict_keys(surface)
 
-        #Get number of sections
-        num_sections = surface["num_sections"]
-
-        if surface["meshes"] == "gen-meshes":
-            #Verify that all required inputs for automatic mesh generation are provided for each section
-            if len(surface["sec_ny"]) != num_sections:
-                raise ValueError("Number of spanwise points needs to be provided for each section")
-            if len(surface["sec_taper"]) != num_sections:
-                raise ValueError("Taper needs to be provided for each section")
-            if len(surface["sec_root_chord"]) != num_sections:
-                raise ValueError("Root chord length needs to be provided for each section")
-            if len(surface["sec_span"]) != num_sections:
-                raise ValueError("Span needs to be provided for each section")
-            if len(surface["sec_sweep"]) != num_sections:
-                raise ValueError("Sweep needs to be provided for each section")
-            
-            #Get required data for section mesh generation
-            nx = surface["nx"]
-            sec_ny = surface["sec_ny"]
-            sec_taper = surface["sec_taper"]
-            sec_span = surface["sec_span"]
-            sec_root_chord = surface["sec_root_chord"]
-            sec_sweep = surface["sec_sweep"]
-
-            #Compute section aspect ratio
-            sec_S = sec_span*(sec_root_chord*(np.ones(num_sections)+sec_taper))/2
-            sec_AR = sec_span**2/sec_S
-
-            #Create data array for mesh generator
-            sectionData = np.hstack([np.ones(num_sections)[:,np.newaxis],sec_root_chord[:,np.newaxis],sec_AR[:,np.newaxis],np.zeros(num_sections)[:,np.newaxis]])
-
-            symmetry  = surface["symmetry"]
-
-            #Generate unified and individual section meshes
-            mesh, sec_meshes = multiMesh.generateMesh(num_sections,sectionData,sec_ny-np.ones(num_sections,dtype=np.int32),nx-1,symmetry)
-            
-        else:
-            #Allow user to provide mesh for each section
-            if len(surface["meshes"]) != num_sections:
-                raise ValueError("A mesh needs to be provided for each section.")
-            sec_meshes = surface["meshes"]
-
-        if len(surface["sec_name"]) != num_sections:
-             raise ValueError("A name needs to be provided for each section.")
+        sec_dicts = build_sections(surface)
         
-        #Create individual geometry groups for each section
-        from openaerostruct.geometry.geometry_mesh import GeometryMesh
-
-        #Loop through surfaces 
-        for i in range(num_sections):
-            section = {
-                "name": surface["sec_name"][i],  # name of the surface
-                "symmetry": surface["symmetry"],  
-                "S_ref_type": surface["S_ref_type"], 
-                "mesh": sec_meshes[i],
-                "span":surface["sec_span"][i],
-                "taper":surface["sec_taper"][i],
-                "sweep":surface["sec_sweep"][i],
-                "chord_cp": surface["sec_chord_cp"][i],  
-                "ref_axis_pos": 0.25, 
-                "CL0": surface["sec_CL0"][i], 
-                "CD0": surface["sec_CD0"][i], 
-                "k_lam": surface["k_lam"], 
-                #"t_over_c_cp": surface["sec_t_over_c_cp"][i], 
-                "c_max_t": surface["sec_c_max_t"][i],  
-                "with_viscous": surface["with_viscous"], 
-                "with_wave": surface["with_wave"],
-                "groundplane": surface["groundplane"],
-            }  # end of surface dictionary
+        section_names = []
+        for sec in sec_dicts:
+            geom_group = Geometry(surface=sec)
+            self.add_subsystem(sec["name"], geom_group)
+            section_names.append(sec["name"])
 
 
-            name = section["name"]
-            geom_group = Geometry(surface=section)
-            self.add_subsystem(name, geom_group)
+        #Add the mesh unification component
+        unification_name = '{}_unification'.format(surface["name"])
+        from openaerostruct.geometry.geometry_unification import GeomMultiUnification
+        uni_mesh = GeomMultiUnification(sections = sec_dicts, surface_name = surface["name"])
+        self.add_subsystem(unification_name, uni_mesh)
+
+        if joining_comp:
+            #Add section joining component
+            joining_name = '{}_joining'.format(surface["name"])
+            from openaerostruct.geometry.geometry_multi_join import GeomMultiJoin
+            join = GeomMultiJoin(sections = sec_dicts,dim_constr = dc)
+            self.add_subsystem(joining_name, join)
+
+
+        #Connect each section mesh to mesh unification component inputs
+        for sec_name in section_names:
+            self.connect('{}.mesh'.format(sec_name),'{}.{}_def_mesh'.format(unification_name,sec_name))
+            self.connect('{}.mesh'.format(sec_name),'{}.{}_join_mesh'.format(joining_name,sec_name))

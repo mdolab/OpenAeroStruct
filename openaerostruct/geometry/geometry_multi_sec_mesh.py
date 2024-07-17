@@ -434,7 +434,7 @@ def planformSymmetric(panelGeomX, panelGeomY, bPanels):
 
 def sectionSymmetric(panelGeomX, panelGeomY, bPanels):
     """
-    Cuts sectiona meshes in half is symmetry conditions are used
+    Cuts section meshes in half if symmetry conditions are used
 
     Parameters
     ----------
@@ -478,7 +478,7 @@ def outputOASMesh(panelGeomX, panelGeomY):
     """
     panelGeomY = np.broadcast_to(panelGeomY, (panelGeomX.shape[0], len(panelGeomY)))
     mesh = np.zeros((panelGeomX.shape[0], panelGeomY.shape[1], 3))
-    mesh[:, :, 0] = panelGeomX
+    mesh[:, :, 0] = panelGeomX[::-1]
     mesh[:, :, 1] = panelGeomY
     return mesh
 
@@ -502,7 +502,7 @@ def outputOASSectionMesh(panelGX,panelGY):
     """
     panelGY = np.broadcast_to(panelGY, (panelGX.shape[0], len(panelGY)))
     mesh = np.zeros((panelGX.shape[0], panelGY.shape[1], 3))
-    mesh[:, :, 0] = panelGX
+    mesh[:, :, 0] = panelGX[::-1]
     mesh[:, :, 1] = panelGY
     return mesh
 

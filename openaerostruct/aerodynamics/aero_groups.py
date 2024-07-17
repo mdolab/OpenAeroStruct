@@ -1,4 +1,5 @@
 import openmdao.api as om
+import numpy as np
 from openaerostruct.aerodynamics.compressible_states import CompressibleVLMStates
 from openaerostruct.aerodynamics.geometry import VLMGeometry
 from openaerostruct.aerodynamics.states import VLMStates
@@ -25,10 +26,48 @@ class AeroPoint(om.Group):
             default=False,
             desc="Turns on compressibility correction for moderate Mach number " "flows. Defaults to False.",
         )
+        self.options.declare(
+            "multiSection",
+            types=bool,
+            default = False,
+            desc="Set to True to turn on support for multi section surfaces"
+        )
+        self.options.declare(
+            "unifiedMesh",
+            types=np.ndarray,
+            desc="Provide a unified mesh if multiSection is enabled."
+        )
 
     def setup(self):
         surfaces = self.options["surfaces"]
         rotational = self.options["rotational"]
+        multiSurface = self.options["multiSection"]
+
+        #If multisection mesh then build a single surface with the unified mesh data
+        if multiSurface:
+            surf_name = "surface"
+            uniMesh = self.options["unifiedMesh"]
+            # Define input surface dictionary for our wing
+            surface = {
+                # Wing definition
+                "name": surf_name,  # name of the surface
+                "symmetry": True,  # if true, model one half of wing
+                # reflected across the plane y = 0
+                "S_ref_type": "projected",  # how we compute the wing area,
+                "mesh": uniMesh,
+                "CL0": 0.0,  # CL of the surface at alpha=0
+                "CD0": 0.0,  # CD of the surface at alpha=0
+                # Airfoil properties for viscous drag calculation
+                "k_lam": 0.05,  # percentage of chord with laminar
+                "c_max_t": 0.303,  # chordwise location of maximum (NACA0015)
+                # flow, used for viscous drag
+                # thickness
+                "with_viscous": False,  # if true, compute viscous drag,
+                "with_wave": False,
+            }  # end of surface dictionary
+
+            surfaces = []
+            surfaces.append(surface)
 
         # Loop through each surface and connect relevant parameters
         for surface in surfaces:
