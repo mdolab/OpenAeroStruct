@@ -94,7 +94,7 @@ Version Information
 The oldest and latest versions of the dependencies that we test regularly are the following (other versions may work, but no guarantees):
 
 | Dependency         | oldest | latest |
-|--------------------|--------| ------ |
+| ------------------ | ------ | ------ |
 | Python             | 3.8    | 3.11   |
 | NumPy              | 1.20   | latest |
 | SciPy              | 1.6.0  | latest |
