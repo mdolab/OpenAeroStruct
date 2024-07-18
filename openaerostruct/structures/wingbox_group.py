@@ -1,4 +1,3 @@
-import numpy as np
 import openmdao.api as om
 from openaerostruct.structures.section_properties_wingbox import SectionPropertiesWingbox
 from openaerostruct.structures.wingbox_geometry import WingboxGeometry
@@ -13,7 +12,6 @@ class WingboxGroup(om.Group):
 
     def setup(self):
         surface = self.options["surface"]
-        ny = surface["mesh"].shape[1]
 
         if "spar_thickness_cp" in surface.keys():
             n_cp = len(surface["spar_thickness_cp"])

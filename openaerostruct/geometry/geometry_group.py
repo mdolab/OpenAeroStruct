@@ -30,7 +30,6 @@ class Geometry(om.Group):
 
         # Get the surface name and create a group to contain components
         # only for this surface
-        ny = surface["mesh"].shape[1]
 
         if self.options["DVGeo"]:
             from openaerostruct.geometry.ffd_component import GeometryMesh

@@ -1,4 +1,3 @@
-import numpy as np
 import openmdao.api as om
 from openaerostruct.structures.section_properties_tube import SectionPropertiesTube
 from openaerostruct.geometry.radius_comp import RadiusComp
@@ -15,8 +14,6 @@ class TubeGroup(om.Group):
 
     def setup(self):
         surface = self.options["surface"]
-        mesh = surface["mesh"]
-        ny = mesh.shape[1]
 
         if "thickness_cp" in surface.keys():
             n_cp = len(surface["thickness_cp"])
