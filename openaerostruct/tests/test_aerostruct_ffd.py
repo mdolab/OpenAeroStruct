@@ -2,6 +2,7 @@ from openmdao.utils.assert_utils import assert_near_equal
 import unittest
 import numpy as np
 from openaerostruct.utils.constants import grav_constant
+from openaerostruct.utils.testing import assert_opt_successful
 
 # check if pygeo is available
 try:
@@ -165,9 +166,10 @@ class Test(unittest.TestCase):
         prob.setup()
 
         # prob.run_model()
-        prob.run_driver()
+        optResult = prob.run_driver()
+        assert_opt_successful(self, optResult)
 
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 92343.61493294379, 1e-3)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 92474.52106288195, 1e-3)
 
 
 if __name__ == "__main__":

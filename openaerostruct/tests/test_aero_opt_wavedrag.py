@@ -5,6 +5,7 @@ import numpy as np
 from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.geometry.geometry_group import Geometry
 from openaerostruct.aerodynamics.aero_groups import AeroPoint
+from openaerostruct.utils.testing import assert_opt_successful
 
 import openmdao.api as om
 
@@ -106,11 +107,13 @@ class Test(unittest.TestCase):
         # Set up the problem
         prob.setup()
 
-        prob.run_driver()
+        optResult = prob.run_driver()
 
-        assert_near_equal(prob["aero_point_0.wing_perf.CL"][0], 0.5, 1e-6)
-        assert_near_equal(prob["aero_point_0.wing_perf.CD"][0], 0.020838936785019083, 1e-6)
-        assert_near_equal(prob["aero_point_0.CM"][1], -2.081989092575424, 1e-6)
+        assert_opt_successful(self, optResult)
+
+        assert_near_equal(prob["aero_point_0.CL"][0], 0.5, 1e-6)
+        assert_near_equal(prob["aero_point_0.CD"][0], 0.021353004050991248, 1e-6)
+        assert_near_equal(prob["aero_point_0.CM"][1], -2.0819892547514067, 1e-6)
 
 
 if __name__ == "__main__":

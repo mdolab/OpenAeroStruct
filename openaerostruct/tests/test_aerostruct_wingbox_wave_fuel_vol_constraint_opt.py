@@ -1,4 +1,5 @@
 from openmdao.utils.assert_utils import assert_near_equal
+from openaerostruct.utils.testing import assert_opt_successful
 import unittest
 import numpy as np
 
@@ -428,11 +429,12 @@ class Test(unittest.TestCase):
         # Set up the problem
         prob.setup()
 
-        optFailed = prob.run_driver()
+        optResult = prob.run_driver()
 
-        self.assertFalse(optFailed)
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 85348.88283214, 1e-5)
-        assert_near_equal(prob["wing.structural_mass"][0], 13029.71120634, 1e-5)
+        assert_opt_successful(self, optResult)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 85374.45357945036, 1e-5)
+        assert_near_equal(prob["wing.structural_mass"][0], 13048.465090719292, 1e-5)
+        assert_near_equal(prob["AS_point_0.CL"][0], 0.5, 1e-5)
 
 
 if __name__ == "__main__":

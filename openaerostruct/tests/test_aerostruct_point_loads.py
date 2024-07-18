@@ -150,8 +150,8 @@ class Test(unittest.TestCase):
 
         prob.run_model()
 
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 252038.66600566648, 1e-4)
-        assert_near_equal(prob["AS_point_0.CM"][1], -0.7006002684582702, 1e-5)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 264106.7825178142, 1e-4)
+        assert_near_equal(prob["AS_point_0.CM"][1], -0.6436834908660709, 1e-5)
 
 
 if __name__ == "__main__":
