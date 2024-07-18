@@ -2,6 +2,7 @@ import numpy as np
 import openmdao.api as om
 from openaerostruct.structures.section_properties_tube import SectionPropertiesTube
 from openaerostruct.geometry.radius_comp import RadiusComp
+from openaerostruct.utils.interpolation import get_normalized_span_coords
 
 
 class TubeGroup(om.Group):
@@ -20,7 +21,7 @@ class TubeGroup(om.Group):
         if "thickness_cp" in surface.keys():
             n_cp = len(surface["thickness_cp"])
             # Add bspline components for active bspline geometric variables.
-            x_interp = np.linspace(0.0, 1.0, int(ny - 1))
+            x_interp = get_normalized_span_coords(surface, mid_panel=True)
             comp = self.add_subsystem(
                 "thickness_bsp",
                 om.SplineComp(
@@ -35,7 +36,7 @@ class TubeGroup(om.Group):
         if "radius_cp" in surface.keys():
             n_cp = len(surface["radius_cp"])
             # Add bspline components for active bspline geometric variables.
-            x_interp = np.linspace(0.0, 1.0, int(ny - 1))
+            x_interp = get_normalized_span_coords(surface, mid_panel=True)
             comp = self.add_subsystem(
                 "radius_bsp",
                 om.SplineComp(

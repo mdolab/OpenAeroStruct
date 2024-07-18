@@ -2,34 +2,7 @@ import numpy as np
 
 import openmdao.api as om
 from openaerostruct.utils.check_surface_dict import check_surface_dict_keys
-
-
-def get_normalized_span_coords(surface, mid_panel=False):
-    """Get the normalised coordinates used for interpolating values along the wingspan
-
-    These normalized coordinates range from 0 at the tip of the wing to 1 at the root.
-
-    Parameters
-    ----------
-    surface : OpenAeroStruct surface dictionary
-        Surface to generate coordinates for
-    mid_panel : bool, optional
-        Whether the normalized coordinate should be of the panel midpoints rather than the mesh nodes, by default False
-
-    Returns
-    -------
-    np.array
-        Normalized coordinate values
-    """
-    spanwise_coord = surface["mesh"][0, :, 1]
-    span_range = spanwise_coord[-1] - spanwise_coord[0]
-    span_offset = spanwise_coord[0]
-    if mid_panel:
-        x_real = (spanwise_coord[:-1] + spanwise_coord[1:]) / 2
-    else:
-        x_real = spanwise_coord
-    x_norm = (x_real - span_offset) / span_range
-    return x_norm
+from openaerostruct.utils.interpolation import get_normalized_span_coords
 
 
 class Geometry(om.Group):
@@ -67,7 +40,7 @@ class Geometry(om.Group):
             if "t_over_c_cp" in surface.keys():
                 n_cp = len(surface["t_over_c_cp"])
                 # Add bspline components for active bspline geometric variables.
-                x_interp = np.linspace(0.0, 1.0, int(ny - 1))
+                x_interp = get_normalized_span_coords(surface, mid_panel=True)
                 comp = self.add_subsystem(
                     "t_over_c_bsp",
                     om.SplineComp(
