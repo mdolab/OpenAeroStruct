@@ -1,4 +1,4 @@
 #!/bin/bash
 set -e
 
-testflo -n 2 -v openaerostruct --coverage --coverpkg openaerostruct
+testflo -n 2 -v . --coverage --coverpkg openaerostruct
