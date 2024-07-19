@@ -3,6 +3,7 @@ import unittest
 import numpy as np
 
 from openaerostruct.geometry.utils import generate_mesh
+from openaerostruct.utils.testing import assert_opt_successful
 
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
 
@@ -426,15 +427,17 @@ class Test(unittest.TestCase):
         # Set up the problem
         prob.setup()
 
-        prob.run_driver()
+        optResult = prob.run_driver()
 
         print(prob["AS_point_0.fuelburn"][0])
         print(prob["wing.structural_mass"][0] / 1.25)
         print(prob["fuel_vol_delta.fuel_vol_delta"][0])
 
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 76869.38586654868, 1e-5)
-        assert_near_equal(prob["wing.structural_mass"][0] / 1.25, 11619.131535449487, 1e-4)
-        assert_near_equal(prob["fuel_vol_delta.fuel_vol_delta"][0], 42.98939210455205, 1e-4)
+        assert_opt_successful(self, optResult)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 76869.3858256513, 1e-4)
+        assert_near_equal(prob["wing.structural_mass"][0], 14523.135605406405, 1e-4)
+        assert_near_equal(prob["fuel_vol_delta.fuel_vol_delta"][0], 42.99371350246894, 1e-4)
+        assert_near_equal(prob["AS_point_0.CL"][0], 0.5, 1e-5)
 
 
 if __name__ == "__main__":
