@@ -15,8 +15,7 @@ from openaerostruct.mphys.aero_solver_group import AeroSolverGroup
 from openaerostruct.mphys.aero_funcs_group import AeroFuncsGroup
 
 try:
-    from mphys.builder import Builder
-    from mphys.distributed_converter import DistributedConverter, DistributedVariableDescription
+    from mphys.core import Builder, MPhysVariables, DistributedConverter, DistributedVariableDescription
 
     mphys_found = True
 except ImportError:
@@ -48,20 +47,32 @@ class AeroCouplingGroup(om.Group):
 
     def setup(self):
         self.surfaces = self.options["surfaces"]
+        self.surfaces = self.options["surfaces"]
         self.compressible = self.options["compressible"]
 
-        self.set_input_defaults("aoa", val=0.0, units="deg")
-        self.set_input_defaults("yaw", val=0.0, units="deg")
+        self.set_input_defaults(MPhysVariables.Aerodynamics.FlowConditions.ANGLE_OF_ATTACK, val=0.0, units="deg")
+        self.set_input_defaults(MPhysVariables.Aerodynamics.FlowConditions.YAW_ANGLE, val=0.0, units="deg")
         if self.compressible:
-            self.set_input_defaults("mach", val=0.0)
+            self.set_input_defaults(MPhysVariables.Aerodynamics.FlowConditions.MACH_NUMBER, val=0.0)
 
         nnodes = get_number_of_nodes(self.surfaces)
 
         # Convert distributed mphys mesh input into a serial vector OAS can use
-        in_vars = [DistributedVariableDescription(name="x_aero", shape=(nnodes * 3), tags=["mphys_coordinates"])]
+        in_vars = [
+            DistributedVariableDescription(
+                name=MPhysVariables.Aerodynamics.Surface.COORDINATES, shape=(nnodes * 3), tags=["mphys_coordinates"]
+            )
+        ]
 
-        self.add_subsystem("collector", DistributedConverter(distributed_inputs=in_vars), promotes_inputs=["x_aero"])
-        self.connect("collector.x_aero_serial", "demuxer.x_aero")
+        self.add_subsystem(
+            "collector",
+            DistributedConverter(distributed_inputs=in_vars),
+            promotes_inputs=[MPhysVariables.Aerodynamics.Surface.COORDINATES],
+        )
+        self.connect(
+            f"collector.{MPhysVariables.Aerodynamics.Surface.COORDINATES}_serial",
+            f"demuxer.{MPhysVariables.Aerodynamics.Surface.COORDINATES}",
+        )
 
         # Demux flattened surface mesh vector into seperate vectors for each surface
         self.add_subsystem(
@@ -86,12 +97,21 @@ class AeroCouplingGroup(om.Group):
         )
 
         # Convert serial force vector to distributed, like mphys expects
-        out_vars = [DistributedVariableDescription(name="f_aero", shape=(nnodes * 3), tags=["mphys_coupling"])]
+        out_vars = [
+            DistributedVariableDescription(
+                name=MPhysVariables.Aerodynamics.Surface.LOADS, shape=(nnodes * 3), tags=["mphys_coupling"]
+            )
+        ]
 
         self.add_subsystem(
-            "distributor", DistributedConverter(distributed_outputs=out_vars), promotes_outputs=["f_aero"]
+            "distributor",
+            DistributedConverter(distributed_outputs=out_vars),
+            promotes_outputs=[MPhysVariables.Aerodynamics.Surface.LOADS],
         )
-        self.connect("muxer.f_aero", "distributor.f_aero_serial")
+        self.connect(
+            f"muxer.{MPhysVariables.Aerodynamics.Surface.LOADS}",
+            f"distributor.{MPhysVariables.Aerodynamics.Surface.LOADS}_serial",
+        )
 
 
 class AeroBuilder(Builder):
