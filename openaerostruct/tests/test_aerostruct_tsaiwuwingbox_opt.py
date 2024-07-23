@@ -263,7 +263,7 @@ class Test(unittest.TestCase):
             # reflected across the plane y = 0
             "S_ref_type": "wetted",  # how we compute the wing area,
             # can be 'wetted' or 'projected'
-            "fem_model_type": "tsaiwu_wingbox", #NOTE: testing the Tsai Wu wingbox model
+            "fem_model_type": "tsaiwu_wingbox",  # NOTE: testing the Tsai Wu wingbox model
             "composite_safetyfactor": 1.5,
             "spar_thickness_cp": np.array([0.004, 0.005, 0.005, 0.008, 0.008, 0.01]),  # [m]
             "skin_thickness_cp": np.array([0.005, 0.01, 0.015, 0.020, 0.025, 0.026]),
@@ -294,9 +294,9 @@ class Test(unittest.TestCase):
             # "E": 73.1e9,  # [Pa] Young's modulus
             # "G": (73.1e9 / 2 / 1.33),  # [Pa] shear modulus (calculated using E and the Poisson's ratio here)
             "E": 62.53e9,  # [Pa] Young's modulus # skin composites
-            "G": 29.71e9,  # [Pa] shear modulus # skin composites   
+            "G": 29.71e9,  # [Pa] shear modulus # skin composites
             "yield": (420.0e6 / 1.5),  # [Pa] allowable yield stress
-            "mrho": 1550,  # [kg/m^3] material density #NOTE: CFRP density 
+            "mrho": 1550,  # [kg/m^3] material density #NOTE: CFRP density
             "strength_factor_for_upper_skin": 1.0,  # the yield stress is multiplied by this factor for the upper skin
             # 'fem_origin' : 0.35,    # normalized chordwise location of the spar
             "wing_weight_ratio": 1.25,
@@ -412,8 +412,6 @@ class Test(unittest.TestCase):
 
         # # We could also just use prob.driver.recording_options['includes']=['*'] here, but for large meshes the database file becomes extremely large. So we just select the variables we need.
         # prob.driver.recording_options["includes"] = ['*']
-
-        
 
         # prob.driver.recording_options["record_objectives"] = True
         # prob.driver.recording_options["record_constraints"] = True

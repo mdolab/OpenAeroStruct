@@ -70,14 +70,12 @@ class TsaiWuWingbox(om.ExplicitComponent):
         self.add_input("hrear", val=np.zeros((self.ny - 1)), units="m")
 
         # self.add_output("vonmises", val=np.zeros((self.ny - 1, 4)), units="N/m**2")
-        self.add_output("tsaiwu_sr", val=np.zeros((self.ny - 1, 16))) # NOTE: To be verified again
+        self.add_output("tsaiwu_sr", val=np.zeros((self.ny - 1, 16)))  # NOTE: To be verified again
 
         self.E = surface["E"]
         self.G = surface["G"]
 
         self.tssf = surface["strength_factor_for_upper_skin"]
-
-        
 
         self.declare_partials("*", "*", method="cs")
 
@@ -102,7 +100,6 @@ class TsaiWuWingbox(om.ExplicitComponent):
 
         E = self.E
         G = self.G
-        
 
         num_elems = self.ny - 1
         for ielem in range(num_elems):
@@ -222,12 +219,12 @@ class TsaiWuWingbox(om.ExplicitComponent):
             # Element 3:
             epsilon_elem[2, 0] = front_bending_strain + axial_strain
             epsilon_elem[2, 1] = 0
-            epsilon_elem[2, 2] = torsion_shear_strain + vertical_shear_strain # NOTE: To be verified again
+            epsilon_elem[2, 2] = torsion_shear_strain + vertical_shear_strain  # NOTE: To be verified again
 
             # Element 4:
             epsilon_elem[3, 0] = rear_bending_strain + axial_strain
             epsilon_elem[3, 1] = 0
-            epsilon_elem[3, 2] = - torsion_shear_strain + vertical_shear_strain # NOTE: To be verified again
+            epsilon_elem[3, 2] = -torsion_shear_strain + vertical_shear_strain  # NOTE: To be verified again
 
             # defining the array for ply-orientation angles:
             theta = np.array([0, 90, 45, -45])
@@ -239,9 +236,32 @@ class TsaiWuWingbox(om.ExplicitComponent):
             # running a loop over the 4 elements and 4 plies to calculate the epsilon_elem_ply array
             for elem_num in range(4):
                 for ply_num in range(4):
-                    epsilon_elem_ply[elem_num, ply_num, 0] = epsilon_elem[elem_num, 0] * np.cos(np.radians(theta[ply_num]))**2 + epsilon_elem[elem_num, 1] * np.sin(np.radians(theta[ply_num]))**2 + 2 * epsilon_elem[elem_num, 2] * np.sin(np.radians(theta[ply_num])) * np.cos(np.radians(theta[ply_num]))
-                    epsilon_elem_ply[elem_num, ply_num, 1] = epsilon_elem[elem_num, 0] * np.sin(np.radians(theta[ply_num]))**2 + epsilon_elem[elem_num, 1] * np.cos(np.radians(theta[ply_num]))**2 - 2 * epsilon_elem[elem_num, 2] * np.sin(np.radians(theta[ply_num])) * np.cos(np.radians(theta[ply_num]))
-                    epsilon_elem_ply[elem_num, ply_num, 2] = - epsilon_elem[elem_num, 0] * np.sin(np.radians(theta[ply_num])) * np.cos(np.radians(theta[ply_num])) + epsilon_elem[elem_num, 1] * np.sin(np.radians(theta[ply_num])) * np.cos(np.radians(theta[ply_num])) + epsilon_elem[elem_num, 2] * (np.cos(np.radians(theta[ply_num]))**2 - np.sin(np.radians(theta[ply_num]))**2)
+                    epsilon_elem_ply[elem_num, ply_num, 0] = (
+                        epsilon_elem[elem_num, 0] * np.cos(np.radians(theta[ply_num])) ** 2
+                        + epsilon_elem[elem_num, 1] * np.sin(np.radians(theta[ply_num])) ** 2
+                        + 2
+                        * epsilon_elem[elem_num, 2]
+                        * np.sin(np.radians(theta[ply_num]))
+                        * np.cos(np.radians(theta[ply_num]))
+                    )
+                    epsilon_elem_ply[elem_num, ply_num, 1] = (
+                        epsilon_elem[elem_num, 0] * np.sin(np.radians(theta[ply_num])) ** 2
+                        + epsilon_elem[elem_num, 1] * np.cos(np.radians(theta[ply_num])) ** 2
+                        - 2
+                        * epsilon_elem[elem_num, 2]
+                        * np.sin(np.radians(theta[ply_num]))
+                        * np.cos(np.radians(theta[ply_num]))
+                    )
+                    epsilon_elem_ply[elem_num, ply_num, 2] = (
+                        -epsilon_elem[elem_num, 0]
+                        * np.sin(np.radians(theta[ply_num]))
+                        * np.cos(np.radians(theta[ply_num]))
+                        + epsilon_elem[elem_num, 1]
+                        * np.sin(np.radians(theta[ply_num]))
+                        * np.cos(np.radians(theta[ply_num]))
+                        + epsilon_elem[elem_num, 2]
+                        * (np.cos(np.radians(theta[ply_num])) ** 2 - np.sin(np.radians(theta[ply_num])) ** 2)
+                    )
 
             # defining the strain-stress relations for the material:
             E1 = 117.7e9
@@ -272,7 +292,6 @@ class TsaiWuWingbox(om.ExplicitComponent):
                     sigma_elem_ply[elem_num, ply_num, 1] = sigma2
                     sigma_elem_ply[elem_num, ply_num, 2] = sigma12
 
-
             # defining the Tsai-Wu constants for the material:
             sigma_c1 = 1034.0e6
             sigma_t1 = 1648.0e6
@@ -280,9 +299,9 @@ class TsaiWuWingbox(om.ExplicitComponent):
             sigma_t2 = 64.0e6
             sigma_12_max = 71.0e6
 
-            F1 =  1 / sigma_t1 - 1 / sigma_c1 # NOTE: To be verified again
+            F1 = 1 / sigma_t1 - 1 / sigma_c1  # NOTE: To be verified again
             F11 = 1 / (sigma_t1 * sigma_c1)
-            F2 =  1 / sigma_t2 - 1 / sigma_c2 # NOTE: To be verified again
+            F2 = 1 / sigma_t2 - 1 / sigma_c2  # NOTE: To be verified again
             F22 = 1 / (sigma_t2 * sigma_c2)
             F66 = 1 / (sigma_12_max**2)
 
@@ -290,7 +309,11 @@ class TsaiWuWingbox(om.ExplicitComponent):
             for elem_num in range(4):
                 for ply_num in range(4):
                     a = F1 * sigma_elem_ply[elem_num, ply_num, 0] + F2 * sigma_elem_ply[elem_num, ply_num, 1]
-                    b = F11 * sigma_elem_ply[elem_num, ply_num, 0]**2 + F22 * sigma_elem_ply[elem_num, ply_num, 1]**2 + F66 * sigma_elem_ply[elem_num, ply_num, 2]**2
+                    b = (
+                        F11 * sigma_elem_ply[elem_num, ply_num, 0] ** 2
+                        + F22 * sigma_elem_ply[elem_num, ply_num, 1] ** 2
+                        + F66 * sigma_elem_ply[elem_num, ply_num, 2] ** 2
+                    )
                     tsaiwu_sr[ielem, elem_num * 4 + ply_num] = 0.5 * (a + np.sqrt(a**2 + 4 * b))
 
                     # a = F1 * epsilon_elem_ply[elem_num, ply_num, 0] + F2 * epsilon_elem_ply[elem_num, ply_num, 1]
