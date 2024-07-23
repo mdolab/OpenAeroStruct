@@ -1,7 +1,7 @@
 OpenAeroStruct
 ==============
 
-![GitHub Actions Status](https://github.com/mdolab/OpenAeroStruct/workflows/OAS%20build/badge.svg)
+[![Build Status](https://dev.azure.com/mdolab/Public/_apis/build/status%2Fmdolab.OpenAeroStruct?repoName=mdolab%2FOpenAeroStruct&branchName=main)](https://dev.azure.com/mdolab/Public/_build/latest?definitionId=49&repoName=mdolab%2FOpenAeroStruct&branchName=main)
 [![codecov](https://codecov.io/gh/mdolab/OpenAeroStruct/branch/main/graph/badge.svg?token=yOxeH7rT2H)](https://codecov.io/gh/mdolab/OpenAeroStruct)
 [![Documentation Status](https://readthedocs.com/projects/mdolab-openaerostruct/badge/?version=latest)](https://mdolab-openaerostruct.readthedocs-hosted.com/en/latest/?badge=latest)
 [![PyPI](https://img.shields.io/pypi/v/openaerostruct)](https://pypi.org/project/openaerostruct/)

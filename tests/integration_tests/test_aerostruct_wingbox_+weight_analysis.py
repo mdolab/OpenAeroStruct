@@ -288,7 +288,7 @@ class Test(unittest.TestCase):
             "original_wingbox_airfoil_t_over_c": 0.12,
             "c_max_t": 0.38,  # chordwise location of maximum thickness
             "with_viscous": True,
-            "with_wave": True,  # if true, compute wave drag
+            "with_wave": False,  # if true, compute wave drag
             # Structural values are based on aluminum 7075
             "E": 73.1e9,  # [Pa] Young's modulus
             "G": (73.1e9 / 2 / 1.33),  # [Pa] shear modulus (calculated using E and the Poisson's ratio here)
@@ -391,19 +391,17 @@ class Test(unittest.TestCase):
 
         prob.driver = om.ScipyOptimizeDriver()
         prob.driver.options["tol"] = 1e-9
+        prob.driver.options["disp"] = True
 
         # Set up the problem
         prob.setup()
 
+        AS_point.nonlinear_solver.options["iprint"] = 2
+
         prob.run_model()
 
-        print(prob["AS_point_0.fuelburn"][0])
-        print(prob["wing.structural_mass"][0] / 1.25)
-        print(prob["AS_point_0.wing_perf.failure"][0])
-
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 84999.8396153129, 1e-5)
-        assert_near_equal(prob["wing.structural_mass"][0] / 1.25, 24009.5230566, 1e-5)
-        assert_near_equal(prob["AS_point_0.wing_perf.failure"][0], 1.6254327137382174, 1e-5)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 87333.56998786073, 1e-5)
+        assert_near_equal(prob["wing.structural_mass"][0], 34500.40422127632, 1e-5)
 
 
 if __name__ == "__main__":

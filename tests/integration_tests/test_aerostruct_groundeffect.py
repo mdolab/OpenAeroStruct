@@ -1,6 +1,6 @@
 from openmdao.utils.assert_utils import assert_near_equal
 import unittest
-from openaerostruct.utils.testing import assert_check_totals
+from openaerostruct.utils.testing import assert_check_totals, assert_opt_successful
 
 
 class Test(unittest.TestCase):
@@ -144,17 +144,21 @@ class Test(unittest.TestCase):
         # Set up the problem
         prob.setup(check=True)
 
-        prob.run_driver()
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 92369.74980979414, 1e-6)
+        optResult = prob.run_driver()
+        assert_opt_successful(self, optResult)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 92523.90218121602, 1e-6)
+
         prob["height_agl"] = 20.0
-        prob.run_driver()
+        optResult = prob.run_driver()
+        assert_opt_successful(self, optResult)
         # the fuel burn should be less in ground effect
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 86910.5549671242, 1e-6)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 86980.04655202407, 1e-6)
         totals = prob.check_totals(
             of=["AS_point_0.L_equals_W", "AS_point_0.fuelburn", "AS_point_0.wing_perf.failure"],
             wrt=["wing.twist_cp", "alpha", "height_agl"],
             compact_print=True,
-            out_stream=None,
+            abs_err_tol=1e-2,
+            rel_err_tol=1e-5,
         )
         assert_check_totals(totals, atol=1e-2, rtol=1e-5)
 

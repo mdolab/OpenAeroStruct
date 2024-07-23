@@ -1,4 +1,5 @@
 from openmdao.utils.assert_utils import assert_near_equal
+from openaerostruct.utils.testing import assert_opt_successful
 import unittest
 import numpy as np
 
@@ -8,6 +9,7 @@ from openaerostruct.integration.aerostruct_groups import AerostructGeometry, Aer
 
 import openmdao.api as om
 from openaerostruct.structures.wingbox_fuel_vol_delta import WingboxFuelVolDelta
+
 
 # Provide coordinates for a portion of an airfoil for the wingbox cross-section as an nparray with dtype=complex (to work with the complex-step approximation for derivatives).
 # These should be for an airfoil with the chord scaled to 1.
@@ -244,7 +246,7 @@ lower_y = np.array(
 class Test(unittest.TestCase):
     def test(self):
         """
-        This is an opt problem that tests the fuel volume constraint with the wingbox model
+        This is an opt problem that tests the wingbox model with wave drag and the fuel vol constraint
         """
 
         # Create a dictionary to store options about the surface
@@ -288,11 +290,11 @@ class Test(unittest.TestCase):
             # Airfoil properties for viscous drag calculation
             "k_lam": 0.05,  # percentage of chord with laminar
             # flow, used for viscous drag
-            "t_over_c_cp": np.array([0.08, 0.08, 0.08, 0.10, 0.10, 0.08]),
+            "t_over_c_cp": 0.12 * np.ones(6),
             "original_wingbox_airfoil_t_over_c": 0.12,
             "c_max_t": 0.38,  # chordwise location of maximum thickness
             "with_viscous": True,
-            "with_wave": False,  # if true, compute wave drag
+            "with_wave": True,  # if true, compute wave drag
             # Structural values are based on aluminum 7075
             "E": 73.1e9,  # [Pa] Young's modulus
             "G": (73.1e9 / 2 / 1.33),  # [Pa] shear modulus (calculated using E and the Poisson's ratio here)
@@ -316,10 +318,11 @@ class Test(unittest.TestCase):
 
         # Add problem information as an independent variables component
         indep_var_comp = om.IndepVarComp()
-        indep_var_comp.add_output("v", val=0.85 * 295.07, units="m/s")
+        Mach = 0.77
+        indep_var_comp.add_output("v", val=Mach * 295.07, units="m/s")
         indep_var_comp.add_output("alpha", val=0.0, units="deg")
-        indep_var_comp.add_output("Mach_number", val=0.85)
-        indep_var_comp.add_output("re", val=0.348 * 295.07 * 0.85 * 1.0 / (1.43 * 1e-5), units="1/m")
+        indep_var_comp.add_output("Mach_number", val=Mach)
+        indep_var_comp.add_output("re", val=0.348 * 295.07 * Mach * 1.0 / (1.43 * 1e-5), units="1/m")
         indep_var_comp.add_output("rho", val=0.348, units="kg/m**3")
         indep_var_comp.add_output("CT", val=0.53 / 3600, units="1/s")
         indep_var_comp.add_output("R", val=14.307e6, units="m")
@@ -411,7 +414,7 @@ class Test(unittest.TestCase):
         prob.model.add_design_var("wing.twist_cp", lower=-15.0, upper=15.0, scaler=0.1)
         prob.model.add_design_var("wing.spar_thickness_cp", lower=0.003, upper=0.1, scaler=1e2)
         prob.model.add_design_var("wing.skin_thickness_cp", lower=0.003, upper=0.1, scaler=1e2)
-        prob.model.add_design_var("wing.geometry.t_over_c_cp", lower=0.07, upper=0.2, scaler=10.0)
+        prob.model.add_design_var("wing.geometry.t_over_c_cp", lower=0.06, upper=0.2, scaler=10.0)
 
         prob.model.add_constraint("AS_point_0.CL", equals=0.5)
         prob.model.add_constraint("AS_point_0.wing_perf.failure", upper=0.0)
@@ -426,15 +429,12 @@ class Test(unittest.TestCase):
         # Set up the problem
         prob.setup()
 
-        prob.run_driver()
+        optResult = prob.run_driver()
 
-        print(prob["AS_point_0.fuelburn"][0])
-        print(prob["wing.structural_mass"][0] / 1.25)
-        print(prob["fuel_vol_delta.fuel_vol_delta"][0])
-
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 76869.38586654868, 1e-5)
-        assert_near_equal(prob["wing.structural_mass"][0] / 1.25, 11619.131535449487, 1e-4)
-        assert_near_equal(prob["fuel_vol_delta.fuel_vol_delta"][0], 42.98939210455205, 1e-4)
+        assert_opt_successful(self, optResult)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 85374.45357945036, 1e-5)
+        assert_near_equal(prob["wing.structural_mass"][0], 13048.465090719292, 1e-5)
+        assert_near_equal(prob["AS_point_0.CL"][0], 0.5, 1e-5)
 
 
 if __name__ == "__main__":

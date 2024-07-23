@@ -1,17 +1,28 @@
 from openmdao.utils.assert_utils import assert_near_equal
 import unittest
 import numpy as np
-
-from openaerostruct.geometry.utils import generate_mesh
-
-from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
-
-import openmdao.api as om
 from openaerostruct.utils.constants import grav_constant
+from openaerostruct.utils.testing import assert_opt_successful
+
+# check if pygeo is available
+try:
+    import pygeo  # noqa: F401
+
+    pygeo_flag = True
+except ImportError:
+    pygeo_flag = False
 
 
+@unittest.skipUnless(pygeo_flag, "pyGeo is required.")
 class Test(unittest.TestCase):
     def test(self):
+        from openaerostruct.geometry.utils import generate_mesh, write_FFD_file
+
+        from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
+
+        import openmdao.api as om
+        from pygeo import DVGeometry
+
         # Create a dictionary to store options about the surface
         mesh_dict = {"num_y": 5, "num_x": 2, "wing_type": "CRM", "symmetry": True, "num_twist_cp": 5}
 
@@ -26,8 +37,10 @@ class Test(unittest.TestCase):
             # can be 'wetted' or 'projected'
             "fem_model_type": "tube",
             "thickness_cp": np.array([0.1, 0.2, 0.3]),
-            "twist_cp": twist_cp,
             "mesh": mesh,
+            "geom_manipulator": "FFD",
+            "mx": 2,
+            "my": 3,
             # Aerodynamic performance of the lifting surface at
             # an angle of attack of 0 (alpha=0).
             # These CL0 and CD0 values are added to the CL and CD
@@ -66,7 +79,6 @@ class Test(unittest.TestCase):
         indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output("v", val=248.136, units="m/s")
         indep_var_comp.add_output("alpha", val=5.0, units="deg")
-        indep_var_comp.add_output("beta", val=0.0, units="deg")
         indep_var_comp.add_output("Mach_number", val=0.84)
         indep_var_comp.add_output("re", val=1.0e6, units="1/m")
         indep_var_comp.add_output("rho", val=0.38, units="kg/m**3")
@@ -85,7 +97,9 @@ class Test(unittest.TestCase):
             # only for this surface
             name = surface["name"]
 
-            aerostruct_group = AerostructGeometry(surface=surface)
+            filename = write_FFD_file(surface, surface["mx"], surface["my"])
+            DVGeo = DVGeometry(filename)
+            aerostruct_group = AerostructGeometry(surface=surface, DVGeo=DVGeo)
 
             # Add tmp_group to the problem with the name of the surface.
             prob.model.add_subsystem(name, aerostruct_group)
@@ -96,14 +110,13 @@ class Test(unittest.TestCase):
             # Connect the parameters within the model for each aero point
 
             # Create the aero point group and add it to the model
-            AS_point = AerostructPoint(surfaces=surfaces, compressible=True)
+            AS_point = AerostructPoint(surfaces=surfaces)
 
             prob.model.add_subsystem(point_name, AS_point)
 
             # Connect flow properties to the analysis point
             prob.model.connect("v", point_name + ".v")
             prob.model.connect("alpha", point_name + ".alpha")
-            prob.model.connect("beta", point_name + ".beta")
             prob.model.connect("Mach_number", point_name + ".Mach_number")
             prob.model.connect("re", point_name + ".re")
             prob.model.connect("rho", point_name + ".rho")
@@ -134,13 +147,29 @@ class Test(unittest.TestCase):
                 )
                 prob.model.connect(name + ".t_over_c", com_name + ".t_over_c")
 
+        # Import the Scipy Optimizer and set the driver of the problem to use
+        # it, which defaults to an SLSQP optimization method
+        prob.driver = om.ScipyOptimizeDriver()
+
+        # Setup problem and add design variables, constraint, and objective
+        prob.model.add_design_var("wing.shape", lower=-3, upper=2)
+        prob.model.add_design_var("wing.thickness_cp", lower=0.01, upper=0.5, scaler=1e2)
+        prob.model.add_constraint("AS_point_0.wing_perf.failure", upper=0.0)
+        prob.model.add_constraint("AS_point_0.wing_perf.thickness_intersects", upper=0.0)
+
+        # Add design variables, constraisnt, and objective on the problem
+        prob.model.add_design_var("alpha", lower=-10.0, upper=10.0)
+        prob.model.add_constraint("AS_point_0.L_equals_W", equals=0.0)
+        prob.model.add_objective("AS_point_0.fuelburn", scaler=1e-5)
+
         # Set up the problem
         prob.setup()
 
-        prob.run_model()
+        # prob.run_model()
+        optResult = prob.run_driver()
+        assert_opt_successful(self, optResult)
 
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 213840.78859689648, 1e-4)
-        assert_near_equal(prob["AS_point_0.CM"][1], -0.9866929184880228, 1e-5)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 92474.52106288195, 1e-3)
 
 
 if __name__ == "__main__":

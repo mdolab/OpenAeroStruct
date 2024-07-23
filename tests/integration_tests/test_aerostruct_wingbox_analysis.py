@@ -263,8 +263,7 @@ class Test(unittest.TestCase):
             # reflected across the plane y = 0
             "S_ref_type": "wetted",  # how we compute the wing area,
             # can be 'wetted' or 'projected'
-            "fem_model_type": "tsaiwu_wingbox", #NOTE: testing the Tsai Wu wingbox model
-            "composite_safetyfactor": 1.5,
+            "fem_model_type": "wingbox",
             "spar_thickness_cp": np.array([0.004, 0.005, 0.005, 0.008, 0.008, 0.01]),  # [m]
             "skin_thickness_cp": np.array([0.005, 0.01, 0.015, 0.020, 0.025, 0.026]),
             "twist_cp": np.array([4.0, 5.0, 8.0, 8.0, 8.0, 9.0]),
@@ -291,12 +290,10 @@ class Test(unittest.TestCase):
             "with_viscous": True,
             "with_wave": True,  # if true, compute wave drag
             # Structural values are based on aluminum 7075
-            # "E": 73.1e9,  # [Pa] Young's modulus
-            # "G": (73.1e9 / 2 / 1.33),  # [Pa] shear modulus (calculated using E and the Poisson's ratio here)
-            "E": 62.53e9,  # [Pa] Young's modulus # skin composites
-            "G": 29.71e9,  # [Pa] shear modulus # skin composites   
+            "E": 73.1e9,  # [Pa] Young's modulus
+            "G": (73.1e9 / 2 / 1.33),  # [Pa] shear modulus (calculated using E and the Poisson's ratio here)
             "yield": (420.0e6 / 1.5),  # [Pa] allowable yield stress
-            "mrho": 1550,  # [kg/m^3] material density #NOTE: CFRP density 
+            "mrho": 2.78e3,  # [kg/m^3] material density
             "strength_factor_for_upper_skin": 1.0,  # the yield stress is multiplied by this factor for the upper skin
             # 'fem_origin' : 0.35,    # normalized chordwise location of the spar
             "wing_weight_ratio": 1.25,
@@ -305,7 +302,6 @@ class Test(unittest.TestCase):
             # Constraints
             "exact_failure_constraint": False,  # if false, use KS function
             "Wf_reserve": 15000.0,  # [kg] reserve fuel mass
-            "span": 58,  # [m] wingspan
         }
 
         surfaces = [surf_dict]
@@ -396,43 +392,18 @@ class Test(unittest.TestCase):
         prob.driver = om.ScipyOptimizeDriver()
         prob.driver.options["tol"] = 1e-9
 
-        prob.model.add_objective("AS_point_0.fuelburn", scaler=1e-5)
-
-        prob.model.add_design_var("wing.twist_cp", lower=-15.0, upper=15.0, scaler=0.1)
-        prob.model.add_design_var("wing.spar_thickness_cp", lower=0.003, upper=0.1, scaler=1e2)
-        prob.model.add_design_var("wing.skin_thickness_cp", lower=0.003, upper=0.1, scaler=1e2)
-        prob.model.add_design_var("wing.geometry.t_over_c_cp", lower=0.07, upper=0.2, scaler=10.0)
-        prob.model.add_design_var("wing.geometry.span", lower=55.0, upper=60.0, scaler=2e-2)
-
-        prob.model.add_constraint("AS_point_0.CL", equals=0.5)
-        prob.model.add_constraint("AS_point_0.wing_perf.failure", upper=0.0)
-
-        # recorder = om.SqliteRecorder("tsaiwu_opt.db")
-        # prob.driver.add_recorder(recorder)
-
-        # # We could also just use prob.driver.recording_options['includes']=['*'] here, but for large meshes the database file becomes extremely large. So we just select the variables we need.
-        # prob.driver.recording_options["includes"] = ['*']
-
-        
-
-        # prob.driver.recording_options["record_objectives"] = True
-        # prob.driver.recording_options["record_constraints"] = True
-        # prob.driver.recording_options["record_desvars"] = True
-        # prob.driver.recording_options["record_inputs"] = True
-
-        prob.driver = om.ScipyOptimizeDriver()
-        prob.driver.options["optimizer"] = "SLSQP"
-        prob.driver.options["tol"] = 1e-6
-        prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
-
         # Set up the problem
         prob.setup()
 
-        prob.run_driver()
+        prob.run_model()
 
-        # assert_near_equal(prob["AS_point_0.fuelburn"][0], 84999.8396153129, 1e-5)
-        # assert_near_equal(prob["wing.structural_mass"][0] / 1.25, 24009.5230566, 1e-5)
-        # assert_near_equal(prob["AS_point_0.wing_perf.failure"][0], 1.6254327137382174, 1e-5)
+        print(prob["AS_point_0.fuelburn"][0])
+        print(prob["wing.structural_mass"][0] / 1.25)
+        print(prob["AS_point_0.wing_perf.failure"][0])
+
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 87760.55423816708, 1e-5)
+        assert_near_equal(prob["wing.structural_mass"][0], 34500.40422127632, 1e-5)
+        assert_near_equal(prob["AS_point_0.wing_perf.failure"][0], -0.15727437869018163, 1e-5)
 
 
 if __name__ == "__main__":
