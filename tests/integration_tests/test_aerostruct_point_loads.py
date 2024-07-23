@@ -78,12 +78,10 @@ class Test(unittest.TestCase):
         indep_var_comp.add_output("empty_cg", val=np.zeros((3)), units="m")
 
         point_masses = np.array([[8000.0]])
-        engine_thrusts = np.array([[80.0e3]])
 
-        point_mass_locations = np.array([[25, -10.0, -1.0]])
+        point_mass_locations = np.array([[25, -10.0, 0.0]])
 
         indep_var_comp.add_output("point_masses", val=point_masses, units="kg")
-        indep_var_comp.add_output("engine_thrusts", val=engine_thrusts, units="N")
         indep_var_comp.add_output("point_mass_locations", val=point_mass_locations, units="m")
 
         prob.model.add_subsystem("prob_vars", indep_var_comp, promotes=["*"])
@@ -145,7 +143,6 @@ class Test(unittest.TestCase):
 
             coupled_name = point_name + ".coupled." + name
             prob.model.connect("point_masses", coupled_name + ".point_masses")
-            prob.model.connect("engine_thrusts", coupled_name + ".engine_thrusts")
             prob.model.connect("point_mass_locations", coupled_name + ".point_mass_locations")
 
         # Set up the problem
@@ -153,11 +150,8 @@ class Test(unittest.TestCase):
 
         prob.run_model()
 
-        print(prob["AS_point_0.fuelburn"][0])
-        print(prob["AS_point_0.CM"][1])
-
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 251929.9085951508, 1e-4)
-        assert_near_equal(prob["AS_point_0.CM"][1], -0.7008367976235399, 1e-5)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 264106.7825178142, 1e-4)
+        assert_near_equal(prob["AS_point_0.CM"][1], -0.6436834908660709, 1e-5)
 
 
 if __name__ == "__main__":

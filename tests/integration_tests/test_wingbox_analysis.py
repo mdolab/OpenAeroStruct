@@ -1,19 +1,9 @@
-from openmdao.utils.assert_utils import assert_near_equal
-import unittest
 import numpy as np
-
+import unittest
 from openaerostruct.geometry.utils import generate_mesh
-
-from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
-
+from openaerostruct.structures.struct_groups import SpatialBeamAlone
+from openmdao.utils.assert_utils import assert_check_partials, assert_near_equal
 import openmdao.api as om
-
-
-# Provide coordinates for a portion of an airfoil for the wingbox cross-section as an nparray with dtype=complex (to work with the complex-step approximation for derivatives).
-# These should be for an airfoil with the chord scaled to 1.
-# We use the 10% to 60% portion of the NASA SC2-0612 airfoil for this case
-# We use the coordinates available from airfoiltools.com. Using such a large number of coordinates is not necessary.
-# The first and last x-coordinates of the upper and lower skins must be the same
 
 upper_x = np.array(
     [
@@ -244,26 +234,18 @@ lower_y = np.array(
 class Test(unittest.TestCase):
     def test(self):
         # Create a dictionary to store options about the surface
-        mesh_dict = {
-            "num_y": 5,
-            "num_x": 3,
-            "wing_type": "CRM",
-            "symmetry": True,
-            "num_twist_cp": 6,
-            "chord_cos_spacing": 0,
-            "span_cos_spacing": 0,
-        }
+        mesh_dict = {"num_y": 7, "wing_type": "uCRM_based", "symmetry": True, "num_twist_cp": 5}
 
         mesh, twist_cp = generate_mesh(mesh_dict)
 
         surf_dict = {
             # Wing definition
             "name": "wing",  # name of the surface
-            "symmetry": True,  # if true, model one half of wing
             # reflected across the plane y = 0
             "S_ref_type": "wetted",  # how we compute the wing area,
             # can be 'wetted' or 'projected'
             "fem_model_type": "wingbox",
+            "symmetry": True,
             "spar_thickness_cp": np.array([0.004, 0.005, 0.005, 0.008, 0.008, 0.01]),  # [m]
             "skin_thickness_cp": np.array([0.005, 0.01, 0.015, 0.020, 0.025, 0.026]),
             "twist_cp": np.array([4.0, 5.0, 8.0, 8.0, 8.0, 9.0]),
@@ -288,7 +270,7 @@ class Test(unittest.TestCase):
             "original_wingbox_airfoil_t_over_c": 0.12,
             "c_max_t": 0.38,  # chordwise location of maximum thickness
             "with_viscous": True,
-            "with_wave": False,  # if true, compute wave drag
+            "with_wave": True,  # if true, compute wave drag
             # Structural values are based on aluminum 7075
             "E": 73.1e9,  # [Pa] Young's modulus
             "G": (73.1e9 / 2 / 1.33),  # [Pa] shear modulus (calculated using E and the Poisson's ratio here)
@@ -297,111 +279,60 @@ class Test(unittest.TestCase):
             "strength_factor_for_upper_skin": 1.0,  # the yield stress is multiplied by this factor for the upper skin
             # 'fem_origin' : 0.35,    # normalized chordwise location of the spar
             "wing_weight_ratio": 1.25,
-            "struct_weight_relief": True,  # True to add the weight of the structure to the loads on the structure
-            "distributed_fuel_weight": False,
+            "struct_weight_relief": False,
+            "distributed_fuel_weight": True,
             # Constraints
-            "exact_failure_constraint": False,  # if false, use KS function
+            "exact_failure_constraint": True,  # if false, use KS function
+            "fuel_density": 803.0,  # [kg/m^3] fuel density (only needed if the fuel-in-wing volume constraint is used)
             "Wf_reserve": 15000.0,  # [kg] reserve fuel mass
         }
-
-        surfaces = [surf_dict]
 
         # Create the problem and assign the model group
         prob = om.Problem()
 
-        # Add problem information as an independent variables component
+        ny = surf_dict["mesh"].shape[1]
+
         indep_var_comp = om.IndepVarComp()
-        indep_var_comp.add_output("v", val=0.85 * 295.07, units="m/s")
-        indep_var_comp.add_output("alpha", val=0.0, units="deg")
-        indep_var_comp.add_output("Mach_number", val=0.85)
-        indep_var_comp.add_output("re", val=0.348 * 295.07 * 0.85 * 1.0 / (1.43 * 1e-5), units="1/m")
-        indep_var_comp.add_output("rho", val=0.348, units="kg/m**3")
-        indep_var_comp.add_output("CT", val=0.53 / 3600, units="1/s")
-        indep_var_comp.add_output("R", val=14.307e6, units="m")
-        indep_var_comp.add_output("W0", val=148000 + surf_dict["Wf_reserve"], units="kg")
-        indep_var_comp.add_output("speed_of_sound", val=295.07, units="m/s")
+        indep_var_comp.add_output("loads", val=np.ones((ny, 6)) * 2e5, units="N")
         indep_var_comp.add_output("load_factor", val=1.0)
-        indep_var_comp.add_output("empty_cg", val=np.zeros((3)), units="m")
-
-        prob.model.add_subsystem("prob_vars", indep_var_comp, promotes=["*"])
-
-        # Loop over each surface in the surfaces list
-        for surface in surfaces:
-            # Get the surface name and create a group to contain components
-            # only for this surface
-            name = surface["name"]
-
-            aerostruct_group = AerostructGeometry(surface=surface)
-
-            # Add tmp_group to the problem with the name of the surface.
-            prob.model.add_subsystem(name, aerostruct_group)
-
-        # Loop through and add a certain number of aero points
-        for i in range(1):
-            point_name = "AS_point_{}".format(i)
-            # Connect the parameters within the model for each aero point
-
-            # Create the aero point group and add it to the model
-            AS_point = AerostructPoint(surfaces=surfaces)
-
-            prob.model.add_subsystem(point_name, AS_point)
-
-            # Connect flow properties to the analysis point
-            prob.model.connect("v", point_name + ".v")
-            prob.model.connect("alpha", point_name + ".alpha")
-            prob.model.connect("Mach_number", point_name + ".Mach_number")
-            prob.model.connect("re", point_name + ".re")
-            prob.model.connect("rho", point_name + ".rho")
-            prob.model.connect("CT", point_name + ".CT")
-            prob.model.connect("R", point_name + ".R")
-            prob.model.connect("W0", point_name + ".W0")
-            prob.model.connect("speed_of_sound", point_name + ".speed_of_sound")
-            prob.model.connect("empty_cg", point_name + ".empty_cg")
-            prob.model.connect("load_factor", point_name + ".load_factor")
-
-            for _surface in surfaces:
-                com_name = point_name + "." + name + "_perf."
-                prob.model.connect(
-                    name + ".local_stiff_transformed", point_name + ".coupled." + name + ".local_stiff_transformed"
-                )
-                prob.model.connect(name + ".nodes", point_name + ".coupled." + name + ".nodes")
-
-                # Connect aerodyamic mesh to coupled group mesh
-                prob.model.connect(name + ".mesh", point_name + ".coupled." + name + ".mesh")
-                prob.model.connect(name + ".element_mass", point_name + ".coupled." + name + ".element_mass")
-
-                # Connect performance calculation variables
-                prob.model.connect(name + ".nodes", com_name + "nodes")
-                prob.model.connect(name + ".cg_location", point_name + "." + "total_perf." + name + "_cg_location")
-                prob.model.connect(
-                    name + ".structural_mass", point_name + "." + "total_perf." + name + "_structural_mass"
-                )
-
-                # Connect wingbox properties to von Mises stress calcs
-                prob.model.connect(name + ".Qz", com_name + "Qz")
-                prob.model.connect(name + ".J", com_name + "J")
-                prob.model.connect(name + ".A_enc", com_name + "A_enc")
-                prob.model.connect(name + ".htop", com_name + "htop")
-                prob.model.connect(name + ".hbottom", com_name + "hbottom")
-                prob.model.connect(name + ".hfront", com_name + "hfront")
-                prob.model.connect(name + ".hrear", com_name + "hrear")
-
-                prob.model.connect(name + ".spar_thickness", com_name + "spar_thickness")
-                prob.model.connect(name + ".t_over_c", com_name + "t_over_c")
+        indep_var_comp.add_output("fuel_mass", val=10000.0, units="kg")
+        struct_group = SpatialBeamAlone(surface=surf_dict)
+        # Add indep_vars to the structural group
+        struct_group.add_subsystem("indep_vars", indep_var_comp, promotes=["*"])
+        prob.model.add_subsystem(surf_dict["name"], struct_group)
+        if surf_dict["distributed_fuel_weight"]:
+            prob.model.connect("wing.fuel_mass", "wing.struct_states.fuel_mass")
+            prob.model.connect("wing.struct_setup.fuel_vols", "wing.struct_states.fuel_vols")
 
         prob.driver = om.ScipyOptimizeDriver()
         prob.driver.options["tol"] = 1e-9
-        prob.driver.options["disp"] = True
+
+        # Setup problem and add design variables, constraint, and objective
+        prob.model.add_design_var("wing.spar_thickness_cp", lower=0.01, upper=0.5, ref=1e-1)
+        prob.model.add_design_var("wing.skin_thickness_cp", lower=0.01, upper=0.5, ref=1e-1)
+        prob.model.add_constraint("wing.failure", upper=0.0)
+        # prob.model.add_constraint('wing.thickness_intersects', upper=0.)
+
+        # Add design variables, constraisnt, and objective on the problem
+        prob.model.add_objective("wing.structural_mass", scaler=1e-5)
 
         # Set up the problem
         prob.setup()
 
-        AS_point.nonlinear_solver.options["iprint"] = 2
-
         prob.run_model()
 
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 84598.60636387265, 1e-5)
-        assert_near_equal(prob["wing.structural_mass"][0] / 1.25, 24009.5230566, 1e-5)
+        # the list of components that uses CS to compute derivatives. We exclude them from check_partials
+        excludes_list = [
+            "wing.wingbox_group.wingbox",
+            "wing.struct_setup.fuel_vol",
+            "wing.struct_states.fuel_loads",
+            "wing.struct_funcs.vonmises",
+        ]
+        data = prob.check_partials(compact_print=True, out_stream=None, excludes=excludes_list, method="cs")
+        assert_check_partials(data, atol=1e20, rtol=1e-6)
+
+        prob.run_driver()
+        assert_near_equal(prob["wing.structural_mass"], 16675.586037621928, 1e-6)
 
 
 if __name__ == "__main__":
