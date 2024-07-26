@@ -318,94 +318,6 @@ def stitchSectionGeometry(sections, panelGY, panelGX, bPanels):
     return panelGeomX, panelGeomY
 
 
-def stitchPanelChordGeometry(sections, panelQC, tquartX, bPanels):
-    """
-    Combines the split section arrays for quarter chord and three-quarters chord x-coordintes into singular unified mesh
-
-    Parameters
-    ----------
-    sections : int
-        Integer for number of wing sections specified
-    panelQC : List
-         List containing the mesh quarter chord x-coordinates for each section
-    tquartX : List
-        List containing the mesh three-quarter chord x-coordinates for each section
-    bPanels: numpy array
-        1 x sections 1-D array consisting of integers that specify the number of spanwise panels corresponding to each wing section
-
-
-    Returns
-    -------
-    quarterC : numpy array
-         Array of the quarter chord x-coordinates
-    tquarterPointsX : numpy array
-        Array of the three-quarter chord x-coordinates
-    """
-    for i in range(sections):
-        if i == 0:
-            quarterC = panelQC[i]
-            tquarterPointsX = tquartX[i]
-        else:
-            quarterC = np.concatenate((panelQC[i][:, 0 : bPanels[i]], quarterC, panelQC[i][:, bPanels[i] :]), axis=1)
-            tquarterPointsX = np.concatenate(
-                (tquartX[i][:, 0 : bPanels[i]], tquarterPointsX, tquartX[i][:, bPanels[i] :]), axis=1
-            )
-    return quarterC, tquarterPointsX
-
-
-
-def calcControlPoints(panelGeomY, panelGeomX, tquartX, panelQC, bPanels, cPanels):
-    """
-    Calculates the control point locations on each panel
-
-    Parameters
-    ----------
-    panelGeomX : numpy array
-         Array of the mesh x-coordinates
-    panelGeomY : numpy array
-        Array of the mesh y-coordinates
-    bPanels: numpy array
-        1 x sections 1-D array consisting of integers that specify the number of spanwise panels corresponding to each wing section
-    cPanels: int
-        Integer for number of chord-wise panels
-    panelQC : numpy array
-         Array of the quarter chord x-coordinates
-    tquartX : : numpy array
-         Array of the three-quarter chord x-coordinates
-
-
-    Returns
-    -------
-    controlPointsX : numpy array
-         Array of the three-quarter chord control point x-coordinates
-    qControlPointsX : numpy array
-        Array of the quarter chord control point x-coordinates
-    controlPointsY : numpy array
-        Array of the control point y-coordinates
-    chordDistGeom : numpy array
-        The geometric chord distribution
-    chordDistCont : numpy array
-        Array of chord distribution at the control points
-    """
-    controlPointsX = np.zeros([cPanels, 2 * np.sum(bPanels)])
-    qControlPointsX = np.zeros_like(controlPointsX)
-    controlPointsY = np.zeros(2 * np.sum(bPanels))
-    chordDistGeom = np.zeros_like(panelGeomY)
-    chordDistCont = np.zeros_like(controlPointsY)
-
-    for i in range(len(panelGeomY)):
-        chordDistGeom[i] = panelGeomX[0, i] - panelGeomX[-1, i]
-
-    for i in range(len(panelGeomY) - 1):
-        for j in range(cPanels):
-            controlPointsX[j, i] = (tquartX[j, i + 1] + tquartX[j, i]) / 2
-            qControlPointsX[j, i] = (panelQC[j, i + 1] + panelQC[j, i]) / 2
-        controlPointsY[i] = panelGeomY[i] + (panelGeomY[i + 1] - panelGeomY[i]) / 2
-        chordDistCont[i] = (chordDistGeom[i + 1] + chordDistGeom[i]) / 2
-
-    return controlPointsX, qControlPointsX, controlPointsY, chordDistGeom, chordDistCont
-
-
 def planformSymmetric(panelGeomX, panelGeomY, bPanels):
     """
     Cuts the mesh in half is symmetry conditions are used
@@ -505,6 +417,95 @@ def outputOASSectionMesh(panelGX,panelGY):
     mesh[:, :, 0] = panelGX[::-1]
     mesh[:, :, 1] = panelGY
     return mesh
+
+
+
+def stitchPanelChordGeometry(sections, panelQC, tquartX, bPanels):
+    """
+    Combines the split section arrays for quarter chord and three-quarters chord x-coordintes into singular unified mesh
+
+    Parameters
+    ----------
+    sections : int
+        Integer for number of wing sections specified
+    panelQC : List
+         List containing the mesh quarter chord x-coordinates for each section
+    tquartX : List
+        List containing the mesh three-quarter chord x-coordinates for each section
+    bPanels: numpy array
+        1 x sections 1-D array consisting of integers that specify the number of spanwise panels corresponding to each wing section
+
+
+    Returns
+    -------
+    quarterC : numpy array
+         Array of the quarter chord x-coordinates
+    tquarterPointsX : numpy array
+        Array of the three-quarter chord x-coordinates
+    """
+    for i in range(sections):
+        if i == 0:
+            quarterC = panelQC[i]
+            tquarterPointsX = tquartX[i]
+        else:
+            quarterC = np.concatenate((panelQC[i][:, 0 : bPanels[i]], quarterC, panelQC[i][:, bPanels[i] :]), axis=1)
+            tquarterPointsX = np.concatenate(
+                (tquartX[i][:, 0 : bPanels[i]], tquarterPointsX, tquartX[i][:, bPanels[i] :]), axis=1
+            )
+    return quarterC, tquarterPointsX
+
+
+def calcControlPoints(panelGeomY, panelGeomX, tquartX, panelQC, bPanels, cPanels):
+    """
+    Calculates the control point locations on each panel
+
+    Parameters
+    ----------
+    panelGeomX : numpy array
+         Array of the mesh x-coordinates
+    panelGeomY : numpy array
+        Array of the mesh y-coordinates
+    bPanels: numpy array
+        1 x sections 1-D array consisting of integers that specify the number of spanwise panels corresponding to each wing section
+    cPanels: int
+        Integer for number of chord-wise panels
+    panelQC : numpy array
+         Array of the quarter chord x-coordinates
+    tquartX : : numpy array
+         Array of the three-quarter chord x-coordinates
+
+
+    Returns
+    -------
+    controlPointsX : numpy array
+         Array of the three-quarter chord control point x-coordinates
+    qControlPointsX : numpy array
+        Array of the quarter chord control point x-coordinates
+    controlPointsY : numpy array
+        Array of the control point y-coordinates
+    chordDistGeom : numpy array
+        The geometric chord distribution
+    chordDistCont : numpy array
+        Array of chord distribution at the control points
+    """
+    controlPointsX = np.zeros([cPanels, 2 * np.sum(bPanels)])
+    qControlPointsX = np.zeros_like(controlPointsX)
+    controlPointsY = np.zeros(2 * np.sum(bPanels))
+    chordDistGeom = np.zeros_like(panelGeomY)
+    chordDistCont = np.zeros_like(controlPointsY)
+
+    for i in range(len(panelGeomY)):
+        chordDistGeom[i] = panelGeomX[0, i] - panelGeomX[-1, i]
+
+    for i in range(len(panelGeomY) - 1):
+        for j in range(cPanels):
+            controlPointsX[j, i] = (tquartX[j, i + 1] + tquartX[j, i]) / 2
+            qControlPointsX[j, i] = (panelQC[j, i + 1] + panelQC[j, i]) / 2
+        controlPointsY[i] = panelGeomY[i] + (panelGeomY[i + 1] - panelGeomY[i]) / 2
+        chordDistCont[i] = (chordDistGeom[i + 1] + chordDistGeom[i]) / 2
+
+    return controlPointsX, qControlPointsX, controlPointsY, chordDistGeom, chordDistCont
+
 
 def plotPlanform(sections, panelGX, panelGY, plotSymmetry="Left", wingName="CustomUserWing"):
     """

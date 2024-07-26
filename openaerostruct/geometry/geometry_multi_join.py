@@ -75,45 +75,24 @@ class GeomMultiJoin(om.ExplicitComponent):
             mesh_name = "{}_join_mesh".format(name)
             self.add_input(mesh_name, shape=(nx, ny, 3), units="m")
 
-            if section["symmetry"]:
-                left_wing = abs(mesh[0, 0, 1]) > abs(mesh[0, -1, 1])
-                if left_wing:
-                    if iSec == 0:
-                        rows,cols = get_section_edge_left(mesh,self.dim_constr[iSec],edge_cur,self.dim_constr)[1:]
-                        vals = -1*np.ones_like(rows)
-                    elif iSec < len(sections) - 1:
-                        rows1,cols1 = get_section_edge_right(mesh,self.dim_constr[iSec-1],edge_cur,self.dim_constr)[1:]
-                        vals1 = np.ones_like(rows1)
+            if iSec == 0:
+                rows,cols = get_section_edge_right(mesh,self.dim_constr[iSec],edge_cur,self.dim_constr)[1:]
+                vals = -1*np.ones_like(rows)
+            elif iSec < len(sections) - 1:
+                rows1,cols1 = get_section_edge_left(mesh,self.dim_constr[iSec-1],edge_cur,self.dim_constr)[1:]
+                vals1 = np.ones_like(rows1)
 
-                        edge_cur += 1
-                        rows2, cols2 = get_section_edge_left(mesh,self.dim_constr[iSec],edge_cur,self.dim_constr)[1:]
-                        vals2 = -1*np.ones_like(rows2)
+                edge_cur += 1
+                rows2, cols2 = get_section_edge_right(mesh,self.dim_constr[iSec],edge_cur,self.dim_constr)[1:]
+                vals2 = -1*np.ones_like(rows2)
 
-                        rows = np.concatenate([rows1,rows2])
-                        cols = np.concatenate([cols1,cols2])
-                        vals = np.concatenate([vals1,vals2])
-                    else:
-                        rows, cols = get_section_edge_right(mesh,self.dim_constr[iSec-1],edge_cur,self.dim_constr)[1:]
-                        vals = np.ones_like(rows)
-                else:
-                    if iSec == 0:
-                        rows,cols = get_section_edge_right(mesh,self.dim_constr[iSec],edge_cur,self.dim_constr)[1:]
-                        vals = -1*np.ones_like(rows)
-                    elif iSec < len(sections) - 1:
-                        rows,cols = get_section_edge_left(mesh,self.dim_constr[iSec-1],edge_cur,self.dim_constr)[1:]
-                        vals1 = np.ones_like(rows1)
+                rows = np.concatenate([rows1,rows2])
+                cols = np.concatenate([cols1,cols2])
+                vals = np.concatenate([vals1,vals2])
+            else:
+                rows, cols = get_section_edge_left(mesh,self.dim_constr[iSec-1],edge_cur,self.dim_constr)[1:]
+                vals = np.ones_like(rows)
 
-                        edge_cur += 1
-                        rows,cols = get_section_edge_right(mesh,self.dim_constr[iSec],edge_cur,self.dim_constr)[1:]
-                        vals2 = -1*np.ones_like(rows2)
-
-                        rows = np.concatenate([rows1,rows2])
-                        cols = np.concatenate([cols1,cols2])
-                        vals = np.concatenate([vals1,vals2])
-                    else:
-                        rows, cols = get_section_edge_left(mesh,self.dim_constr[iSec-1],edge_cur,self.dim_constr)[1:]
-                        vals = np.ones_like(rows)
-                        
             
             self.declare_partials("section_separation",mesh_name,rows=rows,cols=cols,val=vals)
             #self.declare_partials("section_separation", mesh_name, method='cs')
@@ -128,26 +107,15 @@ class GeomMultiJoin(om.ExplicitComponent):
         for iSec, section in enumerate(sections):
             name = section["name"]
             mesh_name = "{}_join_mesh".format(name)
-            if section["symmetry"]:
-                left_wing = abs(inputs[mesh_name][0, 0, 1]) > abs(inputs[mesh_name][0, -1, 1])
-                if left_wing:
-                    if iSec == 0:
-                        edges.append(get_section_edge_left(inputs[mesh_name],self.dim_constr[iSec])[0])
-                    elif iSec < len(sections) - 1:
-                        edges.append(get_section_edge_right(inputs[mesh_name],self.dim_constr[iSec-1])[0])
-                        edges.append(get_section_edge_left(inputs[mesh_name],self.dim_constr[iSec])[0])
-                    else:
-                        edges.append(get_section_edge_right(inputs[mesh_name],self.dim_constr[iSec-1])[0])
-                else:
-                    if iSec == 0:
-                        edges.append(get_section_edge_right(inputs[mesh_name],self.dim_constr[iSec])[0])
-                    elif iSec < len(sections) - 1:
-                        edges.append(get_section_edge_left(inputs[mesh_name],self.dim_constr[iSec-1])[0])
-                        edges.append(get_section_edge_right(inputs[mesh_name],self.dim_constr[iSec])[0])
-                    else:
-                        edges.append(get_section_edge_left(inputs[mesh_name],self.dim_constr[iSec-1])[0])
+
+            if iSec == 0:
+                edges.append(get_section_edge_right(inputs[mesh_name],self.dim_constr[iSec])[0])
+            elif iSec < len(sections) - 1:
+                edges.append(get_section_edge_left(inputs[mesh_name],self.dim_constr[iSec-1])[0])
+                edges.append(get_section_edge_right(inputs[mesh_name],self.dim_constr[iSec])[0])
             else:
-                raise Exception("Joining requires symmetry on for now.")
+                edges.append(get_section_edge_left(inputs[mesh_name],self.dim_constr[iSec-1])[0])
+
             
         for i in range(self.num_sections - 1):
             edge_constraints.append((edges[2*i+1] - edges[2*i]).flatten())

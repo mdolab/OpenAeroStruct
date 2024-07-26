@@ -6,12 +6,10 @@ def compute_unimesh_dims(sections):
     uni_nx = sections[0]["mesh"].shape[0]
     uni_ny = 0
     for iSec in range(len(sections)):
-        if iSec == 0:
+        if iSec == len(sections)-1:
             uni_ny += sections[iSec]["mesh"].shape[1]
-        elif sections[iSec]["symmetry"] and iSec != 0:
-            uni_ny += (sections[iSec]["mesh"].shape[1] - 1)
         else:
-            uni_ny += (sections[iSec]["mesh"].shape[1] - 2)
+            uni_ny += sections[iSec]["mesh"].shape[1] - 1
     uni_mesh_indices = np.arange(uni_nx * uni_ny * 3).reshape((uni_nx, uni_ny, 3))
 
     return uni_mesh_indices,uni_nx,uni_ny
@@ -22,25 +20,18 @@ def compute_unimesh_index_blocks(sections,uni_mesh_indices):
     blocks = []
 
     #cursor to track the y position of each section along the unified mesh
-    ycurr = -1
+    ycurr = 0
     for iSec in range(len(sections)):
         mesh = sections[iSec]["mesh"]
         nx = mesh.shape[0]
         ny = mesh.shape[1]
 
-        if sections[iSec]['symmetry']:
-            if iSec == 0:
-                block = uni_mesh_indices[:,ycurr:ycurr-ny:-1,:][:,::-1,:]
-                ycurr -= ny
-            else:
-                block = uni_mesh_indices[:,ycurr:ycurr-(ny-1):-1,:][:,::-1,:]
-                ycurr -= ny-1
+        if iSec == len(sections) -1:
+            block = uni_mesh_indices[:,ycurr:,:]
+            ycurr += ny
         else:
-            raise ValueError("Mesh unification not supported without symmetry turned on. For now.")
-            if iSec == 0:
-                block = uni_mesh_indices[:,-1:-1-ny:-1,:]
-            else:
-                block = uni_mesh_indices[:,-1-(iSec*ny):-1-(iSec*ny)-(ny-1):-1,:]
+            block = uni_mesh_indices[:,ycurr:ycurr+(ny-1),:]
+            ycurr += ny-1
 
         blocks.append(block.flatten())
 
@@ -48,20 +39,24 @@ def compute_unimesh_index_blocks(sections,uni_mesh_indices):
 
 #Function that produces a unified mesh from all the individual wing sections meshes
 def unify_mesh(sections):
-    for isec,section in enumerate(sections):
-            mesh = section["mesh"]
-            nx = mesh.shape[0]
-            ny = mesh.shape[1]
-            name = section["name"]
-            import copy
-            # Stitch the results into a singular mesh
-            if isec == 0:
-                uniMesh = copy.deepcopy(mesh)
-            else:
-                if section["symmetry"]:
-                    uniMesh = np.concatenate((mesh[:,0 : ny-1,:], uniMesh),axis=1)
-                else:
-                    uniMesh = np.concatenate((mesh[:,0 : ny/2-1,:], uniMesh, mesh[:,ny/2+1:,:]),axis=1)
+    for iSec in np.arange(0,len(sections)-1):
+        mesh = sections[iSec]["mesh"]
+        nx = mesh.shape[0]
+        ny = mesh.shape[1]
+        name = sections[iSec]["name"]
+        import copy
+        if iSec == 0:
+            uniMesh = copy.deepcopy(mesh[:,:-1,:])
+        else:
+            uniMesh = np.concatenate([uniMesh,mesh[:,:-1,:]],axis=1)
+        # Stitch the results into a singular mesh
+    mesh = sections[len(sections)-1]["mesh"]
+    if len(sections) == 1:
+        import copy
+        uniMesh = copy.deepcopy(mesh)
+    else:
+        uniMesh = np.concatenate([uniMesh,mesh],axis=1)
+        
     return uniMesh
 
 
@@ -114,43 +109,25 @@ class GeomMultiUnification(om.ExplicitComponent):
             mesh_name = "{}_def_mesh".format(name)
 
             self.add_input(mesh_name, shape=(nx, ny, 3), units="m", tags=["mphys_coupling"])
-            
-            if section["symmetry"]:
-                left_wing = abs(section["mesh"][0, 0, 1]) > abs(section["mesh"][0, -1, 1])
-                
-                #Generate index array
-                mesh_indices = np.arange(nx * ny * 3).reshape((nx, ny, 3))
+                          
+            #Generate index array
+            mesh_indices = np.arange(nx * ny * 3).reshape((nx, ny, 3))
 
-                if iSec == 0:
-                    cols = mesh_indices.flatten()
-                else:
-                    #If not section 0 then the most inboard column is disregarded
-                    if left_wing:
-                        cols = mesh_indices[:,:-1,:].flatten()
-                    else:
-                        cols = mesh_indices[:,1:,:].flatten()
-
-                #Get data from section block in unified mesh
-                rows = uni_mesh_blocks[iSec]
-
-                #Fill non zero Jacobian entries with ones
-                data = np.ones_like(rows)
-
-                self.declare_partials(uni_mesh_name, mesh_name, val=data, rows=rows, cols=cols)
-                #self.declare_partials(uni_mesh_name, mesh_name, method='cs')
+            if iSec == len(sections)-1:
+                cols = mesh_indices.flatten()
             else:
-                
-                mesh_indices = np.arange(nx * ny * 3).reshape((nx, ny, 3))
-                if iSec == 0:
-                    cols = mesh_indices.flatten()
-                else:
-                    cols = np.concatenate((mesh_indices[:,:ny/2-1,:].flatten(),mesh_indices[:,ny/2+1:,:].flatten()))
+                #If not section N then the most inboard column is disregarded
+                cols = mesh_indices[:,:-1,:].flatten()
 
-                self.add_output(uni_mesh_name, shape=(uni_nx, uni_ny * 2, 3), units="m")
+            #Get data from section block in unified mesh
+            rows = uni_mesh_blocks[iSec]
 
+            #Fill non zero Jacobian entries with ones
+            data = np.ones_like(rows)
 
-                raise ValueError("Mesh unification not supported without symmetry turned on.")
-        
+            self.declare_partials(uni_mesh_name, mesh_name, val=data, rows=rows, cols=cols)
+            #self.declare_partials(uni_mesh_name, mesh_name, method='cs')
+    
         self.add_output(uni_mesh_name, shape=(uni_nx, uni_ny, 3), units="m")
 
 
@@ -160,37 +137,22 @@ class GeomMultiUnification(om.ExplicitComponent):
         uni_mesh_name = '{}_uni_mesh'.format(surface_name)
         
         #Loop through all sections to unify the mesh
-        for isec,section in enumerate(sections):
-            mesh = section["mesh"]
+        for iSec in np.arange(0,len(sections)-1):
+            mesh = sections[iSec]["mesh"]
             nx = mesh.shape[0]
             ny = mesh.shape[1]
-            name = section["name"]
+            name = sections[iSec]["name"]
             mesh_name = "{}_def_mesh".format(name)
 
-            #Build the unified mesh
-            if isec == 0:
-                uniMesh = inputs[mesh_name]
+            if iSec == 0:
+                uniMesh = inputs[mesh_name][:,:-1,:]
             else:
-                #If not section 0 then the most inboard column is disregarded
-                if section["symmetry"]:
-                    left_wing = abs(inputs[mesh_name][0, 0, 1]) > abs(inputs[mesh_name][0, -1, 1])
-                    if left_wing:
-                        uniMesh = np.concatenate((inputs[mesh_name][:,0 : ny-1,:], uniMesh),axis=1)
-                    else:
-                        uniMesh = np.concatenate((uniMesh,inputs[mesh_name][:,1 : ny,:]),axis=1)
-                else:
-                    uniMesh = np.concatenate((inputs[mesh_name][:,0 : ny/2-1,:], uniMesh, inputs[mesh_name][:,ny/2+1:,:]),axis=1)
+                uniMesh = np.concatenate([uniMesh,inputs[mesh_name][:,:-1,:]],axis=1)
+
+        mesh_name = "{}_def_mesh".format(sections[len(sections)-1]["name"])
+        if len(sections) == 1:
+            uniMesh = inputs[mesh_name]
+        else:
+            uniMesh = np.concatenate([uniMesh,inputs[mesh_name]],axis=1)
+
         outputs[uni_mesh_name] = uniMesh
-
-    def compute_partials(self, inputs, J):
-        #Dummy code. Not needed for now.
-        sections = self.options["sections"]
-        for section in sections:
-            mesh = section["mesh"]
-            nx = mesh.shape[0]
-            ny = mesh.shape[1]
-            name = section["name"]
-
-            mesh_name = "{}_def_mesh".format(name)
-            uni_mesh_name = "{}_uni_mesh".format(name)
-            continue

@@ -51,19 +51,19 @@ class AeroPoint(om.Group):
             surface = {
                 # Wing definition
                 "name": surf_name,  # name of the surface
-                "symmetry": True,  # if true, model one half of wing
+                "symmetry": surfaces[0]["symmetry"],  # if true, model one half of wing
                 # reflected across the plane y = 0
-                "S_ref_type": "projected",  # how we compute the wing area,
+                "S_ref_type": surfaces[0]["S_ref_type"],  # how we compute the wing area,
                 "mesh": uniMesh,
                 "CL0": 0.0,  # CL of the surface at alpha=0
                 "CD0": 0.0,  # CD of the surface at alpha=0
                 # Airfoil properties for viscous drag calculation
-                "k_lam": 0.05,  # percentage of chord with laminar
-                "c_max_t": 0.303,  # chordwise location of maximum (NACA0015)
+                "k_lam": surfaces[0]["k_lam"],  # percentage of chord with laminar
+                "c_max_t": surfaces[0]["c_max_t"],  # chordwise location of maximum (NACA0015)
                 # flow, used for viscous drag
                 # thickness
-                "with_viscous": False,  # if true, compute viscous drag,
-                "with_wave": False,
+                "with_viscous": surfaces[0]["with_viscous"],  # if true, compute viscous drag,
+                "with_wave": surfaces[0]["with_wave"],
             }  # end of surface dictionary
 
             surfaces = []
