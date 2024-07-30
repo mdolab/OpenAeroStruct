@@ -27,46 +27,72 @@ class FailureExact(om.ExplicitComponent):
 
         if surface["fem_model_type"] == "tube":
             num_failure_criteria = 2
+
         elif surface["fem_model_type"] == "wingbox":
-            num_failure_criteria = 4
-        # =================================
-        # Adding Tsai Wu here
-        # =================================
-        elif surface["fem_model_type"] == "tsaiwu_wingbox":
-            num_failure_criteria = 16
-        # =================================
+            if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
+                num_failure_criteria = 16
+            else:  # using the Isotropic wingbox
+                num_failure_criteria = 4
+
+        # # =================================
+        # # Adding Tsai Wu here
+        # # =================================
+        # elif surface["fem_model_type"] == "tsaiwu_wingbox":
+        #     num_failure_criteria = 16
+        # # =================================
 
         self.ny = surface["mesh"].shape[1]
-        self.sigma = surface["yield"] #NOTE: does this need to be set to null or removed if not being used?
+        self.sigma = surface["yield"]  # NOTE: does this need to be set to null or removed if not being used?
+
         # =================================
         # Adding Tsai Wu SF here (srlimit) = 1 / SF
         # =================================
-        self.srlimit = 1 / surface["composite_safetyfactor"] #NOTE: This option needs to be added in the surface dictionary and connected
+        self.srlimit = (
+            1 / surface["composite_safetyfactor"]
+        )  # NOTE: This option needs to be added in the surface dictionary and connected
         # =================================
 
-        # =================================
-        # Adding an if statement for vonmises and tsaiwu_sr
-        # =================================
-        if surface["fem_model_type"] == "tube" or surface["fem_model_type"] == "wingbox":
-            self.add_input("vonmises", val=np.zeros((self.ny - 1, num_failure_criteria)), units="N/m**2")
-        elif surface["fem_model_type"] == "tsaiwu_wingbox":
+        # # =================================
+        # # Adding an if statement for vonmises and tsaiwu_sr
+        # # =================================
+        # if surface["fem_model_type"] == "tube" or surface["fem_model_type"] == "wingbox":
+        #     self.add_input("vonmises", val=np.zeros((self.ny - 1, num_failure_criteria)), units="N/m**2")
+        # elif surface["fem_model_type"] == "tsaiwu_wingbox":
+        #     self.add_input("tsaiwu_sr", val=np.zeros((self.ny - 1, num_failure_criteria)), units=None)
+
+        # # self.add_input("vonmises", val=np.zeros((self.ny - 1, num_failure_criteria)), units="N/m**2")
+        # # =================================
+
+        if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
             self.add_input("tsaiwu_sr", val=np.zeros((self.ny - 1, num_failure_criteria)), units=None)
-
-        # self.add_input("vonmises", val=np.zeros((self.ny - 1, num_failure_criteria)), units="N/m**2")
-        # =================================
+        else:  # using the Isotropic wingbox
+            self.add_input("vonmises", val=np.zeros((self.ny - 1, num_failure_criteria)), units="N/m**2")
 
         self.add_output("failure", val=np.zeros((self.ny - 1, num_failure_criteria)))
 
-        # =================================
-        # Adding an if statement for vonmises and tsaiwu_sr
-        # =================================
-        if surface["fem_model_type"] == "tube" or surface["fem_model_type"] == "wingbox":
-            self.declare_partials("failure", "vonmises", val=np.eye(((self.ny - 1) * num_failure_criteria)) / self.sigma)
-        elif surface["fem_model_type"] == "tsaiwu_wingbox":
-            self.declare_partials("failure", "tsaiwu_sr", val=np.eye(((self.ny - 1) * num_failure_criteria)) / self.srlimit)
+        # # =================================
+        # # Adding an if statement for vonmises and tsaiwu_sr
+        # # =================================
+        # if surface["fem_model_type"] == "tube" or surface["fem_model_type"] == "wingbox":
+        #     self.declare_partials(
+        #         "failure", "vonmises", val=np.eye(((self.ny - 1) * num_failure_criteria)) / self.sigma
+        #     )
+        # elif surface["fem_model_type"] == "tsaiwu_wingbox":
+        #     self.declare_partials(
+        #         "failure", "tsaiwu_sr", val=np.eye(((self.ny - 1) * num_failure_criteria)) / self.srlimit
+        #     )
 
-        # self.declare_partials("failure", "vonmises", val=np.eye(((self.ny - 1) * num_failure_criteria)) / self.sigma)
-        # =================================
+        # # self.declare_partials("failure", "vonmises", val=np.eye(((self.ny - 1) * num_failure_criteria)) / self.sigma)
+        # # =================================
+
+        if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
+            self.declare_partials(
+                "failure", "tsaiwu_sr", val=np.eye(((self.ny - 1) * num_failure_criteria)) / self.srlimit
+            )
+        else:  # using the Isotropic structures
+            self.declare_partials(
+                "failure", "vonmises", val=np.eye(((self.ny - 1) * num_failure_criteria)) / self.sigma
+            )
 
     # =================================
     # Adding an if statement for vonmises and tsaiwu_sr

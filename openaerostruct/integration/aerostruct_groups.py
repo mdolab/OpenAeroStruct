@@ -12,8 +12,80 @@ from openaerostruct.aerodynamics.compressible_states import CompressibleVLMState
 from openaerostruct.structures.tube_group import TubeGroup
 from openaerostruct.structures.wingbox_group import WingboxGroup
 from openaerostruct.utils.check_surface_dict import check_surface_dict_keys
-
+import numpy as np
 import openmdao.api as om
+
+
+def TransformationMatrix(theta):
+    # function to find the transformation matrix for a given angle
+    # input: theta (angle in radians)
+    # output: transformation matrix
+    theta = theta * np.pi / 180
+    c = np.cos(theta)
+    s = np.sin(theta)
+    T = np.zeros((3, 3))
+    T[0, 0] = c**2
+    T[0, 1] = s**2
+    T[0, 2] = 2 * s * c
+    T[1, 0] = s**2
+    T[1, 1] = c**2
+    T[1, 2] = -2 * s * c
+    T[2, 0] = -s * c
+    T[2, 1] = s * c
+    T[2, 2] = c**2 - s**2
+    return T
+
+
+def computCompositeStiffness(surface):
+    """
+    Function to compute the effective E and G values for a composite material,
+    based on the plyfractions, ply angles and individual fiber and matrix properties.
+    """
+
+    # E1 = 117.7 * 10**9 # Pa
+    # E2 = 9.7 * 10**9 # Pa
+    # v12 = 0.35
+    # v21 = (E2 / E1) * v12
+    # G12 = 4.8 * 10**9 # Pa
+    E1 = surface["E1"]
+    E2 = surface["E2"]
+    v12 = surface["nu12"]
+    G12 = surface["G12"]
+    v21 = (E2 / E1) * v12
+    plyfractions = surface["plyfractions"]
+    plyangles = surface["plyangles"]
+    numofplies = len(plyfractions)
+
+    # finding the Q matrix
+    Q = np.zeros((3, 3))
+    Q[0, 0] = E1 / (1 - v12 * v21)
+    Q[0, 1] = v12 * E2 / (1 - v12 * v21)
+    Q[0, 2] = 0
+    Q[1, 0] = v21 * E1 / (1 - v12 * v21)
+    Q[1, 1] = E2 / (1 - v12 * v21)
+    Q[1, 2] = 0
+    Q[2, 0] = 0
+    Q[2, 1] = 0
+    Q[2, 2] = G12
+
+    # finding the Q_bar matrix for each ply in the form of a 3D Array
+    Q_bar = np.zeros((numofplies, 3, 3))
+    Q_bar_eff = np.zeros((3, 3))
+    for i in range(numofplies):
+        theta = plyangles[i]
+        T = TransformationMatrix(theta)
+        Q_bar[i] = np.dot(np.dot(np.linalg.inv(T), Q), T)
+        Q_bar_eff += plyfractions[i] * Q_bar[i]
+
+    S_bar_eff = np.linalg.inv(Q_bar_eff)
+    E_eff = 1 / S_bar_eff[0, 0]
+    G_eff = 1 / S_bar_eff[2, 2]
+
+    # replacing the values in the surface dictionary
+    surface["E"] = E_eff
+    surface["G"] = G_eff
+
+    return surface
 
 
 class AerostructGeometry(om.Group):
@@ -71,47 +143,95 @@ class AerostructGeometry(om.Group):
                 promotes_outputs=tube_promotes_output,
             )
         elif surface["fem_model_type"] == "wingbox":
-            wingbox_promotes_in = ["mesh", "t_over_c"]
-            wingbox_promotes_out = ["A", "Iy", "Iz", "J", "Qz", "A_enc", "A_int", "htop", "hbottom", "hfront", "hrear"]
-            if "skin_thickness_cp" in surface.keys() and "spar_thickness_cp" in surface.keys():
-                wingbox_promotes_in.append("skin_thickness_cp")
-                wingbox_promotes_in.append("spar_thickness_cp")
-                wingbox_promotes_out.append("skin_thickness")
-                wingbox_promotes_out.append("spar_thickness")
-            elif "skin_thickness_cp" in surface.keys() or "spar_thickness_cp" in surface.keys():
-                raise NameError("Please have both skin and spar thickness as design variables, not one or the other.")
 
-            self.add_subsystem(
-                "wingbox_group",
-                WingboxGroup(surface=surface),
-                promotes_inputs=wingbox_promotes_in,
-                promotes_outputs=wingbox_promotes_out,
-            )
-        # ================================================
-        # Adding Tsai Wu wingbox here
-        # ================================================
-        elif surface["fem_model_type"] == "tsaiwu_wingbox":
-            wingbox_promotes_in = ["mesh", "t_over_c"]
-            wingbox_promotes_out = ["A", "Iy", "Iz", "J", "Qz", "A_enc", "A_int", "htop", "hbottom", "hfront", "hrear"]
-            if "skin_thickness_cp" in surface.keys() and "spar_thickness_cp" in surface.keys():
-                wingbox_promotes_in.append("skin_thickness_cp")
-                wingbox_promotes_in.append("spar_thickness_cp")
-                wingbox_promotes_out.append("skin_thickness")
-                wingbox_promotes_out.append("spar_thickness")
-            elif "skin_thickness_cp" in surface.keys() or "spar_thickness_cp" in surface.keys():
-                raise NameError("Please have both skin and spar thickness as design variables, not one or the other.")
+            if "useComposite" in surface.keys() and surface["useComposite"]:  # using Composite Wing Box
+                wingbox_promotes_in = ["mesh", "t_over_c"]
+                wingbox_promotes_out = [
+                    "A",
+                    "Iy",
+                    "Iz",
+                    "J",
+                    "Qz",
+                    "A_enc",
+                    "A_int",
+                    "htop",
+                    "hbottom",
+                    "hfront",
+                    "hrear",
+                ]
+                if "skin_thickness_cp" in surface.keys() and "spar_thickness_cp" in surface.keys():
+                    wingbox_promotes_in.append("skin_thickness_cp")
+                    wingbox_promotes_in.append("spar_thickness_cp")
+                    wingbox_promotes_out.append("skin_thickness")
+                    wingbox_promotes_out.append("spar_thickness")
+                elif "skin_thickness_cp" in surface.keys() or "spar_thickness_cp" in surface.keys():
+                    raise NameError(
+                        "Please have both skin and spar thickness as design variables, not one or the other."
+                    )
 
-            self.add_subsystem(
-                "wingbox_group",
-                WingboxGroup(surface=surface),
-                promotes_inputs=wingbox_promotes_in,
-                promotes_outputs=wingbox_promotes_out,
-            )
-        # ================================================
+                self.add_subsystem(
+                    "wingbox_group",
+                    WingboxGroup(surface=surface),
+                    promotes_inputs=wingbox_promotes_in,
+                    promotes_outputs=wingbox_promotes_out,
+                )
+
+            else:  # using the isotropic Wing Box
+                wingbox_promotes_in = ["mesh", "t_over_c"]
+                wingbox_promotes_out = [
+                    "A",
+                    "Iy",
+                    "Iz",
+                    "J",
+                    "Qz",
+                    "A_enc",
+                    "A_int",
+                    "htop",
+                    "hbottom",
+                    "hfront",
+                    "hrear",
+                ]
+                if "skin_thickness_cp" in surface.keys() and "spar_thickness_cp" in surface.keys():
+                    wingbox_promotes_in.append("skin_thickness_cp")
+                    wingbox_promotes_in.append("spar_thickness_cp")
+                    wingbox_promotes_out.append("skin_thickness")
+                    wingbox_promotes_out.append("spar_thickness")
+                elif "skin_thickness_cp" in surface.keys() or "spar_thickness_cp" in surface.keys():
+                    raise NameError(
+                        "Please have both skin and spar thickness as design variables, not one or the other."
+                    )
+
+                self.add_subsystem(
+                    "wingbox_group",
+                    WingboxGroup(surface=surface),
+                    promotes_inputs=wingbox_promotes_in,
+                    promotes_outputs=wingbox_promotes_out,
+                )
+        # # ================================================
+        # # Adding Tsai Wu wingbox here
+        # # ================================================
+        # elif surface["fem_model_type"] == "tsaiwu_wingbox":
+        #     wingbox_promotes_in = ["mesh", "t_over_c"]
+        #     wingbox_promotes_out = ["A", "Iy", "Iz", "J", "Qz", "A_enc", "A_int", "htop", "hbottom", "hfront", "hrear"]
+        #     if "skin_thickness_cp" in surface.keys() and "spar_thickness_cp" in surface.keys():
+        #         wingbox_promotes_in.append("skin_thickness_cp")
+        #         wingbox_promotes_in.append("spar_thickness_cp")
+        #         wingbox_promotes_out.append("skin_thickness")
+        #         wingbox_promotes_out.append("spar_thickness")
+        #     elif "skin_thickness_cp" in surface.keys() or "spar_thickness_cp" in surface.keys():
+        #         raise NameError("Please have both skin and spar thickness as design variables, not one or the other.")
+
+        #     self.add_subsystem(
+        #         "wingbox_group",
+        #         WingboxGroup(surface=surface),
+        #         promotes_inputs=wingbox_promotes_in,
+        #         promotes_outputs=wingbox_promotes_out,
+        #     )
+        # # ================================================
         else:
-            raise NameError("Please select a valid `fem_model_type` from either `tube` or `wingbox` or `tsaiwu_wingbox`.")
+            raise NameError("Please select a valid `fem_model_type` from either `tube` or `wingbox`.")
 
-        if surface["fem_model_type"] == "wingbox" or surface["fem_model_type"] == "tsaiwu_wingbox": #NOTE: Added tsaiwu_wingbox
+        if surface["fem_model_type"] == "wingbox":  # NOTE: Composite wingbox taken care of under the 'wingbox' option
             promotes = ["A_int"]
         else:
             promotes = []
@@ -201,47 +321,67 @@ class CoupledPerformance(om.Group):
             )
 
         elif surface["fem_model_type"] == "wingbox":
-            self.add_subsystem(
-                "struct_funcs",
-                SpatialBeamFunctionals(surface=surface),
-                promotes_inputs=[
-                    "Qz",
-                    "J",
-                    "A_enc",
-                    "spar_thickness",
-                    "htop",
-                    "hbottom",
-                    "hfront",
-                    "hrear",
-                    "nodes",
-                    "disp",
-                ],
-                promotes_outputs=["vonmises", "failure"],
-            )
-        # ================================================
-        # Adding Tsai Wu wingbox here
-        # ================================================
-        elif surface["fem_model_type"] == "tsaiwu_wingbox":
-            self.add_subsystem(
-                "struct_funcs",
-                SpatialBeamFunctionals(surface=surface),
-                promotes_inputs=[
-                    "Qz",
-                    "J",
-                    "A_enc",
-                    "spar_thickness",
-                    "htop",
-                    "hbottom",
-                    "hfront",
-                    "hrear",
-                    "nodes",
-                    "disp",
-                ],
-                promotes_outputs=["tsaiwu_sr", "failure"],
-            )
-        # ================================================
+
+            if "useComposite" in surface.keys() and surface["useComposite"]:  # using Composite Wing Box
+                self.add_subsystem(
+                    "struct_funcs",
+                    SpatialBeamFunctionals(surface=surface),
+                    promotes_inputs=[
+                        "Qz",
+                        "J",
+                        "A_enc",
+                        "spar_thickness",
+                        "htop",
+                        "hbottom",
+                        "hfront",
+                        "hrear",
+                        "nodes",
+                        "disp",
+                    ],
+                    promotes_outputs=["tsaiwu_sr", "failure"],
+                )
+            else:  # using the isotropic Wing Box
+                self.add_subsystem(
+                    "struct_funcs",
+                    SpatialBeamFunctionals(surface=surface),
+                    promotes_inputs=[
+                        "Qz",
+                        "J",
+                        "A_enc",
+                        "spar_thickness",
+                        "htop",
+                        "hbottom",
+                        "hfront",
+                        "hrear",
+                        "nodes",
+                        "disp",
+                    ],
+                    promotes_outputs=["vonmises", "failure"],
+                )
+        # # ================================================
+        # # Adding Tsai Wu wingbox here
+        # # ================================================
+        # elif surface["fem_model_type"] == "tsaiwu_wingbox":
+        #     self.add_subsystem(
+        #         "struct_funcs",
+        #         SpatialBeamFunctionals(surface=surface),
+        #         promotes_inputs=[
+        #             "Qz",
+        #             "J",
+        #             "A_enc",
+        #             "spar_thickness",
+        #             "htop",
+        #             "hbottom",
+        #             "hfront",
+        #             "hrear",
+        #             "nodes",
+        #             "disp",
+        #         ],
+        #         promotes_outputs=["tsaiwu_sr", "failure"],
+        #     )
+        # # ================================================
         else:
-            raise NameError("Please select a valid `fem_model_type` from either `tube` or `wingbox` or `tsaiwu_wingbox`.")
+            raise NameError("Please select a valid `fem_model_type` from either `tube` or `wingbox`.")
 
 
 class AerostructPoint(om.Group):
@@ -267,6 +407,10 @@ class AerostructPoint(om.Group):
 
         for surface in surfaces:
             name = surface["name"]
+
+            # if useComposite is enabled, compute the effective E and G values for the composite material
+            if surface["useComposite"]:
+                surface = computCompositeStiffness(surface)
 
             # Connect the output of the loads component with the FEM
             # displacement parameter. This links the coupling within the coupled
