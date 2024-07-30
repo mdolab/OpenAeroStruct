@@ -43,36 +43,48 @@ class FailureKS(om.ExplicitComponent):
 
         if surface["fem_model_type"] == "tube":
             num_failure_criteria = 2
+
         elif surface["fem_model_type"] == "wingbox":
-            num_failure_criteria = 4
-        
-        # =================================
-        # Adding Tsai Wu here
-        # =================================
-        elif surface["fem_model_type"] == "tsaiwu_wingbox":
-            num_failure_criteria = 16
-        # =================================
+            if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
+                num_failure_criteria = 16
+            else:  # using the Isotropic wingbox
+                num_failure_criteria = 4
+
+        # # =================================
+        # # Adding Tsai Wu here
+        # # =================================
+        # elif surface["fem_model_type"] == "tsaiwu_wingbox":
+        #     num_failure_criteria = 16
+        # # =================================
 
         self.ny = surface["mesh"].shape[1]
 
-        # =================================
-        # Adding an if statement for vonmises
-        # =================================
-        if surface["fem_model_type"] == "tube" or surface["fem_model_type"] == "wingbox":
-            self.add_input("vonmises", val=np.zeros((self.ny - 1, num_failure_criteria)), units="N/m**2")
-
-        # self.add_input("vonmises", val=np.zeros((self.ny - 1, num_failure_criteria)), units="N/m**2")
-        # =================================
-
-        # =================================
-        # Adding Tsai Wu here
-        # =================================
-        if surface["fem_model_type"] == "tsaiwu_wingbox":
+        if "useComposite" in surface.keys() and surface["useComposite"]:
             self.add_input("tsaiwu_sr", val=np.zeros((self.ny - 1, 16)), units=None)
             self.composite_safetyfactor = surface["composite_safetyfactor"]
             self.srlimit = 1 / self.composite_safetyfactor
-        # =================================
-        
+
+        else:
+            self.add_input("vonmises", val=np.zeros((self.ny - 1, num_failure_criteria)), units="N/m**2")
+
+        # # =================================
+        # # Adding an if statement for vonmises
+        # # =================================
+        # if surface["fem_model_type"] == "tube" or surface["fem_model_type"] == "wingbox":
+        #     self.add_input("vonmises", val=np.zeros((self.ny - 1, num_failure_criteria)), units="N/m**2")
+
+        # # self.add_input("vonmises", val=np.zeros((self.ny - 1, num_failure_criteria)), units="N/m**2")
+        # # =================================
+
+        # # =================================
+        # # Adding Tsai Wu here
+        # # =================================
+        # if surface["fem_model_type"] == "tsaiwu_wingbox":
+        #     self.add_input("tsaiwu_sr", val=np.zeros((self.ny - 1, 16)), units=None)
+        #     self.composite_safetyfactor = surface["composite_safetyfactor"]
+        #     self.srlimit = 1 / self.composite_safetyfactor
+        # # =================================
+
         self.add_output("failure", val=0.0)
         # self.composite_safetyfactor = surface["composite_safetyfactor"]
         self.sigma = surface["yield"]
@@ -90,24 +102,37 @@ class FailureKS(om.ExplicitComponent):
     def compute(self, inputs, outputs):
         sigma = self.sigma
         rho = self.rho
-        # =================================
-        # Adding Tsai Wu SF here
-        # =================================
-        # srlimit = 1 / self.composite_safetyfactor
-        # =================================
+        # # =================================
+        # # Adding Tsai Wu SF here
+        # # =================================
+        # # srlimit = 1 / self.composite_safetyfactor
+        # # =================================
 
-        # =================================
-        # Adding an if statement for vonmises calculations and tsaiwu calculations
-        # =================================
+        # # =================================
+        # # Adding an if statement for vonmises calculations and tsaiwu calculations
+        # # =================================
 
-        # defining the stress_array and stress_limit variables for both cases
-        if self.options["surface"]["fem_model_type"] == "tube" or self.options["surface"]["fem_model_type"] == "wingbox":
-            stress_array = inputs["vonmises"]
-            stress_limit = sigma
-        elif self.options["surface"]["fem_model_type"] == "tsaiwu_wingbox":
+        # # defining the stress_array and stress_limit variables for both cases
+        # if (
+        #     self.options["surface"]["fem_model_type"] == "tube"
+        #     or self.options["surface"]["fem_model_type"] == "wingbox"
+        # ):
+        #     stress_array = inputs["vonmises"]
+        #     stress_limit = sigma
+        # elif self.options["surface"]["fem_model_type"] == "tsaiwu_wingbox":
+        #     stress_array = inputs["tsaiwu_sr"]
+        #     srlimit = 1 / self.composite_safetyfactor
+        #     stress_limit = srlimit
+
+        if (
+            "useComposite" in self.options["surface"].keys() and self.options["surface"]["useComposite"]
+        ):  # using the Composite wingbox
             stress_array = inputs["tsaiwu_sr"]
             srlimit = 1 / self.composite_safetyfactor
-            stress_limit = srlimit
+            stress_limit = self.srlimit
+        else:  # using the Isotropic structures
+            stress_array = inputs["vonmises"]
+            stress_limit = sigma
 
         fmax = np.max(stress_array / stress_limit - 1)
 
@@ -125,21 +150,32 @@ class FailureKS(om.ExplicitComponent):
 
         # =================================
 
-
     def compute_partials(self, inputs, partials):
 
-        # =================================
-        # Adding an if statement for vonmises calculations and tsaiwu calculations
-        # =================================
+        # # =================================
+        # # Adding an if statement for vonmises calculations and tsaiwu calculations
+        # # =================================
 
-        # defining the stress_array and stress_limit variables for both cases
-        if self.options["surface"]["fem_model_type"] == "tube" or self.options["surface"]["fem_model_type"] == "wingbox":
-            stress_array = inputs["vonmises"]
-            stress_limit = self.sigma
-        elif self.options["surface"]["fem_model_type"] == "tsaiwu_wingbox":
+        # # defining the stress_array and stress_limit variables for both cases
+        # if (
+        #     self.options["surface"]["fem_model_type"] == "tube"
+        #     or self.options["surface"]["fem_model_type"] == "wingbox"
+        # ):
+        #     stress_array = inputs["vonmises"]
+        #     stress_limit = self.sigma
+        # elif self.options["surface"]["fem_model_type"] == "tsaiwu_wingbox":
+        #     stress_array = inputs["tsaiwu_sr"]
+        #     stress_limit = self.srlimit
+
+        if (
+            "useComposite" in self.options["surface"].keys() and self.options["surface"]["useComposite"]
+        ):  # using the Composite wingbox
             stress_array = inputs["tsaiwu_sr"]
             stress_limit = self.srlimit
-        
+        else:  # using the Isotropic structures
+            stress_array = inputs["vonmises"]
+            stress_limit = self.sigma
+
         fmax = np.max(stress_array / stress_limit - 1)
         i, j = np.where((stress_array / stress_limit - 1) == fmax)
         i, j = i[0], j[0]
@@ -153,10 +189,20 @@ class FailureKS(om.ExplicitComponent):
         derivs = tempb / stress_limit
         derivs[i, j] += fmaxb / stress_limit
 
-        if self.options["surface"]["fem_model_type"] == "tube" or self.options["surface"]["fem_model_type"] == "wingbox":
-            partials["failure", "vonmises"] = derivs.reshape(1, -1)
-        elif self.options["surface"]["fem_model_type"] == "tsaiwu_wingbox":
+        # if (
+        #     self.options["surface"]["fem_model_type"] == "tube"
+        #     or self.options["surface"]["fem_model_type"] == "wingbox"
+        # ):
+        #     partials["failure", "vonmises"] = derivs.reshape(1, -1)
+        # elif self.options["surface"]["fem_model_type"] == "tsaiwu_wingbox":
+        #     partials["failure", "tsaiwu_sr"] = derivs.reshape(1, -1)
+
+        if (
+            "useComposite" in self.options["surface"].keys() and self.options["surface"]["useComposite"]
+        ):  # using the Composite wingbox
             partials["failure", "tsaiwu_sr"] = derivs.reshape(1, -1)
+        else:  # using the Isotropic structures
+            partials["failure", "vonmises"] = derivs.reshape(1, -1)
 
         # vonmises = inputs["vonmises"]
         # sigma = self.sigma
