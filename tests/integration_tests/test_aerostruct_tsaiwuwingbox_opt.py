@@ -263,8 +263,7 @@ class Test(unittest.TestCase):
             # reflected across the plane y = 0
             "S_ref_type": "wetted",  # how we compute the wing area,
             # can be 'wetted' or 'projected'
-            "fem_model_type": "tsaiwu_wingbox",  # NOTE: testing the Tsai Wu wingbox model
-            "composite_safetyfactor": 1.5,
+            "fem_model_type": "wingbox",  # NOTE: testing the Tsai Wu wingbox model
             "spar_thickness_cp": np.array([0.004, 0.005, 0.005, 0.008, 0.008, 0.01]),  # [m]
             "skin_thickness_cp": np.array([0.005, 0.01, 0.015, 0.020, 0.025, 0.026]),
             "twist_cp": np.array([4.0, 5.0, 8.0, 8.0, 8.0, 9.0]),
@@ -306,6 +305,19 @@ class Test(unittest.TestCase):
             "exact_failure_constraint": False,  # if false, use KS function
             "Wf_reserve": 15000.0,  # [kg] reserve fuel mass
             "span": 58,  # [m] wingspan
+            "useComposite": True,
+            "composite_safetyfactor": 1.5,
+            "plyangles": [0, 45, -45, 90],
+            "plyfractions": [10, 25, 25, 40],
+            "E1": 117.7e9,
+            "E2": 9.7e9,
+            "nu12": 0.35,
+            "G12": 4.8e9,
+            "sigma_t1": 1648.0e6,
+            "sigma_c1": 1034.0e6,
+            "sigma_t2": 64.0e6,
+            "sigma_c2": 228.0e6,
+            "sigma_12max": 71.0e6,
         }
 
         surfaces = [surf_dict]
