@@ -50,8 +50,8 @@ class TsaiWuWingbox(om.ExplicitComponent):
 
     def setup(self):
         self.surface = surface = self.options["surface"]
-        plyangles = surface["plyangles"]
-        numofplies = len(plyangles)
+        self.plyangles = surface["plyangles"]
+        self.numofplies = len(self.plyangles)
 
         self.ny = surface["mesh"].shape[1]
 
@@ -65,7 +65,7 @@ class TsaiWuWingbox(om.ExplicitComponent):
         self.add_input("hbottom", val=np.zeros((self.ny - 1)), units="m")
         self.add_input("hfront", val=np.zeros((self.ny - 1)), units="m")
         self.add_input("hrear", val=np.zeros((self.ny - 1)), units="m")
-        self.add_output("tsaiwu_sr", val=np.zeros((self.ny - 1, numofplies * 4)))
+        self.add_output("tsaiwu_sr", val=np.zeros((self.ny - 1, self.numofplies * 4)))
 
         self.E = surface["E"]
         self.G = surface["G"]
@@ -269,4 +269,4 @@ class TsaiWuWingbox(om.ExplicitComponent):
                         + F22 * sigma_elem_ply[elem_num, ply_num, 1] ** 2
                         + F66 * sigma_elem_ply[elem_num, ply_num, 2] ** 2
                     )
-                    tsaiwu_sr[ielem, elem_num * 4 + ply_num] = 0.5 * (a + np.sqrt(a**2 + 4 * b))
+                    tsaiwu_sr[ielem, elem_num * numofplies + ply_num] = 0.5 * (a + np.sqrt(a**2 + 4 * b))
