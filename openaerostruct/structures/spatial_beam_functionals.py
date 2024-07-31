@@ -50,42 +50,48 @@ class SpatialBeamFunctionals(om.Group):
         elif surface["fem_model_type"] == "wingbox":
 
             if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
-                self.add_subsystem(
-                    "tsaiwu_sr",
-                    TsaiWuWingbox(surface=surface),
-                    promotes_inputs=[
-                        "Qz",
-                        "J",
-                        "A_enc",
-                        "spar_thickness",
-                        "htop",
-                        "hbottom",
-                        "hfront",
-                        "hrear",
-                        "nodes",
-                        "disp",
-                    ],
-                    promotes_outputs=["tsaiwu_sr"],
-                )
+                subsystemname = "tsaiwu_sr"
+                promotedoutput = "tsaiwu_sr"
             else:  # using the Isotropic wingbox
+                subsystemname = "vonmises"
+                promotedoutput = "vonmises"
 
-                self.add_subsystem(
-                    "vonmises",
-                    VonMisesWingbox(surface=surface),
-                    promotes_inputs=[
-                        "Qz",
-                        "J",
-                        "A_enc",
-                        "spar_thickness",
-                        "htop",
-                        "hbottom",
-                        "hfront",
-                        "hrear",
-                        "nodes",
-                        "disp",
-                    ],
-                    promotes_outputs=["vonmises"],
-                )
+            self.add_subsystem(
+                subsystemname,
+                TsaiWuWingbox(surface=surface),
+                promotes_inputs=[
+                    "Qz",
+                    "J",
+                    "A_enc",
+                    "spar_thickness",
+                    "htop",
+                    "hbottom",
+                    "hfront",
+                    "hrear",
+                    "nodes",
+                    "disp",
+                ],
+                promotes_outputs=[promotedoutput],
+            )
+            # else:  # using the Isotropic wingbox
+
+            # self.add_subsystem(
+            #     "vonmises",
+            #     VonMisesWingbox(surface=surface),
+            #     promotes_inputs=[
+            #         "Qz",
+            #         "J",
+            #         "A_enc",
+            #         "spar_thickness",
+            #         "htop",
+            #         "hbottom",
+            #         "hfront",
+            #         "hrear",
+            #         "nodes",
+            #         "disp",
+            #     ],
+            #     promotes_outputs=["vonmises"],
+            # )
         # # ======================================================================
         # # Adding the elif statement for Tsai Wu Wingbox
         # # ======================================================================
@@ -129,7 +135,7 @@ class SpatialBeamFunctionals(om.Group):
                     promotes_inputs=["tsaiwu_sr"],
                     promotes_outputs=["failure"],
                 )
-            else:
+            else:  # using the Isotropic structures
                 self.add_subsystem(
                     "failure", FailureExact(surface=surface), promotes_inputs=["vonmises"], promotes_outputs=["failure"]
                 )

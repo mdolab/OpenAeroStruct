@@ -247,8 +247,8 @@ class TsaiWuWingbox(om.ExplicitComponent):
             numofplies = len(plyangles)
 
             # defining the epsilon_elem_ply array for the epsilon1, epsilon2 and gamma12 for each ply
-            epsilon_elem_ply = np.zeros((4, 4, 3), dtype=dtype)
-            sigma_elem_ply = np.zeros((4, 4, 3), dtype=dtype)
+            epsilon_elem_ply = np.zeros((4, numofplies, 3), dtype=dtype)
+            sigma_elem_ply = np.zeros((4, numofplies, 3), dtype=dtype)
 
             # running a loop over the 4 elements and the number of plies to calculate the epsilon_elem_ply array
             for elem_num in range(4):
@@ -334,7 +334,7 @@ class TsaiWuWingbox(om.ExplicitComponent):
 
             # Find the Tsai-Wu Strength Ratios for each ply in each element and store them in the tsaiwu_sr array
             for elem_num in range(4):
-                for ply_num in range(4):
+                for ply_num in range(numofplies):
                     a = F1 * sigma_elem_ply[elem_num, ply_num, 0] + F2 * sigma_elem_ply[elem_num, ply_num, 1]
                     b = (
                         F11 * sigma_elem_ply[elem_num, ply_num, 0] ** 2

@@ -24,13 +24,15 @@ class FailureExact(om.ExplicitComponent):
 
     def setup(self):
         surface = self.options["surface"]
+        plyangles = surface["plyangles"]
+        numofplies = len(plyangles)
 
         if surface["fem_model_type"] == "tube":
             num_failure_criteria = 2
 
         elif surface["fem_model_type"] == "wingbox":
             if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
-                num_failure_criteria = 16
+                num_failure_criteria = 4 * numofplies  # 4 critical elements * number of plies
             else:  # using the Isotropic wingbox
                 num_failure_criteria = 4
 
@@ -65,7 +67,7 @@ class FailureExact(om.ExplicitComponent):
 
         if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
             self.add_input("tsaiwu_sr", val=np.zeros((self.ny - 1, num_failure_criteria)), units=None)
-        else:  # using the Isotropic wingbox
+        else:  # using the Isotropic structures
             self.add_input("vonmises", val=np.zeros((self.ny - 1, num_failure_criteria)), units="N/m**2")
 
         self.add_output("failure", val=np.zeros((self.ny - 1, num_failure_criteria)))

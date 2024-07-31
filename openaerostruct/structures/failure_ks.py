@@ -40,13 +40,15 @@ class FailureKS(om.ExplicitComponent):
     def setup(self):
         surface = self.options["surface"]
         rho = self.options["rho"]
+        plyangles = surface["plyangles"]
+        numofplies = len(plyangles)
 
         if surface["fem_model_type"] == "tube":
             num_failure_criteria = 2
 
         elif surface["fem_model_type"] == "wingbox":
             if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
-                num_failure_criteria = 16
+                num_failure_criteria = 4 * numofplies  # 4 critical elements * number of plies
             else:  # using the Isotropic wingbox
                 num_failure_criteria = 4
 
@@ -60,7 +62,7 @@ class FailureKS(om.ExplicitComponent):
         self.ny = surface["mesh"].shape[1]
 
         if "useComposite" in surface.keys() and surface["useComposite"]:
-            self.add_input("tsaiwu_sr", val=np.zeros((self.ny - 1, 16)), units=None)
+            self.add_input("tsaiwu_sr", val=np.zeros((self.ny - 1, num_failure_criteria)), units=None)
             self.composite_safetyfactor = surface["composite_safetyfactor"]
             self.srlimit = 1 / self.composite_safetyfactor
 

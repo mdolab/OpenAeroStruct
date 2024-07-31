@@ -66,6 +66,12 @@ def check_surface_dict_keys(surface):
         "data_y_lower",
         # tsaiwu_wingbox structure
         "useComposite",
+        # FFD
+        "mx",
+        "my",
+    ]
+
+    compositeInputs = [
         "composite_safetyfactor",
         "plyangles",
         "plyfractions",
@@ -78,10 +84,9 @@ def check_surface_dict_keys(surface):
         "sigma_t2",
         "sigma_c2",
         "sigma_12max",
-        # FFD
-        "mx",
-        "my",
     ]
+
+    keys_implemented += compositeInputs
 
     for key in surface.keys():
         if key not in keys_implemented:
@@ -90,3 +95,36 @@ def check_surface_dict_keys(surface):
                 category=RuntimeWarning,
                 stacklevel=2,
             )
+
+    # adding checks for using the composite failure model
+
+    # check1: if useComposite is True, then the following keys must be present
+    if surface.get("useComposite", False):
+        for key in compositeInputs:
+            if key not in surface.keys():
+                raise ValueError(
+                    "Key `{}` is required when `useComposite` is True".format(key),
+                )
+
+    # check2: if useComposite is True, then 'fem_model_type' must be 'wingbox'
+    if surface.get("useComposite", False) and surface.get("fem_model_type", "") != "wingbox":
+        raise ValueError(
+            "`fem_model_type` must be 'wingbox' when `useComposite` is True",
+        )
+        # warnings.warn(
+        #     "`fem_model_type` must be 'wingbox' when `useComposite` is True",
+        #     category=RuntimeWarning,
+        #     stacklevel=2,
+        # )
+
+    # check3: if useComposite is True, then length of plyangles and plyfractions must be equal
+    if surface.get("useComposite", False):
+        if len(surface["plyangles"]) != len(surface["plyfractions"]):
+            raise ValueError(
+                "Length of `plyangles` and `plyfractions` must be equal",
+            )
+            # warnings.warn(
+            #     "Length of `plyangles` and `plyfractions` must be equal",
+            #     category=RuntimeWarning,
+            #     stacklevel=2,
+            # )
