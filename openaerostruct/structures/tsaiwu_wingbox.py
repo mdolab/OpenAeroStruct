@@ -6,10 +6,8 @@ from openaerostruct.structures.utils import norm, unit
 
 
 class TsaiWuWingbox(om.ExplicitComponent):
-    """Compute the von Mises stresses for each element.
-    See Chauhan et al. (https://doi.org/10.1007/978-3-319-97773-7_38) for more.
-
-    NOTE: Compute the Tsai-Wu failure criteria for each element, and return an array of the Strength Ratios (SR) for each ply (4) for each element (4).
+    """Compute the Tsai-Wu failure criteria for each element, and return an array of the Strength Ratios (SR) for each ply at each element (4).
+    The Tsai-Wu failure criterion is a quadratic expression that is used to predict the failure of composite materials.
 
     Parameters
     ----------
@@ -42,11 +40,8 @@ class TsaiWuWingbox(om.ExplicitComponent):
 
     Returns
     -------
-    vonmises[ny-1, 4] : numpy array
-        von Mises stresses for 4 stress combinations for each FEM element.
-
-    NOTE: tsaiwu_sr[ny-1, 16] : numpy array
-        Tsai-Wu Strength Ratios for 16 plys for each FEM element.
+    tsaiwu_sr[ny-1, 16] : numpy array
+        Tsai-Wu Strength Ratios for each FEM element (4 critical elements * number of plies).
 
     """
 
@@ -55,6 +50,8 @@ class TsaiWuWingbox(om.ExplicitComponent):
 
     def setup(self):
         self.surface = surface = self.options["surface"]
+        plyangles = surface["plyangles"]
+        numofplies = len(plyangles)
 
         self.ny = surface["mesh"].shape[1]
 
@@ -68,9 +65,7 @@ class TsaiWuWingbox(om.ExplicitComponent):
         self.add_input("hbottom", val=np.zeros((self.ny - 1)), units="m")
         self.add_input("hfront", val=np.zeros((self.ny - 1)), units="m")
         self.add_input("hrear", val=np.zeros((self.ny - 1)), units="m")
-
-        # self.add_output("vonmises", val=np.zeros((self.ny - 1, 4)), units="N/m**2")
-        self.add_output("tsaiwu_sr", val=np.zeros((self.ny - 1, 16)))  # NOTE: To be verified again
+        self.add_output("tsaiwu_sr", val=np.zeros((self.ny - 1, numofplies * 4)))
 
         self.E = surface["E"]
         self.G = surface["G"]
@@ -87,7 +82,6 @@ class TsaiWuWingbox(om.ExplicitComponent):
         self.sigma_t2 = surface["sigma_t2"]
         self.sigma_12max = surface["sigma_12max"]
 
-        self.plyangles = surface["plyangles"]
         self.tssf = surface["strength_factor_for_upper_skin"]
 
         self.declare_partials("*", "*", method="cs")
@@ -103,7 +97,6 @@ class TsaiWuWingbox(om.ExplicitComponent):
         hfront = inputs["hfront"]
         hrear = inputs["hrear"]
         spar_thickness = inputs["spar_thickness"]
-        # vonmises = outputs["vonmises"]
         tsaiwu_sr = outputs["tsaiwu_sr"]
 
         # Only use complex type for these arrays if we're using cs to check derivs
@@ -136,55 +129,29 @@ class TsaiWuWingbox(om.ExplicitComponent):
             u1x, u1y, u1z = T.dot(disp[ielem + 1, :3])
             r1x, r1y, r1z = T.dot(disp[ielem + 1, 3:])
 
-            # # this is stress = modulus * strain; positive is tensile
-            # axial_stress = E * (u1x - u0x) / L
-
-            # # this is Torque / (2 * thickness_min * Area_enclosed)
-            # torsion_stress = G * J[ielem] / L * (r1x - r0x) / 2 / spar_thickness[ielem] / A_enc[ielem]
-
-            # # this is moment * h / I
-            # top_bending_stress = E / (L**2) * (6 * u0y + 2 * r0z * L - 6 * u1y + 4 * r1z * L) * htop[ielem]
-
-            # # this is moment * h / I
-            # bottom_bending_stress = -E / (L**2) * (6 * u0y + 2 * r0z * L - 6 * u1y + 4 * r1z * L) * hbottom[ielem]
-
-            # # this is moment * h / I
-            # front_bending_stress = -E / (L**2) * (-6 * u0z + 2 * r0y * L + 6 * u1z + 4 * r1y * L) * hfront[ielem]
-
-            # # this is moment * h / I
-            # rear_bending_stress = E / (L**2) * (-6 * u0z + 2 * r0y * L + 6 * u1z + 4 * r1y * L) * hrear[ielem]
-
-            # # shear due to bending (VQ/It) note: the I used to get V cancels the other I
-            # vertical_shear = (
-            #     E
-            #     / (L**3)
-            #     * (-12 * u0y - 6 * r0z * L + 12 * u1y - 6 * r1z * L)
-            #     * Qy[ielem]
-            #     / (2 * spar_thickness[ielem])
-            # )
-
             # ==============================================================================
             # strain equations
             # ==============================================================================
-            # this is stress = modulus * strain; positive is tensile
+
+            # this is strain
             axial_strain = (u1x - u0x) / L
 
-            # this is Torque / (2 * thickness_min * Area_enclosed)
+            # this is torsion strain
             torsion_shear_strain = J[ielem] / L * (r1x - r0x) / 2 / spar_thickness[ielem] / A_enc[ielem]
 
-            # this is moment * h / I
+            # this is bending strain for the top skin
             top_bending_strain = 1.0 / (L**2) * (6 * u0y + 2 * r0z * L - 6 * u1y + 4 * r1z * L) * htop[ielem]
 
-            # this is moment * h / I
+            # this is bending strain for the bottom skin
             bottom_bending_strain = -1.0 / (L**2) * (6 * u0y + 2 * r0z * L - 6 * u1y + 4 * r1z * L) * hbottom[ielem]
 
-            # this is moment * h / I
+            # this is bending strain for the front spar
             front_bending_strain = -1.0 / (L**2) * (-6 * u0z + 2 * r0y * L + 6 * u1z + 4 * r1y * L) * hfront[ielem]
 
-            # this is moment * h / I
+            # this is bending strain for the rear spar
             rear_bending_strain = 1.0 / (L**2) * (-6 * u0z + 2 * r0y * L + 6 * u1z + 4 * r1y * L) * hrear[ielem]
 
-            # shear due to bending (VQ/It) note: the I used to get V cancels the other I
+            # shear strain due to bending
             vertical_shear_strain = (
                 1.0
                 / (L**3)
@@ -192,31 +159,6 @@ class TsaiWuWingbox(om.ExplicitComponent):
                 * Qy[ielem]
                 / (2 * spar_thickness[ielem])
             )
-
-            # print("==========",ielem,"================")
-            # print("vertical_shear", vertical_shear)
-            # print("top",top_bending_stress)
-            # print("bottom",bottom_bending_stress)
-            # print("front",front_bending_stress)
-            # print("rear",rear_bending_stress)
-            # print("axial", axial_stress)
-            # print("torsion", torsion_stress)
-
-            # # The 4 stress combinations:
-            # vonmises[ielem, 0] = (
-            #     np.sqrt((top_bending_stress + rear_bending_stress + axial_stress) ** 2 + 3 * torsion_stress**2)
-            #     / self.tssf
-            # )
-            # vonmises[ielem, 1] = np.sqrt(
-            #     (bottom_bending_stress + front_bending_stress + axial_stress) ** 2 + 3 * torsion_stress**2
-            # )
-            # vonmises[ielem, 2] = np.sqrt(
-            #     (front_bending_stress + axial_stress) ** 2 + 3 * (torsion_stress - vertical_shear) ** 2
-            # )
-            # vonmises[ielem, 3] = (
-            #     np.sqrt((rear_bending_stress + axial_stress) ** 2 + 3 * (torsion_stress + vertical_shear) ** 2)
-            #     / self.tssf
-            # )
 
             # The strain combinations for the 4 elements under consideration: (split into epsilonx, epsilony and gammatau)
             # Defining the epsilon_elem array for the epsionx, epsiony and gammatau for each element
@@ -235,12 +177,12 @@ class TsaiWuWingbox(om.ExplicitComponent):
             # Element 3:
             epsilon_elem[2, 0] = front_bending_strain + axial_strain
             epsilon_elem[2, 1] = 0
-            epsilon_elem[2, 2] = torsion_shear_strain + vertical_shear_strain  # NOTE: To be verified again
+            epsilon_elem[2, 2] = torsion_shear_strain + vertical_shear_strain
 
             # Element 4:
             epsilon_elem[3, 0] = rear_bending_strain + axial_strain
             epsilon_elem[3, 1] = 0
-            epsilon_elem[3, 2] = -torsion_shear_strain + vertical_shear_strain  # NOTE: To be verified again
+            epsilon_elem[3, 2] = -torsion_shear_strain + vertical_shear_strain
 
             # defining the array for ply-orientation angles:
             plyangles = self.plyangles
@@ -281,13 +223,6 @@ class TsaiWuWingbox(om.ExplicitComponent):
                         * (np.cos(np.radians(plyangles[ply_num])) ** 2 - np.sin(np.radians(plyangles[ply_num])) ** 2)
                     )
 
-            # defining the strain-stress relations for the material:
-            # E1 = 117.7e9
-            # E2 = 9.7e9
-            # G12 = 4.8e9
-            # nu_12 = 0.35
-            # nu_21 = nu_12 * E2 / E1
-
             # defining the Q matrix for the material:
             Q11 = E1 / (1 - nu_12 * nu_21)
             Q22 = E2 / (1 - nu_12 * nu_21)
@@ -312,13 +247,6 @@ class TsaiWuWingbox(om.ExplicitComponent):
                     sigma_elem_ply[elem_num, ply_num, 1] = sigma2
                     sigma_elem_ply[elem_num, ply_num, 2] = sigma12
 
-            # defining the Tsai-Wu constants for the material:
-            # sigma_c1 = 1034.0e6
-            # sigma_t1 = 1648.0e6
-            # sigma_c2 = 228.0e6
-            # sigma_t2 = 64.0e6
-            # sigma_12max = 71.0e6
-
             sigma_c1 = self.sigma_c1
             sigma_t1 = self.sigma_t1
             sigma_c2 = self.sigma_c2
@@ -326,13 +254,13 @@ class TsaiWuWingbox(om.ExplicitComponent):
             sigma_12max = self.sigma_12max
 
             # defining the constants for the Tsai-Wu Strength Ratios
-            F1 = 1 / sigma_t1 - 1 / sigma_c1  # NOTE: To be verified again
+            F1 = 1 / sigma_t1 - 1 / sigma_c1
             F11 = 1 / (sigma_t1 * sigma_c1)
-            F2 = 1 / sigma_t2 - 1 / sigma_c2  # NOTE: To be verified again
+            F2 = 1 / sigma_t2 - 1 / sigma_c2
             F22 = 1 / (sigma_t2 * sigma_c2)
             F66 = 1 / (sigma_12max**2)
 
-            # Find the Tsai-Wu Strength Ratios for each ply in each element and store them in the tsaiwu_sr array
+            # Finding the Tsai-Wu Strength Ratios for each ply in each element and storing them in the tsaiwu_sr array
             for elem_num in range(4):
                 for ply_num in range(numofplies):
                     a = F1 * sigma_elem_ply[elem_num, ply_num, 0] + F2 * sigma_elem_ply[elem_num, ply_num, 1]
@@ -342,7 +270,3 @@ class TsaiWuWingbox(om.ExplicitComponent):
                         + F66 * sigma_elem_ply[elem_num, ply_num, 2] ** 2
                     )
                     tsaiwu_sr[ielem, elem_num * 4 + ply_num] = 0.5 * (a + np.sqrt(a**2 + 4 * b))
-
-                    # a = F1 * epsilon_elem_ply[elem_num, ply_num, 0] + F2 * epsilon_elem_ply[elem_num, ply_num, 1]
-                    # b = F11 * epsilon_elem_ply[elem_num, ply_num, 0]**2 + F22 * epsilon_elem_ply[elem_num, ply_num, 1]**2 + F66 * epsilon_elem_ply[elem_num, ply_num, 0] * epsilon_elem_ply[elem_num, ply_num, 1]
-                    # tsaiwu_sr[ielem, elem_num * 4 + ply_num] = 0.5 * (a + np.sqrt(a**2 + 4 * b))

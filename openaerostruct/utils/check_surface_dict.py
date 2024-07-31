@@ -70,7 +70,7 @@ def check_surface_dict_keys(surface):
         "mx",
         "my",
     ]
-
+    # keys that are required when useComposite is True
     compositeInputs = [
         "composite_safetyfactor",
         "plyangles",
@@ -97,7 +97,6 @@ def check_surface_dict_keys(surface):
             )
 
     # adding checks for using the composite failure model
-
     # check1: if useComposite is True, then the following keys must be present
     if surface.get("useComposite", False):
         for key in compositeInputs:
@@ -111,11 +110,6 @@ def check_surface_dict_keys(surface):
         raise ValueError(
             "`fem_model_type` must be 'wingbox' when `useComposite` is True",
         )
-        # warnings.warn(
-        #     "`fem_model_type` must be 'wingbox' when `useComposite` is True",
-        #     category=RuntimeWarning,
-        #     stacklevel=2,
-        # )
 
     # check3: if useComposite is True, then length of plyangles and plyfractions must be equal
     if surface.get("useComposite", False):
@@ -123,8 +117,3 @@ def check_surface_dict_keys(surface):
             raise ValueError(
                 "Length of `plyangles` and `plyfractions` must be equal",
             )
-            # warnings.warn(
-            #     "Length of `plyangles` and `plyfractions` must be equal",
-            #     category=RuntimeWarning,
-            #     stacklevel=2,
-            # )
