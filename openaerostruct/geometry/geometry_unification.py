@@ -1,8 +1,24 @@
 import numpy as np
 import openmdao.api as om
 
-#Function computes the dimensions of the unified mesh as well as an index array
 def compute_unimesh_dims(sections):
+    """
+    Function computes the dimensions of the unified mesh as well as an index array
+
+    Parameters
+    ----------
+    sections : list
+        List of section OpenAeroStruct surface dictionaries
+
+    Returns
+    -------
+    uni_mesh_indices : numpy array
+        Array of indicies matching the size of the mesh array
+    uni_nx : int
+        Number of chordwise points in the unified mesh
+    uni_ny : int
+        Number of spanwise points in the unified mesh
+    """
     uni_nx = sections[0]["mesh"].shape[0]
     uni_ny = 0
     for iSec in range(len(sections)):
@@ -15,12 +31,28 @@ def compute_unimesh_dims(sections):
     return uni_mesh_indices,uni_nx,uni_ny
 
 
-#Function that computes the index block that corresponds to each individual wing section
 def compute_unimesh_index_blocks(sections,uni_mesh_indices):
+    """
+    Function that computes the index block that corresponds to each individual wing section
+
+    Parameters
+    ----------
+    sections : list
+        List of section OpenAeroStruct surface dictionaries
+    uni_mesh_indices : numpy array
+        Array of indicies matching the size of the mesh array
+
+    Returns
+    -------
+    blocks : list
+        List of numpy arrays containing the incidies corresponding to each section. Basically breaks the uni_mesh_indices
+        array up into pieces that correspond to each section.
+    """
     blocks = []
 
     #cursor to track the y position of each section along the unified mesh
     ycurr = 0
+
     for iSec in range(len(sections)):
         mesh = sections[iSec]["mesh"]
         nx = mesh.shape[0]
@@ -37,19 +69,29 @@ def compute_unimesh_index_blocks(sections,uni_mesh_indices):
 
     return blocks
 
-#Function that produces a unified mesh from all the individual wing sections meshes
 def unify_mesh(sections):
+    """
+    Function that produces a unified mesh from all the individual wing section meshes.
+
+    Parameters
+    ----------
+    sections : list
+        List of section OpenAeroStruct surface dictionaries
+
+    Returns
+    -------
+    uniMesh : numpy array
+        Unfied surface mesh in OAS format
+    """
     for iSec in np.arange(0,len(sections)-1):
         mesh = sections[iSec]["mesh"]
-        nx = mesh.shape[0]
-        ny = mesh.shape[1]
-        name = sections[iSec]["name"]
+
         import copy
         if iSec == 0:
             uniMesh = copy.deepcopy(mesh[:,:-1,:])
         else:
             uniMesh = np.concatenate([uniMesh,mesh[:,:-1,:]],axis=1)
-        # Stitch the results into a singular mesh
+    # Stitch the results into a singular mesh
     mesh = sections[len(sections)-1]["mesh"]
     if len(sections) == 1:
         import copy

@@ -3,7 +3,6 @@ import numpy as np
 import openmdao.api as om
 from openaerostruct.utils.check_surface_dict import check_surface_dict_keys, check_multi_sec_surface_dict_keys
 import openaerostruct.geometry.geometry_mesh_gen as meshGen
-from openaerostruct.geometry.multi_bspline_component import build_multi_spline
 
 
 class Geometry(om.Group):
@@ -195,6 +194,20 @@ class Geometry(om.Group):
 
 #Function that constructs the individual section surface data dictionaries
 def build_sections(surface):
+    '''This function returns an OpenMDAO Independent Variable Component with an output vector appropriately 
+    named and sized to function as an unified B-spline that joins multiple sections by construction. 
+    
+    Parameters
+    ----------
+    surface: dict
+        OpenAeroStruct multi-section surface dictionary
+
+    Returns
+    -------
+    section_surfaces : list
+        List of OpenAeroStruct surface dictionaries for each individual surface
+        
+    '''
     #Get number of sections
     num_sections = surface["num_sections"]
 
@@ -252,13 +265,16 @@ class MultiSecGeometry(om.Group):
     This group handles the creation of each section geometry group based on parameters 
     supplied in the multi-section surface dictionary. Meshes for each section can be 
     provided by the user or automatically generated based on parameters supplied in the 
-    surface dictionary. 
+    surface dictionary. The group also adds a mesh unification component that combines the 
+    individual section for each mesh into a singular unified mesh for use in aero components.
+    Optionally, the joining component can be added that computes the edge distances between sections.
+    This information can be used to set a distance constraint along the specified axes if needed.
     """
 
     def initialize(self):
-        self.options.declare("surface", types=dict)
-        self.options.declare("joining_comp",types=bool)
-        self.options.declare("dim_constr",types=list)
+        self.options.declare("surface", types=dict) #Multi-section surface dictionary
+        self.options.declare("joining_comp",types=bool,default=False) #Specify if a distance computation component should be added
+        self.options.declare("dim_constr",types=list,default=[]) #List of arrays corresponding to each shared edge between section along the surface. Each array inidicates along which axes the distance constarint is applied([x y z])
 
 
     def setup(self):
@@ -289,7 +305,7 @@ class MultiSecGeometry(om.Group):
             self.connect('{}.mesh'.format(sec_name),'{}.{}_def_mesh'.format(unification_name,sec_name))
 
         if joining_comp:
-            #Add section joining component
+            #Add section joining component to output edge distances
             joining_name = '{}_joining'.format(surface["name"])
             from openaerostruct.geometry.geometry_multi_join import GeomMultiJoin
             join = GeomMultiJoin(sections = sec_dicts,dim_constr = dc)

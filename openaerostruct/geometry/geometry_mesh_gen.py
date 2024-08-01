@@ -9,45 +9,25 @@ def generateMesh(
     surface
 ):
     """
-    Quickly generates user multi-section mesh based on a few parameters
+    Automatically generates meshes for single and multi-section wings using the OpenAeroStruct surface dictionary.
 
     Parameters
     ----------
-    sections : int
-        Integer for number of wing sections specified
-    data : numpy array
-        sectionsx4 array consisting of taper, root chord length, aspect ratio, and leading edge sweep in columns. Each row corresponds to each specified wing section.
-    bPanels: numpy array
-        1 x sections 1-D array consisting of integers that specify the number of spanwise panels corresponding to each wing section
-    cPanels: int
-        Integer for number of chord-wise panels
-    symmetry : boolean
-        Flag set to True if surface is reflected about y=0 plane.
-    controlPoints: boolean
-        Flag set to True if both quarter chord and three-quarter chord control points should be computed
-    generatePlots: boolean
-        Flag set to True if planform and mesh plots should be created and saved.
-    plotOptions: Dict
-        Dictionary containing user options for plotting
-            'type': 'plan', 'mesh', 'all'
-                Plots the planform geometry only, mesh only, or both
-
-            'symmetry': 'Left', 'Right', 'Full
-                Plots the left, right, or full spans
-
-            'name': string
-                Name of wing
+    surface : dict
+        OpenAeroStruct surface or multi-section surface dictionary.
 
     Returns
     -------
     mesh[nx, ny, 3] : numpy array
         Nodal mesh defining the aerodynamic surface.
+    
+    sec_mesh : list
+        List of nodal meshes corresponding to each section in a multi-section surface.
     """
 
-    #Parse Data
+    #Get Data
     numSections = surface["num_sections"]
     symmetry = surface["symmetry"]
-
 
     if symmetry or numSections == 1:
         rootSection = numSections-1
@@ -57,7 +37,7 @@ def generateMesh(
         else:
             rootSection = surface["rootSection"]
             
-
+    #Geometry data dictionary
     sectionData = {'taper':surface["sec_taper"],'sweep':surface["sec_sweep"],'span':surface["sec_span"],'rootChord':surface["root_chord"]}
 
     if 'bPanels' in surface.keys():
@@ -70,16 +50,18 @@ def generateMesh(
     else:
         nx = surface['nx']
 
+    #Generate the mesh data
     panelGX, panelGY  = generateSectionGeometry(numSections, symmetry, sectionData, ny, nx, rootSection)
+
+    #Sitch the mesh into a unified mesh and out in OAS format
     panelGeomX, panelGeomY = stitchSectionGeometry(numSections, panelGY, panelGX)
     mesh = outputOASMesh(panelGeomX, panelGeomY)
 
-    #Produce meshes for each section
+    #Produce meshes for each section in OAS format
     sec_meshes = []
     for section in range(numSections):
         secMesh = outputOASMesh(panelGX[section],panelGY[section])
         sec_meshes.append(secMesh)
-
 
     return mesh, sec_meshes
 
@@ -92,12 +74,16 @@ def generateSectionGeometry(sections, symmetry, sectionData, ny, nx, rootSection
     ----------
     sections : int
         Integer for number of wing sections specified
-    data : numpy array
-        sectionsx4 array consisting of taper, root chord length, aspect ratio, and leading edge sweep in each column. Each row corresponds to each specified wing section.
-    bPanels: numpy array
-        1 x sections 1-D array consisting of integers that specify the number of spanwise panels corresponding to each wing section
-    cPanels: int
-        Integer for number of chord-wise panels
+    symmetry : bool
+        Bool inidicating if the funciton should only generate the left span of the wing
+    sectionData : dict
+        Dictionary with arrays corresponding the taper, span, sweep, and root chord of each section
+    ny : numpy array
+        Array with ints correponding to the number of spanwise points per section
+    nx : int
+        Number of chordwise points
+    rootSection:
+        The section number that should be treated as the root section(y=0 origin)
 
 
     Returns
@@ -106,17 +92,11 @@ def generateSectionGeometry(sections, symmetry, sectionData, ny, nx, rootSection
          List containing the mesh x-coordinates for each section
     panelGY : List
         List containing the mesh y-coordinates for each section
-    panelQC : List
-         List containing the quarter chord x-positions along each panel edge. Not used by OAS but information is too good to get rid of at this point.
-    tquartX : : List
-         List containing the three-quarter chord x-positions along each panel edge. Not used by OAS but information is too good to get rid of at this point.
-    Npanels : int
-        Total number of panels in the mesh
     """
 
+    #Preallocate the lists
     panelGY = [None] * sections
     panelGX = [None] * sections
-    Stot = 0
 
     
     #Jump to root section and build left wing
@@ -134,7 +114,6 @@ def generateSectionGeometry(sections, symmetry, sectionData, ny, nx, rootSection
             rootTE = panelGX[sec + 1][nx-1, 0]
             rootY = panelGY[sec + 1][0]
         tipC = rootC*taper
-        Stot = Stot + b * ((tipC + rootC) / 2)
 
         rootLE = rootC + rootTE
         tipLE = rootLE - b * np.tan(leLambda)
@@ -170,7 +149,6 @@ def generateSectionGeometry(sections, symmetry, sectionData, ny, nx, rootSection
             rootC = np.abs(panelGX[sec - 1][0, -1] - panelGX[sec - 1][nx-1, -1])
             tipC = rootC*taper
             rootY = panelGY[sec - 1][-1]
-            Stot = Stot + b * ((tipC + rootC) / 2)
 
             rootTE = panelGX[sec - 1][nx-1, 0]
             rootLE = rootC + rootTE
@@ -212,8 +190,6 @@ def stitchSectionGeometry(sections, panelGY, panelGX):
          List containing the mesh x-coordinates for each section
     panelGY : List
         List containing the mesh y-coordinates for each section
-    bPanels: numpy array
-        1 x sections 1-D array consisting of integers that specify the number of spanwise panels corresponding to each wing section
 
 
     Returns
@@ -241,7 +217,7 @@ def stitchSectionGeometry(sections, panelGY, panelGX):
 
 def reflectSymmetric(panelGeomX, panelGeomY):
     """
-    Reflect the mesh over y=0 is symmetry conditions are used
+    Reflects the mesh over y=0
 
     Parameters
     ----------
@@ -269,11 +245,9 @@ def outputOASMesh(panelGeomX, panelGeomY):
     Parameters
     ----------
     panelGeomX : numpy array
-         Array of the mesh x-coordinates
+        2D array of the mesh x-coordinates
     panelGeomY : numpy array
-        Array of the mesh y-coordinates
-
-
+        1D array of the mesh y-coordinates
 
     Returns
     -------
@@ -288,6 +262,7 @@ def outputOASMesh(panelGeomX, panelGeomY):
 
 
 if __name__ == "__main__":
+    '''Allows the mesh generator to be run independently of OAS. Example 2 section mesh provided.'''
 
     surface = {
         # Wing definition
@@ -350,9 +325,7 @@ if __name__ == "__main__":
         plt.axis('equal')
         plt.xlabel('y (m)')
         plt.ylabel('x (m)')
-        #plt.legend()
   
-
     plot_meshes(sec_meshes)
     plt.show()
 

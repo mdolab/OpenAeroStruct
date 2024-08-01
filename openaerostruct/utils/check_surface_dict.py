@@ -80,7 +80,7 @@ def check_surface_dict_keys(surface):
 
 def check_multi_sec_surface_dict_keys(surface):
     """
-    Key valication function for the OAS multi section surface dict.
+    Key valication function for the OAS multi-section surface dict.
     Shows a warning if a user provided a key that is (likely) not implemented in OAS.
 
     Parameters
@@ -110,6 +110,8 @@ def check_multi_sec_surface_dict_keys(surface):
         "sec_zshear_cp",
         "sec_ny",
         "nx",
+        "bPanels",
+        "cPanels",
         "ref_axis_pos",
         "rootSection",
         # aerodynamics
