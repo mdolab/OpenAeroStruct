@@ -5,13 +5,7 @@ import openmdao.api as om
 # from openaerostruct.structures.spar_within_wing import SparWithinWing
 from openaerostruct.structures.vonmises_tube import VonMisesTube
 from openaerostruct.structures.vonmises_wingbox import VonMisesWingbox
-
-# ======================================================================
-# Adding the import statement for Tsai Wu Wingbox
-# ======================================================================
 from openaerostruct.structures.tsaiwu_wingbox import TsaiWuWingbox
-
-# ======================================================================
 from openaerostruct.structures.non_intersecting_thickness import NonIntersectingThickness
 from openaerostruct.structures.failure_exact import FailureExact
 from openaerostruct.structures.failure_ks import FailureKS
@@ -50,65 +44,29 @@ class SpatialBeamFunctionals(om.Group):
         elif surface["fem_model_type"] == "wingbox":
 
             if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
-                self.add_subsystem(
-                    "tsaiwu_sr",
-                    TsaiWuWingbox(surface=surface),
-                    promotes_inputs=[
-                        "Qz",
-                        "J",
-                        "A_enc",
-                        "spar_thickness",
-                        "htop",
-                        "hbottom",
-                        "hfront",
-                        "hrear",
-                        "nodes",
-                        "disp",
-                    ],
-                    promotes_outputs=["tsaiwu_sr"],
-                )
+                subsystemname = "tsaiwu_sr"
+                promotedoutput = "tsaiwu_sr"
             else:  # using the Isotropic wingbox
+                subsystemname = "vonmises"
+                promotedoutput = "vonmises"
 
-                self.add_subsystem(
-                    "vonmises",
-                    VonMisesWingbox(surface=surface),
-                    promotes_inputs=[
-                        "Qz",
-                        "J",
-                        "A_enc",
-                        "spar_thickness",
-                        "htop",
-                        "hbottom",
-                        "hfront",
-                        "hrear",
-                        "nodes",
-                        "disp",
-                    ],
-                    promotes_outputs=["vonmises"],
-                )
-        # # ======================================================================
-        # # Adding the elif statement for Tsai Wu Wingbox
-        # # ======================================================================
-        # elif surface["fem_model_type"] == "tsaiwu_wingbox":
-        #     self.add_subsystem(
-        #         "tsaiwu_sr",
-        #         TsaiWuWingbox(surface=surface),
-        #         promotes_inputs=[
-        #             "Qz",
-        #             "J",
-        #             "A_enc",
-        #             "spar_thickness",
-        #             "htop",
-        #             "hbottom",
-        #             "hfront",
-        #             "hrear",
-        #             "nodes",
-        #             "disp",
-        #         ],
-        #         promotes_outputs=["tsaiwu_sr"],
-        #     )
-        # # ======================================================================
-
+            self.add_subsystem(
+                subsystemname,
+                TsaiWuWingbox(surface=surface),
+                promotes_inputs=[
+                    "Qz",
+                    "J",
+                    "A_enc",
+                    "spar_thickness",
+                    "htop",
+                    "hbottom",
+                    "hfront",
+                    "hrear",
+                    "nodes",
+                    "disp",
+                ],
+                promotes_outputs=[promotedoutput],
+            )
         else:
             raise NameError("Please select a valid `fem_model_type` from either `tube` or `wingbox`.")
 
@@ -119,9 +77,6 @@ class SpatialBeamFunctionals(om.Group):
         #          promotes=['*'])
 
         if surface["exact_failure_constraint"]:
-            # ======================================================================
-            # Adding the if else statement for FailureExact for Tsai Wu Wingbox
-            # ======================================================================
             if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
                 self.add_subsystem(
                     "failure",
@@ -129,16 +84,11 @@ class SpatialBeamFunctionals(om.Group):
                     promotes_inputs=["tsaiwu_sr"],
                     promotes_outputs=["failure"],
                 )
-            else:
+            else:  # using the Isotropic structures
                 self.add_subsystem(
                     "failure", FailureExact(surface=surface), promotes_inputs=["vonmises"], promotes_outputs=["failure"]
                 )
-            # ======================================================================
-
         else:
-            # ======================================================================
-            # Adding the if else statement for FailureKS for Tsai Wu Wingbox
-            # ======================================================================
             if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
                 self.add_subsystem(
                     "failure", FailureKS(surface=surface), promotes_inputs=["tsaiwu_sr"], promotes_outputs=["failure"]
@@ -147,4 +97,3 @@ class SpatialBeamFunctionals(om.Group):
                 self.add_subsystem(
                     "failure", FailureKS(surface=surface), promotes_inputs=["vonmises"], promotes_outputs=["failure"]
                 )
-            # ======================================================================
