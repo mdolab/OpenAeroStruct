@@ -81,8 +81,10 @@ This step is not necessary and not directly relevant to parallelization, but the
 Complete runscript
 ------------------
 
-.. embed-code::
-    tests.integration_tests.test_multipoint_parallel.Test.test_multipoint_MPI
+.. literalinclude:: /../../tests/integration_tests/test_multipoint_parallel.py
+    :start-after: docs checkpoint 0
+    :end-before: docs checkpoint 1
+    :dedent: 8
 
 To run this example in parallel with two processors, use the following command:
 

@@ -25,6 +25,7 @@ class Test(unittest.TestCase):
     N_PROCS = 2
 
     def test_multipoint_MPI(self):
+        # docs checkpoint 0
         import numpy as np
         import time
 
@@ -386,6 +387,7 @@ class Test(unittest.TestCase):
         if MPI.COMM_WORLD.rank == 0:
             print("Analysis runtime: ", run_model_time, "[s]")
             print("Derivatives runtime: ", derivs_time, "[s]")
+        # docs checkpoint 1
 
         # OpenMDAO versions before 3.31 use absolute names as dictionary keys, but versions after
         # use user facing (promoted) names. Handle both cases here.

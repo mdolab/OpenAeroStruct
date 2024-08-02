@@ -16,6 +16,7 @@ except ImportError:
 @unittest.skipUnless(pygeo_flag, "pyGeo is required.")
 class Test(unittest.TestCase):
     def test(self):
+        # docs checkpoint 0
         from openaerostruct.geometry.utils import generate_mesh, write_FFD_file
 
         from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
@@ -167,6 +168,7 @@ class Test(unittest.TestCase):
 
         # prob.run_model()
         optResult = prob.run_driver()
+        # docs checkpoint 1
         assert_opt_successful(self, optResult)
 
         assert_near_equal(prob["AS_point_0.fuelburn"][0], 92474.52106288195, 1e-3)

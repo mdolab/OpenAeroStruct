@@ -4,6 +4,7 @@ import unittest
 
 class Test(unittest.TestCase):
     def test(self):
+        # docs checkpoint 0
         import numpy as np
 
         import openmdao.api as om
@@ -134,6 +135,7 @@ class Test(unittest.TestCase):
         prob.setup()
 
         prob.run_model()
+        # docs checkpoint 1
 
         assert_near_equal(prob["aero_point_0.wing_perf.CD"][0], 0.03539775778518085, 1e-6)
         assert_near_equal(prob["aero_point_0.wing_perf.CL"][0], 0.5124736932248048, 1e-6)

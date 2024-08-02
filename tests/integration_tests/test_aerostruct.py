@@ -5,6 +5,7 @@ from openaerostruct.utils.testing import assert_opt_successful
 
 class Test(unittest.TestCase):
     def test(self):
+        # docs checkpoint 0
         import numpy as np
 
         from openaerostruct.geometry.utils import generate_mesh
@@ -141,11 +142,12 @@ class Test(unittest.TestCase):
         # Set up the problem
         prob.setup(check=True)
 
+        optResult = prob.run_driver()
+        # docs checkpoint 1
+
         # Inserting a small unit test here. Verify that beta is correctly promoted in an Aerostruct
         # group.
         assert_near_equal(prob["AS_point_0.beta"], 0.0)
-
-        optResult = prob.run_driver()
         assert_opt_successful(self, optResult)
 
         assert_near_equal(prob["AS_point_0.fuelburn"][0], 92523.945549167, 1e-8)
