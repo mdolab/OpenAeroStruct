@@ -247,7 +247,7 @@ def build_sections(surface):
             "CL0": surface["sec_CL0"][i], 
             "CD0": surface["sec_CD0"][i], 
             "k_lam": surface["k_lam"], 
-            #"t_over_c_cp": surface["sec_t_over_c_cp"][i], 
+            "t_over_c_cp": surface["sec_t_over_c_cp"][i], 
             "c_max_t": surface["sec_c_max_t"][i],  
             "with_viscous": surface["with_viscous"], 
             "with_wave": surface["with_wave"],
@@ -303,6 +303,11 @@ class MultiSecGeometry(om.Group):
         #Connect each section mesh to mesh unification component inputs
         for sec_name in section_names:
             self.connect('{}.mesh'.format(sec_name),'{}.{}_def_mesh'.format(unification_name,sec_name))
+
+        #Connect each section t over c B-spline to t over c unification component if needed
+        if "sec_t_over_c_cp" in surface.keys():
+            for sec_name in section_names: 
+                self.connect('{}.t_over_c'.format(sec_name),'{}.{}_t_over_c'.format(unification_name,sec_name))
 
         if joining_comp:
             #Add section joining component to output edge distances

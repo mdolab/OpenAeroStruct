@@ -173,6 +173,23 @@ class GeomMultiUnification(om.ExplicitComponent):
         self.add_output(uni_mesh_name, shape=(uni_nx, uni_ny, 3), units="m")
 
 
+        #Unify the t/c output of each section if that has been specified
+        if 't_over_c_cp' in sections[0].keys():
+            uni_tc_name = '{}_uni_t_over_c'.format(self.options["surface_name"])
+
+            Nacc = 0
+            for iSec,section in enumerate(sections):
+                name=section["name"]
+                t_over_c_name = "{}_t_over_c".format(name)
+                n = int(ny - 1)
+                self.add_input(t_over_c_name, shape=(n),tags=["mphys_coupling"])
+
+                self.declare_partials(uni_tc_name,t_over_c_name,rows = np.arange(0,n) + Nacc,cols = np.arange(0,n), val=np.ones(n))
+
+                Nacc += n
+
+            self.add_output(uni_tc_name,shape=(uni_ny-1))
+
     def compute(self, inputs, outputs):
         sections = self.options["sections"]
         surface_name = self.options["surface_name"]
@@ -197,4 +214,17 @@ class GeomMultiUnification(om.ExplicitComponent):
         else:
             uniMesh = np.concatenate([uniMesh,inputs[mesh_name]],axis=1)
 
+        if 't_over_c_cp' in sections[0].keys():
+            uni_tc_name = '{}_uni_t_over_c'.format(self.options["surface_name"])
+            for iSec,section in enumerate(sections):
+                name=section["name"]
+                t_over_c_name = "{}_t_over_c".format(name)
+                t_over_c  = inputs[t_over_c_name]
+
+                if iSec == 0:
+                    uni_t_over_c = inputs[t_over_c_name]
+                else:
+                    uni_t_over_c = np.concatenate([uni_t_over_c,t_over_c])
+        
         outputs[uni_mesh_name] = uniMesh
+        outputs[uni_tc_name] = uni_t_over_c
