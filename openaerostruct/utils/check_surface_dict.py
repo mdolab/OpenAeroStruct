@@ -98,22 +98,31 @@ def check_surface_dict_keys(surface):
 
     # adding checks for using the composite failure model
     # check1: if useComposite is True, then the following keys must be present
-    if surface.get("useComposite", False):
+    useComposite = "useComposite" in surface.keys() and surface["useComposite"]
+    if useComposite:
         for key in compositeInputs:
             if key not in surface.keys():
                 raise ValueError(
-                    "Key `{}` is required when `useComposite` is True".format(key),
+                    f"Key `{}` not found in surface dict, when `useComposite` is True, the following keys must be present: {compositeInputs}",
                 )
 
     # check2: if useComposite is True, then 'fem_model_type' must be 'wingbox'
-    if surface.get("useComposite", False) and surface.get("fem_model_type", "") != "wingbox":
+    if useComposite and surface.get("fem_model_type", "") != "wingbox":
         raise ValueError(
             "`fem_model_type` must be 'wingbox' when `useComposite` is True",
         )
 
-    # check3: if useComposite is True, then length of plyangles and plyfractions must be equal
-    if surface.get("useComposite", False):
-        if len(surface["plyangles"]) != len(surface["plyfractions"]):
+    # check3: if useComposite is True, then length of ply_angles and ply_fractions must be equal
+    if useComposite:
+        if len(surface["ply_angles"]) != len(surface["ply_fractions"]):
             raise ValueError(
-                "Length of `plyangles` and `plyfractions` must be equal",
+                "Length of `ply_angles` and `ply_fractions` arrays must be equal",
+            )
+
+    # check5: if useComposite is True, then the ply fractions should add to 1
+    if useComposite:
+        plyFracSum = sum(surface["ply_fractions"])
+        if abs(plyFracSum - 1) > 1e-2:
+            raise ValueError(
+                f"Sum of `ply_fractions` ({surface["ply_fractions"]}) is {plyFracSum} must be 1.",
             )
