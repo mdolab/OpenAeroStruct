@@ -72,9 +72,9 @@ def check_surface_dict_keys(surface):
     ]
     # keys that are required when useComposite is True
     compositeInputs = [
-        "composite_safetyfactor",
-        "plyangles",
-        "plyfractions",
+        "composite_safety_factor",
+        "ply_angles",
+        "ply_fractions",
         "E1",
         "E2",
         "nu12",

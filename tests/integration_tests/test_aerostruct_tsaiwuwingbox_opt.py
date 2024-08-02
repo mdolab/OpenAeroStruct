@@ -306,9 +306,9 @@ class Test(unittest.TestCase):
             "Wf_reserve": 15000.0,  # [kg] reserve fuel mass
             "span": 58,  # [m] wingspan
             "useComposite": True,
-            "composite_safetyfactor": 1.5,
-            "plyangles": [0, 45, -45, 90],
-            "plyfractions": [10, 25, 25, 40],
+            "composite_safety_factor": 1.5,
+            "ply_angles": [0, 45, -45, 90],
+            "ply_fractions": [10, 25, 25, 40],
             "E1": 117.7e9,
             "E2": 9.7e9,
             "nu12": 0.35,

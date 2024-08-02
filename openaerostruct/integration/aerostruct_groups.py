@@ -41,16 +41,16 @@ def TransformationMatrix(theta):
 def computeCompositeStiffness(surface):
     """
     Function to compute the effective E and G stiffness values for a composite material,
-    based on the plyfractions, ply angles and individual fiber and matrix properties.
+    based on the ply_fractions, ply angles and individual fiber and matrix properties.
     """
     E1 = surface["E1"]
     E2 = surface["E2"]
     v12 = surface["nu12"]
     G12 = surface["G12"]
     v21 = (E2 / E1) * v12
-    plyfractions = surface["plyfractions"]
-    plyangles = surface["plyangles"]
-    numofplies = len(plyfractions)
+    ply_fractions = surface["ply_fractions"]
+    ply_angles = surface["ply_angles"]
+    numofplies = len(ply_fractions)
 
     # finding the Q matrix
     Q = np.zeros((3, 3))
@@ -68,10 +68,10 @@ def computeCompositeStiffness(surface):
     Q_bar = np.zeros((numofplies, 3, 3))
     Q_bar_eff = np.zeros((3, 3))
     for i in range(numofplies):
-        theta = plyangles[i]
+        theta = ply_angles[i]
         T = TransformationMatrix(theta)
         Q_bar[i] = np.dot(np.dot(np.linalg.inv(T), Q), T)
-        Q_bar_eff += plyfractions[i] * Q_bar[i]
+        Q_bar_eff += ply_fractions[i] * Q_bar[i]
 
     S_bar_eff = np.linalg.inv(Q_bar_eff)
     E_eff = 1 / S_bar_eff[0, 0]
@@ -141,7 +141,6 @@ class AerostructGeometry(om.Group):
         elif (
             surface["fem_model_type"] == "wingbox"
         ):  # connections and nomenclature remains the same for both isotropic and composite wingbox
-
             wingbox_promotes_in = ["mesh", "t_over_c"]
             wingbox_promotes_out = [
                 "A",
@@ -263,7 +262,6 @@ class CoupledPerformance(om.Group):
             )
 
         elif surface["fem_model_type"] == "wingbox":
-
             if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite Wing Box
                 promotedoutput = "tsaiwu_sr"
             else:  # using the isotropic Wing Box
@@ -315,7 +313,8 @@ class AerostructPoint(om.Group):
             name = surface["name"]
 
             # if useComposite is enabled, compute the effective E and G values for the composite material
-            if surface["useComposite"]:
+            useComposite = "useComposite" in surface.keys() and surface["useComposite"]
+            if useComposite:
                 computeCompositeStiffness(surface)
 
             # Connect the output of the loads component with the FEM

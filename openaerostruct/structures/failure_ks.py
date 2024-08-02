@@ -46,24 +46,25 @@ class FailureKS(om.ExplicitComponent):
     def setup(self):
         surface = self.options["surface"]
         rho = self.options["rho"]
-        plyangles = surface["plyangles"]
-        numofplies = len(plyangles)
+        self.useComposite = "useComposite" in self.options["surface"].keys() and self.options["surface"]["useComposite"]
+        if self.useComposite:
+            self.numofplies = len(surface["ply_angles"])
 
         if surface["fem_model_type"] == "tube":
             num_failure_criteria = 2
 
         elif surface["fem_model_type"] == "wingbox":
-            if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
-                num_failure_criteria = 4 * numofplies  # 4 critical elements * number of plies
+            if self.useComposite:  # using the Composite wingbox
+                num_failure_criteria = 4 * self.numofplies  # 4 critical elements * number of plies
             else:  # using the Isotropic wingbox
                 num_failure_criteria = 4
 
         self.ny = surface["mesh"].shape[1]
 
-        if "useComposite" in surface.keys() and surface["useComposite"]:
+        if self.useComposite:
             self.add_input("tsaiwu_sr", val=np.zeros((self.ny - 1, num_failure_criteria)), units=None)
-            self.composite_safetyfactor = surface["composite_safetyfactor"]
-            self.srlimit = 1 / self.composite_safetyfactor
+            self.composite_safety_factor = surface["composite_safety_factor"]
+            self.srlimit = 1 / self.composite_safety_factor
 
         else:
             self.add_input("vonmises", val=np.zeros((self.ny - 1, num_failure_criteria)), units="N/m**2")
@@ -78,9 +79,7 @@ class FailureKS(om.ExplicitComponent):
         sigma = self.sigma
         rho = self.rho
 
-        if (
-            "useComposite" in self.options["surface"].keys() and self.options["surface"]["useComposite"]
-        ):  # using the Composite wingbox
+        if self.useComposite:  # using the Composite wingbox
             stress_array = inputs["tsaiwu_sr"]
             stress_limit = self.srlimit
         else:  # using the Isotropic structures
@@ -94,10 +93,7 @@ class FailureKS(om.ExplicitComponent):
         outputs["failure"] = fmax + ks
 
     def compute_partials(self, inputs, partials):
-
-        if (
-            "useComposite" in self.options["surface"].keys() and self.options["surface"]["useComposite"]
-        ):  # using the Composite wingbox
+        if self.useComposite:  # using the Composite wingbox
             stress_array = inputs["tsaiwu_sr"]
             stress_limit = self.srlimit
         else:  # using the Isotropic structures

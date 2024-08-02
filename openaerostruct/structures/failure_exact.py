@@ -30,8 +30,8 @@ class FailureExact(om.ExplicitComponent):
 
     def setup(self):
         surface = self.options["surface"]
-        plyangles = surface["plyangles"]
-        numofplies = len(plyangles)
+        ply_angles = surface["ply_angles"]
+        numofplies = len(ply_angles)
 
         if surface["fem_model_type"] == "tube":
             num_failure_criteria = 2
@@ -45,7 +45,7 @@ class FailureExact(om.ExplicitComponent):
         self.ny = surface["mesh"].shape[1]
         self.sigma = surface["yield"]
 
-        self.srlimit = 1 / surface["composite_safetyfactor"]
+        self.srlimit = 1 / surface["composite_safety_factor"]
 
         if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
             self.add_input("tsaiwu_sr", val=np.zeros((self.ny - 1, num_failure_criteria)), units=None)
