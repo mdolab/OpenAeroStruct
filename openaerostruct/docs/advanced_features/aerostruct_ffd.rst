@@ -10,4 +10,4 @@ This allows for more general design shape changes and helps sync up geometry cha
   This example requires `pyGeo`, an external code developed by the MDO Lab. You can install it from `here <https://github.com/mdolab/pygeo>`_.
 
 .. embed-code::
-  openaerostruct.tests.test_aerostruct_ffd.Test.test
+  tests.integration_tests.test_aerostruct_ffd.Test.test

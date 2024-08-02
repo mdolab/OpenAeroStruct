@@ -12,7 +12,7 @@ Aerodynamic Optimization Example
 We optimize the aircraft at two cruise flight conditions below.
 
 .. embed-code::
-    openaerostruct.tests.test_multipoint_aero.Test.test
+    tests.integration_tests.test_multipoint_aero.Test.test
     :layout: interleave
 
 

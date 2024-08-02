@@ -82,7 +82,7 @@ Complete runscript
 ------------------
 
 .. embed-code::
-    openaerostruct.tests.test_multipoint_parallel.Test.test_multipoint_MPI
+    tests.integration_tests.test_multipoint_parallel.Test.test_multipoint_MPI
 
 To run this example in parallel with two processors, use the following command:
 

@@ -18,7 +18,7 @@ This means that configurations deep in ground effect (small altitude compared to
 To enable ground effect, add a :code:`groundplane: True` attribute to your aerosurfaces, like so:
 
 .. embed-code::
-    openaerostruct.tests.test_aero_ground_effect.Test.test
+    tests.integration_tests.test_aero_ground_effect.Test.test
 
 If groundplane is turned on for an AeroPoint or AeroStructPoint, a new input will be created (height_agl) which represents the distance from the origin (in airplane coordinates) to the ground plane.
 The default value, 8000 meters, produces essentially zero ground effect.
