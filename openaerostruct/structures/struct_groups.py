@@ -34,9 +34,23 @@ class SpatialBeamAlone(om.Group):
                 promotes_inputs=tube_promotes_input,
                 promotes_outputs=tube_promotes_output,
             )
-        elif surface["fem_model_type"] == "wingbox":
+        elif (
+            surface["fem_model_type"] == "wingbox"
+        ):  # connections and nomenclature remains same for both isotropic and composite wingbox
             wingbox_promotes_in = ["mesh", "t_over_c"]
-            wingbox_promotes_out = ["A", "Iy", "Iz", "J", "Qz", "A_enc", "A_int", "htop", "hbottom", "hfront", "hrear"]
+            wingbox_promotes_out = [
+                "A",
+                "Iy",
+                "Iz",
+                "J",
+                "Qz",
+                "A_enc",
+                "A_int",
+                "htop",
+                "hbottom",
+                "hfront",
+                "hrear",
+            ]
             if "skin_thickness_cp" in surface.keys() and "spar_thickness_cp" in surface.keys():
                 wingbox_promotes_in.append("skin_thickness_cp")
                 wingbox_promotes_in.append("spar_thickness_cp")
@@ -61,7 +75,9 @@ class SpatialBeamAlone(om.Group):
                 promotes_inputs=["mesh", "A", "Iy", "Iz", "J"],
                 promotes_outputs=["nodes", "local_stiff_transformed", "structural_mass", "cg_location", "element_mass"],
             )
-        else:
+        elif (
+            surface["fem_model_type"] == "wingbox"
+        ):  # connections and nomenclature remains same for both isotropic and composite wingbox
             self.add_subsystem(
                 "struct_setup",
                 SpatialBeamSetup(surface=surface),
@@ -99,7 +115,13 @@ class SpatialBeamAlone(om.Group):
                 promotes_inputs=["thickness", "radius", "nodes", "disp"],
                 promotes_outputs=["thickness_intersects", "vonmises", "failure"],
             )
-        else:
+        elif surface["fem_model_type"] == "wingbox":
+
+            if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
+                promotedoutput = "tsaiwu_sr"
+            else:  # using the Isotropic wingbox
+                promotedoutput = "vonmises"
+
             self.add_subsystem(
                 "struct_funcs",
                 SpatialBeamFunctionals(surface=surface),
@@ -115,5 +137,5 @@ class SpatialBeamAlone(om.Group):
                     "hrear",
                     "nodes",
                 ],
-                promotes_outputs=["vonmises", "failure"],
+                promotes_outputs=[promotedoutput, "failure"],
             )

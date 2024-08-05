@@ -21,15 +21,21 @@ class FailureKS(om.ExplicitComponent):
 
     parameters
     ----------
+    for Isotropic structures:
     vonmises[ny-1, 2] : numpy array
         von Mises stress magnitudes for each FEM element.
+
+    for Composite wingbox:
+    tsaiwu_sr[ny-1, 4 * numofplies] : numpy array
+        Tsai-Wu strength ratios for each FEM element (ply at each critical element).
 
     Returns
     -------
     failure : float
         KS aggregation quantity obtained by combining the failure criteria
         for each FEM node. Used to simplify the optimization problem by
-        reducing the number of constraints.
+        reducing the number of constraints. This entity is defined for either
+        failure criteria, vonmises or tsaiwu_sr. # TODO: check this
 
     """
 
@@ -40,17 +46,30 @@ class FailureKS(om.ExplicitComponent):
     def setup(self):
         surface = self.options["surface"]
         rho = self.options["rho"]
+        self.useComposite = "useComposite" in self.options["surface"].keys() and self.options["surface"]["useComposite"]
+        if self.useComposite:
+            self.numofplies = len(surface["ply_angles"])
 
         if surface["fem_model_type"] == "tube":
             num_failure_criteria = 2
+
         elif surface["fem_model_type"] == "wingbox":
-            num_failure_criteria = 4
+            if self.useComposite:  # using the Composite wingbox
+                num_failure_criteria = 4 * self.numofplies  # 4 critical elements * number of plies
+            else:  # using the Isotropic wingbox
+                num_failure_criteria = 4
 
         self.ny = surface["mesh"].shape[1]
 
-        self.add_input("vonmises", val=np.zeros((self.ny - 1, num_failure_criteria)), units="N/m**2")
-        self.add_output("failure", val=0.0)
+        if self.useComposite:
+            self.add_input("tsaiwu_sr", val=np.zeros((self.ny - 1, num_failure_criteria)), units=None)
+            self.composite_safety_factor = surface["composite_safety_factor"]
+            self.srlimit = 1 / self.composite_safety_factor
 
+        else:
+            self.add_input("vonmises", val=np.zeros((self.ny - 1, num_failure_criteria)), units="N/m**2")
+
+        self.add_output("failure", val=0.0)
         self.sigma = surface["yield"]
         self.rho = rho
 
@@ -59,35 +78,44 @@ class FailureKS(om.ExplicitComponent):
     def compute(self, inputs, outputs):
         sigma = self.sigma
         rho = self.rho
-        vonmises = inputs["vonmises"]
 
-        fmax = np.max(vonmises / sigma - 1)
+        if self.useComposite:  # using the Composite wingbox
+            stress_array = inputs["tsaiwu_sr"]
+            stress_limit = self.srlimit
+        else:  # using the Isotropic structures
+            stress_array = inputs["vonmises"]
+            stress_limit = sigma
+
+        fmax = np.max(stress_array / stress_limit - 1)
 
         nlog, nsum, nexp = np.log, np.sum, np.exp
-        ks = 1 / rho * nlog(nsum(nexp(rho * (vonmises / sigma - 1 - fmax))))
+        ks = 1 / rho * nlog(nsum(nexp(rho * (stress_array / stress_limit - 1 - fmax))))
         outputs["failure"] = fmax + ks
 
     def compute_partials(self, inputs, partials):
-        vonmises = inputs["vonmises"]
-        sigma = self.sigma
-        rho = self.rho
+        if self.useComposite:  # using the Composite wingbox
+            stress_array = inputs["tsaiwu_sr"]
+            stress_limit = self.srlimit
+        else:  # using the Isotropic structures
+            stress_array = inputs["vonmises"]
+            stress_limit = self.sigma
 
-        # Find the location of the max stress constraint
-        fmax = np.max(vonmises / sigma - 1)
-        i, j = np.where((vonmises / sigma - 1) == fmax)
+        fmax = np.max(stress_array / stress_limit - 1)
+        i, j = np.where((stress_array / stress_limit - 1) == fmax)
         i, j = i[0], j[0]
 
-        # Set incoming seed as 1 so we simply get the jacobian entries
         ksb = 1.0
 
-        # Use results from the AD code to compute the jacobian entries
-        tempb0 = ksb / (rho * np.sum(np.exp(rho * (vonmises / sigma - fmax - 1))))
-        tempb = np.exp(rho * (vonmises / sigma - fmax - 1)) * rho * tempb0
+        tempb0 = ksb / (self.rho * np.sum(np.exp(self.rho * (stress_array / stress_limit - fmax - 1))))
+        tempb = np.exp(self.rho * (stress_array / stress_limit - fmax - 1)) * self.rho * tempb0
         fmaxb = ksb - np.sum(tempb)
 
-        # Populate the entries
-        derivs = tempb / sigma
-        derivs[i, j] += fmaxb / sigma
+        derivs = tempb / stress_limit
+        derivs[i, j] += fmaxb / stress_limit
 
-        # Reshape and save them to the jac dict
-        partials["failure", "vonmises"] = derivs.reshape(1, -1)
+        if (
+            "useComposite" in self.options["surface"].keys() and self.options["surface"]["useComposite"]
+        ):  # using the Composite wingbox
+            partials["failure", "tsaiwu_sr"] = derivs.reshape(1, -1)
+        else:  # using the Isotropic structures
+            partials["failure", "vonmises"] = derivs.reshape(1, -1)
