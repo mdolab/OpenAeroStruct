@@ -31,6 +31,7 @@ surface = {
     "sec_span":np.array([1.0,1.0,1.0]), #Wing span for each section
     "sec_sweep":np.array([0.0,0.0,0.0]), #Wing sweep for each section
     "sec_chord_cp": [np.array([0.5,0.1]),np.array([1,1]),np.array([1,0.5])],
+    "sec_twist_cp": [np.zeros(2),np.zeros(2),np.zeros(2)],
     #"sec_chord_cp": [np.ones(1),2*np.ones(1),3*np.ones(1)], #Chord B-spline control points for each section
     "root_chord" : 1.0, #Wing root chord for each section
 
@@ -81,7 +82,7 @@ uniMesh = unify_mesh(section_surfaces)
 
 # Create the aero point group, which contains the actual aerodynamic
 # analyses
-aero_group = AeroPoint(surfaces=section_surfaces,multiSection=True,unifiedMesh=uniMesh)
+aero_group = AeroPoint(surfaces=section_surfaces,multiSection=True,unifiedMesh=uniMesh,msSurfName=surface["name"])
 point_name = "aero_point_0"
 prob.model.add_subsystem(
     point_name, aero_group, promotes_inputs=["v", "alpha", "Mach_number", "re", "rho", "cg"]

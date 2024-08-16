@@ -21,32 +21,32 @@ surface = {
     "num_sections": 2, #The number of sections in the multi-section surface
     "sec_name": ["sec0","sec1"],  # names of the individual sections
     "symmetry": True,  # if true, model one half of wing. reflected across the midspan of the root section
-    "S_ref_type": "wetted",  # how we compute the wing area,
-    # can be 'wetted' or 'projected'
+    "S_ref_type": "wetted",  # how we compute the wing area, can be 'wetted' or 'projected'
     "rootSection": 1,
 
 
     #Geometry Parameters
-    "sec_taper": np.array([1.0,1.0]), #Wing taper for each section
-    "sec_span":np.array([1.0,1.0]), #Wing span for each section
-    "sec_sweep":np.array([0.0,0.0]), #Wing sweep for each section
-    "sec_chord_cp": [np.array([1,1]),np.array([1,1])],
-    #"sec_chord_cp": [np.ones(1),2*np.ones(1),3*np.ones(1)], #Chord B-spline control points for each section
+    "taper": [1.0,1.0], #Wing taper for each section
+    "span":[1.0,1.0], #Wing span for each section
+    "sweep":[0.0,0.0], #Wing sweep for each section
+    "chord_cp": [np.array([1,1]),np.array([1,1])],
+    "twist_cp": [np.zeros(2),np.zeros(2)],
+    #"chord_cp": [np.ones(1),2*np.ones(1),3*np.ones(1)], #Chord B-spline control points for each section
     "root_chord" : 1.0, #Wing root chord for each section
 
     #Mesh Parameters
     "meshes": "gen-meshes", #Supply a mesh for each section or "gen-meshes" for automatic mesh generation
     "nx" : 2, #Number of chordwise points. Same for all sections
-    "sec_ny" : np.array([2,2]), #Number of spanwise points for each section
+    "ny" : [21,21], #Number of spanwise points for each section
     
     #Aerodynamic Parameters
-    "sec_CL0": np.array([0.0,0.0]),  # CL of the surface at alpha=0
-    "sec_CD0": np.array([0.015,0.015]),  # CD of the surface at alpha=0
+    "CL0": [0.0,0.0],  # CL of the surface at alpha=0
+    "CD0": [0.015,0.015],  # CD of the surface at alpha=0
     # Airfoil properties for viscous drag calculation
     "k_lam": 0.05,  # percentage of chord with laminar
     # flow, used for viscous drag
-    "sec_t_over_c_cp": [np.array([0.15]),np.array([0.15])],  # thickness over chord ratio (NACA0015)
-    "sec_c_max_t": [0.303,0.303],  # chordwise location of maximum (NACA0015)
+    #"t_over_c_cp": [np.array([0.15]),np.array([0.15])],  # thickness over chord ratio (NACA0015)
+    "c_max_t": [0.303,0.303],  # chordwise location of maximum (NACA0015)
     # thickness
     "with_viscous": False,  # if true, compute viscous drag
     "with_wave": False,  # if true, compute wave drag
@@ -81,7 +81,7 @@ uniMesh = unify_mesh(section_surfaces)
 
 # Create the aero point group, which contains the actual aerodynamic
 # analyses
-aero_group = AeroPoint(surfaces=section_surfaces,multiSection=True,unifiedMesh=uniMesh)
+aero_group = AeroPoint(surfaces=section_surfaces,multiSection=True,msSurfName=surface["name"],unifiedMesh=uniMesh)
 point_name = "aero_point_0"
 prob.model.add_subsystem(
     point_name, aero_group, promotes_inputs=["v", "alpha", "Mach_number", "re", "rho", "cg"]
@@ -110,6 +110,8 @@ prob.model.add_constraint('surface.surface_joining.section_separation',upper=0,l
 
 #Add CL constraint
 prob.model.add_constraint(point_name +'.CL',equals=0.3)
+
+#prob.model.add_constraint(point_name+'.CM',equals=-0.074,indices=[1])
 
 #Add Area constraint
 prob.model.add_constraint(point_name + '.total_perf.S_ref_total',equals=2.0)
@@ -155,7 +157,7 @@ def plot_meshes(meshes):
     plt.xlabel('y (m)')
     plt.ylabel('x (m)')
     #plt.legend()
+    #plt.savefig('opt_planform_constrained.pdf')
 
-plot_meshes([mesh1,mesh2])
-#plot_meshes([meshUni])
+plot_meshes([meshUni])
 plt.show()

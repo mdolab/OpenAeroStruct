@@ -33,6 +33,11 @@ class AeroPoint(om.Group):
             desc="Set to True to turn on support for multi section surfaces"
         )
         self.options.declare(
+            "msSurfName",
+            types=str,
+            desc="Name of the multi section surface."
+        )
+        self.options.declare(
             "unifiedMesh",
             types=np.ndarray,
             desc="Provide a unified mesh if multiSection is enabled."
@@ -45,18 +50,45 @@ class AeroPoint(om.Group):
 
         #If multisection mesh then build a single surface with the unified mesh data
         if multiSurface:
-            surf_name = "surface"
+            surf_name = self.options["msSurfName"]
             uniMesh = self.options["unifiedMesh"]
+
+            target_keys = [
+                #Essential Info
+                "symmetry",
+                "S_ref_type",
+                "ref_axis_pos",
+                # aerodynamics
+                "CL0",
+                "CD0",
+                "with_viscous",
+                "with_wave",
+                "groundplane",
+                "k_lam",
+                "t_over_c_cp",
+                "c_max_t",
+            ]
+
+
+            surface = {}
+            for k in set(surfaces[0]).intersection(target_keys):
+                surface[k] = surfaces[0][k]
+
+            surface["name"] = surf_name
+            surface["mesh"] = uniMesh
+
+
+            '''
             # Define input surface dictionary for our wing
             surface = {
                 # Wing definition
                 "name": surf_name,  # name of the surface
-                "symmetry": surfaces[0]["symmetry"],  # if true, model one half of wing
-                # reflected across the plane y = 0
+                "symmetry": surfaces[0]["symmetry"],  # if true, model one half of wing reflected across the plane y = 0
                 "S_ref_type": surfaces[0]["S_ref_type"],  # how we compute the wing area,
+                "ref_axis_pos" : surfaces[0]["ref_axis_pos"],
                 "mesh": uniMesh,
-                "CL0": 0.0,  # CL of the surface at alpha=0
-                "CD0": 0.0,  # CD of the surface at alpha=0
+                "CL0": surfaces[0]["CL0"],  # CL of the surface at alpha=0
+                "CD0": surfaces[0]["CD0"],  # CD of the surface at alpha=0
                 # Airfoil properties for viscous drag calculation
                 "k_lam": surfaces[0]["k_lam"],  # percentage of chord with laminar
                 "c_max_t": surfaces[0]["c_max_t"],  # chordwise location of maximum (NACA0015)
@@ -64,8 +96,9 @@ class AeroPoint(om.Group):
                 # thickness
                 "with_viscous": surfaces[0]["with_viscous"],  # if true, compute viscous drag,
                 "with_wave": surfaces[0]["with_wave"],
+                "groundplane": surfaces[0]["groundplane"],
             }  # end of surface dictionary
-
+            '''
             surfaces = []
             surfaces.append(surface)
 

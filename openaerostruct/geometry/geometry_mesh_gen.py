@@ -38,12 +38,12 @@ def generateMesh(
             rootSection = surface["rootSection"]
             
     #Geometry data dictionary
-    sectionData = {'taper':surface["sec_taper"],'sweep':surface["sec_sweep"],'span':surface["sec_span"],'rootChord':surface["root_chord"]}
+    sectionData = {'taper':surface["taper"],'sweep':surface["sweep"],'span':surface["span"],'rootChord':surface["root_chord"]}
 
     if 'bPanels' in surface.keys():
         ny = surface['bPanels'] + 1
     else:
-        ny = surface['sec_ny']
+        ny = surface['ny']
 
     if 'cPanels' in surface.keys():
         nx = surface['cPanels'] + 1

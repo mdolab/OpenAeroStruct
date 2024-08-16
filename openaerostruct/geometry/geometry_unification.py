@@ -167,8 +167,8 @@ class GeomMultiUnification(om.ExplicitComponent):
             #Fill non zero Jacobian entries with ones
             data = np.ones_like(rows)
 
-            self.declare_partials(uni_mesh_name, mesh_name, val=data, rows=rows, cols=cols)
-            #self.declare_partials(uni_mesh_name, mesh_name, method='cs')
+            #self.declare_partials(uni_mesh_name, mesh_name, val=data, rows=rows, cols=cols)
+            self.declare_partials(uni_mesh_name, mesh_name, method='fd')
     
         self.add_output(uni_mesh_name, shape=(uni_nx, uni_ny, 3), units="m")
 
@@ -225,6 +225,7 @@ class GeomMultiUnification(om.ExplicitComponent):
                     uni_t_over_c = inputs[t_over_c_name]
                 else:
                     uni_t_over_c = np.concatenate([uni_t_over_c,t_over_c])
+            outputs[uni_tc_name] = uni_t_over_c
         
         outputs[uni_mesh_name] = uniMesh
-        outputs[uni_tc_name] = uni_t_over_c
+        
