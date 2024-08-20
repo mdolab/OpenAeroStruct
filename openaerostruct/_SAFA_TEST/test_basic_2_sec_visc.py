@@ -5,13 +5,16 @@ import openmdao.api as om
 from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.geometry.geometry_group import MultiSecGeometry
 from openaerostruct.aerodynamics.aero_groups import AeroPoint
-import openaerostruct.geometry.geometry_multi_sec_mesh as multiMesh
 from openaerostruct.geometry.geometry_group import build_sections
 from openaerostruct.geometry.geometry_unification import unify_mesh
+from openaerostruct.geometry.multi_unified_bspline_utils import build_multi_spline, connect_multi_spline
 import matplotlib.pyplot as plt
-import niceplots
 
-plt.style.use(niceplots.get_style("doumont-light"))
+
+#Set-up B-splines for each section. Done here since this information will be needed multiple times.
+sec_chord_cp = [np.array([1,1]),np.array([1.0,0.2])]
+
+
 # Create a dictionary with info and options about the multi-section aerodynamic
 # lifting surface
 surface = {
@@ -19,37 +22,38 @@ surface = {
 
     #Basic surface parameters
     "name":"surface",
-    "num_sections": 3, #The number of sections in the multi-section surface
-    "sec_name": ["sec0","sec1","sec2"],  # names of the individual sections
+    "isMultiSection":True,
+    "num_sections": 2, #The number of sections in the multi-section surface
+    "sec_name": ["sec0","sec1"],  # names of the individual sections
     "symmetry": True,  # if true, model one half of wing. reflected across the midspan of the root section
     "S_ref_type": "wetted",  # how we compute the wing area,
     # can be 'wetted' or 'projected'
 
 
     #Geometry Parameters
-    "taper": [1.0,1.0,1.0], #Wing taper for each section
-    "span":[1.0,1.0,1.0], #Wing span for each section
-    "sweep":[0.0,0.0,0.0], #Wing sweep for each section
-    "chord_cp": [np.array([0.5,0.1]),np.array([1,1]),np.array([1,0.5])],
-    "twist_cp": [np.zeros(2),np.zeros(2),np.zeros(2)],
+    "taper": [1.0,1.0], #Wing taper for each section
+    "span":[1.0,1.0], #Wing span for each section
+    "sweep":[0.0,0.0], #Wing sweep for each section
+    "chord_cp": sec_chord_cp, #Use previously set-up B-spline
+    "twist_cp": [np.zeros(2),np.zeros(2)],
     #"sec_chord_cp": [np.ones(1),2*np.ones(1),3*np.ones(1)], #Chord B-spline control points for each section
     "root_chord" : 1.0, #Wing root chord for each section
 
     #Mesh Parameters
     "meshes": "gen-meshes", #Supply a mesh for each section or "gen-meshes" for automatic mesh generation
-    "nx" : 5, #Number of chordwise points. Same for all sections
-    "ny" : [21,21,21], #Number of spanwise points for each section
+    "nx" : 3, #Number of chordwise points. Same for all sections
+    "ny" : [21,21], #Number of spanwise points for each section
     
     #Aerodynamic Parameters
-    "CL0": [0.0,0.0,0.0],  # CL of the surface at alpha=0
-    "CD0": [0.0,0.0,0.0],  # CD of the surface at alpha=0
+    "CL0": 0.0,  # CL of the surface at alpha=0
+    "CD0": 0.015,  # CD of the surface at alpha=0
     # Airfoil properties for viscous drag calculation
     "k_lam": 0.05,  # percentage of chord with laminar
     # flow, used for viscous drag
-    "t_over_c_cp": [np.array([0.15]),np.array([0.15]),np.array([0.15])],  # thickness over chord ratio (NACA0015)
-    "c_max_t": [0.303,0.303,0.303],  # chordwise location of maximum (NACA0015)
+    "t_over_c_cp": [np.array([0.15]),np.array([0.15])],  # thickness over chord ratio (NACA0015)
+    "c_max_t": 0.303,  # chordwise location of maximum (NACA0015) 
     # thickness
-    "with_viscous": False,  # if true, compute viscous drag
+    "with_viscous": True,  # if true, compute viscous drag
     "with_wave": False,  # if true, compute wave drag
     "groundplane":False,
 }
@@ -70,19 +74,30 @@ indep_var_comp.add_output("cg", val=np.zeros((3)), units="m")
 # Add this IndepVarComp to the problem model
 prob.model.add_subsystem("prob_vars", indep_var_comp, promotes=["*"])
 
-# Create and add a group that handles the geometry for the
-# aerodynamic lifting surface
-multi_geom_group = MultiSecGeometry(surface=surface,joining_comp=True,dim_constr=[np.array([1,0,0]),np.array([1,0,0]),np.array([1,0,0])])
-prob.model.add_subsystem(surface["name"], multi_geom_group)
 
-#Generate the sections and unified mesh here in addition to adding the components. 
-#This has to ALSO be done here since AeroPoint has to know the unified mesh size.
+#Generate the sections and unified mesh here. It's needed to join the sections by construction.
 section_surfaces = build_sections(surface)
 uniMesh = unify_mesh(section_surfaces)
+surface["mesh"] = uniMesh
+
+#Build a component with B-spline control points that joins the sections by construction
+chord_comp = build_multi_spline('chord_cp',len(section_surfaces),sec_chord_cp)
+prob.model.add_subsystem(
+    'chord_bspline', chord_comp
+)
+
+#Connect the B-spline component to the section B-splines
+connect_multi_spline(prob,section_surfaces,sec_chord_cp,'chord_cp','chord_bspline')
+
+# Create and add a group that handles the geometry for the
+# aerodynamic lifting surface
+multi_geom_group = MultiSecGeometry(surface=surface)
+prob.model.add_subsystem(surface["name"], multi_geom_group)
+
 
 # Create the aero point group, which contains the actual aerodynamic
 # analyses
-aero_group = AeroPoint(surfaces=section_surfaces,multiSection=True,unifiedMesh=uniMesh,msSurfName=surface["name"])
+aero_group = AeroPoint(surfaces=[surface])
 point_name = "aero_point_0"
 prob.model.add_subsystem(
     point_name, aero_group, promotes_inputs=["v", "alpha", "Mach_number", "re", "rho", "cg"]
@@ -102,14 +117,11 @@ prob.model.connect(name + "." + unification_name + "." + name + "_uni_mesh", poi
 #Connect t over c B-spline for viscous drag
 prob.model.connect(name + "." + unification_name + "." + name + "_uni_t_over_c", point_name + "." + name + "_perf." + "t_over_c")
 
-prob.model.add_design_var("surface.sec0.chord_cp", lower=0.1, upper=10.0, units=None)
-prob.model.add_design_var("surface.sec1.chord_cp", lower=0.1, upper=10.0, units=None)
-#prob.model.add_design_var("surface.sec2.chord_cp", lower=0.1, upper=10.0, units=None)
+
+#Add DVs
+prob.model.add_design_var("chord_bspline.chord_cp_spline", lower=0.1, upper=10.0, units=None)
 prob.model.add_design_var("alpha", lower=0.0, upper=10.0, units='deg')
 
-#Add joined mesh constraint
-#prob.model.add_constraint('surface.surface_joining.section_separation',upper=0,lower=0)
-prob.model.add_constraint('surface.surface_joining.section_separation',equals=0.0)
 
 #Add CL constraint
 prob.model.add_constraint(point_name +'.CL',equals=0.3)
@@ -120,35 +132,23 @@ prob.model.add_constraint(point_name + '.total_perf.S_ref_total',equals=2.0)
 #Add objective
 prob.model.add_objective(point_name + ".CD", scaler=1e4)
 
-'''
 prob.driver = om.ScipyOptimizeDriver()
 prob.driver.options['optimizer'] = 'SLSQP'
 prob.driver.options['tol'] = 1e-3
 prob.driver.options['disp'] = True
 prob.driver.options['maxiter'] = 1000
-prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
-'''
-
-prob.driver = om.pyOptSparseDriver()
-prob.driver.options['optimizer'] = 'SNOPT'
-prob.driver.opt_settings['Major feasibility tolerance'] = 1e-3
-#prob.driver.opt_settings['ACC'] = 1e-3
-#prob.driver.options['disp'] = True
-#prob.driver.opt_settings['MAXIT'] = 1000
-prob.driver.opt_settings['Major iterations limit'] = 1000
-prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
+prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"] 
 
 # Set up and run the optimization problem
 prob.setup()
 #prob.run_model()
-
 prob.run_driver()
-om.n2(prob)
+#om.n2(prob)
+
 
 
 mesh1 = prob.get_val("surface.sec0.mesh", units="m")
 mesh2 = prob.get_val("surface.sec1.mesh", units="m")
-mesh3 = prob.get_val("surface.sec2.mesh", units="m")
 
 meshUni = prob.get_val(name + "." + unification_name + "." + name + "_uni_mesh")
 
@@ -168,51 +168,9 @@ def plot_meshes(meshes):
     plt.axis('equal')
     plt.xlabel('y (m)')
     plt.ylabel('x (m)')
-    plt.savefig('figure2.png')
-    plt.savefig('figure2.pdf')
     #plt.legend()
-  
+    #plt.savefig('opt_planform_construction.png')
 
-plot_meshes([mesh1,mesh2,mesh3])
-
-
-
-# ---------------------------------
-# plot spanwise lift distribution
-# ---------------------------------
-# get spanwise coordinate, chord length, and sectional lift coefficient
-mesh = prob.get_val(point_name + ".surface.def_mesh", units="m")
-y_vertices = mesh[0, :, 1]   # spanwise coordinate of VLM panel vertices
-y_center = 0.5 * (y_vertices[:-1] + y_vertices[1:])   # spanwise coordinate of VLM panel centers
-Cl = prob.get_val(point_name + ".surface_perf.Cl")   # sectional lift coefficient
-chord_edge = prob.get_val(point_name + ".surface.chords", units="m")   # chord length at panel edges
-chord_center = 0.5 * (chord_edge[:-1] + chord_edge[1:])   # chord length at panel centers
-
-# concatenate the other side of symmetric wing
-x_center = np.concatenate((y_center, -y_center[::-1]))
-chord_center = np.concatenate((chord_center, chord_center[::-1]))
-Cl = np.concatenate((Cl, Cl[::-1]))
-
-# compute reference elliptical lift distribution
-CL = prob.get_val(point_name + ".surface_perf.CL")[0]   # CL of the total wing
-Sref = prob.get_val(point_name + ".surface_perf.S_ref", units="m**2")[0]   # wing area
-semi_span = mesh[0, -1, 1] - mesh[0, 0, 1]   # wing semi-span
-cl_chord_max = 2 * CL * Sref / (np.pi * semi_span)   # Cl * chord at the center of elliptical lift distribution (based on the area of ellipse = 2 * CL * S)
-# smooth line for elliptical lift distribution
-y_ellipse = np.linspace(-semi_span, semi_span, 100)
-Cl_chord_ellipse = cl_chord_max * np.sqrt(1 - (y_ellipse / semi_span) ** 2)
-
-# plot lift distribution
-plt.figure(figsize=(8, 4))
-plt.plot(x_center, Cl * chord_center, color="C0", lw=2,label="Optimized Wing")
-plt.plot(y_ellipse, Cl_chord_ellipse, color="C1", lw=1,label="Elliptical")
-plt.xlabel("y (m)")
-plt.ylabel("$C_{l}c(y)$")
-#plt.grid()
-plt.legend()
-
-plt.savefig("lift_distribution_optimized.png", bbox_inches="tight")
-
-
-#plot_meshes([meshUni])
+#plot_meshes([mesh1,mesh2])
+plot_meshes([meshUni])
 plt.show()

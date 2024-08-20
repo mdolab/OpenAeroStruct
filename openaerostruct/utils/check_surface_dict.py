@@ -93,6 +93,7 @@ def check_multi_sec_surface_dict_keys(surface):
     keys_implemented = [
         # wing definition
         "name",
+        "isMultiSection",
         "num_sections",
         "sec_name",
         "symmetry",

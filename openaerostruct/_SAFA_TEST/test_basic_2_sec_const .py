@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 sec_chord_cp = [np.array([1,1]),np.array([1.0,0.2])]
 
 
-
 # Create a dictionary with info and options about the multi-section aerodynamic
 # lifting surface
 surface = {
@@ -23,6 +22,7 @@ surface = {
 
     #Basic surface parameters
     "name":"surface",
+    "isMultiSection":True,
     "num_sections": 2, #The number of sections in the multi-section surface
     "sec_name": ["sec0","sec1"],  # names of the individual sections
     "symmetry": True,  # if true, model one half of wing. reflected across the midspan of the root section
@@ -34,7 +34,7 @@ surface = {
     "taper": [1.0,1.0], #Wing taper for each section
     "span":[1.0,1.0], #Wing span for each section
     "sweep":[0.0,0.0], #Wing sweep for each section
-    "chord_cp": sec_chord_cp,
+    "chord_cp": sec_chord_cp, #Use previously set-up B-spline
     "twist_cp": [np.zeros(2),np.zeros(2)],
     #"sec_chord_cp": [np.ones(1),2*np.ones(1),3*np.ones(1)], #Chord B-spline control points for each section
     "root_chord" : 1.0, #Wing root chord for each section
@@ -45,13 +45,12 @@ surface = {
     "ny" : [21,21], #Number of spanwise points for each section
     
     #Aerodynamic Parameters
-    "CL0": [0.0,0.0],  # CL of the surface at alpha=0
-    "CD0": [0.015,0.015],  # CD of the surface at alpha=0
+    "CL0": 0.0,  # CL of the surface at alpha=0
+    "CD0": 0.015,  # CD of the surface at alpha=0
     # Airfoil properties for viscous drag calculation
-    "k_lam": 0.05,  # percentage of chord with laminar
+   "k_lam": 0.05,  # percentage of chord with laminar
     # flow, used for viscous drag
-    #"sec_t_over_c_cp": [np.array([0.15]),np.array([0.15])],  # thickness over chord ratio (NACA0015)
-    "c_max_t": [0.303,0.303],  # chordwise location of maximum (NACA0015)
+    "c_max_t": 0.303,  # chordwise location of maximum (NACA0015) 
     # thickness
     "with_viscous": False,  # if true, compute viscous drag
     "with_wave": False,  # if true, compute wave drag
@@ -78,7 +77,7 @@ prob.model.add_subsystem("prob_vars", indep_var_comp, promotes=["*"])
 #Generate the sections and unified mesh here. It's needed to join the sections by construction.
 section_surfaces = build_sections(surface)
 uniMesh = unify_mesh(section_surfaces)
-
+surface["mesh"] = uniMesh
 
 #Build a component with B-spline control points that joins the sections by construction
 chord_comp = build_multi_spline('chord_cp',len(section_surfaces),sec_chord_cp)
@@ -97,7 +96,7 @@ prob.model.add_subsystem(surface["name"], multi_geom_group)
 
 # Create the aero point group, which contains the actual aerodynamic
 # analyses
-aero_group = AeroPoint(surfaces=section_surfaces,multiSection=True,msSurfName=surface["name"],unifiedMesh=uniMesh)
+aero_group = AeroPoint(surfaces=[surface])
 point_name = "aero_point_0"
 prob.model.add_subsystem(
     point_name, aero_group, promotes_inputs=["v", "alpha", "Mach_number", "re", "rho", "cg"]
@@ -113,10 +112,6 @@ prob.model.connect(name + "." + unification_name + "." + name + "_uni_mesh", poi
 # Perform the connections with the modified names within the
 # 'aero_states' group.
 prob.model.connect(name + "." + unification_name + "." + name + "_uni_mesh", point_name + ".aero_states." + "surface" + "_def_mesh")
-
-
-#prob.model.connect(name + "." + unification_name + "." + name + "_uni_t_over_c", point_name + "." + name + "_perf." + "t_over_c")
-
 
 #Add DVs
 prob.model.add_design_var("chord_bspline.chord_cp_spline", lower=0.1, upper=10.0, units=None)

@@ -18,6 +18,7 @@ surface = {
 
     #Basic surface parameters
     "name":"surface",
+    "isMultiSection":True,
     "num_sections": 3, #The number of sections in the multi-section surface
     "sec_name": ["sec0","sec1","sec2"],  # names of the individual sections
     "symmetry": True,  # if true, model one half of wing. reflected across the midspan of the root section
@@ -40,13 +41,13 @@ surface = {
     "ny" : [3,3,3], #Number of spanwise points for each section
     
     #Aerodynamic Parameters
-    "CL0": [0.0,0.0,0.0],  # CL of the surface at alpha=0
-    "CD0": [0.015,0.015,0.015],  # CD of the surface at alpha=0
+    "CL0": 0.0,  # CL of the surface at alpha=0
+    "CD0": 0.015,  # CD of the surface at alpha=0
     # Airfoil properties for viscous drag calculation
     "k_lam": 0.05,  # percentage of chord with laminar
     # flow, used for viscous drag
     "t_over_c_cp": [np.array([0.15]),np.array([0.15]),np.array([0.15])],  # thickness over chord ratio (NACA0015)
-    "c_max_t": [0.303,0.303,0.303],  # chordwise location of maximum (NACA0015)
+    "c_max_t": 0.303,  # chordwise location of maximum (NACA0015)
     # thickness
     "with_viscous": False,  # if true, compute viscous drag
     "with_wave": False,  # if true, compute wave drag
@@ -78,10 +79,11 @@ prob.model.add_subsystem(surface["name"], multi_geom_group)
 #This has to ALSO be done here since AeroPoint has to know the unified mesh size.
 section_surfaces = build_sections(surface)
 uniMesh = unify_mesh(section_surfaces)
+surface["mesh"] = uniMesh
 
 # Create the aero point group, which contains the actual aerodynamic
 # analyses
-aero_group = AeroPoint(surfaces=section_surfaces,multiSection=True,msSurfName=surface["name"],unifiedMesh=uniMesh)
+aero_group = AeroPoint(surfaces=[surface])
 point_name = "aero_point_0"
 prob.model.add_subsystem(
     point_name, aero_group, promotes_inputs=["v", "alpha", "Mach_number", "re", "rho", "cg"]

@@ -233,7 +233,8 @@ def build_sections(surface):
     if len(surface["sec_name"]) != num_sections:
             raise ValueError("A name needs to be provided for each section.")
     
-     # NOTE: make sure this is consistent to the documentation's surface dict page
+    # List of support keys for multi-section wings
+    # NOTE: make sure this is consistent to the documentation's surface dict page
     target_keys = [
         #Essential Info
         "num_section",
@@ -261,8 +262,8 @@ def build_sections(surface):
         "c_max_t",
     ]
 
+    #Constructs a list of section dictionaries and adds the specified supported keys and values from the mult-section surface dictionary.
     surface_sections = []
-
     num_sections = surface["num_sections"]
 
     for i in range(num_sections):
@@ -275,30 +276,6 @@ def build_sections(surface):
         section["mesh"] = sec_meshes[i]
         section["name"] = surface["sec_name"][i]
         surface_sections.append(section)
-    """ section_surfaces = []
-    for i in range(num_sections):
-        section = {
-            "name": surface["sec_name"][i],  # name of the surface
-            "symmetry": surface["symmetry"],  
-            "S_ref_type": surface["S_ref_type"], 
-            "mesh": sec_meshes[i],
-            "span":surface["sec_span"][i],
-            "taper":surface["sec_taper"][i],
-            "sweep":surface["sec_sweep"][i],
-            "chord_cp": surface["sec_chord_cp"][i],
-            "twist_cp": surface["sec_twist_cp"][i],  
-            "ref_axis_pos": 0.25, 
-            "CL0": surface["sec_CL0"][i], 
-            "CD0": surface["sec_CD0"][i], 
-            "k_lam": surface["k_lam"], 
-            #"t_over_c_cp": surface["sec_t_over_c_cp"][i], 
-            "c_max_t": surface["sec_c_max_t"][i],  
-            "with_viscous": surface["with_viscous"], 
-            "with_wave": surface["with_wave"],
-            "groundplane": surface["groundplane"],
-        }  # end of surface dictionary
-
-        section_surfaces.append(section) """
     return surface_sections
 
 class MultiSecGeometry(om.Group):
@@ -349,7 +326,7 @@ class MultiSecGeometry(om.Group):
             self.connect('{}.mesh'.format(sec_name),'{}.{}_def_mesh'.format(unification_name,sec_name))
 
         #Connect each section t over c B-spline to t over c unification component if needed
-        if "sec_t_over_c_cp" in surface.keys():
+        if "t_over_c_cp" in surface.keys():
             for sec_name in section_names: 
                 self.connect('{}.t_over_c'.format(sec_name),'{}.{}_t_over_c'.format(unification_name,sec_name))
 
