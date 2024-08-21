@@ -134,7 +134,7 @@ prob.setup()
 
 #prob.run_model()
 prob.run_driver()
-#om.n2(prob)
+om.n2(prob)
 
 
 mesh1 = prob.get_val("surface.sec0.mesh", units="m")
