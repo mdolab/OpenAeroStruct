@@ -59,7 +59,7 @@ class AeroPoint(om.Group):
                 aeroSurface = {}
                 for k in set(surface).intersection(target_keys):
                     aeroSurface[k] = surface[k]
-
+                print(aeroSurface["name"])
                 surfaces[i] = copy.deepcopy(aeroSurface)
 
 
