@@ -103,7 +103,7 @@ def check_surface_dict_keys(surface):
         for key in compositeInputs:
             if key not in surface.keys():
                 raise ValueError(
-                    f"Key `{}` not found in surface dict, when `useComposite` is True, the following keys must be present: {compositeInputs}",
+                    f"{key} not found in surface dict, when `useComposite` is True, the following keys must be present: {compositeInputs}",
                 )
 
     # check2: if useComposite is True, then 'fem_model_type' must be 'wingbox'
@@ -124,5 +124,5 @@ def check_surface_dict_keys(surface):
         plyFracSum = sum(surface["ply_fractions"])
         if abs(plyFracSum - 1) > 1e-2:
             raise ValueError(
-                f"Sum of `ply_fractions` ({surface["ply_fractions"]}) is {plyFracSum} must be 1.",
+                f"Sum of `ply_fractions` ({surface['ply_fractions']}) is {plyFracSum} must be 1.",
             )
