@@ -126,9 +126,7 @@ class WaveDrag(om.ExplicitComponent):
                 ccos = np.sum(widths * panel_mid_chords)
                 ccos2w = np.sum(panel_mid_chords * widths**2 / lengths_spanwise)
 
-                davgdcos = (
-                    2 * panel_mid_chords * widths / lengths_spanwise / ccos - panel_mid_chords * ccos2w / ccos**2
-                )
+                davgdcos = 2 * panel_mid_chords * widths / lengths_spanwise / ccos - panel_mid_chords * ccos2w / ccos**2
                 dtocdcos = (
                     panel_mid_chords * t_over_c / ccos
                     - panel_mid_chords * np.sum(panel_mid_chords * widths * t_over_c) / ccos**2
