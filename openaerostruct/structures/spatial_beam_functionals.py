@@ -42,7 +42,6 @@ class SpatialBeamFunctionals(om.Group):
             )
 
         elif surface["fem_model_type"] == "wingbox":
-
             if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
                 self.add_subsystem(
                     "tsaiwu_sr",
