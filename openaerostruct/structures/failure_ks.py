@@ -21,12 +21,9 @@ class FailureKS(om.ExplicitComponent):
 
     parameters
     ----------
-    for Isotropic structures:
-    vonmises[ny-1, 2] : numpy array
+    vonmises : ny-1 x 2 numpy array
         von Mises stress magnitudes for each FEM element.
-
-    for Composite wingbox:
-    tsaiwu_sr[ny-1, 4 * numofplies] : numpy array
+    tsaiwu_sr : ny-1 x 4 * numofplies numpy array
         Tsai-Wu strength ratios for each FEM element (ply at each critical element).
 
     Returns
@@ -35,8 +32,7 @@ class FailureKS(om.ExplicitComponent):
         KS aggregation quantity obtained by combining the failure criteria
         for each FEM node. Used to simplify the optimization problem by
         reducing the number of constraints. This entity is defined for either
-        failure criteria, vonmises or tsaiwu_sr. # TODO: check this
-
+        failure criteria, vonmises or tsaiwu_sr.
     """
 
     def initialize(self):
