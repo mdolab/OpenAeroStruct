@@ -44,29 +44,41 @@ class SpatialBeamFunctionals(om.Group):
         elif surface["fem_model_type"] == "wingbox":
 
             if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
-                subsystemname = "tsaiwu_sr"
-                promotedoutput = "tsaiwu_sr"
+                self.add_subsystem(
+                    "tsaiwu_sr",
+                    TsaiWuWingbox(surface=surface),
+                    promotes_inputs=[
+                        "Qz",
+                        "J",
+                        "A_enc",
+                        "spar_thickness",
+                        "htop",
+                        "hbottom",
+                        "hfront",
+                        "hrear",
+                        "nodes",
+                        "disp",
+                    ],
+                    promotes_outputs=["tsaiwu_sr"],
+                )
             else:  # using the Isotropic wingbox
-                subsystemname = "vonmises"
-                promotedoutput = "vonmises"
-
-            self.add_subsystem(
-                subsystemname,
-                TsaiWuWingbox(surface=surface),
-                promotes_inputs=[
-                    "Qz",
-                    "J",
-                    "A_enc",
-                    "spar_thickness",
-                    "htop",
-                    "hbottom",
-                    "hfront",
-                    "hrear",
-                    "nodes",
-                    "disp",
-                ],
-                promotes_outputs=[promotedoutput],
-            )
+                self.add_subsystem(
+                    "vonmises",
+                    VonMisesWingbox(surface=surface),
+                    promotes_inputs=[
+                        "Qz",
+                        "J",
+                        "A_enc",
+                        "spar_thickness",
+                        "htop",
+                        "hbottom",
+                        "hfront",
+                        "hrear",
+                        "nodes",
+                        "disp",
+                    ],
+                    promotes_outputs=["vonmises"],
+                )
         else:
             raise NameError("Please select a valid `fem_model_type` from either `tube` or `wingbox`.")
 
@@ -78,22 +90,23 @@ class SpatialBeamFunctionals(om.Group):
 
         if surface["exact_failure_constraint"]:
             if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
-                self.add_subsystem(
-                    "failure",
-                    FailureExact(surface=surface),
-                    promotes_inputs=["tsaiwu_sr"],
-                    promotes_outputs=["failure"],
-                )
+                promotedinput = "tsaiwu_sr"
             else:  # using the Isotropic structures
-                self.add_subsystem(
-                    "failure", FailureExact(surface=surface), promotes_inputs=["vonmises"], promotes_outputs=["failure"]
-                )
+                promotedinput = "vonmises"
+
+            self.add_subsystem(
+                "failure",
+                FailureExact(surface=surface),
+                promotes_inputs=[promotedinput],
+                promotes_outputs=["failure"],
+            )
+
         else:
             if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
-                self.add_subsystem(
-                    "failure", FailureKS(surface=surface), promotes_inputs=["tsaiwu_sr"], promotes_outputs=["failure"]
-                )
-            else:
-                self.add_subsystem(
-                    "failure", FailureKS(surface=surface), promotes_inputs=["vonmises"], promotes_outputs=["failure"]
-                )
+                promotedinput = "tsaiwu_sr"
+            else:  # using the Isotropic structures
+                promotedinput = "vonmises"
+
+            self.add_subsystem(
+                "failure", FailureKS(surface=surface), promotes_inputs=[promotedinput], promotes_outputs=["failure"]
+            )
