@@ -36,7 +36,6 @@ Please review these at a minimum to understand how aerodynamic, structural, and 
    aero_walkthrough.rst
    struct_example.rst
    aerostructural_index.rst
-   composites_walkthrough.rst
 
 
 Advanced Features
