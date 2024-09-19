@@ -56,17 +56,17 @@ class FailureKS(om.ExplicitComponent):
                 num_failure_criteria = 4
 
         self.ny = surface["mesh"].shape[1]
+        self.safety_factor = surface["safety_factor"]
 
         if self.useComposite:
             self.add_input("tsaiwu_sr", val=np.zeros((self.ny - 1, num_failure_criteria)), units=None)
-            self.composite_safety_factor = surface["composite_safety_factor"]
-            self.srlimit = 1 / self.composite_safety_factor
+            self.srlimit = 1 / self.safety_factor
 
         else:
             self.add_input("vonmises", val=np.zeros((self.ny - 1, num_failure_criteria)), units="N/m**2")
 
         self.add_output("failure", val=0.0)
-        self.sigma = surface["yield"]
+        self.sigma = surface["yield"] / self.safety_factor
         self.rho = rho
 
         self.declare_partials("*", "*")

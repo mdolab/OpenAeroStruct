@@ -38,12 +38,13 @@ class FailureExact(om.ExplicitComponent):
         elif surface["fem_model_type"] == "wingbox":
             if self.useComposite:  # using the Composite wingbox
                 num_failure_criteria = 4 * numofplies  # 4 critical elements * number of plies
-                self.srlimit = 1 / surface["composite_safety_factor"]
+                self.srlimit = 1 / surface["safety_factor"]
             else:  # using the Isotropic wingbox
                 num_failure_criteria = 4
 
         self.ny = surface["mesh"].shape[1]
-        self.sigma = surface["yield"]
+        self.safety_factor = surface["safety_factor"]
+        self.sigma = surface["yield"] / self.safety_factor
 
         if self.useComposite:  # using the Composite wingbox
             self.add_input("tsaiwu_sr", val=np.zeros((self.ny - 1, num_failure_criteria)), units=None)

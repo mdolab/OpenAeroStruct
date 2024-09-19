@@ -295,7 +295,8 @@ class Test(unittest.TestCase):
             # Structural values are based on aluminum 7075
             "E": 73.1e9,  # [Pa] Young's modulus
             "G": (73.1e9 / 2 / 1.33),  # [Pa] shear modulus (calculated using E and the Poisson's ratio here)
-            "yield": (420.0e6 / 1.5),  # [Pa] allowable yield stress
+            "yield": 420.0e6,  # [Pa] yield stress
+            "safety_factor": 1.5,  # safety factor
             "mrho": 1550,  # [kg/m^3] material density #NOTE: CFRP density
             "strength_factor_for_upper_skin": 1.0,  # the yield stress is multiplied by this factor for the upper skin
             # 'fem_origin' : 0.35,    # normalized chordwise location of the spar
@@ -306,7 +307,7 @@ class Test(unittest.TestCase):
             "exact_failure_constraint": False,  # if false, use KS function
             "Wf_reserve": 15000.0,  # [kg] reserve fuel mass
             "useComposite": True,
-            "composite_safety_factor": 1.5,
+            "safety_factor": 1.5,
             "ply_angles": [0, 45, -45, 90],
             "ply_fractions": [0.10, 0.25, 0.25, 0.40],
             "E1": 117.7e9,

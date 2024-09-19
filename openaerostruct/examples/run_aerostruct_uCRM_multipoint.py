@@ -87,7 +87,8 @@ surf_dict = {
     # Structural values are based on aluminum 7075
     "E": 73.1e9,  # [Pa] Young's modulus
     "G": (73.1e9 / 2 / 1.33),  # [Pa] shear modulus (calculated using E and the Poisson's ratio here)
-    "yield": (420.0e6 / 1.5),  # [Pa] allowable yield stress
+    "yield": 420.0e6,  # [Pa] yield stress
+    "safety_factor": 1.5,  # safety factor
     "mrho": 2.78e3,  # [kg/m^3] material density
     "strength_factor_for_upper_skin": 1.0,  # the yield stress is multiplied by this factor for the upper skin
     "wing_weight_ratio": 1.25,

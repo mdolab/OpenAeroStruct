@@ -43,6 +43,7 @@ def check_surface_dict_keys(surface):
         "E",
         "G",
         "yield",
+        "safety_factor",
         "mrho",
         "fem_origin",
         "wing_weight_ratio",
@@ -72,7 +73,7 @@ def check_surface_dict_keys(surface):
     ]
     # keys that are required when useComposite is True
     compositeInputs = [
-        "composite_safety_factor",
+        "safety_factor",
         "ply_angles",
         "ply_fractions",
         "E1",
@@ -86,7 +87,7 @@ def check_surface_dict_keys(surface):
         "sigma_12max",
     ]
 
-    keys_implemented += compositeInputs
+    keys_implemented = list(set(keys_implemented + compositeInputs))
 
     for key in surface.keys():
         if key not in keys_implemented:
