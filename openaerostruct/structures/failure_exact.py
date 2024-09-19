@@ -7,21 +7,18 @@ class FailureExact(om.ExplicitComponent):
     """
     Output individual failure constraints on each FEM element.
 
-    Parameters
+    parameters
     ----------
-    for Isotropic structures:
-    vonmises[ny-1, 2] : numpy array
+    vonmises : ny-1 x 2 numpy array
         von Mises stress magnitudes for each FEM element.
-
-    for Composite wingbox:
-    tsaiwu_sr[ny-1, 4 * numofplies] : numpy array
+    tsaiwu_sr : ny-1 x 4 * numofplies numpy array
         Tsai-Wu strength ratios for each FEM element (ply at each critical element).
 
     Returns
     -------
-    failure[ny-1, 2] : numpy array
+    failure : float
         Array of failure conditions. Positive if element has failed. This entity is defined for either
-        failure criteria, vonmises or tsaiwu_sr. # TODO: check this
+        failure criteria, vonmises or tsaiwu_sr.
 
     """
 

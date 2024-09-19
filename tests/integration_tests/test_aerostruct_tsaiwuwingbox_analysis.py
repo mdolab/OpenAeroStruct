@@ -411,7 +411,7 @@ class Test(unittest.TestCase):
 
         # Set up the problem
         prob.setup()
-        om.n2(prob)
+        # om.n2(prob)
 
         prob.run_model()
 
