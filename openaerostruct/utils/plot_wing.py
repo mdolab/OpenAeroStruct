@@ -10,7 +10,6 @@ Ex: `plot_wing aero.db 1` a wider view than `plot_wing aero.db 5`.
 
 """
 
-
 import sys
 import numpy as np
 from openmdao.recorders.sqlite_reader import SqliteCaseReader

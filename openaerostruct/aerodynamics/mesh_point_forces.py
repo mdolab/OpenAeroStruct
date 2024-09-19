@@ -1,6 +1,7 @@
 """
 Class definition for the MeshPointForces component.
 """
+
 import numpy as np
 import openmdao.api as om
 

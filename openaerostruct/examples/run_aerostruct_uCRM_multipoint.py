@@ -19,7 +19,6 @@ this script and the results in the paper because those results were from an
 older version of OAS (very slight differences due to numerical errors, etc.)
 """
 
-
 import numpy as np
 
 from openaerostruct.geometry.utils import generate_mesh

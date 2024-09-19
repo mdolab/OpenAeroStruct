@@ -116,7 +116,6 @@ class SpatialBeamAlone(om.Group):
                 promotes_outputs=["thickness_intersects", "vonmises", "failure"],
             )
         elif surface["fem_model_type"] == "wingbox":
-
             if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
                 promotedoutput = "tsaiwu_sr"
             else:  # using the Isotropic wingbox
