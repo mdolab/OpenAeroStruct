@@ -309,7 +309,7 @@ class Test(unittest.TestCase):
             "useComposite": True,
             "composite_safety_factor": 1.5,
             "ply_angles": [0, 45, -45, 90],
-            "ply_fractions": [10, 25, 25, 40],
+            "ply_fractions": [0.10, 0.25, 0.25, 0.40],
             "E1": 117.7e9,
             "E2": 9.7e9,
             "nu12": 0.35,

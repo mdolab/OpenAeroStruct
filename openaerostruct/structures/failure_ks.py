@@ -113,9 +113,7 @@ class FailureKS(om.ExplicitComponent):
         derivs = tempb / stress_limit
         derivs[i, j] += fmaxb / stress_limit
 
-        if (
-            "useComposite" in self.options["surface"].keys() and self.options["surface"]["useComposite"]
-        ):  # using the Composite wingbox
+        if self.useComposite:  # using the Composite wingbox
             partials["failure", "tsaiwu_sr"] = derivs.reshape(1, -1)
         else:  # using the Isotropic structures
             partials["failure", "vonmises"] = derivs.reshape(1, -1)

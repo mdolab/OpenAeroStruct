@@ -30,31 +30,32 @@ class FailureExact(om.ExplicitComponent):
 
     def setup(self):
         surface = self.options["surface"]
-        ply_angles = surface["ply_angles"]
-        numofplies = len(ply_angles)
+        self.useComposite = "useComposite" in self.options["surface"].keys() and self.options["surface"]["useComposite"]
+        if self.useComposite:
+            ply_angles = surface["ply_angles"]
+            numofplies = len(ply_angles)
 
         if surface["fem_model_type"] == "tube":
             num_failure_criteria = 2
 
         elif surface["fem_model_type"] == "wingbox":
-            if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
+            if self.useComposite:  # using the Composite wingbox
                 num_failure_criteria = 4 * numofplies  # 4 critical elements * number of plies
+                self.srlimit = 1 / surface["composite_safety_factor"]
             else:  # using the Isotropic wingbox
                 num_failure_criteria = 4
 
         self.ny = surface["mesh"].shape[1]
         self.sigma = surface["yield"]
 
-        self.srlimit = 1 / surface["composite_safety_factor"]
-
-        if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
+        if self.useComposite:  # using the Composite wingbox
             self.add_input("tsaiwu_sr", val=np.zeros((self.ny - 1, num_failure_criteria)), units=None)
         else:  # using the Isotropic structures
             self.add_input("vonmises", val=np.zeros((self.ny - 1, num_failure_criteria)), units="N/m**2")
 
         self.add_output("failure", val=np.zeros((self.ny - 1, num_failure_criteria)))
 
-        if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
+        if self.useComposite:  # using the Composite wingbox
             self.declare_partials(
                 "failure", "tsaiwu_sr", val=np.eye(((self.ny - 1) * num_failure_criteria)) / self.srlimit
             )
