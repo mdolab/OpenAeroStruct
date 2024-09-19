@@ -56,7 +56,11 @@ class FailureKS(om.ExplicitComponent):
                 num_failure_criteria = 4
 
         self.ny = surface["mesh"].shape[1]
-        self.safety_factor = surface["safety_factor"]
+
+        if "safety_factor" in self.options["surface"].keys():
+            self.safety_factor = surface["safety_factor"]
+        else:
+            self.safety_factor = 1
 
         if self.useComposite:
             self.add_input("tsaiwu_sr", val=np.zeros((self.ny - 1, num_failure_criteria)), units=None)

@@ -43,7 +43,12 @@ class FailureExact(om.ExplicitComponent):
                 num_failure_criteria = 4
 
         self.ny = surface["mesh"].shape[1]
-        self.safety_factor = surface["safety_factor"]
+
+        if "safety_factor" in self.options["surface"].keys():
+            self.safety_factor = surface["safety_factor"]
+        else:
+            self.safety_factor = 1
+
         self.sigma = surface["yield"] / self.safety_factor
 
         if self.useComposite:  # using the Composite wingbox
