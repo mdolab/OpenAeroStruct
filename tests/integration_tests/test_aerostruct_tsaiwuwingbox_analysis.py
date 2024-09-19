@@ -1,4 +1,3 @@
-from openmdao.utils.assert_utils import assert_near_equal
 import unittest
 import numpy as np
 
@@ -419,10 +418,6 @@ class Test(unittest.TestCase):
         print(prob["wing.structural_mass"][0] / 1.25)
         print("TsaiWu SR vals:", prob["AS_point_0.wing_perf.tsaiwu_sr"])
         print(prob["AS_point_0.wing_perf.failure"])
-
-        # assert_near_equal(prob["AS_point_0.fuelburn"][0], 84999.8396153129, 1e-5)
-        # assert_near_equal(prob["wing.structural_mass"][0] / 1.25, 24009.5230566, 1e-5)
-        # assert_near_equal(prob["AS_point_0.wing_perf.failure"][0], 1.6254327137382174, 1e-5)
 
 
 if __name__ == "__main__":
