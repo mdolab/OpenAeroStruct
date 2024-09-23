@@ -99,6 +99,7 @@ def check_multi_sec_surface_dict_keys(surface):
         "symmetry",
         "S_ref_type",
         "meshes",
+        "mesh",
         "root_chord",
         "span",
         "taper",
