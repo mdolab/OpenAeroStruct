@@ -28,7 +28,6 @@ class Test(unittest.TestCase):
             "thickness_cp": np.array([0.1, 0.2, 0.3]),
             "twist_cp": twist_cp,
             "mesh": mesh,
-            "n_point_masses": 1,
             # Aerodynamic performance of the lifting surface at
             # an angle of attack of 0 (alpha=0).
             # These CL0 and CD0 values are added to the CL and CD
@@ -76,13 +75,7 @@ class Test(unittest.TestCase):
         indep_var_comp.add_output("speed_of_sound", val=295.4, units="m/s")
         indep_var_comp.add_output("load_factor", val=1.0)
         indep_var_comp.add_output("empty_cg", val=np.zeros((3)), units="m")
-
-        point_masses = np.array([[8000.0]])
-
-        point_mass_locations = np.array([[25, -10.0, 0.0]])
-
-        indep_var_comp.add_output("point_masses", val=point_masses, units="kg")
-        indep_var_comp.add_output("point_mass_locations", val=point_mass_locations, units="m")
+        indep_var_comp.add_output("S_ref_total", val=150.0, units="m**2")
 
         prob.model.add_subsystem("prob_vars", indep_var_comp, promotes=["*"])
 
@@ -103,7 +96,7 @@ class Test(unittest.TestCase):
             # Connect the parameters within the model for each aero point
 
             # Create the aero point group and add it to the model
-            AS_point = AerostructPoint(surfaces=surfaces)
+            AS_point = AerostructPoint(surfaces=surfaces, user_specified_Sref=True)
 
             prob.model.add_subsystem(point_name, AS_point)
 
@@ -119,7 +112,7 @@ class Test(unittest.TestCase):
             prob.model.connect("speed_of_sound", point_name + ".speed_of_sound")
             prob.model.connect("empty_cg", point_name + ".empty_cg")
             prob.model.connect("load_factor", point_name + ".load_factor")
-            prob.model.connect("load_factor", point_name + ".coupled.load_factor")
+            prob.model.connect("S_ref_total", point_name + ".S_ref_total")
 
             for _surface in surfaces:
                 com_name = point_name + "." + name + "_perf"
@@ -141,17 +134,13 @@ class Test(unittest.TestCase):
                 )
                 prob.model.connect(name + ".t_over_c", com_name + ".t_over_c")
 
-            coupled_name = point_name + ".coupled." + name
-            prob.model.connect("point_masses", coupled_name + ".point_masses")
-            prob.model.connect("point_mass_locations", coupled_name + ".point_mass_locations")
-
         # Set up the problem
         prob.setup()
 
         prob.run_model()
 
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 252038.66600566648, 1e-4)
-        assert_near_equal(prob["AS_point_0.CM"][1], -0.7006002684582702, 1e-5)
+        assert_near_equal(prob["AS_point_0.CL"][0], 1.6210175228727655, 1e-6)
+        assert_near_equal(prob["AS_point_0.CM"][1], -1.8365760768848112, 1e-5)
 
 
 if __name__ == "__main__":

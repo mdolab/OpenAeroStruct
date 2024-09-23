@@ -10,6 +10,7 @@ Additionally, we have more variable connections due to the more complex problem 
 
 For more details about ``mesh_dict`` and ``surface`` in the following script, see :ref:`Mesh and Surface Dict`.
 
-.. embed-code::
-    openaerostruct.tests.test_aerostruct.Test.test
-    :layout: interleave
+.. literalinclude:: /../../tests/integration_tests/test_aerostruct.py
+    :start-after: docs checkpoint 0
+    :end-before: docs checkpoint 1
+    :dedent: 8

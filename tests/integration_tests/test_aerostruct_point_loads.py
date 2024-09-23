@@ -13,14 +13,7 @@ from openaerostruct.utils.constants import grav_constant
 class Test(unittest.TestCase):
     def test(self):
         # Create a dictionary to store options about the surface
-        mesh_dict = {
-            "num_y": 13,
-            "num_x": 2,
-            "wing_type": "CRM",
-            "symmetry": True,
-            "num_twist_cp": 5,
-            "span_cos_spacing": 1.0,
-        }
+        mesh_dict = {"num_y": 5, "num_x": 2, "wing_type": "CRM", "symmetry": True, "num_twist_cp": 5}
 
         mesh, twist_cp = generate_mesh(mesh_dict)
 
@@ -32,9 +25,10 @@ class Test(unittest.TestCase):
             "S_ref_type": "wetted",  # how we compute the wing area,
             # can be 'wetted' or 'projected'
             "fem_model_type": "tube",
-            "thickness_cp": np.ones(2) * 0.06836728,
+            "thickness_cp": np.array([0.1, 0.2, 0.3]),
             "twist_cp": twist_cp,
             "mesh": mesh,
+            "n_point_masses": 1,
             # Aerodynamic performance of the lifting surface at
             # an angle of attack of 0 (alpha=0).
             # These CL0 and CD0 values are added to the CL and CD
@@ -46,10 +40,10 @@ class Test(unittest.TestCase):
             # Airfoil properties for viscous drag calculation
             "k_lam": 0.05,  # percentage of chord with laminar
             # flow, used for viscous drag
-            "t_over_c_cp": np.array([0.12]),  # thickness over chord ratio (NACA0015)
+            "t_over_c_cp": np.array([0.15]),  # thickness over chord ratio (NACA0015)
             "c_max_t": 0.303,  # chordwise location of maximum (NACA0015)
             # thickness
-            "with_viscous": False,
+            "with_viscous": True,
             "with_wave": False,  # if true, compute wave drag
             # Structural values are based on aluminum 7075
             "E": 70.0e9,  # [Pa] Young's modulus of the spar
@@ -57,7 +51,7 @@ class Test(unittest.TestCase):
             "yield": 500.0e6 / 2.5,  # [Pa] yield stress divided by 2.5 for limiting case
             "mrho": 3.0e3,  # [kg/m^3] material density
             "fem_origin": 0.35,  # normalized chordwise location of the spar
-            "wing_weight_ratio": 1.0,
+            "wing_weight_ratio": 2.0,
             "struct_weight_relief": False,  # True to add the weight of the structure to the loads on the structure
             "distributed_fuel_weight": False,
             # Constraints
@@ -82,6 +76,13 @@ class Test(unittest.TestCase):
         indep_var_comp.add_output("speed_of_sound", val=295.4, units="m/s")
         indep_var_comp.add_output("load_factor", val=1.0)
         indep_var_comp.add_output("empty_cg", val=np.zeros((3)), units="m")
+
+        point_masses = np.array([[8000.0]])
+
+        point_mass_locations = np.array([[25, -10.0, 0.0]])
+
+        indep_var_comp.add_output("point_masses", val=point_masses, units="kg")
+        indep_var_comp.add_output("point_mass_locations", val=point_mass_locations, units="m")
 
         prob.model.add_subsystem("prob_vars", indep_var_comp, promotes=["*"])
 
@@ -118,6 +119,7 @@ class Test(unittest.TestCase):
             prob.model.connect("speed_of_sound", point_name + ".speed_of_sound")
             prob.model.connect("empty_cg", point_name + ".empty_cg")
             prob.model.connect("load_factor", point_name + ".load_factor")
+            prob.model.connect("load_factor", point_name + ".coupled.load_factor")
 
             for _surface in surfaces:
                 com_name = point_name + "." + name + "_perf"
@@ -139,17 +141,17 @@ class Test(unittest.TestCase):
                 )
                 prob.model.connect(name + ".t_over_c", com_name + ".t_over_c")
 
+            coupled_name = point_name + ".coupled." + name
+            prob.model.connect("point_masses", coupled_name + ".point_masses")
+            prob.model.connect("point_mass_locations", coupled_name + ".point_mass_locations")
+
         # Set up the problem
         prob.setup()
 
-        # om.view_model(prob)
-
         prob.run_model()
 
-        assert_near_equal(prob["AS_point_0.wing_perf.CL"][0], 0.510849206378, 1e-6)
-        assert_near_equal(prob["AS_point_0.wing_perf.failure"][0], -0.483587598753, 1e-6)
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 68894.2100988, 1e-4)
-        assert_near_equal(prob["AS_point_0.CM"][1], -1.539189058161678, 1e-5)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 264106.7825178142, 1e-4)
+        assert_near_equal(prob["AS_point_0.CM"][1], -0.6436834908660709, 1e-5)
 
 
 if __name__ == "__main__":

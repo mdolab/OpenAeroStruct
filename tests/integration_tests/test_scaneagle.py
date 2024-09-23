@@ -206,10 +206,10 @@ class Test(unittest.TestCase):
         # Actually run the optimization problem
         self.prob.run_driver()
 
-        assert_near_equal(self.prob["AS_point_0.fuelburn"][0], 4.6365011384888275, 1e-5)
-        assert_near_equal(self.prob["wing.twist_cp"], np.array([2.25819837, 10.39881572, 5.0]), 1e-5)
-        assert_near_equal(self.prob["wing.sweep"][0], 18.964409030629632, 1e-5)
-        assert_near_equal(self.prob["alpha"][0], 2.0366563718492547, 1e-5)
+        assert_near_equal(self.prob["AS_point_0.fuelburn"][0], 4.518756027353296, 1e-5)
+        assert_near_equal(self.prob["wing.twist_cp"], np.array([2.74161203, 12.22389255, 5.0]), 1e-5)
+        assert_near_equal(self.prob["wing.sweep"][0], 18.909083171987344, 1e-5)
+        assert_near_equal(self.prob["alpha"][0], 1.4756577579439902, 1e-5)
 
     def test_totals(self):
         # Set up the problem

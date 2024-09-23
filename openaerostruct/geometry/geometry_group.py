@@ -3,6 +3,7 @@ import numpy as np
 import openmdao.api as om
 from openaerostruct.utils.check_surface_dict import check_surface_dict_keys, check_multi_sec_surface_dict_keys
 import openaerostruct.geometry.geometry_mesh_gen as meshGen
+from openaerostruct.utils.interpolation import get_normalized_span_coords
 
 
 class Geometry(om.Group):
@@ -30,7 +31,6 @@ class Geometry(om.Group):
 
         # Get the surface name and create a group to contain components
         # only for this surface
-        ny = surface["mesh"].shape[1]
 
         if self.options["DVGeo"]:
             from openaerostruct.geometry.ffd_component import GeometryMesh
@@ -40,7 +40,7 @@ class Geometry(om.Group):
             if "t_over_c_cp" in surface.keys():
                 n_cp = len(surface["t_over_c_cp"])
                 # Add bspline components for active bspline geometric variables.
-                x_interp = np.linspace(0.0, 1.0, int(ny - 1))
+                x_interp = get_normalized_span_coords(surface, mid_panel=True)
                 comp = self.add_subsystem(
                     "t_over_c_bsp",
                     om.SplineComp(
@@ -68,7 +68,7 @@ class Geometry(om.Group):
             if "twist_cp" in surface.keys():
                 n_cp = len(surface["twist_cp"])
                 # Add bspline components for active bspline geometric variables.
-                x_interp = np.linspace(0.0, 1.0, int(ny))
+                x_interp = get_normalized_span_coords(surface)
                 comp = self.add_subsystem(
                     "twist_bsp",
                     om.SplineComp(
@@ -87,7 +87,7 @@ class Geometry(om.Group):
             if "chord_cp" in surface.keys():
                 n_cp = len(surface["chord_cp"])
                 # Add bspline components for active bspline geometric variables.
-                x_interp = np.linspace(0.0, 1.0, int(ny))
+                x_interp = get_normalized_span_coords(surface)
                 comp = self.add_subsystem(
                     "chord_bsp",
                     om.SplineComp(
@@ -104,7 +104,7 @@ class Geometry(om.Group):
             if "t_over_c_cp" in surface.keys():
                 n_cp = len(surface["t_over_c_cp"])
                 # Add bspline components for active bspline geometric variables.
-                x_interp = np.linspace(0.0, 1.0, int(ny - 1))
+                x_interp = get_normalized_span_coords(surface, mid_panel=True)
                 comp = self.add_subsystem(
                     "t_over_c_bsp",
                     om.SplineComp(
@@ -120,7 +120,7 @@ class Geometry(om.Group):
             if "xshear_cp" in surface.keys():
                 n_cp = len(surface["xshear_cp"])
                 # Add bspline components for active bspline geometric variables.
-                x_interp = np.linspace(0.0, 1.0, int(ny))
+                x_interp = get_normalized_span_coords(surface)
                 comp = self.add_subsystem(
                     "xshear_bsp",
                     om.SplineComp(
@@ -137,7 +137,7 @@ class Geometry(om.Group):
             if "yshear_cp" in surface.keys():
                 n_cp = len(surface["yshear_cp"])
                 # Add bspline components for active bspline geometric variables.
-                x_interp = np.linspace(0.0, 1.0, int(ny))
+                x_interp = get_normalized_span_coords(surface)
                 comp = self.add_subsystem(
                     "yshear_bsp",
                     om.SplineComp(
@@ -154,7 +154,7 @@ class Geometry(om.Group):
             if "zshear_cp" in surface.keys():
                 n_cp = len(surface["zshear_cp"])
                 # Add bspline components for active bspline geometric variables.
-                x_interp = np.linspace(0.0, 1.0, int(ny))
+                x_interp = get_normalized_span_coords(surface)
                 comp = self.add_subsystem(
                     "zshear_bsp",
                     om.SplineComp(

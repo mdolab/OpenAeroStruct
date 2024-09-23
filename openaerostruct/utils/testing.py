@@ -5,6 +5,25 @@ import numpy as np
 from openaerostruct.geometry.utils import generate_mesh
 
 
+def assert_opt_successful(test, optResult):
+    """Check whether an OpenMDAO optimization successfully converged
+
+    Parameters
+    ----------
+    test : unittest.TestCase
+        The test case that is being run
+    optResult :
+        Result returned by OpenMDAO's run_driver() method
+    """
+    # In older versions of OpenMDAO, the run_driver() method returns a boolean that indicates whether the
+    # optimization failed, but in newer versions it returns an object that contains the optimization results,
+    # including a `success` attribute.
+    if isinstance(optResult, bool):
+        test.assertFalse(optResult)
+    else:
+        test.assertTrue(optResult.success)
+
+
 def view_mat(mat1, mat2=None, key="Title", tol=1e-10):  # pragma: no cover
     """
     Helper function used to visually examine matrices. It plots mat1 and mat2 side by side,

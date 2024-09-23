@@ -28,6 +28,7 @@ class Test(unittest.TestCase):
             "thickness_cp": np.array([0.1, 0.2, 0.3]),
             "twist_cp": twist_cp,
             "mesh": mesh,
+            "n_point_masses": 1,
             # Aerodynamic performance of the lifting surface at
             # an angle of attack of 0 (alpha=0).
             # These CL0 and CD0 values are added to the CL and CD
@@ -66,7 +67,6 @@ class Test(unittest.TestCase):
         indep_var_comp = om.IndepVarComp()
         indep_var_comp.add_output("v", val=248.136, units="m/s")
         indep_var_comp.add_output("alpha", val=5.0, units="deg")
-        indep_var_comp.add_output("beta", val=0.0, units="deg")
         indep_var_comp.add_output("Mach_number", val=0.84)
         indep_var_comp.add_output("re", val=1.0e6, units="1/m")
         indep_var_comp.add_output("rho", val=0.38, units="kg/m**3")
@@ -76,6 +76,15 @@ class Test(unittest.TestCase):
         indep_var_comp.add_output("speed_of_sound", val=295.4, units="m/s")
         indep_var_comp.add_output("load_factor", val=1.0)
         indep_var_comp.add_output("empty_cg", val=np.zeros((3)), units="m")
+
+        point_masses = np.array([[8000.0]])
+        engine_thrusts = np.array([[80.0e3]])
+
+        point_mass_locations = np.array([[25, -10.0, -1.0]])
+
+        indep_var_comp.add_output("point_masses", val=point_masses, units="kg")
+        indep_var_comp.add_output("engine_thrusts", val=engine_thrusts, units="N")
+        indep_var_comp.add_output("point_mass_locations", val=point_mass_locations, units="m")
 
         prob.model.add_subsystem("prob_vars", indep_var_comp, promotes=["*"])
 
@@ -96,14 +105,13 @@ class Test(unittest.TestCase):
             # Connect the parameters within the model for each aero point
 
             # Create the aero point group and add it to the model
-            AS_point = AerostructPoint(surfaces=surfaces, compressible=True)
+            AS_point = AerostructPoint(surfaces=surfaces)
 
             prob.model.add_subsystem(point_name, AS_point)
 
             # Connect flow properties to the analysis point
             prob.model.connect("v", point_name + ".v")
             prob.model.connect("alpha", point_name + ".alpha")
-            prob.model.connect("beta", point_name + ".beta")
             prob.model.connect("Mach_number", point_name + ".Mach_number")
             prob.model.connect("re", point_name + ".re")
             prob.model.connect("rho", point_name + ".rho")
@@ -113,6 +121,7 @@ class Test(unittest.TestCase):
             prob.model.connect("speed_of_sound", point_name + ".speed_of_sound")
             prob.model.connect("empty_cg", point_name + ".empty_cg")
             prob.model.connect("load_factor", point_name + ".load_factor")
+            prob.model.connect("load_factor", point_name + ".coupled.load_factor")
 
             for _surface in surfaces:
                 com_name = point_name + "." + name + "_perf"
@@ -134,13 +143,21 @@ class Test(unittest.TestCase):
                 )
                 prob.model.connect(name + ".t_over_c", com_name + ".t_over_c")
 
+            coupled_name = point_name + ".coupled." + name
+            prob.model.connect("point_masses", coupled_name + ".point_masses")
+            prob.model.connect("engine_thrusts", coupled_name + ".engine_thrusts")
+            prob.model.connect("point_mass_locations", coupled_name + ".point_mass_locations")
+
         # Set up the problem
         prob.setup()
 
         prob.run_model()
 
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 213840.78859689648, 1e-4)
-        assert_near_equal(prob["AS_point_0.CM"][1], -0.9866929184880228, 1e-5)
+        print(prob["AS_point_0.fuelburn"][0])
+        print(prob["AS_point_0.CM"][1])
+
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 263992.6780138112, 1e-4)
+        assert_near_equal(prob["AS_point_0.CM"][1], -0.6438933659444002, 1e-5)
 
 
 if __name__ == "__main__":

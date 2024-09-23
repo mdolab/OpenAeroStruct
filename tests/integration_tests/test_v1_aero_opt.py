@@ -119,7 +119,14 @@ class Test(unittest.TestCase):
         prob.run_driver()
         # docs checkpoint 5
 
-        assert_near_equal(prob["aero_point_0.wing_perf.CD"][0], 0.0049392534859265614, 1e-6)
+        assert_near_equal(prob["aero_point_0.CD"][0], 0.004938282205728244, 1e-6)
+        assert_near_equal(prob["aero_point_0.CL"][0], 0.5, 1e-6)
+        assert_near_equal(prob["aero_point_0.CM"][1], -0.7630284313966209, 1e-6)
+        assert_near_equal(prob["wing.dihedral"][0], -2.9553117192703464, 1e-6)
+        assert_near_equal(prob["wing.sweep"][0], 30.0, 1e-6)
+        np.testing.assert_allclose(
+            prob["wing.twist_cp"], [-2.8855929739789588, 4.483359585932103], rtol=1e-6, atol=1e-6
+        )
 
 
 if __name__ == "__main__":
