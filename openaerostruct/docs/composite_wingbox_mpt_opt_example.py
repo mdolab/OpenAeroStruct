@@ -82,13 +82,26 @@ surf_dict = {
     "strength_factor_for_upper_skin": 1.0,  # the yield stress is multiplied by this factor for the upper skin
     "wing_weight_ratio": 1.25,
     "exact_failure_constraint": False,  # if false, use KS function
-    # docs checkpoint 7
     "struct_weight_relief": True,
     "distributed_fuel_weight": True,
     "n_point_masses": 1,  # number of point masses in the system; in this case, the engine (omit option if no point masses)
-    # docs checkpoint 8
     "fuel_density": 803.0,  # [kg/m^3] fuel density (only needed if the fuel-in-wing volume constraint is used)
     "Wf_reserve": 15000.0,  # [kg] reserve fuel mass
+    # docs checkpoint 7
+    "useComposite": True,
+    "safety_factor": 1.5,
+    "ply_angles": [0, 45, -45, 90],
+    "ply_fractions": [0.10, 0.25, 0.25, 0.40],
+    "E1": 117.7e9,
+    "E2": 9.7e9,
+    "nu12": 0.35,
+    "G12": 4.8e9,
+    "sigma_t1": 1648.0e6,
+    "sigma_c1": 1034.0e6,
+    "sigma_t2": 64.0e6,
+    "sigma_c2": 228.0e6,
+    "sigma_12max": 71.0e6,
+    # docs checkpoint 8
 }
 
 surfaces = [surf_dict]
