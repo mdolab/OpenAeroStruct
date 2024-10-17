@@ -10,23 +10,21 @@ The composites module allows you to define composite material properties and lam
   :start-after: checkpoint 7
   :end-before: checkpoint 8
 
-Here,  
-- ``useComposite`` is a boolean variable that is set to True to enable the composites model.  
-- ``safety_factor`` is the factor of safety used for determining the Tsai-Wu based failure
-criteria of the composite material.  
+Here,  ``useComposite`` is a boolean variable that is set to True to enable the composites model and ``safety_factor`` is the factor of safety used for determining the Tsai-Wu based failure
+criteria of the composite material. The composite material properties are defined using the following variables: 
 
-The composite material properties are defined using the following variables:   
 - ``ply_angles`` is a list of the angles of the plies with respect to the x-axis.  
 - ``ply_fractions`` is a list of the ply fractions of the plies.  
 - ``E1`` is the modulus of elasticity in the fiber direction.  
 - ``E2`` is the modulus of elasticity in the transverse direction.  
-- ``G12`` is the shear modulus.\\
-- ``nu12`` is the Poisson's ratio.\\
-- ``sigma_t1`` is the tensile strength in the fiber direction.\\
-- ``sigma_c1`` is the compressive strength in the fiber direction.\\
-- ``sigma_t2`` is the tensile strength in the transverse direction.\\
-- ``sigma_c2`` is the compressive strength in the transverse direction.\\
-- ``sigma_12max`` is the maximum shear strength.\\ \\
+- ``G12`` is the shear modulus.
+- ``nu12`` is the Poisson's ratio.
+- ``sigma_t1`` is the tensile strength in the fiber direction.
+- ``sigma_c1`` is the compressive strength in the fiber direction.
+- ``sigma_t2`` is the tensile strength in the transverse direction.
+- ``sigma_c2`` is the compressive strength in the transverse direction.
+- ``sigma_12max`` is the maximum shear strength.
+
 Currently, the moduli of elasticity of the entire FEM spatial beam model are assumed to be isotropic
 in 2D plane so as to not change the entire model and is left for the future works. The values of the
 moduli of elasticity are found using The unidirectional ply properties are used to find the stiffness matrix of the plies:
@@ -78,12 +76,13 @@ The effective compliance matrix is found using the following equation:
 The effective laminate properties are found using the following equations:
 
 .. math::
-    E_{11} = \frac{1}{S_{eff_{11}}}
+    E_{11} = \frac{1}{S_{eff_{11}}}\\
     G = \frac{1}{S_{eff_{66}}}
 
 These moduli of elasticility values are hence used to determine the stiffness matrix of the entire FEM spatial beam model. Thereafter, at the 4 critical points in the wingbox (mentioned in the aerostruct-wingbox walkthrough),
 the strains are calculated for each of the constituent plies by transforming the strains at the critical points to the laminate coordinate system. This is done using the following equation:\\
 using the transformation:
+
 .. math::
 
     \begin{pmatrix}
@@ -128,7 +127,7 @@ These local axial and shear stresses are then utilized to calculate the value of
 
 .. math::
 
-    F_{12} = \frac{1}{2 S_{LT}^{(+)}}
+    F_{66} = \frac{1}{2 S_{LT}^{2}}
 
 where :math:`S_L^{(+)} \text{and} S_L^{(-)}` are the longitudinal strengths in tension and compression respectively, 
 :math:`S_T^{(+)} \text{and} S_T^{(-)}` are the transverse strengths in tension and compression respectively and 
@@ -137,14 +136,16 @@ The Tsai-Wu failure criteria is given by:
 
 .. math::
 
-    F_1 + F_2 + F_{11} + F_{22} + F_{66} = 1
+    F_1 \sigma_1 + F_2 \sigma_2 + F_{11} \sigma_1^2 + F_{22} \sigma_2^2 + F_{66} \tau_{12}^2 = 1
 
 In order to implement the safety factor in the Tsai-Wu failure criteria, the equation is re-written as:
+
 .. math::
-    a = F_1 \sigma_1 + F_2 \sigma_2 \\
-    b = F_{11} \sigma_1^2 + F_{22} \sigma_2^2 + F_{12} \sigma_1 \sigma_2 \\
+    a &= F_1 \sigma_1 + F_2 \sigma_2 \\
+    b &= F_{11} \sigma_1^2 + F_{22} \sigma_2^2 + F_{12} \sigma_1 \sigma_2 
     
 We hence caclulate the **Strength Ratios** using the formula:
+
 .. math::
 
     SR = \frac{1}{2} (a + \sqrt{a^2 + 4 b})
