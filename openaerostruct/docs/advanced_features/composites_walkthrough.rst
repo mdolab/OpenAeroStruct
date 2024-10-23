@@ -14,7 +14,7 @@ Here,  ``useComposite`` is a boolean variable that is set to True to enable the 
 criteria of the composite material. The composite material properties are defined using the following variables: 
 
 - ``ply_angles`` is a list of the angles of the plies with respect to the x-axis.  
-- ``ply_fractions`` is a list of the ply fractions of the plies.  
+- ``ply_fractions`` is a list of the ply fractions of the plies. (Should be the same length as ``ply_angles``, with the sum of the fractions equal to 1).
 - ``E1`` is the modulus of elasticity in the fiber direction.  
 - ``E2`` is the modulus of elasticity in the transverse direction.  
 - ``G12`` is the shear modulus.
@@ -166,3 +166,9 @@ where :math:`g` is :math:`\left( \frac{SR}{SR_{\text{lim}}} - 1 \right)` value f
 
 
 The failure is determined by the value of :math:`\max_j g_j + \hat{g}_{KS}(\rho, g)` exceeding 0.
+
+The effect of using composites can be seen in the following figure. A Pareto-optimal front is generated for the wingbox model using Isotropic (Almunim) and Orthotropic (Carbon Fiber Reinforced Polymer) materials.
+
+.. image:: openaerostruct/docs/advanced_features/figs/compositeModelPareto.png
+   :width: 600
+   :align: center

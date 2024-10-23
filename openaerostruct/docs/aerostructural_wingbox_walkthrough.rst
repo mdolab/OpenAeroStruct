@@ -100,10 +100,10 @@ The `c_max_t` value is the location of the maximum thickness of the airfoil alon
   :end-before: checkpoint 6
 
 Next we provide some information related to structures.
-We provide the Young's and shear moduli, as well as the allowable yield stress and density of the material being used (the wingbox model currently assumes that the material is isotropic).
-Here we use include a safety factor of 1.5 in the allowable yield stress.
+We provide the Young's and shear moduli, as well as the maximum yield stress and density of the material being used. The material can either be assumed to be isotropic (like aluminum) or orthotropic (like carbon fiber reinforced polymer).
+Here we use include a safety factor of 1.5 using the `safety_factor` key.
 The `strength_factor_for_upper_skin` value can be used to adjust the yield strength of the upper skin relative to the lower skin.
-For example, if we were using different alloys for the top and bottom skin (e.g., Al7075 vs Al2024) we would provide the allowable yield stress of the lower skin for `yield` and the ratio of the yield strengths of the upper skin to the lower skin for `strength_factor_for_upper_skin`.
+For example, if we were using different alloys for the top and bottom skin (e.g., Al7075 vs Al2024) we would provide the maximum yield stress of the lower skin for `yield` and the ratio of the yield strengths of the upper skin to the lower skin for `strength_factor_for_upper_skin`.
 The `wing_weight_ratio` number is used to estimate the weight of other components not modeled in the wingbox structure (e.g., overlaps, fasteners, etc.).
 With the `exact_failure_constraint` set to `False`, we aggregate the stress constraints for the FEM elements into a single constraint using the  Kreisselmeier--Steinhauser function.
 This helps reduce computational cost during optimization by replacing a large number of constraints (one for each stress combination for each element) with a single constraint.
