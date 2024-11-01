@@ -41,77 +41,66 @@ class FailureKS(om.ExplicitComponent):
 
     def setup(self):
         surface = self.options["surface"]
-        rho = self.options["rho"]
-        self.useComposite = "useComposite" in self.options["surface"].keys() and self.options["surface"]["useComposite"]
-        if self.useComposite:
-            self.numofplies = len(surface["ply_angles"])
-
-        if surface["fem_model_type"] == "tube":
-            num_failure_criteria = 2
-
-        elif surface["fem_model_type"] == "wingbox":
-            if self.useComposite:  # using the Composite wingbox
-                num_failure_criteria = 4 * self.numofplies  # 4 critical elements * number of plies
-            else:  # using the Isotropic wingbox
-                num_failure_criteria = 4
-
-        self.ny = surface["mesh"].shape[1]
+        self.rho = self.options["rho"]
 
         if "safety_factor" in self.options["surface"].keys():
             self.safety_factor = surface["safety_factor"]
         else:
             self.safety_factor = 1
 
+        self.useComposite = "useComposite" in self.options["surface"].keys() and self.options["surface"]["useComposite"]
         if self.useComposite:
-            self.add_input("tsaiwu_sr", val=np.zeros((self.ny - 1, num_failure_criteria)), units=None)
-            self.srlimit = 1 / self.safety_factor
-
+            self.num_plies = len(surface["ply_angles"])
+            self.input_name = "tsaiwu_sr"
+            self.stress_limit = 1 / self.safety_factor
+            self.stress_units = None
         else:
-            self.add_input("vonmises", val=np.zeros((self.ny - 1, num_failure_criteria)), units="N/m**2")
+            self.input_name = "vonmises"
+            self.stress_limit = surface["yield"] / self.safety_factor
+            self.stress_units = "N/m**2"
+
+        if surface["fem_model_type"] == "tube":
+            num_failure_criteria = 2
+
+        elif surface["fem_model_type"] == "wingbox":
+            if self.useComposite:  # using the Composite wingbox
+                num_failure_criteria = 4 * self.num_plies  # 4 critical elements * number of plies
+            else:  # using the Isotropic wingbox
+                num_failure_criteria = 4
+
+        self.ny = surface["mesh"].shape[1]
+
+        self.add_input(self.input_name, val=np.zeros((self.ny - 1, num_failure_criteria)), units=self.stress_units)
 
         self.add_output("failure", val=0.0)
-        self.sigma = surface["yield"] / self.safety_factor
-        self.rho = rho
 
         self.declare_partials("*", "*")
 
     def compute(self, inputs, outputs):
-        sigma = self.sigma
-        rho = self.rho
 
-        if self.useComposite:  # using the Composite wingbox
-            stress_array = inputs["tsaiwu_sr"]
-            stress_limit = self.srlimit
-        else:  # using the Isotropic structures
-            stress_array = inputs["vonmises"]
-            stress_limit = sigma
+        stress_array = inputs[self.input_name]
 
-        fmax = np.max(stress_array / stress_limit - 1)
+        fmax = np.max(stress_array / self.stress_limit - 1)
 
         nlog, nsum, nexp = np.log, np.sum, np.exp
-        ks = 1 / rho * nlog(nsum(nexp(rho * (stress_array / stress_limit - 1 - fmax))))
+        ks = 1 / self.rho * nlog(nsum(nexp(self.rho * (stress_array / self.stress_limit - 1 - fmax))))
         outputs["failure"] = fmax + ks
 
     def compute_partials(self, inputs, partials):
-        if self.useComposite:  # using the Composite wingbox
-            stress_array = inputs["tsaiwu_sr"]
-            stress_limit = self.srlimit
-        else:  # using the Isotropic structures
-            stress_array = inputs["vonmises"]
-            stress_limit = self.sigma
+        stress_array = inputs[self.input_name]
 
-        fmax = np.max(stress_array / stress_limit - 1)
-        i, j = np.where((stress_array / stress_limit - 1) == fmax)
+        fmax = np.max(stress_array / self.stress_limit - 1)
+        i, j = np.where((stress_array / self.stress_limit - 1) == fmax)
         i, j = i[0], j[0]
 
         ksb = 1.0
 
-        tempb0 = ksb / (self.rho * np.sum(np.exp(self.rho * (stress_array / stress_limit - fmax - 1))))
-        tempb = np.exp(self.rho * (stress_array / stress_limit - fmax - 1)) * self.rho * tempb0
+        tempb0 = ksb / (self.rho * np.sum(np.exp(self.rho * (stress_array / self.stress_limit - fmax - 1))))
+        tempb = np.exp(self.rho * (stress_array / self.stress_limit - fmax - 1)) * self.rho * tempb0
         fmaxb = ksb - np.sum(tempb)
 
-        derivs = tempb / stress_limit
-        derivs[i, j] += fmaxb / stress_limit
+        derivs = tempb / self.stress_limit
+        derivs[i, j] += fmaxb / self.stress_limit
 
         if self.useComposite:  # using the Composite wingbox
             partials["failure", "tsaiwu_sr"] = derivs.reshape(1, -1)
