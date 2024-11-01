@@ -51,7 +51,7 @@ class TsaiWuWingbox(om.ExplicitComponent):
     def setup(self):
         self.surface = surface = self.options["surface"]
         self.ply_angles = surface["ply_angles"]
-        self.numofplies = len(self.ply_angles)
+        self.num_plies = len(self.ply_angles)
 
         self.ny = surface["mesh"].shape[1]
 
@@ -65,7 +65,7 @@ class TsaiWuWingbox(om.ExplicitComponent):
         self.add_input("hbottom", val=np.zeros((self.ny - 1)), units="m")
         self.add_input("hfront", val=np.zeros((self.ny - 1)), units="m")
         self.add_input("hrear", val=np.zeros((self.ny - 1)), units="m")
-        self.add_output("tsaiwu_sr", val=np.zeros((self.ny - 1, self.numofplies * 4)))
+        self.add_output("tsaiwu_sr", val=np.zeros((self.ny - 1, self.num_plies * 4)))
 
         self.E = surface["E"]
         self.G = surface["G"]
@@ -186,15 +186,15 @@ class TsaiWuWingbox(om.ExplicitComponent):
 
             # defining the array for ply-orientation angles:
             ply_angles = self.ply_angles
-            numofplies = len(ply_angles)
+            num_plies = len(ply_angles)
 
             # defining the epsilon_elem_ply array for the epsilon1, epsilon2 and gamma12 for each ply
-            epsilon_elem_ply = np.zeros((4, numofplies, 3), dtype=dtype)
-            sigma_elem_ply = np.zeros((4, numofplies, 3), dtype=dtype)
+            epsilon_elem_ply = np.zeros((4, num_plies, 3), dtype=dtype)
+            sigma_elem_ply = np.zeros((4, num_plies, 3), dtype=dtype)
 
             # running a loop over the 4 elements and the number of plies to calculate the epsilon_elem_ply array
             for elem_num in range(4):
-                for ply_num in range(numofplies):
+                for ply_num in range(num_plies):
                     epsilon_elem_ply[elem_num, ply_num, 0] = (
                         epsilon_elem[elem_num, 0] * np.cos(np.radians(ply_angles[ply_num])) ** 2
                         + epsilon_elem[elem_num, 1] * np.sin(np.radians(ply_angles[ply_num])) ** 2
@@ -231,7 +231,7 @@ class TsaiWuWingbox(om.ExplicitComponent):
 
             # converting the strains to stresses using strain-stress relations
             for elem_num in range(4):
-                for ply_num in range(numofplies):
+                for ply_num in range(num_plies):
                     epsilon1 = epsilon_elem_ply[elem_num, ply_num, 0]
                     epsilon2 = epsilon_elem_ply[elem_num, ply_num, 1]
                     gamma12 = epsilon_elem_ply[elem_num, ply_num, 2]
@@ -260,11 +260,11 @@ class TsaiWuWingbox(om.ExplicitComponent):
 
             # Finding the Tsai-Wu Strength Ratios for each ply in each element and storing them in the tsaiwu_sr array
             for elem_num in range(4):
-                for ply_num in range(numofplies):
+                for ply_num in range(num_plies):
                     a = F1 * sigma_elem_ply[elem_num, ply_num, 0] + F2 * sigma_elem_ply[elem_num, ply_num, 1]
                     b = (
                         F11 * sigma_elem_ply[elem_num, ply_num, 0] ** 2
                         + F22 * sigma_elem_ply[elem_num, ply_num, 1] ** 2
                         + F66 * sigma_elem_ply[elem_num, ply_num, 2] ** 2
                     )
-                    tsaiwu_sr[ielem, elem_num * numofplies + ply_num] = 0.5 * (a + np.sqrt(a**2 + 4 * b))
+                    tsaiwu_sr[ielem, elem_num * num_plies + ply_num] = 0.5 * (a + np.sqrt(a**2 + 4 * b))

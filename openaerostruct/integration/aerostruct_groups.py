@@ -50,7 +50,7 @@ def computeCompositeStiffness(surface):
     v21 = (E2 / E1) * v12
     ply_fractions = surface["ply_fractions"]
     ply_angles = surface["ply_angles"]
-    numofplies = len(ply_fractions)
+    num_plies = len(ply_fractions)
 
     # finding the Q matrix
     Q = np.zeros((3, 3))
@@ -65,9 +65,9 @@ def computeCompositeStiffness(surface):
     Q[2, 2] = G12
 
     # finding the Q_bar matrix for each ply in the form of a 3D Array
-    Q_bar = np.zeros((numofplies, 3, 3))
+    Q_bar = np.zeros((num_plies, 3, 3))
     Q_bar_eff = np.zeros((3, 3))
-    for i in range(numofplies):
+    for i in range(num_plies):
         theta = ply_angles[i]
         T = TransformationMatrix(theta)
         Q_bar[i] = np.dot(np.dot(np.linalg.inv(T), Q), T)

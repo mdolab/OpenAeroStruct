@@ -23,7 +23,7 @@ class FailureKS(om.ExplicitComponent):
     ----------
     vonmises : ny-1 x 2 numpy array
         von Mises stress magnitudes for each FEM element.
-    tsaiwu_sr : ny-1 x 4 * numofplies numpy array
+    tsaiwu_sr : ny-1 x 4 * num_plies numpy array
         Tsai-Wu strength ratios for each FEM element (ply at each critical element).
 
     Returns

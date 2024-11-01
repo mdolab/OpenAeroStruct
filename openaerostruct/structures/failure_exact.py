@@ -11,14 +11,15 @@ class FailureExact(om.ExplicitComponent):
     ----------
     vonmises : ny-1 x 2 numpy array
         von Mises stress magnitudes for each FEM element.
-    tsaiwu_sr : ny-1 x 4 * numofplies numpy array
+    tsaiwu_sr : ny-1 x 4 * num_plies numpy array
         Tsai-Wu strength ratios for each FEM element (ply at each critical element).
 
     Returns
     -------
-    failure : float
-        Array of failure conditions. Positive if element has failed. This entity is defined for either
-        failure criteria, vonmises or tsaiwu_sr.
+    failure : ny-1 x num_failure_criteria array
+        Array of failure conditions. Positive if element has failed. This entity is defined for either failure criteria,
+        vonmises or tsaiwu_sr. num_failure_criteria is 2 for tube, 4 for the isotropic wingbox and 4*num_plies for the
+        composite wingbox.
 
     """
 
@@ -30,14 +31,14 @@ class FailureExact(om.ExplicitComponent):
         self.useComposite = "useComposite" in self.options["surface"].keys() and self.options["surface"]["useComposite"]
         if self.useComposite:
             ply_angles = surface["ply_angles"]
-            numofplies = len(ply_angles)
+            num_plies = len(ply_angles)
 
         if surface["fem_model_type"] == "tube":
             num_failure_criteria = 2
 
         elif surface["fem_model_type"] == "wingbox":
             if self.useComposite:  # using the Composite wingbox
-                num_failure_criteria = 4 * numofplies  # 4 critical elements * number of plies
+                num_failure_criteria = 4 * num_plies  # 4 critical elements * number of plies
                 self.srlimit = 1 / surface["safety_factor"]
             else:  # using the Isotropic wingbox
                 num_failure_criteria = 4
