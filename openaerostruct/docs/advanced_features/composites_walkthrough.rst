@@ -3,7 +3,7 @@
 A walkthrough of the composites model
 =====================================
 
-This page will walk you through the composites model in OpenAeroStruct. 
+This page will walk you through the composites model in OpenAeroStruct.
 The composites module allows you to define composite material properties and laminate layups for the wing structure.
 
 .. literalinclude:: ../composite_wingbox_mpt_opt_example.py
@@ -11,12 +11,12 @@ The composites module allows you to define composite material properties and lam
   :end-before: checkpoint 8
 
 Here,  ``useComposite`` is a boolean variable that is set to True to enable the composites model and ``safety_factor`` is the factor of safety used for determining the Tsai-Wu based failure
-criteria of the composite material. The composite material properties are defined using the following variables: 
+criteria of the composite material. The composite material properties are defined using the following variables:
 
-- ``ply_angles`` is a list of the angles of the plies with respect to the x-axis.  
+- ``ply_angles`` is a list of the angles of the plies with respect to the x-axis.
 - ``ply_fractions`` is a list of the ply fractions of the plies. (Should be the same length as ``ply_angles``, with the sum of the fractions equal to 1).
-- ``E1`` is the modulus of elasticity in the fiber direction.  
-- ``E2`` is the modulus of elasticity in the transverse direction.  
+- ``E1`` is the modulus of elasticity in the fiber direction.
+- ``E2`` is the modulus of elasticity in the transverse direction.
 - ``G12`` is the shear modulus.
 - ``nu12`` is the Poisson's ratio.
 - ``sigma_t1`` is the tensile strength in the fiber direction.
@@ -24,6 +24,10 @@ criteria of the composite material. The composite material properties are define
 - ``sigma_t2`` is the tensile strength in the transverse direction.
 - ``sigma_c2`` is the compressive strength in the transverse direction.
 - ``sigma_12max`` is the maximum shear strength.
+
+.. note::
+    The composites failure model doesn't use the ``strength_factor_for_upper_skin`` option from the surface dictionary.
+    If you want to apply a knockdown factor on the compressive strength to account for buckling, you should scale down the values of ``sigma_c1`` and ``sigma_c2``.
 
 Currently, the moduli of elasticity of the entire FEM spatial beam model are assumed to be isotropic
 in 2D plane so as to not change the entire model and is left for the future works. The values of the
@@ -38,7 +42,7 @@ moduli of elasticity are found using The unidirectional ply properties are used 
     \end{bmatrix}
 
 where :math:`E_1` and :math:`E_2` are the moduli of elasticity in the fiber direction and transverse direction, respectively,
-:math:`\nu_{12}` and :math:`\nu_{21}` are the Poisson's ratios, and :math:`G_{12}` is the shear modulus. 
+:math:`\nu_{12}` and :math:`\nu_{21}` are the Poisson's ratios, and :math:`G_{12}` is the shear modulus.
 
 The transformed reduced stiffness matrix is found using the following equation:
 
@@ -56,7 +60,7 @@ where :math:`T` is the transformation matrix. The transformation matrix is found
     0 & 0 & 1
     \end{bmatrix}
 
-where :math:`\theta` is the angle of the ply with respect to the x-axis. 
+where :math:`\theta` is the angle of the ply with respect to the x-axis.
 
 The effective reduced stiffness matrix for the laminate is found using the weighted sum of the reduced stiffness matrices of the plies,
 using their respective ply fraction constituition:
@@ -129,10 +133,10 @@ These local axial and shear stresses are then utilized to calculate the value of
 
     F_{66} = \frac{1}{2 S_{LT}^{2}}
 
-where :math:`S_L^{(+)} \text{and} S_L^{(-)}` are the longitudinal strengths in tension and compression respectively, 
-:math:`S_T^{(+)} \text{and} S_T^{(-)}` are the transverse strengths in tension and compression respectively and 
-:math:`S_{LT}^{(+)}` is the shear strength of a ply. The strength ratios are then used to calculate the Tsai-Wu based failure criteria for each ply. 
-The Tsai-Wu failure criteria is given by:  
+where :math:`S_L^{(+)} \text{and} S_L^{(-)}` are the longitudinal strengths in tension and compression respectively,
+:math:`S_T^{(+)} \text{and} S_T^{(-)}` are the transverse strengths in tension and compression respectively and
+:math:`S_{LT}^{(+)}` is the shear strength of a ply. The strength ratios are then used to calculate the Tsai-Wu based failure criteria for each ply.
+The Tsai-Wu failure criteria is given by:
 
 .. math::
 
@@ -142,15 +146,15 @@ In order to implement the safety factor in the Tsai-Wu failure criteria, the equ
 
 .. math::
     a &= F_1 \sigma_1 + F_2 \sigma_2 \\
-    b &= F_{11} \sigma_1^2 + F_{22} \sigma_2^2 + F_{12} \sigma_1 \sigma_2 
-    
+    b &= F_{11} \sigma_1^2 + F_{22} \sigma_2^2 + F_{12} \sigma_1 \sigma_2
+
 We hence caclulate the **Strength Ratios** using the formula:
 
 .. math::
 
     SR = \frac{1}{2} (a + \sqrt{a^2 + 4 b})
 
-The strength ratio values hence calculated for each ply (determined by the length of ``ply_angles``) at each critical point (4 total), 
+The strength ratio values hence calculated for each ply (determined by the length of ``ply_angles``) at each critical point (4 total),
 (hence 4 x ``numplies`` strength ratio values for each beam element) for all beam elements are aggregated using a **KS Aggregate** function:
 
 .. math::
@@ -165,10 +169,10 @@ where :math:`g` is :math:`\left( \frac{SR}{SR_{\text{lim}}} - 1 \right)` value f
     SR_{\text{lim}} = \frac{1}{FOS}
 
 
-The failure is determined by the value of :math:`\max_j g_j + \hat{g}_{KS}(\rho, g)` exceeding 0.
+The failure is determined by the value of :math:`\hat{g}_{KS}(\rho, g)` exceeding 0.
 
 The effect of using composites can be seen in the following figure. A Pareto-optimal front is generated for the wingbox model using Isotropic (Almunim) and Orthotropic (Carbon Fiber Reinforced Polymer) materials.
 
-.. image:: openaerostruct/docs/advanced_features/figs/compositeModelPareto.png
+.. image:: /advanced_features/figs/compositeModelPareto.png
    :width: 600
    :align: center
