@@ -26,7 +26,7 @@ class SpatialBeamFunctionals(om.Group):
         #          Energy(surface=surface),
         #          promotes=['*'])
 
-        if surface["fem_model_type"] == "tube":
+        if surface["fem_model_type"].lower() == "tube":
             self.add_subsystem(
                 "thicknessconstraint",
                 NonIntersectingThickness(surface=surface),
@@ -41,7 +41,7 @@ class SpatialBeamFunctionals(om.Group):
                 promotes_outputs=["vonmises"],
             )
 
-        elif surface["fem_model_type"] == "wingbox":
+        elif surface["fem_model_type"].lower() == "wingbox":
             if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
                 self.add_subsystem(
                     "tsaiwu_sr",

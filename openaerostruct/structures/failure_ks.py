@@ -59,10 +59,10 @@ class FailureKS(om.ExplicitComponent):
             self.stress_limit = surface["yield"] / self.safety_factor
             self.stress_units = "N/m**2"
 
-        if surface["fem_model_type"] == "tube":
+        if surface["fem_model_type"].lower() == "tube":
             num_failure_criteria = 2
 
-        elif surface["fem_model_type"] == "wingbox":
+        elif surface["fem_model_type"].lower() == "wingbox":
             if self.useComposite:  # using the Composite wingbox
                 num_failure_criteria = 4 * self.num_plies  # 4 critical elements * number of plies
             else:  # using the Isotropic wingbox

@@ -20,7 +20,7 @@ class SpatialBeamAlone(om.Group):
             "geometry", Geometry(surface=surface), promotes_inputs=[], promotes_outputs=["mesh", "t_over_c"]
         )
 
-        if surface["fem_model_type"] == "tube":
+        if surface["fem_model_type"].lower() == "tube":
             tube_promotes_input = []
             tube_promotes_output = ["A", "Iy", "Iz", "J", "radius", "thickness"]
             if "thickness_cp" in surface.keys():
@@ -35,7 +35,7 @@ class SpatialBeamAlone(om.Group):
                 promotes_outputs=tube_promotes_output,
             )
         elif (
-            surface["fem_model_type"] == "wingbox"
+            surface["fem_model_type"].lower() == "wingbox"
         ):  # connections and nomenclature remains same for both isotropic and composite wingbox
             wingbox_promotes_in = ["mesh", "t_over_c"]
             wingbox_promotes_out = [
@@ -68,7 +68,7 @@ class SpatialBeamAlone(om.Group):
         else:
             raise NameError("Please select a valid `fem_model_type` from either `tube` or `wingbox`.")
 
-        if surface["fem_model_type"] == "tube":
+        if surface["fem_model_type"].lower() == "tube":
             self.add_subsystem(
                 "struct_setup",
                 SpatialBeamSetup(surface=surface),
@@ -76,7 +76,7 @@ class SpatialBeamAlone(om.Group):
                 promotes_outputs=["nodes", "local_stiff_transformed", "structural_mass", "cg_location", "element_mass"],
             )
         elif (
-            surface["fem_model_type"] == "wingbox"
+            surface["fem_model_type"].lower() == "wingbox"
         ):  # connections and nomenclature remains same for both isotropic and composite wingbox
             self.add_subsystem(
                 "struct_setup",
@@ -108,14 +108,14 @@ class SpatialBeamAlone(om.Group):
             promotes_outputs=["disp"],
         )
 
-        if surface["fem_model_type"] == "tube":
+        if surface["fem_model_type"].lower() == "tube":
             self.add_subsystem(
                 "struct_funcs",
                 SpatialBeamFunctionals(surface=surface),
                 promotes_inputs=["thickness", "radius", "nodes", "disp"],
                 promotes_outputs=["thickness_intersects", "vonmises", "failure"],
             )
-        elif surface["fem_model_type"] == "wingbox":
+        elif surface["fem_model_type"].lower() == "wingbox":
             if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
                 promotedoutput = "tsaiwu_sr"
             else:  # using the Isotropic wingbox

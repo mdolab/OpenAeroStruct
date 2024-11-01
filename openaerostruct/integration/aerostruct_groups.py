@@ -124,7 +124,7 @@ class AerostructGeometry(om.Group):
             promotes_outputs=geom_promotes_out,
         )
 
-        if surface["fem_model_type"] == "tube":
+        if surface["fem_model_type"].lower() == "tube":
             tube_promotes_input = []
             tube_promotes_output = ["A", "Iy", "Iz", "J", "radius", "thickness"]
             if "thickness_cp" in surface.keys() and connect_geom_DVs:
@@ -139,7 +139,7 @@ class AerostructGeometry(om.Group):
                 promotes_outputs=tube_promotes_output,
             )
         elif (
-            surface["fem_model_type"] == "wingbox"
+            surface["fem_model_type"].lower() == "wingbox"
         ):  # connections and nomenclature remains the same for both isotropic and composite wingbox
             wingbox_promotes_in = ["mesh", "t_over_c"]
             wingbox_promotes_out = [
@@ -172,7 +172,7 @@ class AerostructGeometry(om.Group):
         else:
             raise NameError("Please select a valid `fem_model_type` from either `tube` or `wingbox`.")
 
-        if surface["fem_model_type"] == "wingbox":  # same for both isotropic and composite wingbox
+        if surface["fem_model_type"].lower() == "wingbox":  # same for both isotropic and composite wingbox
             promotes = ["A_int"]
         else:
             promotes = []
@@ -253,7 +253,7 @@ class CoupledPerformance(om.Group):
             promotes_outputs=["CDv", "CDw", "L", "D", "CL1", "CDi", "CD", "CL", "Cl"],
         )
 
-        if surface["fem_model_type"] == "tube":
+        if surface["fem_model_type"].lower() == "tube":
             self.add_subsystem(
                 "struct_funcs",
                 SpatialBeamFunctionals(surface=surface),
@@ -261,7 +261,7 @@ class CoupledPerformance(om.Group):
                 promotes_outputs=["thickness_intersects", "vonmises", "failure"],
             )
 
-        elif surface["fem_model_type"] == "wingbox":
+        elif surface["fem_model_type"].lower() == "wingbox":
             if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite Wing Box
                 promotedoutput = "tsaiwu_sr"
             else:  # using the isotropic Wing Box

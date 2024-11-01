@@ -33,10 +33,10 @@ class FailureExact(om.ExplicitComponent):
             ply_angles = surface["ply_angles"]
             num_plies = len(ply_angles)
 
-        if surface["fem_model_type"] == "tube":
+        if surface["fem_model_type"].lower() == "tube":
             num_failure_criteria = 2
 
-        elif surface["fem_model_type"] == "wingbox":
+        elif surface["fem_model_type"].lower() == "wingbox":
             if self.useComposite:  # using the Composite wingbox
                 num_failure_criteria = 4 * num_plies  # 4 critical elements * number of plies
                 self.srlimit = 1 / surface["safety_factor"]
