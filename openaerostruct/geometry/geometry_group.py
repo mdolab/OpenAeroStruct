@@ -192,11 +192,12 @@ class Geometry(om.Group):
                 "mesh", GeometryMesh(surface=surface), promotes_inputs=bsp_inputs, promotes_outputs=["mesh"]
             )
 
-#Function that constructs the individual section surface data dictionaries
+
+# Function that constructs the individual section surface data dictionaries
 def build_sections(surface):
-    '''This function returns an OpenMDAO Independent Variable Component with an output vector appropriately 
-    named and sized to function as an unified B-spline that joins multiple sections by construction. 
-    
+    """This function returns an OpenMDAO Independent Variable Component with an output vector appropriately
+    named and sized to function as an unified B-spline that joins multiple sections by construction.
+
     Parameters
     ----------
     surface: dict
@@ -206,13 +207,13 @@ def build_sections(surface):
     -------
     section_surfaces : list
         List of OpenAeroStruct surface dictionaries for each individual surface
-        
-    '''
-    #Get number of sections
+
+    """
+    # Get number of sections
     num_sections = surface["num_sections"]
 
     if surface["meshes"] == "gen-meshes":
-        #Verify that all required inputs for automatic mesh generation are provided for each section
+        # Verify that all required inputs for automatic mesh generation are provided for each section
         if len(surface["ny"]) != num_sections:
             raise ValueError("Number of spanwise points needs to be provided for each section")
         if len(surface["taper"]) != num_sections:
@@ -221,22 +222,22 @@ def build_sections(surface):
             raise ValueError("Span needs to be provided for each section")
         if len(surface["sweep"]) != num_sections:
             raise ValueError("Sweep needs to be provided for each section")
-        
-        #Generate unified and individual section meshes
-        mesh, sec_meshes = meshGen.generateMesh(surface) 
+
+        # Generate unified and individual section meshes
+        mesh, sec_meshes = meshGen.generateMesh(surface)
     else:
-        #Allow user to provide mesh for each section
+        # Allow user to provide mesh for each section
         if len(surface["meshes"]) != num_sections:
             raise ValueError("A mesh needs to be provided for each section.")
         sec_meshes = surface["meshes"]
 
     if len(surface["sec_name"]) != num_sections:
-            raise ValueError("A name needs to be provided for each section.")
-    
+        raise ValueError("A name needs to be provided for each section.")
+
     # List of support keys for multi-section wings
     # NOTE: make sure this is consistent to the documentation's surface dict page
     target_keys = [
-        #Essential Info
+        # Essential Info
         "num_section",
         "symmetry",
         "S_ref_type",
@@ -262,7 +263,7 @@ def build_sections(surface):
         "c_max_t",
     ]
 
-    #Constructs a list of section dictionaries and adds the specified supported keys and values from the mult-section surface dictionary.
+    # Constructs a list of section dictionaries and adds the specified supported keys and values from the mult-section surface dictionary.
     surface_sections = []
     num_sections = surface["num_sections"]
 
@@ -278,25 +279,29 @@ def build_sections(surface):
         surface_sections.append(section)
     return surface_sections
 
+
 class MultiSecGeometry(om.Group):
     """
     Group that contains the section geometery groups for the multi-section surface
 
 
-    This group handles the creation of each section geometry group based on parameters 
-    supplied in the multi-section surface dictionary. Meshes for each section can be 
-    provided by the user or automatically generated based on parameters supplied in the 
-    surface dictionary. The group also adds a mesh unification component that combines the 
+    This group handles the creation of each section geometry group based on parameters
+    supplied in the multi-section surface dictionary. Meshes for each section can be
+    provided by the user or automatically generated based on parameters supplied in the
+    surface dictionary. The group also adds a mesh unification component that combines the
     individual section for each mesh into a singular unified mesh for use in aero components.
     Optionally, the joining component can be added that computes the edge distances between sections.
     This information can be used to set a distance constraint along the specified axes if needed.
     """
 
     def initialize(self):
-        self.options.declare("surface", types=dict) #Multi-section surface dictionary
-        self.options.declare("joining_comp",types=bool,default=False) #Specify if a distance computation component should be added
-        self.options.declare("dim_constr",types=list,default=[]) #List of arrays corresponding to each shared edge between section along the surface. Each array inidicates along which axes the distance constarint is applied([x y z])
-
+        self.options.declare("surface", types=dict)  # Multi-section surface dictionary
+        self.options.declare(
+            "joining_comp", types=bool, default=False
+        )  # Specify if a distance computation component should be added
+        self.options.declare(
+            "dim_constr", types=list, default=[]
+        )  # List of arrays corresponding to each shared edge between section along the surface. Each array inidicates along which axes the distance constarint is applied([x y z])
 
     def setup(self):
         surface = self.options["surface"]
@@ -307,35 +312,36 @@ class MultiSecGeometry(om.Group):
         check_multi_sec_surface_dict_keys(surface)
 
         sec_dicts = build_sections(surface)
-        
+
         section_names = []
         for sec in sec_dicts:
             geom_group = Geometry(surface=sec)
             self.add_subsystem(sec["name"], geom_group)
             section_names.append(sec["name"])
 
-
-        #Add the mesh unification component
-        unification_name = '{}_unification'.format(surface["name"])
+        # Add the mesh unification component
+        unification_name = "{}_unification".format(surface["name"])
         from openaerostruct.geometry.geometry_unification import GeomMultiUnification
-        uni_mesh = GeomMultiUnification(sections = sec_dicts, surface_name = surface["name"])
+
+        uni_mesh = GeomMultiUnification(sections=sec_dicts, surface_name=surface["name"])
         self.add_subsystem(unification_name, uni_mesh)
 
-        #Connect each section mesh to mesh unification component inputs
+        # Connect each section mesh to mesh unification component inputs
         for sec_name in section_names:
-            self.connect('{}.mesh'.format(sec_name),'{}.{}_def_mesh'.format(unification_name,sec_name))
+            self.connect("{}.mesh".format(sec_name), "{}.{}_def_mesh".format(unification_name, sec_name))
 
-        #Connect each section t over c B-spline to t over c unification component if needed
+        # Connect each section t over c B-spline to t over c unification component if needed
         if "t_over_c_cp" in surface.keys():
-            for sec_name in section_names: 
-                self.connect('{}.t_over_c'.format(sec_name),'{}.{}_t_over_c'.format(unification_name,sec_name))
+            for sec_name in section_names:
+                self.connect("{}.t_over_c".format(sec_name), "{}.{}_t_over_c".format(unification_name, sec_name))
 
         if joining_comp:
-            #Add section joining component to output edge distances
-            joining_name = '{}_joining'.format(surface["name"])
+            # Add section joining component to output edge distances
+            joining_name = "{}_joining".format(surface["name"])
             from openaerostruct.geometry.geometry_multi_join import GeomMultiJoin
-            join = GeomMultiJoin(sections = sec_dicts,dim_constr = dc)
+
+            join = GeomMultiJoin(sections=sec_dicts, dim_constr=dc)
             self.add_subsystem(joining_name, join)
 
             for sec_name in section_names:
-                self.connect('{}.mesh'.format(sec_name),'{}.{}_join_mesh'.format(joining_name,sec_name))
+                self.connect("{}.mesh".format(sec_name), "{}.{}_join_mesh".format(joining_name, sec_name))

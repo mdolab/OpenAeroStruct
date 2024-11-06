@@ -1,6 +1,7 @@
 import numpy as np
 import openmdao.api as om
 
+
 def compute_unimesh_dims(sections):
     """
     Function computes the dimensions of the unified mesh as well as an index array
@@ -22,16 +23,16 @@ def compute_unimesh_dims(sections):
     uni_nx = sections[0]["mesh"].shape[0]
     uni_ny = 0
     for iSec in range(len(sections)):
-        if iSec == len(sections)-1:
+        if iSec == len(sections) - 1:
             uni_ny += sections[iSec]["mesh"].shape[1]
         else:
             uni_ny += sections[iSec]["mesh"].shape[1] - 1
     uni_mesh_indices = np.arange(uni_nx * uni_ny * 3).reshape((uni_nx, uni_ny, 3))
 
-    return uni_mesh_indices,uni_nx,uni_ny
+    return uni_mesh_indices, uni_nx, uni_ny
 
 
-def compute_unimesh_index_blocks(sections,uni_mesh_indices):
+def compute_unimesh_index_blocks(sections, uni_mesh_indices):
     """
     Function that computes the index block that corresponds to each individual wing section
 
@@ -50,24 +51,24 @@ def compute_unimesh_index_blocks(sections,uni_mesh_indices):
     """
     blocks = []
 
-    #cursor to track the y position of each section along the unified mesh
+    # cursor to track the y position of each section along the unified mesh
     ycurr = 0
 
     for iSec in range(len(sections)):
         mesh = sections[iSec]["mesh"]
-        nx = mesh.shape[0]
         ny = mesh.shape[1]
 
-        if iSec == len(sections) -1:
-            block = uni_mesh_indices[:,ycurr:,:]
+        if iSec == len(sections) - 1:
+            block = uni_mesh_indices[:, ycurr:, :]
             ycurr += ny
         else:
-            block = uni_mesh_indices[:,ycurr:ycurr+(ny-1),:]
-            ycurr += ny-1
+            block = uni_mesh_indices[:, ycurr : ycurr + (ny - 1), :]
+            ycurr += ny - 1
 
         blocks.append(block.flatten())
 
     return blocks
+
 
 def unify_mesh(sections):
     """
@@ -83,22 +84,24 @@ def unify_mesh(sections):
     uniMesh : numpy array
         Unfied surface mesh in OAS format
     """
-    for iSec in np.arange(0,len(sections)-1):
+    for iSec in np.arange(0, len(sections) - 1):
         mesh = sections[iSec]["mesh"]
 
         import copy
+
         if iSec == 0:
-            uniMesh = copy.deepcopy(mesh[:,:-1,:])
+            uniMesh = copy.deepcopy(mesh[:, :-1, :])
         else:
-            uniMesh = np.concatenate([uniMesh,mesh[:,:-1,:]],axis=1)
+            uniMesh = np.concatenate([uniMesh, mesh[:, :-1, :]], axis=1)
     # Stitch the results into a singular mesh
-    mesh = sections[len(sections)-1]["mesh"]
+    mesh = sections[len(sections) - 1]["mesh"]
     if len(sections) == 1:
         import copy
+
         uniMesh = copy.deepcopy(mesh)
     else:
-        uniMesh = np.concatenate([uniMesh,mesh],axis=1)
-        
+        uniMesh = np.concatenate([uniMesh, mesh], axis=1)
+
     return uniMesh
 
 
@@ -109,9 +112,9 @@ class GeomMultiUnification(om.ExplicitComponent):
     the most inboard section) will be added to the unified mesh unchanged. The remaining sections
     are then sequencially added outboard to section 0 along the y-direction. The mesh unification
     component operates under the assumption that it is unifying section that are C0 continous along
-    the span. The most inboard column of points of section i+1 will be coincident with the 
+    the span. The most inboard column of points of section i+1 will be coincident with the
     most outbord column of points of section i. As result, the inboard column of points for each section
-    after section 0 are removed prior to the section being added to the unified mesh. The component also 
+    after section 0 are removed prior to the section being added to the unified mesh. The component also
     produces the appropriate sparse Jacobian matrix for the column removal so that the partials can be computed
     appropriately.
 
@@ -125,6 +128,7 @@ class GeomMultiUnification(om.ExplicitComponent):
     mesh[nx, ny, 3] : numpy array
         Nodal mesh defining the unified surface
     """
+
     def initialize(self):
         """
         Declare options.
@@ -136,13 +140,13 @@ class GeomMultiUnification(om.ExplicitComponent):
         sections = self.options["sections"]
         name = self.options["surface_name"]
 
-        #Get the unified mesh size, index array, and block of indicies for each section
+        # Get the unified mesh size, index array, and block of indicies for each section
         [uni_mesh_indices, uni_nx, uni_ny] = compute_unimesh_dims(sections)
-        uni_mesh_blocks = compute_unimesh_index_blocks(sections,uni_mesh_indices)
-        uni_mesh_name = '{}_uni_mesh'.format(name)
+        uni_mesh_blocks = compute_unimesh_index_blocks(sections, uni_mesh_indices)
+        uni_mesh_name = "{}_uni_mesh".format(name)
 
-        #Loop through each section to build the sparsity pattern for the Jacobian. This Jacobian is fixed based on the mesh size so can be declared here
-        for iSec,section in enumerate(sections):
+        # Loop through each section to build the sparsity pattern for the Jacobian. This Jacobian is fixed based on the mesh size so can be declared here
+        for iSec, section in enumerate(sections):
             mesh = section["mesh"]
             nx = mesh.shape[0]
             ny = mesh.shape[1]
@@ -151,81 +155,78 @@ class GeomMultiUnification(om.ExplicitComponent):
             mesh_name = "{}_def_mesh".format(name)
 
             self.add_input(mesh_name, shape=(nx, ny, 3), units="m", tags=["mphys_coupling"])
-                          
-            #Generate index array
+
+            # Generate index array
             mesh_indices = np.arange(nx * ny * 3).reshape((nx, ny, 3))
 
-            if iSec == len(sections)-1:
+            if iSec == len(sections) - 1:
                 cols = mesh_indices.flatten()
             else:
-                #If not section N then the most inboard column is disregarded
-                cols = mesh_indices[:,:-1,:].flatten()
+                # If not section N then the most inboard column is disregarded
+                cols = mesh_indices[:, :-1, :].flatten()
 
-            #Get data from section block in unified mesh
+            # Get data from section block in unified mesh
             rows = uni_mesh_blocks[iSec]
 
-            #Fill non zero Jacobian entries with ones
+            # Fill non zero Jacobian entries with ones
             data = np.ones_like(rows)
 
             self.declare_partials(uni_mesh_name, mesh_name, val=data, rows=rows, cols=cols)
-            #self.declare_partials(uni_mesh_name, mesh_name, method='fd')
-    
+            # self.declare_partials(uni_mesh_name, mesh_name, method='fd')
+
         self.add_output(uni_mesh_name, shape=(uni_nx, uni_ny, 3), units="m")
 
-
-        #Unify the t/c output of each section if that has been specified
-        if 't_over_c_cp' in sections[0].keys():
-            uni_tc_name = '{}_uni_t_over_c'.format(self.options["surface_name"])
+        # Unify the t/c output of each section if that has been specified
+        if "t_over_c_cp" in sections[0].keys():
+            uni_tc_name = "{}_uni_t_over_c".format(self.options["surface_name"])
 
             Nacc = 0
-            for iSec,section in enumerate(sections):
-                name=section["name"]
+            for iSec, section in enumerate(sections):
+                name = section["name"]
                 t_over_c_name = "{}_t_over_c".format(name)
                 n = int(ny - 1)
-                self.add_input(t_over_c_name, shape=(n),tags=["mphys_coupling"])
+                self.add_input(t_over_c_name, shape=(n), tags=["mphys_coupling"])
 
-                self.declare_partials(uni_tc_name,t_over_c_name,rows = np.arange(0,n) + Nacc,cols = np.arange(0,n), val=np.ones(n))
+                self.declare_partials(
+                    uni_tc_name, t_over_c_name, rows=np.arange(0, n) + Nacc, cols=np.arange(0, n), val=np.ones(n)
+                )
 
                 Nacc += n
 
-            self.add_output(uni_tc_name,shape=(uni_ny-1))
+            self.add_output(uni_tc_name, shape=(uni_ny - 1))
 
     def compute(self, inputs, outputs):
         sections = self.options["sections"]
         surface_name = self.options["surface_name"]
-        uni_mesh_name = '{}_uni_mesh'.format(surface_name)
-        
-        #Loop through all sections to unify the mesh
-        for iSec in np.arange(0,len(sections)-1):
-            mesh = sections[iSec]["mesh"]
-            nx = mesh.shape[0]
-            ny = mesh.shape[1]
+        uni_mesh_name = "{}_uni_mesh".format(surface_name)
+
+        # Loop through all sections to unify the mesh
+        for iSec in np.arange(0, len(sections) - 1):
             name = sections[iSec]["name"]
             mesh_name = "{}_def_mesh".format(name)
 
             if iSec == 0:
-                uniMesh = inputs[mesh_name][:,:-1,:]
+                uniMesh = inputs[mesh_name][:, :-1, :]
             else:
-                uniMesh = np.concatenate([uniMesh,inputs[mesh_name][:,:-1,:]],axis=1)
+                uniMesh = np.concatenate([uniMesh, inputs[mesh_name][:, :-1, :]], axis=1)
 
-        mesh_name = "{}_def_mesh".format(sections[len(sections)-1]["name"])
+        mesh_name = "{}_def_mesh".format(sections[len(sections) - 1]["name"])
         if len(sections) == 1:
             uniMesh = inputs[mesh_name]
         else:
-            uniMesh = np.concatenate([uniMesh,inputs[mesh_name]],axis=1)
+            uniMesh = np.concatenate([uniMesh, inputs[mesh_name]], axis=1)
 
-        if 't_over_c_cp' in sections[0].keys():
-            uni_tc_name = '{}_uni_t_over_c'.format(self.options["surface_name"])
-            for iSec,section in enumerate(sections):
-                name=section["name"]
+        if "t_over_c_cp" in sections[0].keys():
+            uni_tc_name = "{}_uni_t_over_c".format(self.options["surface_name"])
+            for iSec, section in enumerate(sections):
+                name = section["name"]
                 t_over_c_name = "{}_t_over_c".format(name)
-                t_over_c  = inputs[t_over_c_name]
+                t_over_c = inputs[t_over_c_name]
 
                 if iSec == 0:
                     uni_t_over_c = inputs[t_over_c_name]
                 else:
-                    uni_t_over_c = np.concatenate([uni_t_over_c,t_over_c])
+                    uni_t_over_c = np.concatenate([uni_t_over_c, t_over_c])
             outputs[uni_tc_name] = uni_t_over_c
-        
+
         outputs[uni_mesh_name] = uniMesh
-        

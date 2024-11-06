@@ -2,8 +2,7 @@ import numpy as np
 import openmdao.api as om
 
 
-
-def get_section_edge_left(mesh,v=np.ones(3),edge_cur=0,edges_all_constraints=np.ones(3)):
+def get_section_edge_left(mesh, v=np.ones(3), edge_cur=0, edges_all_constraints=np.ones(3)):
     """
     Function that gets the coordinates of the leading and trailing edge points of the left edge of a section. The output can be masked to only retreive the x,y, or z coordinate.
     The function also returns the row and column vectors of non zero entries in the edge coordinate jacobian.
@@ -30,18 +29,17 @@ def get_section_edge_left(mesh,v=np.ones(3),edge_cur=0,edges_all_constraints=np.
 
     """
     nx = mesh.shape[0]
-    ny = mesh.shape[1]
     le_index = 0
-    te_index  = np.ravel_multi_index((nx-1,0,0),mesh.shape)
-    mask = np.array(v, dtype='bool')
+    te_index = np.ravel_multi_index((nx - 1, 0, 0), mesh.shape)
+    mask = np.array(v, dtype="bool")
 
-    rows = np.arange(0,2*np.sum(v)) + 2*int(np.sum(edges_all_constraints[:edge_cur]))
-    cols = np.concatenate([np.arange(le_index,le_index+3)[mask],np.arange(te_index,te_index+3)[mask]])
+    rows = np.arange(0, 2 * np.sum(v)) + 2 * int(np.sum(edges_all_constraints[:edge_cur]))
+    cols = np.concatenate([np.arange(le_index, le_index + 3)[mask], np.arange(te_index, te_index + 3)[mask]])
 
-    return mesh[[0,-1],0][:,np.arange(0,3)[mask]], rows, cols
+    return mesh[[0, -1], 0][:, np.arange(0, 3)[mask]], rows, cols
 
 
-def get_section_edge_right(mesh,v=np.ones(3),edge_cur=0,edges_all_constraints=np.ones(3)):
+def get_section_edge_right(mesh, v=np.ones(3), edge_cur=0, edges_all_constraints=np.ones(3)):
     """
     Function that gets the coordinates of the leading and trailing edge points of the right edge of a section. The output can be masked to only retreive the x,y, or z coordinate.
     The function also returns the row and column vectors of non zero entries in the edge coordinate jacobian.
@@ -66,18 +64,17 @@ def get_section_edge_right(mesh,v=np.ones(3),edge_cur=0,edges_all_constraints=np
     cols : numpy array
         Array of the columns of the non-zero jacobian entries
     """
-        
+
     nx = mesh.shape[0]
     ny = mesh.shape[1]
-    le_index = np.ravel_multi_index((0,ny-1,0),mesh.shape)
-    te_index = np.ravel_multi_index((nx-1,ny-1,0),mesh.shape)
-    mask = np.array(v, dtype='bool')
+    le_index = np.ravel_multi_index((0, ny - 1, 0), mesh.shape)
+    te_index = np.ravel_multi_index((nx - 1, ny - 1, 0), mesh.shape)
+    mask = np.array(v, dtype="bool")
 
-    rows = np.arange(0,2*np.sum(v)) + 2*int(np.sum(edges_all_constraints[:edge_cur]))
-    cols = np.concatenate([np.arange(le_index,le_index+3)[mask],np.arange(te_index,te_index+3)[mask]])
-   
-    return mesh[[0,-1],-1][:,np.arange(0,3)[mask]], rows, cols
+    rows = np.arange(0, 2 * np.sum(v)) + 2 * int(np.sum(edges_all_constraints[:edge_cur]))
+    cols = np.concatenate([np.arange(le_index, le_index + 3)[mask], np.arange(te_index, te_index + 3)[mask]])
 
+    return mesh[[0, -1], -1][:, np.arange(0, 3)[mask]], rows, cols
 
 
 class GeomMultiJoin(om.ExplicitComponent):
@@ -102,29 +99,33 @@ class GeomMultiJoin(om.ExplicitComponent):
         Declare options.
         """
         self.options.declare("sections", types=list, desc="A list of section surface dictionaries to be joined.")
-        self.options.declare("dim_constr",types=list, default=[np.ones(3)],desc="A list of vectors of length three corresponding to each edge. Entries corresponding the dimension([x,y,z]) the user wishes to constraint should be set to 1. Remaining entries should be zero.")
+        self.options.declare(
+            "dim_constr",
+            types=list,
+            default=[np.ones(3)],
+            desc="A list of vectors of length three corresponding to each edge. Entries corresponding the dimension([x,y,z]) the user wishes to constraint should be set to 1. Remaining entries should be zero.",
+        )
 
     def setup(self):
         sections = self.options["sections"]
         self.num_sections = len(sections)
         self.dim_constr = self.options["dim_constr"]
 
-        #Compute total number of unique intersecting edges between each section
-        edgeTotal = self.num_sections-1
-        
-        #Defaults to distane along x-axis for each intersecting edge 
-        if len(self.dim_constr) != (edgeTotal):
-            self.dim_constr = [np.array([1,0,0]) for i in range(edgeTotal)]
+        # Compute total number of unique intersecting edges between each section
+        edgeTotal = self.num_sections - 1
 
-        #Compute size of and add output
-        constr_size = 2*np.count_nonzero(np.concatenate(self.dim_constr))
+        # Defaults to distane along x-axis for each intersecting edge
+        if len(self.dim_constr) != (edgeTotal):
+            self.dim_constr = [np.array([1, 0, 0]) for i in range(edgeTotal)]
+
+        # Compute size of and add output
+        constr_size = 2 * np.count_nonzero(np.concatenate(self.dim_constr))
         self.add_output("section_separation", val=np.zeros(constr_size))
 
-        '''Generate the Jacobian of the edge seperation distance with respect to the section mesh.
-        Jacobian is just ones, zeros, and negative ones so we can declare here. 
-        However the sparsity pattern is complicated and requires two helper functions and the loop below.''' 
+        """Generate the Jacobian of the edge seperation distance with respect to the section mesh.
+        Jacobian is just ones, zeros, and negative ones so we can declare here. However the sparsity pattern is complicated and requires two helper functions and the loop below."""
 
-        #Counter used to track the current unique edge interection between section being processed.
+        # Counter used to track the current unique edge interection between section being processed.
         edge_cur = 0
 
         for iSec, section in enumerate(sections):
@@ -133,36 +134,35 @@ class GeomMultiJoin(om.ExplicitComponent):
             ny = mesh.shape[1]
             name = section["name"]
 
-            #Add the input
+            # Add the input
             mesh_name = "{}_join_mesh".format(name)
             self.add_input(mesh_name, shape=(nx, ny, 3), units="m")
 
-            #Get the sparsity patterns for each section. First and last sections only have one edge intersection.
+            # Get the sparsity patterns for each section. First and last sections only have one edge intersection.
             if iSec == 0:
-                rows,cols = get_section_edge_right(mesh,self.dim_constr[iSec],edge_cur,self.dim_constr)[1:]
-                vals = -1*np.ones_like(rows)
+                rows, cols = get_section_edge_right(mesh, self.dim_constr[iSec], edge_cur, self.dim_constr)[1:]
+                vals = -1 * np.ones_like(rows)
             elif iSec < len(sections) - 1:
-                rows1,cols1 = get_section_edge_left(mesh,self.dim_constr[iSec-1],edge_cur,self.dim_constr)[1:]
+                rows1, cols1 = get_section_edge_left(mesh, self.dim_constr[iSec - 1], edge_cur, self.dim_constr)[1:]
                 vals1 = np.ones_like(rows1)
 
                 edge_cur += 1
-                rows2, cols2 = get_section_edge_right(mesh,self.dim_constr[iSec],edge_cur,self.dim_constr)[1:]
-                vals2 = -1*np.ones_like(rows2)
+                rows2, cols2 = get_section_edge_right(mesh, self.dim_constr[iSec], edge_cur, self.dim_constr)[1:]
+                vals2 = -1 * np.ones_like(rows2)
 
-                rows = np.concatenate([rows1,rows2])
-                cols = np.concatenate([cols1,cols2])
-                vals = np.concatenate([vals1,vals2])
+                rows = np.concatenate([rows1, rows2])
+                cols = np.concatenate([cols1, cols2])
+                vals = np.concatenate([vals1, vals2])
             else:
-                rows, cols = get_section_edge_left(mesh,self.dim_constr[iSec-1],edge_cur,self.dim_constr)[1:]
+                rows, cols = get_section_edge_left(mesh, self.dim_constr[iSec - 1], edge_cur, self.dim_constr)[1:]
                 vals = np.ones_like(rows)
 
-            #Declare partials for the current section
-            self.declare_partials("section_separation",mesh_name,rows=rows,cols=cols,val=vals)
-            #self.declare_partials("section_separation", mesh_name, method='cs')
-            
-        
+            # Declare partials for the current section
+            self.declare_partials("section_separation", mesh_name, rows=rows, cols=cols, val=vals)
+            # self.declare_partials("section_separation", mesh_name, method='cs')
+
     def compute(self, inputs, outputs):
-        #Compute the distances between the corresponding leading and trailing edges along the edge interection between each section
+        # Compute the distances between the corresponding leading and trailing edges along the edge interection between each section
         sections = self.options["sections"]
         edges = []
         edge_constraints = []
@@ -171,15 +171,14 @@ class GeomMultiJoin(om.ExplicitComponent):
             mesh_name = "{}_join_mesh".format(name)
 
             if iSec == 0:
-                edges.append(get_section_edge_right(inputs[mesh_name],self.dim_constr[iSec])[0])
+                edges.append(get_section_edge_right(inputs[mesh_name], self.dim_constr[iSec])[0])
             elif iSec < len(sections) - 1:
-                edges.append(get_section_edge_left(inputs[mesh_name],self.dim_constr[iSec-1])[0])
-                edges.append(get_section_edge_right(inputs[mesh_name],self.dim_constr[iSec])[0])
+                edges.append(get_section_edge_left(inputs[mesh_name], self.dim_constr[iSec - 1])[0])
+                edges.append(get_section_edge_right(inputs[mesh_name], self.dim_constr[iSec])[0])
             else:
-                edges.append(get_section_edge_left(inputs[mesh_name],self.dim_constr[iSec-1])[0])
+                edges.append(get_section_edge_left(inputs[mesh_name], self.dim_constr[iSec - 1])[0])
 
-            
         for i in range(self.num_sections - 1):
-            edge_constraints.append((edges[2*i+1] - edges[2*i]).flatten())
+            edge_constraints.append((edges[2 * i + 1] - edges[2 * i]).flatten())
 
         outputs["section_separation"] = np.array(edge_constraints).flatten()
