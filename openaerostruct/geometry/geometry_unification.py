@@ -181,7 +181,7 @@ class GeomMultiUnification(om.ExplicitComponent):
             uni_tc_name = "{}_uni_t_over_c".format(self.options["surface_name"])
 
             Nacc = 0
-            for iSec, section in enumerate(sections):
+            for section in sections:
                 name = section["name"]
                 t_over_c_name = "{}_t_over_c".format(name)
                 n = int(ny - 1)

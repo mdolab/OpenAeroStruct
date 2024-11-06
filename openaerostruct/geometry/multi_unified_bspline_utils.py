@@ -14,6 +14,7 @@ def build_multi_spline(out_name, num_sections, control_points):
         Number of sections
     control_points: list
         List of B-spline control point arrays corresponding to each section
+
     Returns
     -------
     spline_control : OpenMDAO component object
