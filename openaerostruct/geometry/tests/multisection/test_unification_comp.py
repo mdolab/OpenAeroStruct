@@ -7,7 +7,6 @@ from openaerostruct.utils.testing import run_test, get_multi_section_surface
 
 class Test(unittest.TestCase):
     def test(self):
-
         (surface, chord_bspline) = get_multi_section_surface()
         sec_dicts = build_sections(surface)
 
