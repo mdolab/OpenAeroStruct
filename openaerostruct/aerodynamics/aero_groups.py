@@ -1,5 +1,4 @@
 import openmdao.api as om
-import numpy as np
 from openaerostruct.aerodynamics.compressible_states import CompressibleVLMStates
 from openaerostruct.aerodynamics.geometry import VLMGeometry
 from openaerostruct.aerodynamics.states import VLMStates
@@ -27,20 +26,20 @@ class AeroPoint(om.Group):
             desc="Turns on compressibility correction for moderate Mach number " "flows. Defaults to False.",
         )
 
-
     def setup(self):
         surfaces = self.options["surfaces"]
         rotational = self.options["rotational"]
 
-        #Check for multi-section surfaces and create suitable surface dictionaries for them
-        for i,surface in enumerate(surfaces):
-             #If multisection mesh then build a single surface with the unified mesh data
+        # Check for multi-section surfaces and create suitable surface dictionaries for them
+        for i, surface in enumerate(surfaces):
+            # If multisection mesh then build a single surface with the unified mesh data
             if "isMultiSection" in surface.keys():
                 import copy
+
                 target_keys = [
-                    #Essential Info
+                    # Essential Info
                     "name",
-                    "symmetry",                              
+                    "symmetry",
                     "S_ref_type",
                     "ref_axis_pos",
                     "mesh",
@@ -55,13 +54,12 @@ class AeroPoint(om.Group):
                     "c_max_t",
                 ]
 
-                #Constructs a surface dictionary and adds the specified supported keys and values from the mult-section surface dictionary.
+                # Constructs a surface dictionary and adds the specified supported keys and values from the mult-section surface dictionary.
                 aeroSurface = {}
                 for k in set(surface).intersection(target_keys):
                     aeroSurface[k] = surface[k]
-                #print(aeroSurface["name"])
+                # print(aeroSurface["name"])
                 surfaces[i] = copy.deepcopy(aeroSurface)
-
 
         # Loop through each surface and connect relevant parameters
         for surface in surfaces:
