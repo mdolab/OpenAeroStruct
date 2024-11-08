@@ -15,7 +15,7 @@ class Test(unittest.TestCase):
         from openaerostruct.geometry.multi_unified_bspline_utils import build_multi_spline, connect_multi_spline
 
         # Set-up B-splines for each section. Done here since this information will be needed multiple times.
-        sec_chord_cp = [np.array([1, 1]), np.array([1.0, 0.2])]
+        sec_chord_cp = [np.array([1.0, 1.0]), np.array([1.0, 1.0])]
 
         # Create a dictionary with info and options about the multi-section aerodynamic
         # lifting surface
