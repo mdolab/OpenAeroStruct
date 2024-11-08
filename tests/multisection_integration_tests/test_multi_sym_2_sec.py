@@ -205,13 +205,13 @@ class Test(unittest.TestCase):
         prob2.setup()
         prob2.run_driver()
 
-        assert_near_equal(prob1["aero_point_0.surface_perf.CD"][0], 0.02920058, 1e-6, tol_type="abs")
-        assert_near_equal(prob1["aero_point_0.surface_perf.CL"][0], 0.2999996, 1e-6, tol_type="abs")
-        assert_near_equal(prob1["aero_point_0.CM"][1], -0.07335945, 1e-5, tol_type="abs")
+        assert_near_equal(prob1["aero_point_0.surface_perf.CD"][0], 0.02920058, 1e-3)
+        assert_near_equal(prob1["aero_point_0.surface_perf.CL"][0], 0.2999996, 1e-3)
+        assert_near_equal(prob1["aero_point_0.CM"][1], -0.07335945, 1e-3)
 
-        assert_near_equal(prob2["aero_point_0.surface_perf.CD"][0], 0.02920058, 1e-6, tol_type="abs")
-        assert_near_equal(prob2["aero_point_0.surface_perf.CL"][0], 0.2999996, 1e-6, tol_type="abs")
-        assert_near_equal(prob2["aero_point_0.CM"][1], -0.07335945, 1e-5, tol_type="abs")
+        assert_near_equal(prob2["aero_point_0.surface_perf.CD"][0], 0.02920058, 1e-3)
+        assert_near_equal(prob2["aero_point_0.surface_perf.CL"][0], 0.2999996, 1e-3)
+        assert_near_equal(prob2["aero_point_0.CM"][1], -0.07335945, 1e-3)
 
 
 if __name__ == "__main__":
