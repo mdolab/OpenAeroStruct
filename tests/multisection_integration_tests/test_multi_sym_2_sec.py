@@ -22,7 +22,7 @@ class Test(unittest.TestCase):
                 SNOPT_FLAG = True
             else:
                 SNOPT_FLAG = False
-        except:
+        except ImportError:
             SNOPT_FLAG = False
 
         # Set-up B-splines for each section. Done here since this information will be needed multiple times.
