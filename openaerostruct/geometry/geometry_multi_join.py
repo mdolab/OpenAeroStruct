@@ -162,7 +162,6 @@ class GeomMultiJoin(om.ExplicitComponent):
 
             # Declare partials for the current section
             self.declare_partials("section_separation", mesh_name, rows=rows, cols=cols, val=vals)
-            # self.declare_partials("section_separation", mesh_name, method='cs')
 
     def compute(self, inputs, outputs):
         # Compute the distances between the corresponding leading and trailing edges along the edge interection between each section

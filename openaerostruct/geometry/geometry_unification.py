@@ -172,7 +172,6 @@ class GeomMultiUnification(om.ExplicitComponent):
             data = np.ones_like(rows)
 
             self.declare_partials(uni_mesh_name, mesh_name, val=data, rows=rows, cols=cols)
-            # self.declare_partials(uni_mesh_name, mesh_name, method='fd')
 
         self.add_output(uni_mesh_name, shape=(uni_nx, uni_ny, 3), units="m")
 

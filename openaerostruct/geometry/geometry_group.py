@@ -3,6 +3,8 @@ import numpy as np
 import openmdao.api as om
 from openaerostruct.utils.check_surface_dict import check_surface_dict_keys, check_multi_sec_surface_dict_keys
 import openaerostruct.geometry.geometry_mesh_gen as meshGen
+from openaerostruct.geometry.geometry_unification import GeomMultiUnification
+from openaerostruct.geometry.geometry_multi_join import GeomMultiJoin
 from openaerostruct.utils.interpolation import get_normalized_span_coords
 
 
@@ -321,7 +323,6 @@ class MultiSecGeometry(om.Group):
 
         # Add the mesh unification component
         unification_name = "{}_unification".format(surface["name"])
-        from openaerostruct.geometry.geometry_unification import GeomMultiUnification
 
         uni_mesh = GeomMultiUnification(sections=sec_dicts, surface_name=surface["name"])
         self.add_subsystem(unification_name, uni_mesh)
@@ -338,7 +339,6 @@ class MultiSecGeometry(om.Group):
         if joining_comp:
             # Add section joining component to output edge distances
             joining_name = "{}_joining".format(surface["name"])
-            from openaerostruct.geometry.geometry_multi_join import GeomMultiJoin
 
             join = GeomMultiJoin(sections=sec_dicts, dim_constr=dc)
             self.add_subsystem(joining_name, join)
