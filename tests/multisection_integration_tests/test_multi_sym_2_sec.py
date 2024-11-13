@@ -12,7 +12,6 @@ class Test(unittest.TestCase):
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
         from openaerostruct.geometry.geometry_group import build_sections
         from openaerostruct.geometry.geometry_unification import unify_mesh
-        from openaerostruct.geometry.multi_unified_bspline_utils import build_multi_spline, connect_multi_spline
 
         try:
             import pyoptsparse
@@ -25,7 +24,6 @@ class Test(unittest.TestCase):
         except ImportError:
             SNOPT_FLAG = False
 
-        SNOPT_FLAG = False
         # Set-up B-splines for each section. Done here since this information will be needed multiple times.
         sec_chord_cp = [np.array([1.0, 1.0]), np.array([1.0, 1.0])]
 
@@ -184,8 +182,6 @@ class Test(unittest.TestCase):
                 SNOPT_FLAG = False
         except ImportError:
             SNOPT_FLAG = False
-
-        SNOPT_FLAG = False
 
         # Set-up B-splines for each section. Done here since this information will be needed multiple times.
         sec_chord_cp = [np.array([1.0, 1.0]), np.array([1.0, 1.0])]
