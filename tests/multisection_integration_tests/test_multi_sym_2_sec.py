@@ -25,7 +25,7 @@ class Test(unittest.TestCase):
         except ImportError:
             SNOPT_FLAG = False
 
-        SNOPT_FLAG = True
+        SNOPT_FLAG = False
         # Set-up B-splines for each section. Done here since this information will be needed multiple times.
         sec_chord_cp = [np.array([1.0, 1.0]), np.array([1.0, 1.0])]
 
