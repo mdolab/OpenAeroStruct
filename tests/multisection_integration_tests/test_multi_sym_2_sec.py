@@ -27,7 +27,7 @@ class Test(unittest.TestCase):
 
         SNOPT_FLAG = False
         # Set-up B-splines for each section. Done here since this information will be needed multiple times.
-        sec_chord_cp = [np.array([1.0, 1.0]), np.array([1.0, 0.5])]
+        sec_chord_cp = [np.array([1.0, 1.0]), np.array([1.0, 1.0])]
 
         # Create a dictionary with info and options about the multi-section aerodynamic
         # lifting surface
@@ -186,8 +186,9 @@ class Test(unittest.TestCase):
             SNOPT_FLAG = False
 
         SNOPT_FLAG = False
+
         # Set-up B-splines for each section. Done here since this information will be needed multiple times.
-        sec_chord_cp = [np.array([1.0, 1.0]), np.array([1.0, 0.5])]
+        sec_chord_cp = [np.array([1.0, 1.0]), np.array([1.0, 1.0])]
 
         # Create a dictionary with info and options about the multi-section aerodynamic
         # lifting surface
@@ -199,15 +200,15 @@ class Test(unittest.TestCase):
             "num_sections": 2,  # The number of sections in the multi-section surface
             "sec_name": ["sec0", "sec1"],  # names of the individual sections
             "symmetry": True,  # if true, model one half of wing. reflected across the midspan of the root section
-            "S_ref_type": "wetted",  # how we compute the wing area, can be 'wetted' or 'projected'
-            "rootSection": 1,
+            "S_ref_type": "wetted",  # how we compute the wing area,
+            # can be 'wetted' or 'projected'
             # Geometry Parameters
             "taper": [1.0, 1.0],  # Wing taper for each section
             "span": [1.0, 1.0],  # Wing span for each section
             "sweep": [0.0, 0.0],  # Wing sweep for each section
-            "chord_cp": sec_chord_cp,
+            "chord_cp": sec_chord_cp,  # Use previously set-up B-spline
             "twist_cp": [np.zeros(2), np.zeros(2)],
-            # "chord_cp": [np.ones(1),2*np.ones(1),3*np.ones(1)], #Chord B-spline control points for each section
+            # "sec_chord_cp": [np.ones(1),2*np.ones(1),3*np.ones(1)], #Chord B-spline control points for each section
             "root_chord": 1.0,  # Wing root chord for each section
             # Mesh Parameters
             "meshes": "gen-meshes",  # Supply a mesh for each section or "gen-meshes" for automatic mesh generation
@@ -219,7 +220,6 @@ class Test(unittest.TestCase):
             # Airfoil properties for viscous drag calculation
             "k_lam": 0.05,  # percentage of chord with laminar
             # flow, used for viscous drag
-            # "t_over_c_cp": [np.array([0.15]),np.array([0.15])],  # thickness over chord ratio (NACA0015)
             "c_max_t": 0.303,  # chordwise location of maximum (NACA0015)
             # thickness
             "with_viscous": False,  # if true, compute viscous drag
@@ -227,7 +227,7 @@ class Test(unittest.TestCase):
             "groundplane": False,
         }
 
-        # Create the OpenMDAO problem for the constrained version
+        # Create the OpenMDAO problem
         prob = om.Problem()
 
         # Create an independent variable component that will supply the flow
@@ -243,8 +243,7 @@ class Test(unittest.TestCase):
         # Add this IndepVarComp to the problem model
         prob.model.add_subsystem("prob_vars", indep_var_comp, promotes=["*"])
 
-        # Generate the sections and unified mesh here in addition to adding the components.
-        # This has to also be done here since AeroPoint has to know the unified mesh size.
+        # Generate the sections and unified mesh here. It's needed to join the sections by construction.
         section_surfaces = build_sections(surface)
         uniMesh = unify_mesh(section_surfaces)
         surface["mesh"] = uniMesh
@@ -286,8 +285,7 @@ class Test(unittest.TestCase):
         )
 
         # Add DVs
-        prob.model.add_design_var("surface.sec0.chord_cp", lower=0.1, upper=10.0, units=None)
-        prob.model.add_design_var("surface.sec1.chord_cp", lower=0.1, upper=10.0, units=None)
+        prob.model.add_design_var("chord_bspline.chord_cp_spline", lower=0.1, upper=10.0, units=None)
         prob.model.add_design_var("alpha", lower=0.0, upper=10.0, units="deg")
 
         # Add CL constraint
