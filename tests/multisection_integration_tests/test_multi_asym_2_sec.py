@@ -12,45 +12,9 @@ class Test(unittest.TestCase):
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
         from openaerostruct.geometry.geometry_group import build_sections
         from openaerostruct.geometry.geometry_unification import unify_mesh
+        from openaerostruct.utils.testing import get_two_section_surface_asym
 
-        # Create a dictionary with info and options about the multi-section aerodynamic
-        # lifting surface
-        surface = {
-            # Wing definition
-            # Basic surface parameters
-            "name": "surface",
-            "isMultiSection": True,
-            "num_sections": 2,  # The number of sections in the multi-section surface
-            "sec_name": ["sec0", "sec1"],  # names of the individual sections
-            "symmetry": False,  # if true, model one half of wing. reflected across the midspan of the root section
-            "S_ref_type": "wetted",  # how we compute the wing area,
-            # can be 'wetted' or 'projected'
-            "rootSection": 1,
-            # Geometry Parameters
-            "taper": [1.0, 1.0],  # Wing taper for each section
-            "span": [1.0, 1.0],  # Wing span for each section
-            "sweep": [0.0, 0.0],  # Wing sweep for each section
-            "chord_cp": [np.array([1, 1]), np.array([1.0, 1.0])],
-            "twist_cp": [np.array([0, 0]), np.array([0, 0])],
-            # "sec_chord_cp": [np.ones(1),2*np.ones(1),3*np.ones(1)], #Chord B-spline control points for each section
-            "root_chord": 1.0,  # Wing root chord for each section
-            # Mesh Parameters
-            "meshes": "gen-meshes",  # Supply a mesh for each section or "gen-meshes" for automatic mesh generation
-            "nx": 5,  # Number of chordwise points. Same for all sections
-            "ny": [11, 11],  # Number of spanwise points for each section
-            # Aerodynamic Parameters
-            "CL0": 0.0,  # CL of the surface at alpha=0
-            "CD0": 0.015,  # CD of the surface at alpha=0
-            # Airfoil properties for viscous drag calculation
-            "k_lam": 0.05,  # percentage of chord with laminar
-            # flow, used for viscous drag
-            # "sec_t_over_c_cp": [np.array([0.15]),np.array([0.15])],  # thickness over chord ratio (NACA0015)
-            "c_max_t": 0.303,  # chordwise location of maximum (NACA0015)
-            # thickness
-            "with_viscous": False,  # if true, compute viscous drag
-            "with_wave": False,  # if true, compute wave drag
-            "groundplane": False,
-        }
+        surface, sec_chord_cp = get_two_section_surface_asym()
 
         # Create the OpenMDAO problem
         prob = om.Problem()
@@ -127,7 +91,7 @@ class Test(unittest.TestCase):
         prob.driver.options["tol"] = 1e-3
         prob.driver.options["disp"] = True
         prob.driver.options["maxiter"] = 1000
-        prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
+        # prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
 
         # Set up and run the optimization problem
         prob.setup()
