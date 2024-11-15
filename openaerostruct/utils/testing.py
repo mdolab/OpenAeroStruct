@@ -217,7 +217,7 @@ def get_ground_effect_surfaces():
     return surfaces
 
 
-def get_multi_section_surfaces():
+def get_three_section_surfaces():
     # Outputs a 3 section wing surface and a 2 section tail surface
     # Set-up B-splines for each section. Done here since this information will be needed multiple times.
     wing_chord_cp = [np.ones(2), np.ones(2), np.ones(2)]
@@ -301,8 +301,8 @@ def get_multi_section_surfaces():
     return surfaces, bsplines
 
 
-def get_multi_section_surface():
-    # Outputs a 3 section wing surface and a 2 section tail surface
+def get_three_section_surface():
+    # Outputs a single section wing surface
     # Set-up B-splines for each section. Done here since this information will be needed multiple times.
     wing_chord_cp = [np.ones(2), np.ones(2), np.ones(2)]
 
