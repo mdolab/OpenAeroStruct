@@ -13,17 +13,6 @@ class Test(unittest.TestCase):
         from openaerostruct.geometry.geometry_group import build_sections
         from openaerostruct.geometry.geometry_unification import unify_mesh
 
-        try:
-            import pyoptsparse
-
-            SNOPT = pyoptsparse.Optimizers.SNOPT
-            if SNOPT:
-                SNOPT_FLAG = True
-            else:
-                SNOPT_FLAG = False
-        except ImportError:
-            SNOPT_FLAG = False
-
         # Set-up B-splines for each section. Done here since this information will be needed multiple times.
         sec_chord_cp = [np.array([1.0, 1.0]), np.array([1.0, 1.0])]
 
@@ -124,10 +113,7 @@ class Test(unittest.TestCase):
         prob.model.add_design_var("alpha", lower=0.0, upper=10.0, units="deg")
 
         # Add joined mesh constraint
-        if SNOPT_FLAG:
-            prob.model.add_constraint("surface.surface_joining.section_separation", equals=0.0, scaler=1)
-        else:
-            prob.model.add_constraint("surface.surface_joining.section_separation", upper=0, lower=0)
+        prob.model.add_constraint("surface.surface_joining.section_separation", upper=0, lower=0)
 
         # Add CL constraint
         prob.model.add_constraint(point_name + ".CL", equals=0.3)
@@ -138,20 +124,12 @@ class Test(unittest.TestCase):
         # Add objective
         prob.model.add_objective(point_name + ".CD", scaler=1e4)
 
-        if SNOPT_FLAG:
-            prob.driver = om.pyOptSparseDriver()
-            prob.driver.options["optimizer"] = "SNOPT"
-            prob.driver.opt_settings["Major feasibility tolerance"] = 1e-7
-            prob.driver.opt_settings["Major iterations limit"] = 1000
-            # prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
-
-        else:
-            prob.driver = om.ScipyOptimizeDriver()
-            prob.driver.options["optimizer"] = "SLSQP"
-            prob.driver.options["tol"] = 1e-7
-            prob.driver.options["disp"] = True
-            prob.driver.options["maxiter"] = 1000
-            # prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
+        prob.driver = om.ScipyOptimizeDriver()
+        prob.driver.options["optimizer"] = "SLSQP"
+        prob.driver.options["tol"] = 1e-7
+        prob.driver.options["disp"] = True
+        prob.driver.options["maxiter"] = 1000
+        # prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
 
         # Set up and run the optimization problem
         prob.setup()
@@ -171,17 +149,6 @@ class Test(unittest.TestCase):
         from openaerostruct.geometry.geometry_group import build_sections
         from openaerostruct.geometry.geometry_unification import unify_mesh
         from openaerostruct.geometry.multi_unified_bspline_utils import build_multi_spline, connect_multi_spline
-
-        try:
-            import pyoptsparse
-
-            SNOPT = pyoptsparse.Optimizers.SNOPT
-            if SNOPT:
-                SNOPT_FLAG = True
-            else:
-                SNOPT_FLAG = False
-        except ImportError:
-            SNOPT_FLAG = False
 
         # Set-up B-splines for each section. Done here since this information will be needed multiple times.
         sec_chord_cp = [np.array([1.0, 1.0]), np.array([1.0, 1.0])]
@@ -293,20 +260,12 @@ class Test(unittest.TestCase):
         # Add objective
         prob.model.add_objective(point_name + ".CD", scaler=1e4)
 
-        if SNOPT_FLAG:
-            prob.driver = om.pyOptSparseDriver()
-            prob.driver.options["optimizer"] = "SNOPT"
-            prob.driver.opt_settings["Major feasibility tolerance"] = 1e-7
-            prob.driver.opt_settings["Major iterations limit"] = 1000
-            # prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
-
-        else:
-            prob.driver = om.ScipyOptimizeDriver()
-            prob.driver.options["optimizer"] = "SLSQP"
-            prob.driver.options["tol"] = 1e-7
-            prob.driver.options["disp"] = True
-            prob.driver.options["maxiter"] = 1000
-            # prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
+        prob.driver = om.ScipyOptimizeDriver()
+        prob.driver.options["optimizer"] = "SLSQP"
+        prob.driver.options["tol"] = 1e-7
+        prob.driver.options["disp"] = True
+        prob.driver.options["maxiter"] = 1000
+        # prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
 
         # Set up and run the optimization problem
         prob.setup()
