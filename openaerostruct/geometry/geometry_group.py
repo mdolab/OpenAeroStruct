@@ -1,7 +1,7 @@
 import numpy as np
 
 import openmdao.api as om
-from openaerostruct.utils.check_surface_dict import check_surface_dict_keys, check_multi_sec_surface_dict_keys
+from openaerostruct.utils.check_surface_dict import check_surface_dict_keys
 import openaerostruct.geometry.geometry_mesh_gen as meshGen
 from openaerostruct.geometry.geometry_unification import GeomMultiUnification
 from openaerostruct.geometry.geometry_multi_join import GeomMultiJoin
@@ -311,7 +311,7 @@ class MultiSecGeometry(om.Group):
         dc = self.options["dim_constr"]
 
         # key validation of the surface dict
-        check_multi_sec_surface_dict_keys(surface)
+        check_surface_dict_keys(surface)
 
         sec_dicts = build_sections(surface)
 
