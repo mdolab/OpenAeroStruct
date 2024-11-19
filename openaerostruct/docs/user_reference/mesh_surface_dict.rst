@@ -128,6 +128,59 @@ The surface dict will be provided to Groups, including ``Geometry``, ``AeroPoint
       - 
       - Position of reference axis along the chord about which to apply twist, chord, taper, and span geometry transformations. 1 is the trailing edge, 0 is the leading edge.
 
+.. list-table:: Multi-section Surface definition
+    :widths: 20 20 5 55
+    :header-rows: 1
+
+    * - Key
+      - Example value
+      - Units
+      - Description
+    * - is_multi_section
+      - True
+      - 
+      - This key must be present and set to True for the AeroPoint to correctly interpret this surface as multi-section.
+    * - num_sections
+      - 2
+      - 
+      - The number of sections in the multi-section surface.
+    * - sec_name
+      - ["sec0","sec1","sec2"]
+      - 
+      - Names of the individual sections. Each section must be named and the list length must match the specified number of sections.
+    * - meshes
+      - "gen-meshes" or [mesh1,mesh2,...]
+      - 
+      - Supply a list of meshes for each section or "gen-meshes" for automatic mesh generation
+    * - root_chord
+      - 1.0
+      - m
+      - Root chord length of the section indicated as "root section"(required if using the built-in mesh generator)
+    * - span
+      - [10.0,10.0]
+      - m
+      - Wing span for each section. The list length must match the specified number of sections.
+    * - ny
+      - [21,21]
+      - 
+      - Number of spanwise points for each section. The list length must match the specified number of sections. (required if using the built-in multi-section mesh generator)
+    * - nx
+      - 10
+      - 
+      - Number of chordwise points. Same for all sections.(required if using the built-in multi-section mesh generator)
+    * - bpanels
+      - [10,10]
+      - 
+      - Number of spanwise panels for each section. The list length must match the specified number of sections. An alternative to specifying nx.
+    * - cpanels
+      - [10,10]
+      - 
+      - Number of chordwise panels for each section. An alternative to specifying ny.
+    * - root_section
+      - 1
+      - 
+      - Root chord length of the section indicated as "root section"(required if using the built-in mesh generator)
+
 .. list-table:: Aerodynamics definitions
     :widths: 20 20 5 55
     :header-rows: 1
