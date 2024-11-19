@@ -1,3 +1,7 @@
+"""Optimizes the section chord distribution of a two section symmetrical wing with thickenss and viscous effects accounted
+for. This examples is similar to the inviscid case but explains how to connect the unified t/c B-spline to the OAS performance
+component for correct viscous drag computation. This example is referenced as part of the multi-section tutorial."""
+
 import numpy as np
 
 import openmdao.api as om
@@ -11,7 +15,7 @@ import matplotlib.pyplot as plt
 
 
 # Set-up B-splines for each section. Done here since this information will be needed multiple times.
-sec_chord_cp = [np.array([1, 1]), np.array([1.0, 0.2])]
+sec_chord_cp = [np.array([1.0, 1.0]), np.array([1.0, 1.0])]
 
 
 # Create a dictionary with info and options about the multi-section aerodynamic
@@ -20,31 +24,44 @@ surface = {
     # Wing definition
     # Basic surface parameters
     "name": "surface",
-    "isMultiSection": True,
+    "isMultiSection": True,  # This key must be present for the AeroPoint to correctly interpret this surface as multi-section
     "num_sections": 2,  # The number of sections in the multi-section surface
-    "sec_name": ["sec0", "sec1"],  # names of the individual sections
+    "sec_name": [
+        "sec0",
+        "sec1",
+    ],  # names of the individual sections. Each section must be named and the list length must match the specified number of sections.
     "symmetry": True,  # if true, model one half of wing. reflected across the midspan of the root section
-    "S_ref_type": "wetted",  # how we compute the wing area,
-    # can be 'wetted' or 'projected'
+    "S_ref_type": "wetted",  # how we compute the wing area, can be 'wetted' or 'projected'
     # Geometry Parameters
-    "taper": [1.0, 1.0],  # Wing taper for each section
-    "span": [1.0, 1.0],  # Wing span for each section
-    "sweep": [0.0, 0.0],  # Wing sweep for each section
-    "chord_cp": sec_chord_cp,  # Use previously set-up B-spline
-    "twist_cp": [np.zeros(2), np.zeros(2)],
-    # "sec_chord_cp": [np.ones(1),2*np.ones(1),3*np.ones(1)], #Chord B-spline control points for each section
-    "root_chord": 1.0,  # Wing root chord for each section
+    "taper": [1.0, 1.0],  # Wing taper for each section. The list length must match the specified number of sections.
+    "span": [2.0, 2.0],  # Wing span for each section. The list length must match the specified number of sections.
+    "sweep": [0.0, 0.0],  # Wing sweep for each section. The list length must match the specified number of sections.
+    "chord_cp": [
+        np.array([1, 1]),
+        np.array([1, 1]),
+    ],  # The chord B-spline parameterization for EACH SECTION. The list length must match the specified number of sections.
+    "twist_cp": [
+        np.zeros(2),
+        np.zeros(2),
+    ],  # The twist B-spline parameterization for EACH SECTION. The list length must match the specified number of sections.
+    "t_over_c_cp": [
+        np.array([0.15]),
+        np.array([0.15]),
+    ],  # The thickenss to chord ratio B-spline parameterization for EACH SECTION. The list length must match the specified number of sections.
+    "root_chord": 1.0,  # Root chord length of the section indicated as "root section"(required if using the built-in mesh generator)
     # Mesh Parameters
-    "meshes": "gen-meshes",  # Supply a mesh for each section or "gen-meshes" for automatic mesh generation
-    "nx": 3,  # Number of chordwise points. Same for all sections
-    "ny": [21, 21],  # Number of spanwise points for each section
+    "meshes": "gen-meshes",  # Supply a list of meshes for each section or "gen-meshes" for automatic mesh generation
+    "nx": 2,  # Number of chordwise points. Same for all sections.(required if using the built-in mesh generator)
+    "ny": [
+        21,
+        21,
+    ],  # Number of spanwise points for each section. The list length must match the specified number of sections. (required if using the built-in mesh generator)
     # Aerodynamic Parameters
     "CL0": 0.0,  # CL of the surface at alpha=0
     "CD0": 0.015,  # CD of the surface at alpha=0
     # Airfoil properties for viscous drag calculation
     "k_lam": 0.05,  # percentage of chord with laminar
     # flow, used for viscous drag
-    "t_over_c_cp": [np.array([0.15]), np.array([0.15])],  # thickness over chord ratio (NACA0015)
     "c_max_t": 0.303,  # chordwise location of maximum (NACA0015)
     # thickness
     "with_viscous": True,  # if true, compute viscous drag
@@ -67,7 +84,6 @@ indep_var_comp.add_output("cg", val=np.zeros((3)), units="m")
 
 # Add this IndepVarComp to the problem model
 prob.model.add_subsystem("prob_vars", indep_var_comp, promotes=["*"])
-
 
 # Generate the sections and unified mesh here. It's needed to join the sections by construction.
 section_surfaces = build_sections(surface)
@@ -106,16 +122,22 @@ prob.model.connect(
     name + "." + unification_name + "." + name + "_uni_mesh", point_name + ".aero_states." + "surface" + "_def_mesh"
 )
 
-# Connect t over c B-spline for viscous drag
+
+# docs checkpoint 0
+
+"""If the surface features a thickness to chord ratio B-spline, then the Muli-section geometry component will automatically
+combine them together while enforcing C0 continuity. This process will occurs regardless of whether the constraint or construction-based 
+section joining method are used as otherwise OAS will not be able to calculate the viscous drag correctly. Pay close attention to how the 
+unified t_over_c B-spline(given a unique name by the multi-section geometry group) needs to be connect to the AeroPoint performance component."""
 prob.model.connect(
     name + "." + unification_name + "." + name + "_uni_t_over_c", point_name + "." + name + "_perf." + "t_over_c"
 )
 
+# docs checkpoint 1
 
 # Add DVs
 prob.model.add_design_var("chord_bspline.chord_cp_spline", lower=0.1, upper=10.0, units=None)
 prob.model.add_design_var("alpha", lower=0.0, upper=10.0, units="deg")
-
 
 # Add CL constraint
 prob.model.add_constraint(point_name + ".CL", equals=0.3)
@@ -128,14 +150,13 @@ prob.model.add_objective(point_name + ".CD", scaler=1e4)
 
 prob.driver = om.ScipyOptimizeDriver()
 prob.driver.options["optimizer"] = "SLSQP"
-prob.driver.options["tol"] = 1e-3
+prob.driver.options["tol"] = 1e-7
 prob.driver.options["disp"] = True
 prob.driver.options["maxiter"] = 1000
-prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
+# prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
 
 # Set up and run the optimization problem
 prob.setup()
-# prob.run_model()
 prob.run_driver()
 # om.n2(prob)
 
@@ -162,10 +183,8 @@ def plot_meshes(meshes):
     plt.axis("equal")
     plt.xlabel("y (m)")
     plt.ylabel("x (m)")
-    # plt.legend()
-    # plt.savefig('opt_planform_construction.png')
+    # plt.savefig('opt_planform_visc_construction.png')
 
 
-# plot_meshes([mesh1,mesh2])
 plot_meshes([meshUni])
-plt.show()
+# plt.show()

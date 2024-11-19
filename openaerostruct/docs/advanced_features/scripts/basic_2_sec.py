@@ -1,3 +1,6 @@
+"""Optimizes the section chord distribution of a two section symmetrical wing using the constraint-based approach for section
+joining. This example is referenced as part of the multi-section tutorial."""
+
 # docs checkpoint 0
 import numpy as np
 import openmdao.api as om
@@ -38,7 +41,7 @@ surface = {
     # Wing definition
     # Basic surface parameters
     "name": "surface",
-    "isMultiSection": True,  # This key must be present for the AeroGroup to correctly interpret this surface as multi-section
+    "isMultiSection": True,  # This key must be present for the AeroPoint to correctly interpret this surface as multi-section
     "num_sections": 2,  # The number of sections in the multi-section surface
     "sec_name": [
         "sec0",
@@ -146,7 +149,8 @@ prob.model.add_subsystem(point_name, aero_group, promotes_inputs=["v", "alpha", 
 
 # docs checkpoint 5
 
-# The following steps are similar to a normal OAS surface script but note the differences.
+# The following steps are similar to a normal OAS surface script but note the differences in surface naming. Note that
+# unified surface created by the multi-section geometry group needs to be connected to AeroPoint(be careful with the naming)
 
 # Get name of surface and construct the name of the unified surface mesh
 name = surface["name"]
@@ -171,7 +175,7 @@ prob.model.add_design_var("alpha", lower=0.0, upper=10.0, units="deg")
 
 
 # Next, we add the C0 continuity constraint for this problem by constraining the x-distance between sections to 0.
-# NOTE: SLSQP optimizer does not handle this equality constraint properly so the constraint needs to be specified as an inequality constraint
+# NOTE: SLSQP optimizer does not handle the joining equality constraint properly so the constraint needs to be specified as an inequality constraint
 # All other optimizers like SNOPT can handle the equality constraint as is.
 
 prob.model.add_constraint("surface.surface_joining.section_separation", upper=0, lower=0)  # FOR SLSQP

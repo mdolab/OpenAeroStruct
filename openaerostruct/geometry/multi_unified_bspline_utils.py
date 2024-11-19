@@ -40,7 +40,7 @@ def connect_multi_spline(prob, section_surfaces, sec_cp, out_name, comp_name, re
     controls points of each section's B-spline. This is how section joining by consturction is acheived.
     An issue occurs however when a B-spline in a particular section only has one control point. In this case the one
     section control point is bound to the left edge B-spline component control point. As result, there is nothing to
-    maintain C0 continuity with the next section. As result a constaint will need to be manually set. To facilitate this,
+    maintain C0 continuity with the next section. As result a constraint will need to be manually set. To facilitate this,
     the array bind_inds will contain a list of the B-spline control point indicies that will need to be manually constrained to
     their previous sections.
 

@@ -1,3 +1,6 @@
+"""Optimizes the section chord distribution of a two section symmetrical wing using the construction-based approach for section
+joining. This example is referenced as part of the multi-section tutorial."""
+
 import numpy as np
 
 import openmdao.api as om
@@ -6,13 +9,9 @@ from openaerostruct.geometry.geometry_group import MultiSecGeometry
 from openaerostruct.aerodynamics.aero_groups import AeroPoint
 from openaerostruct.geometry.geometry_group import build_sections
 from openaerostruct.geometry.geometry_unification import unify_mesh
-from openaerostruct.geometry.multi_unified_bspline_utils import build_multi_spline, connect_multi_spline
 import matplotlib.pyplot as plt
 
 
-import niceplots
-
-plt.style.use(niceplots.get_style("doumont-light"))
 # Set-up B-splines for each section. Done here since this information will be needed multiple times.
 sec_chord_cp = [np.array([1, 1]), np.array([1.0, 0.2])]
 
@@ -23,25 +22,34 @@ surface = {
     # Wing definition
     # Basic surface parameters
     "name": "surface",
-    "isMultiSection": True,
+    "isMultiSection": True,  # This key must be present for the AeroPoint to correctly interpret this surface as multi-section
     "num_sections": 2,  # The number of sections in the multi-section surface
-    "sec_name": ["sec0", "sec1"],  # names of the individual sections
+    "sec_name": [
+        "sec0",
+        "sec1",
+    ],  # names of the individual sections. Each section must be named and the list length must match the specified number of sections.
     "symmetry": True,  # if true, model one half of wing. reflected across the midspan of the root section
-    "S_ref_type": "wetted",  # how we compute the wing area,
-    # can be 'wetted' or 'projected'
+    "S_ref_type": "wetted",  # how we compute the wing area, can be 'wetted' or 'projected'
     # Geometry Parameters
-    "taper": [1.0, 1.0],  # Wing taper for each section
-    "span": [2.0, 2.0],  # Wing span for each section
-    "sweep": [0.0, 0.0],  # Wing sweep for each section
-    "chord_cp": sec_chord_cp,  # Use previously set-up B-spline
-    "twist_cp": [np.zeros(2), np.zeros(2)],
-    "ref_axis_pos": [0.25, 0.25],
-    # "sec_chord_cp": [np.ones(1),2*np.ones(1),3*np.ones(1)], #Chord B-spline control points for each section
-    "root_chord": 1.0,  # Wing root chord for each section
+    "taper": [1.0, 1.0],  # Wing taper for each section. The list length must match the specified number of sections.
+    "span": [2.0, 2.0],  # Wing span for each section. The list length must match the specified number of sections.
+    "sweep": [0.0, 0.0],  # Wing sweep for each section. The list length must match the specified number of sections.
+    "chord_cp": [
+        np.array([1, 1]),
+        np.array([1, 1]),
+    ],  # The chord B-spline parameterization for EACH SECTION. The list length must match the specified number of sections.
+    "twist_cp": [
+        np.zeros(2),
+        np.zeros(2),
+    ],  # The twist B-spline parameterization for EACH SECTION. The list length must match the specified number of sections.
+    "root_chord": 1.0,  # Root chord length of the section indicated as "root section"(required if using the built-in mesh generator)
     # Mesh Parameters
-    "meshes": "gen-meshes",  # Supply a mesh for each section or "gen-meshes" for automatic mesh generation
-    "nx": 2,  # Number of chordwise points. Same for all sections
-    "ny": [21, 21],  # Number of spanwise points for each section
+    "meshes": "gen-meshes",  # Supply a list of meshes for each section or "gen-meshes" for automatic mesh generation
+    "nx": 2,  # Number of chordwise points. Same for all sections.(required if using the built-in mesh generator)
+    "ny": [
+        21,
+        21,
+    ],  # Number of spanwise points for each section. The list length must match the specified number of sections. (required if using the built-in mesh generator)
     # Aerodynamic Parameters
     "CL0": 0.0,  # CL of the surface at alpha=0
     "CD0": 0.015,  # CD of the surface at alpha=0
@@ -77,18 +85,57 @@ section_surfaces = build_sections(surface)
 uniMesh = unify_mesh(section_surfaces)
 surface["mesh"] = uniMesh
 
-# Build a component with B-spline control points that joins the sections by construction
+# docs checkpoint 0
+
+# To use the construction based approach an additional import is required.
+from openaerostruct.geometry.multi_unified_bspline_utils import build_multi_spline, connect_multi_spline
+
+"""This functions builds an OpenMDAO B-spline component for the surface with the correct number of control points
+corresponding to each section junction on the surface. Refer to the functions documentions for input details. After
+the compnent has been generated it needs to be added to the model."""
 chord_comp = build_multi_spline("chord_cp", len(section_surfaces), sec_chord_cp)
 prob.model.add_subsystem("chord_bspline", chord_comp)
 
-# Connect the B-spline component to the section B-splines
+"""In order to properly transform the surface geometry the surface B-spline's control points need to be connected
+to the corresponding control points of the local B-spline component on each section. This function automates this
+process as it can be tedious.
+
+The figure below explains how the surface B-spline's control points are connected to the control point of the local 
+section B-spline. In this example, each section features a two point B-spline with control points at the section tips 
+however the principle is the same for B-splines with more points.
+
+
+                surface B-spline
+0;;;;;;;;;;;;;;;;;;;;;;1;;;;;;;;;;;;;;;;;;;;;;;2
+^                      ^                       ^ 
+|                      |                       |
+|                      |                       |
+|                      |    sec 1 B-spline     |
+     sec 0 B-spline    c:::::::::::::::::::::::d
+a::::::::::::::::::::::b
+-----------------------------------------------  ^
+|                      |                       | |
+|                      |                       | |
+|        sec 0         |         sec 1         | | root         
+|                      |                       | | chord
+|______________________|_______________________| |
+                                                 _
+                                              y = 0 ------------------> + y
+
+
+An edge case in this process is when a section features a B-spline with a single control point. The same control point
+cannot be assigned to two different control points on the surface B-spline. In these situations a constraint will need 
+to be used to maintain C0 continuity. See the connect_multi_spline documentation for details.
+"""
 connect_multi_spline(prob, section_surfaces, sec_chord_cp, "chord_cp", "chord_bspline")
 
-# Create and add a group that handles the geometry for the
-# aerodynamic lifting surface
+
+""" With the surface B-spline connected we can add the multi-section geometry group. Note that in this case the joining
+component does not need to be specified as we are not joining the sections by constraint."""
 multi_geom_group = MultiSecGeometry(surface=surface)
 prob.model.add_subsystem(surface["name"], multi_geom_group)
 
+# docs checkpoint 1
 
 # Create the aero point group, which contains the actual aerodynamic
 # analyses
@@ -125,15 +172,14 @@ prob.model.add_objective(point_name + ".CD", scaler=1e4)
 
 prob.driver = om.ScipyOptimizeDriver()
 prob.driver.options["optimizer"] = "SLSQP"
-prob.driver.options["tol"] = 1e-3
+prob.driver.options["tol"] = 1e-7
 prob.driver.options["disp"] = True
 prob.driver.options["maxiter"] = 1000
-prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
+# prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
 
 # Set up and run the optimization problem
 prob.setup()
-prob.run_model()
-# prob.run_driver()
+prob.run_driver()
 # om.n2(prob)
 
 
@@ -159,13 +205,8 @@ def plot_meshes(meshes):
     plt.axis("equal")
     plt.xlabel("y (m)")
     plt.ylabel("x (m)")
-    # ax.get_xaxis().set_visible(False)
-    # ax.get_yaxis().set_visible(False)
-    # ax.set_axis_off()
-    # plt.legend()
-    plt.savefig("opt_planform_construction.png")
+    plt.savefig("opt_planform_construction.pdf")
 
 
-# plot_meshes([mesh1,mesh2])
 plot_meshes([meshUni])
 # plt.show()
