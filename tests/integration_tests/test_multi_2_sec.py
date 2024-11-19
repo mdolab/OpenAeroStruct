@@ -40,8 +40,8 @@ class Test(unittest.TestCase):
         # Generate the sections and unified mesh here in addition to adding the components.
         # This has to also be done here since AeroPoint has to know the unified mesh size.
         section_surfaces = build_sections(surface)
-        uniMesh = unify_mesh(section_surfaces)
-        surface["mesh"] = uniMesh
+        uni_mesh = unify_mesh(section_surfaces)
+        surface["mesh"] = uni_mesh
 
         # Create and add a group that handles the geometry for the
         # aerodynamic lifting surface
@@ -136,8 +136,8 @@ class Test(unittest.TestCase):
 
         # Generate the sections and unified mesh here. It's needed to join the sections by construction.
         section_surfaces = build_sections(surface)
-        uniMesh = unify_mesh(section_surfaces)
-        surface["mesh"] = uniMesh
+        uni_mesh = unify_mesh(section_surfaces)
+        surface["mesh"] = uni_mesh
 
         # Build a component with B-spline control points that joins the sections by construction
         chord_comp = build_multi_spline("chord_cp", len(section_surfaces), sec_chord_cp)
@@ -240,8 +240,8 @@ class Test(unittest.TestCase):
         # Generate the sections and unified mesh here in addition to adding the components.
         # This has to ALSO be done here since AeroPoint has to know the unified mesh size.
         section_surfaces = build_sections(surface)
-        uniMesh = unify_mesh(section_surfaces)
-        surface["mesh"] = uniMesh
+        uni_mesh = unify_mesh(section_surfaces)
+        surface["mesh"] = uni_mesh
 
         # Create the aero point group, which contains the actual aerodynamic
         # analyses
@@ -331,8 +331,8 @@ class Test(unittest.TestCase):
 
         # Generate the sections and unified mesh here. It's needed to join the sections by construction.
         section_surfaces = build_sections(surface)
-        uniMesh = unify_mesh(section_surfaces)
-        surface["mesh"] = uniMesh
+        uni_mesh = unify_mesh(section_surfaces)
+        surface["mesh"] = uni_mesh
 
         # Build a component with B-spline control points that joins the sections by construction
         chord_comp = build_multi_spline("chord_cp", len(section_surfaces), sec_chord_cp)

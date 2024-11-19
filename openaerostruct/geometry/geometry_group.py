@@ -226,7 +226,7 @@ def build_sections(surface):
             raise ValueError("Sweep needs to be provided for each section")
 
         # Generate unified and individual section meshes
-        mesh, sec_meshes = meshGen.generateMesh(surface)
+        mesh, sec_meshes = meshGen.generate_mesh(surface)
     else:
         # Allow user to provide mesh for each section
         if len(surface["meshes"]) != num_sections:

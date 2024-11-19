@@ -226,7 +226,7 @@ def get_three_section_surface_sym():
         # Wing definition
         # Basic surface parameters
         "name": "surface",
-        "isMultiSection": True,
+        "is_multi_section": True,
         "num_sections": 3,  # The number of sections in the multi-section surface
         "sec_name": ["sec0", "sec1", "sec2"],  # names of the individual sections
         "symmetry": True,  # if true, model one half of wing. reflected across the midspan of the root section
@@ -273,13 +273,13 @@ def get_three_section_surface_asym():
         # Wing definition
         # Basic surface parameters
         "name": "surface",
-        "isMultiSection": True,
+        "is_multi_section": True,
         "num_sections": 3,  # The number of sections in the multi-section surface
         "sec_name": ["sec0", "sec1", "sec2"],  # names of the individual sections
         "symmetry": False,  # if true, model one half of wing. reflected across the midspan of the root section
         "S_ref_type": "wetted",  # how we compute the wing area,
         # can be 'wetted' or 'projected'
-        "rootSection": 1,
+        "root_section": 1,
         # Geometry Parameters
         "taper": [1.0, 1.0, 1.0],  # Wing taper for each section
         "span": [1.0, 1.0, 1.0],  # Wing span for each section
@@ -323,12 +323,12 @@ def get_two_section_surface_sym():
         # Wing definition
         # Basic surface parameters
         "name": "surface",
-        "isMultiSection": True,
+        "is_multi_section": True,
         "num_sections": 2,  # The number of sections in the multi-section surface
         "sec_name": ["sec0", "sec1"],  # names of the individual sections
         "symmetry": True,  # if true, model one half of wing. reflected across the midspan of the root section
         "S_ref_type": "wetted",  # how we compute the wing area, can be 'wetted' or 'projected'
-        "rootSection": 1,
+        "root_section": 1,
         # Geometry Parameters
         "taper": [1.0, 1.0],  # Wing taper for each section
         "span": [1.0, 1.0],  # Wing span for each section
@@ -369,7 +369,7 @@ def get_two_section_surface_sym_visc():
         # Wing definition
         # Basic surface parameters
         "name": "surface",
-        "isMultiSection": True,
+        "is_multi_section": True,
         "num_sections": 2,  # The number of sections in the multi-section surface
         "sec_name": ["sec0", "sec1"],  # names of the individual sections
         "symmetry": True,  # if true, model one half of wing. reflected across the midspan of the root section
@@ -415,13 +415,13 @@ def get_two_section_surface_asym():
         # Wing definition
         # Basic surface parameters
         "name": "surface",
-        "isMultiSection": True,
+        "is_multi_section": True,
         "num_sections": 2,  # The number of sections in the multi-section surface
         "sec_name": ["sec0", "sec1"],  # names of the individual sections
         "symmetry": False,  # if true, model one half of wing. reflected across the midspan of the root section
         "S_ref_type": "wetted",  # how we compute the wing area,
         # can be 'wetted' or 'projected'
-        "rootSection": 1,
+        "root_section": 1,
         # Geometry Parameters
         "taper": [1.0, 1.0],  # Wing taper for each section
         "span": [1.0, 1.0],  # Wing span for each section

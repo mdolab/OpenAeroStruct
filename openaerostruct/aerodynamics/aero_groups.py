@@ -33,7 +33,7 @@ class AeroPoint(om.Group):
         # Check for multi-section surfaces and create suitable surface dictionaries for them
         for i, surface in enumerate(surfaces):
             # If multisection mesh then build a single surface with the unified mesh data
-            if "isMultiSection" in surface.keys():
+            if "is_multi_section" in surface.keys():
                 import copy
 
                 target_keys = [

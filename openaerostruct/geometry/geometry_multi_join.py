@@ -115,11 +115,11 @@ class GeomMultiJoin(om.ExplicitComponent):
         self.dim_constr = self.options["dim_constr"]
 
         # Compute total number of unique intersecting edges between each section
-        edgeTotal = self.num_sections - 1
+        edge_total = self.num_sections - 1
 
         # Defaults to distane along x-axis for each intersecting edge
-        if len(self.dim_constr) != (edgeTotal):
-            self.dim_constr = [np.array([1, 0, 0]) for i in range(edgeTotal)]
+        if len(self.dim_constr) != (edge_total):
+            self.dim_constr = [np.array([1, 0, 0]) for i in range(edge_total)]
 
         # Compute size of and add output
         constr_size = 2 * np.count_nonzero(np.concatenate(self.dim_constr))
@@ -131,7 +131,7 @@ class GeomMultiJoin(om.ExplicitComponent):
         # Counter used to track the current unique edge interection between section being processed.
         edge_cur = 0
 
-        for iSec, section in enumerate(sections):
+        for i_sec, section in enumerate(sections):
             mesh = section["mesh"]
             nx = mesh.shape[0]
             ny = mesh.shape[1]
@@ -142,22 +142,22 @@ class GeomMultiJoin(om.ExplicitComponent):
             self.add_input(mesh_name, shape=(nx, ny, 3), units="m")
 
             # Get the sparsity patterns for each section. First and last sections only have one edge intersection.
-            if iSec == 0:
-                rows, cols = get_section_edge_right(mesh, self.dim_constr[iSec], edge_cur, self.dim_constr)[1:]
+            if i_sec == 0:
+                rows, cols = get_section_edge_right(mesh, self.dim_constr[i_sec], edge_cur, self.dim_constr)[1:]
                 vals = -1 * np.ones_like(rows)
-            elif iSec < len(sections) - 1:
-                rows1, cols1 = get_section_edge_left(mesh, self.dim_constr[iSec - 1], edge_cur, self.dim_constr)[1:]
+            elif i_sec < len(sections) - 1:
+                rows1, cols1 = get_section_edge_left(mesh, self.dim_constr[i_sec - 1], edge_cur, self.dim_constr)[1:]
                 vals1 = np.ones_like(rows1)
 
                 edge_cur += 1
-                rows2, cols2 = get_section_edge_right(mesh, self.dim_constr[iSec], edge_cur, self.dim_constr)[1:]
+                rows2, cols2 = get_section_edge_right(mesh, self.dim_constr[i_sec], edge_cur, self.dim_constr)[1:]
                 vals2 = -1 * np.ones_like(rows2)
 
                 rows = np.concatenate([rows1, rows2])
                 cols = np.concatenate([cols1, cols2])
                 vals = np.concatenate([vals1, vals2])
             else:
-                rows, cols = get_section_edge_left(mesh, self.dim_constr[iSec - 1], edge_cur, self.dim_constr)[1:]
+                rows, cols = get_section_edge_left(mesh, self.dim_constr[i_sec - 1], edge_cur, self.dim_constr)[1:]
                 vals = np.ones_like(rows)
 
             # Declare partials for the current section
@@ -168,17 +168,17 @@ class GeomMultiJoin(om.ExplicitComponent):
         sections = self.options["sections"]
         edges = []
         edge_constraints = []
-        for iSec, section in enumerate(sections):
+        for i_sec, section in enumerate(sections):
             name = section["name"]
             mesh_name = "{}_join_mesh".format(name)
 
-            if iSec == 0:
-                edges.append(get_section_edge_right(inputs[mesh_name], self.dim_constr[iSec])[0])
-            elif iSec < len(sections) - 1:
-                edges.append(get_section_edge_left(inputs[mesh_name], self.dim_constr[iSec - 1])[0])
-                edges.append(get_section_edge_right(inputs[mesh_name], self.dim_constr[iSec])[0])
+            if i_sec == 0:
+                edges.append(get_section_edge_right(inputs[mesh_name], self.dim_constr[i_sec])[0])
+            elif i_sec < len(sections) - 1:
+                edges.append(get_section_edge_left(inputs[mesh_name], self.dim_constr[i_sec - 1])[0])
+                edges.append(get_section_edge_right(inputs[mesh_name], self.dim_constr[i_sec])[0])
             else:
-                edges.append(get_section_edge_left(inputs[mesh_name], self.dim_constr[iSec - 1])[0])
+                edges.append(get_section_edge_left(inputs[mesh_name], self.dim_constr[i_sec - 1])[0])
 
         for i in range(self.num_sections - 1):
             edge_constraints.append((edges[2 * i + 1] - edges[2 * i]).flatten())

@@ -68,7 +68,7 @@ def check_surface_dict_keys(surface):
         "mx",
         "my",
         # Multisection
-        "isMultiSection",
+        "is_multi_section",
         "num_sections",
         "sec_name",
         "meshes",
@@ -76,9 +76,9 @@ def check_surface_dict_keys(surface):
         "span",
         "ny",
         "nx",
-        "bPanels",
-        "cPanels",
-        "rootSection",
+        "bpanels",
+        "cpanels",
+        "root_section",
     ]
 
     for key in surface.keys():

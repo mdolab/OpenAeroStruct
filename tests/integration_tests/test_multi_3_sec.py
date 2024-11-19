@@ -46,8 +46,8 @@ class Test(unittest.TestCase):
         # Generate the sections and unified mesh here in addition to adding the components.
         # This has to ALSO be done here since AeroPoint has to know the unified mesh size.
         section_surfaces = build_sections(surface)
-        uniMesh = unify_mesh(section_surfaces)
-        surface["mesh"] = uniMesh
+        uni_mesh = unify_mesh(section_surfaces)
+        surface["mesh"] = uni_mesh
 
         # Create the aero point group, which contains the actual aerodynamic
         # analyses
@@ -148,8 +148,8 @@ class Test(unittest.TestCase):
         # Generate the sections and unified mesh here in addition to adding the components.
         # This has to ALSO be done here since AeroPoint has to know the unified mesh size.
         section_surfaces = build_sections(surface)
-        uniMesh = unify_mesh(section_surfaces)
-        surface["mesh"] = uniMesh
+        uni_mesh = unify_mesh(section_surfaces)
+        surface["mesh"] = uni_mesh
 
         # Create the aero point group, which contains the actual aerodynamic
         # analyses

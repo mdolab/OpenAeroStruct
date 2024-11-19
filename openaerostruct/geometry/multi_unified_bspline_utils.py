@@ -70,7 +70,7 @@ def connect_multi_spline(prob, section_surfaces, sec_cp, out_name, comp_name, re
     bind_inds = []
     for i, section in enumerate(section_surfaces):
         point_count = len(sec_cp[i])
-        srcinds = np.arange(acc, acc + point_count)
+        src_inds = np.arange(acc, acc + point_count)
         acc += point_count - 1
         if point_count == 1:
             acc += 1
@@ -78,7 +78,7 @@ def connect_multi_spline(prob, section_surfaces, sec_cp, out_name, comp_name, re
         prob.model.connect(
             "{}.{}".format(comp_name, out_name) + "_spline",
             "surface." + section["name"] + ".{}".format(out_name),
-            src_indices=srcinds,
+            src_indices=src_inds,
         )
 
     if return_bind_inds:

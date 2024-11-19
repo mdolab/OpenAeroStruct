@@ -24,7 +24,7 @@ surface = {
     # Wing definition
     # Basic surface parameters
     "name": "surface",
-    "isMultiSection": True,  # This key must be present for the AeroPoint to correctly interpret this surface as multi-section
+    "is_multi_section": True,  # This key must be present for the AeroPoint to correctly interpret this surface as multi-section
     "num_sections": 2,  # The number of sections in the multi-section surface
     "sec_name": [
         "sec0",
