@@ -60,6 +60,10 @@ Geometric transformations parameterized by a single value, such as sweep, taper,
    :start-after: checkpoint 0
    :end-before: checkpoint 1
 
+.. literalinclude:: /advanced_features/scripts/basic_2_sec_construction.py
+   :start-after: checkpoint 2
+   :end-before: checkpoint 3
+
 We can now create the aerodynamic analysis group.
 
 .. literalinclude:: /advanced_features/scripts/basic_2_sec.py

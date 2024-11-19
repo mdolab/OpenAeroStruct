@@ -11,6 +11,12 @@ from openaerostruct.geometry.geometry_group import build_sections
 from openaerostruct.geometry.geometry_unification import unify_mesh
 import matplotlib.pyplot as plt
 
+# docs checkpoint 0
+
+# To use the construction based approach an additional import is required.
+from openaerostruct.geometry.multi_unified_bspline_utils import build_multi_spline, connect_multi_spline
+
+# docs checkpoint 1
 
 # Set-up B-splines for each section. Done here since this information will be needed multiple times.
 sec_chord_cp = [np.array([1, 1]), np.array([1.0, 0.2])]
@@ -56,7 +62,7 @@ surface = {
     # Airfoil properties for viscous drag calculation
     "k_lam": 0.05,  # percentage of chord with laminar
     # flow, used for viscous drag
-    "c_max_t": 0.303,  # chordwise location of maximum (NACA0015)
+    "c_max_t": 0.303,  # chordwise location of maximum (NACA0015)# docs checkpoint 1
     # thickness
     "with_viscous": False,  # if true, compute viscous drag
     "with_wave": False,  # if true, compute wave drag
@@ -85,10 +91,7 @@ section_surfaces = build_sections(surface)
 uniMesh = unify_mesh(section_surfaces)
 surface["mesh"] = uniMesh
 
-# docs checkpoint 0
-
-# To use the construction based approach an additional import is required.
-from openaerostruct.geometry.multi_unified_bspline_utils import build_multi_spline, connect_multi_spline
+# docs checkpoint 2
 
 """This functions builds an OpenMDAO B-spline component for the surface with the correct number of control points
 corresponding to each section junction on the surface. Refer to the functions documentions for input details. After
@@ -100,14 +103,14 @@ prob.model.add_subsystem("chord_bspline", chord_comp)
 to the corresponding control points of the local B-spline component on each section. This function automates this
 process as it can be tedious.
 
-The figure below explains how the surface B-spline's control points are connected to the control point of the local 
-section B-spline. In this example, each section features a two point B-spline with control points at the section tips 
+The figure below explains how the surface B-spline's control points are connected to the control point of the local
+section B-spline. In this example, each section features a two point B-spline with control points at the section tips
 however the principle is the same for B-splines with more points.
 
 
                 surface B-spline
 0;;;;;;;;;;;;;;;;;;;;;;1;;;;;;;;;;;;;;;;;;;;;;;2
-^                      ^                       ^ 
+^                      ^                       ^
 |                      |                       |
 |                      |                       |
 |                      |    sec 1 B-spline     |
@@ -116,7 +119,7 @@ a::::::::::::::::::::::b
 -----------------------------------------------  ^
 |                      |                       | |
 |                      |                       | |
-|        sec 0         |         sec 1         | | root         
+|        sec 0         |         sec 1         | | root
 |                      |                       | | chord
 |______________________|_______________________| |
                                                  _
@@ -124,7 +127,7 @@ a::::::::::::::::::::::b
 
 
 An edge case in this process is when a section features a B-spline with a single control point. The same control point
-cannot be assigned to two different control points on the surface B-spline. In these situations a constraint will need 
+cannot be assigned to two different control points on the surface B-spline. In these situations a constraint will need
 to be used to maintain C0 continuity. See the connect_multi_spline documentation for details.
 """
 connect_multi_spline(prob, section_surfaces, sec_chord_cp, "chord_cp", "chord_bspline")
@@ -135,7 +138,7 @@ component does not need to be specified as we are not joining the sections by co
 multi_geom_group = MultiSecGeometry(surface=surface)
 prob.model.add_subsystem(surface["name"], multi_geom_group)
 
-# docs checkpoint 1
+# docs checkpoint 3
 
 # Create the aero point group, which contains the actual aerodynamic
 # analyses

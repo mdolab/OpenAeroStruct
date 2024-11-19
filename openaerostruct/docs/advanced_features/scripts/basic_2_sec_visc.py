@@ -126,8 +126,8 @@ prob.model.connect(
 # docs checkpoint 0
 
 """If the surface features a thickness to chord ratio B-spline, then the Muli-section geometry component will automatically
-combine them together while enforcing C0 continuity. This process will occurs regardless of whether the constraint or construction-based 
-section joining method are used as otherwise OAS will not be able to calculate the viscous drag correctly. Pay close attention to how the 
+combine them together while enforcing C0 continuity. This process will occurs regardless of whether the constraint or construction-based
+section joining method are used as otherwise OAS will not be able to calculate the viscous drag correctly. Pay close attention to how the
 unified t_over_c B-spline(given a unique name by the multi-section geometry group) needs to be connect to the AeroPoint performance component."""
 prob.model.connect(
     name + "." + unification_name + "." + name + "_uni_t_over_c", point_name + "." + name + "_perf." + "t_over_c"
