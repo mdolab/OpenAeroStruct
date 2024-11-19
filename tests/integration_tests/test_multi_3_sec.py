@@ -3,7 +3,7 @@ import unittest
 
 
 class Test(unittest.TestCase):
-    def test_constraint(self):
+    def test_symmetric(self):
         import numpy as np
 
         import openmdao.api as om
@@ -12,11 +12,13 @@ class Test(unittest.TestCase):
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
         from openaerostruct.geometry.geometry_group import build_sections
         from openaerostruct.geometry.geometry_unification import unify_mesh
-        from openaerostruct.utils.testing import get_two_section_surface_sym
+        from openaerostruct.utils.testing import get_three_section_surface_sym
 
-        surface, sec_chord_cp = get_two_section_surface_sym()
+        # Create a dictionary with info and options about the multi-section aerodynamic
+        # lifting surface
+        surface, sec_chord_cp = get_three_section_surface_sym()
 
-        # Create the OpenMDAO problem for the constrained version
+        # Create the OpenMDAO problem
         prob = om.Problem()
 
         # Create an independent variable component that will supply the flow
@@ -32,18 +34,20 @@ class Test(unittest.TestCase):
         # Add this IndepVarComp to the problem model
         prob.model.add_subsystem("prob_vars", indep_var_comp, promotes=["*"])
 
-        # Generate the sections and unified mesh here in addition to adding the components.
-        # This has to also be done here since AeroPoint has to know the unified mesh size.
-        section_surfaces = build_sections(surface)
-        uniMesh = unify_mesh(section_surfaces)
-        surface["mesh"] = uniMesh
-
         # Create and add a group that handles the geometry for the
         # aerodynamic lifting surface
         multi_geom_group = MultiSecGeometry(
-            surface=surface, joining_comp=True, dim_constr=[np.array([1, 0, 0]), np.array([1, 0, 0])]
+            surface=surface,
+            joining_comp=True,
+            dim_constr=[np.array([1, 0, 0]), np.array([1, 0, 0]), np.array([1, 0, 0])],
         )
         prob.model.add_subsystem(surface["name"], multi_geom_group)
+
+        # Generate the sections and unified mesh here in addition to adding the components.
+        # This has to ALSO be done here since AeroPoint has to know the unified mesh size.
+        section_surfaces = build_sections(surface)
+        uniMesh = unify_mesh(section_surfaces)
+        surface["mesh"] = uniMesh
 
         # Create the aero point group, which contains the actual aerodynamic
         # analyses
@@ -72,10 +76,12 @@ class Test(unittest.TestCase):
         # Add DVs
         prob.model.add_design_var("surface.sec0.chord_cp", lower=0.1, upper=10.0, units=None)
         prob.model.add_design_var("surface.sec1.chord_cp", lower=0.1, upper=10.0, units=None)
+        prob.model.add_design_var("surface.sec2.chord_cp", lower=0.1, upper=10.0, units=None)
         prob.model.add_design_var("alpha", lower=0.0, upper=10.0, units="deg")
 
         # Add joined mesh constraint
         prob.model.add_constraint("surface.surface_joining.section_separation", upper=0, lower=0)
+        # prob.model.add_constraint('surface.surface_joining.section_separation',equals=0.0)
 
         # Add CL constraint
         prob.model.add_constraint(point_name + ".CL", equals=0.3)
@@ -97,11 +103,11 @@ class Test(unittest.TestCase):
         prob.setup()
         prob.run_driver()
 
-        assert_near_equal(prob["aero_point_0.surface_perf.CD"][0], 0.02920058, 1e-3)
-        assert_near_equal(prob["aero_point_0.surface_perf.CL"][0], 0.2999996, 1e-3)
-        assert_near_equal(prob["aero_point_0.CM"][1], -0.07335945, 1e-3)
+        assert_near_equal(prob["aero_point_0.surface_perf.CD"][0], 0.02126492, 1e-6)
+        assert_near_equal(prob["aero_point_0.surface_perf.CL"][0], 0.3, 1e-6)
+        assert_near_equal(prob["aero_point_0.CM"][1], -0.10778177, 1e-6)
 
-    def test_construction(self):
+    def test_asymmetric(self):
         import numpy as np
 
         import openmdao.api as om
@@ -110,10 +116,9 @@ class Test(unittest.TestCase):
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
         from openaerostruct.geometry.geometry_group import build_sections
         from openaerostruct.geometry.geometry_unification import unify_mesh
-        from openaerostruct.geometry.multi_unified_bspline_utils import build_multi_spline, connect_multi_spline
-        from openaerostruct.utils.testing import get_two_section_surface_sym
+        from openaerostruct.utils.testing import get_three_section_surface_asym
 
-        surface, sec_chord_cp = get_two_section_surface_sym()
+        surface, sec_chord_cp = get_three_section_surface_asym()
 
         # Create the OpenMDAO problem
         prob = om.Problem()
@@ -131,22 +136,20 @@ class Test(unittest.TestCase):
         # Add this IndepVarComp to the problem model
         prob.model.add_subsystem("prob_vars", indep_var_comp, promotes=["*"])
 
-        # Generate the sections and unified mesh here. It's needed to join the sections by construction.
+        # Create and add a group that handles the geometry for the
+        # aerodynamic lifting surface
+        multi_geom_group = MultiSecGeometry(
+            surface=surface,
+            joining_comp=True,
+            dim_constr=[np.array([1, 0, 0]), np.array([1, 0, 0]), np.array([1, 0, 0])],
+        )
+        prob.model.add_subsystem(surface["name"], multi_geom_group)
+
+        # Generate the sections and unified mesh here in addition to adding the components.
+        # This has to ALSO be done here since AeroPoint has to know the unified mesh size.
         section_surfaces = build_sections(surface)
         uniMesh = unify_mesh(section_surfaces)
         surface["mesh"] = uniMesh
-
-        # Build a component with B-spline control points that joins the sections by construction
-        chord_comp = build_multi_spline("chord_cp", len(section_surfaces), sec_chord_cp)
-        prob.model.add_subsystem("chord_bspline", chord_comp)
-
-        # Connect the B-spline component to the section B-splines
-        connect_multi_spline(prob, section_surfaces, sec_chord_cp, "chord_cp", "chord_bspline")
-
-        # Create and add a group that handles the geometry for the
-        # aerodynamic lifting surface
-        multi_geom_group = MultiSecGeometry(surface=surface)
-        prob.model.add_subsystem(surface["name"], multi_geom_group)
 
         # Create the aero point group, which contains the actual aerodynamic
         # analyses
@@ -172,15 +175,20 @@ class Test(unittest.TestCase):
             point_name + ".aero_states." + "surface" + "_def_mesh",
         )
 
-        # Add DVs
-        prob.model.add_design_var("chord_bspline.chord_cp_spline", lower=0.1, upper=10.0, units=None)
+        prob.model.add_design_var("surface.sec0.chord_cp", lower=0.1, upper=10.0, units=None)
+        prob.model.add_design_var("surface.sec1.chord_cp", lower=0.1, upper=10.0, units=None)
+        prob.model.add_design_var("surface.sec2.chord_cp", lower=0.1, upper=10.0, units=None)
         prob.model.add_design_var("alpha", lower=0.0, upper=10.0, units="deg")
+
+        # Add joined mesh constraint
+        prob.model.add_constraint("surface.surface_joining.section_separation", upper=0, lower=0)
+        # prob.model.add_constraint('surface.surface_joining.section_separation',equals=0.0,scaler=1e-4)
 
         # Add CL constraint
         prob.model.add_constraint(point_name + ".CL", equals=0.3)
 
         # Add Area constraint
-        prob.model.add_constraint(point_name + ".total_perf.S_ref_total", equals=2.0)
+        prob.model.add_constraint(point_name + ".total_perf.S_ref_total", equals=2.5)
 
         # Add objective
         prob.model.add_objective(point_name + ".CD", scaler=1e4)
@@ -196,9 +204,9 @@ class Test(unittest.TestCase):
         prob.setup()
         prob.run_driver()
 
-        assert_near_equal(prob["aero_point_0.surface_perf.CD"][0], 0.02920058, 1e-3)
-        assert_near_equal(prob["aero_point_0.surface_perf.CL"][0], 0.2999996, 1e-3)
-        assert_near_equal(prob["aero_point_0.CM"][1], -0.07335945, 1e-3)
+        assert_near_equal(prob["aero_point_0.surface_perf.CD"][0], 0.02270839, 1e-6)
+        assert_near_equal(prob["aero_point_0.surface_perf.CL"][0], 0.3, 1e-6)
+        assert_near_equal(prob["aero_point_0.CM"][1], -0.08717908, 1e-6)
 
 
 if __name__ == "__main__":

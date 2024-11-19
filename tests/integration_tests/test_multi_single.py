@@ -12,84 +12,16 @@ class Test(unittest.TestCase):
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
         from openaerostruct.geometry.geometry_group import build_sections
         from openaerostruct.geometry.geometry_unification import unify_mesh
-        from openaerostruct.geometry.utils import generate_mesh
+        from openaerostruct.utils.testing import get_two_section_surface_sym, get_single_section_surface
 
         """Create a dictionary with info and options about the aerodynamic
         single section lifting surface"""
-
-        # Create a dictionary to store options about the mesh
-        mesh_dict = {
-            "num_y": 81,
-            "num_x": 2,
-            "wing_type": "rect",
-            "span": 2.0,
-            "root_chord": 1.0,
-            "symmetry": True,
-            "span_cos_spacing": 0,
-            "chord_cos_spacing": 0,
-        }
-
-        # Generate the aerodynamic mesh based on the previous dictionary
-        mesh = generate_mesh(mesh_dict)
-        surfaceSingle = {
-            # Wing definition
-            "name": "surface",  # name of the surface
-            "symmetry": True,  # if true, model one half of wing
-            # reflected across the plane y = 0
-            "S_ref_type": "wetted",  # how we compute the wing area,
-            # can be 'wetted' or 'projected'
-            "twist_cp": np.zeros(2),
-            "mesh": mesh,
-            "CL0": 0.0,  # CL of the surface at alpha=0
-            "CD0": 0.0,  # CD of the surface at alpha=0
-            # Airfoil properties for viscous drag calculation
-            "k_lam": 0.05,  # percentage of chord with laminar
-            # flow, used for viscous drag
-            "c_max_t": 0.303,  # chordwise location of maximum (NACA0015)
-            # thickness
-            "with_viscous": False,  # if true, compute viscous drag
-            "with_wave": False,  # if true, compute wave drag
-            "groundplane": False,
-        }
+        surfaceSingle = get_single_section_surface()
 
         """Create a dictionary with info and options about the multi-section aerodynamic
         lifting surface"""
-
-        surfaceMulti = {
-            # Wing definition
-            # Basic surface parameters
-            "name": "surfaceMulti",
-            "isMultiSection": True,
-            "num_sections": 2,  # The number of sections in the multi-section surface
-            "sec_name": ["sec0", "sec1"],  # names of the individual sections
-            "symmetry": True,  # if true, model one half of wing. reflected across the midspan of the root section
-            "S_ref_type": "wetted",  # how we compute the wing area, can be 'wetted' or 'projected'
-            "rootSection": 1,
-            # Geometry Parameters
-            "taper": [1.0, 1.0],  # Wing taper for each section
-            "span": [1.0, 1.0],  # Wing span for each section
-            "sweep": [0.0, 0.0],  # Wing sweep for each section
-            "chord_cp": [np.array([1, 1]), np.array([1, 1])],
-            "twist_cp": [np.zeros(2), np.zeros(2)],
-            # "chord_cp": [np.ones(1),2*np.ones(1),3*np.ones(1)], #Chord B-spline control points for each section
-            "root_chord": 1.0,  # Wing root chord for each section
-            # Mesh Parameters
-            "meshes": "gen-meshes",  # Supply a mesh for each section or "gen-meshes" for automatic mesh generation
-            "nx": 2,  # Number of chordwise points. Same for all sections
-            "ny": [21, 21],  # Number of spanwise points for each section
-            # Aerodynamic Parameters
-            "CL0": 0.0,  # CL of the surface at alpha=0
-            "CD0": 0.0,  # CD of the surface at alpha=0
-            # Airfoil properties for viscous drag calculation
-            "k_lam": 0.05,  # percentage of chord with laminar
-            # flow, used for viscous drag
-            # "t_over_c_cp": [np.array([0.15]),np.array([0.15])],  # thickness over chord ratio (NACA0015)
-            "c_max_t": 0.303,  # chordwise location of maximum (NACA0015)
-            # thickness
-            "with_viscous": False,  # if true, compute viscous drag
-            "with_wave": False,  # if true, compute wave drag
-            "groundplane": False,
-        }
+        surfaceMulti, sec_chord_cp = get_two_section_surface_sym()
+        surfaceMulti["name"] = "surfaceMulti"
 
         # Create the OpenMDAO problem
         prob = om.Problem()
@@ -166,14 +98,14 @@ class Test(unittest.TestCase):
 
         # Connect the mesh from the mesh unification component to the analysis point
         prob.model.connect(
-            name + "." + unification_name + "." + name + "_uni_mesh", point_name1 + "." + "surfaceMulti" + ".def_mesh"
+            name + "." + unification_name + "." + name + "_uni_mesh", point_name1 + "." + name + ".def_mesh"
         )
 
         # Perform the connections with the modified names within the
         # 'aero_states' group.
         prob.model.connect(
             name + "." + unification_name + "." + name + "_uni_mesh",
-            point_name1 + ".aero_states." + "surfaceMulti" + "_def_mesh",
+            point_name1 + ".aero_states." + name + "_def_mesh",
         )
 
         # Add DVs
@@ -191,7 +123,7 @@ class Test(unittest.TestCase):
         prob.driver.options["tol"] = 1e-6
         prob.driver.options["disp"] = True
         prob.driver.options["maxiter"] = 1000
-        prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
+        # prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
 
         # Set up and run the optimization problem
         prob.setup()
