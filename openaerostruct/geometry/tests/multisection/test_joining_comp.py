@@ -3,12 +3,12 @@ import unittest
 
 from openaerostruct.geometry.geometry_multi_join import GeomMultiJoin
 from openaerostruct.geometry.geometry_group import build_sections
-from openaerostruct.utils.testing import run_test, get_three_section_surface_sym
+from openaerostruct.utils.testing import run_test, get_three_section_surface
 
 
 class Test(unittest.TestCase):
     def test(self):
-        (surface, chord_bspline) = get_three_section_surface_sym()
+        (surface, chord_bspline) = get_three_section_surface()
         sec_dicts = build_sections(surface)
 
         comp = GeomMultiJoin(sections=sec_dicts, dim_constr=[np.ones(3), np.ones(3), np.ones(3)])
