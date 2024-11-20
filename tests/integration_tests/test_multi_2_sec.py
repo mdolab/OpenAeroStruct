@@ -4,6 +4,7 @@ import unittest
 
 class Test(unittest.TestCase):
     def assert_check_results_sym(self, prob):
+        """We put the assert_near_equal for the test_constraint and test construction cases here since they should both return the same results."""
         assert_near_equal(prob["aero_point_0.surface_perf.CD"][0], 0.02920058, 1e-3)
         assert_near_equal(prob["aero_point_0.surface_perf.CL"][0], 0.2999996, 1e-3)
         assert_near_equal(prob["aero_point_0.CM"][1], -0.07335945, 1e-3)
@@ -17,9 +18,9 @@ class Test(unittest.TestCase):
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
         from openaerostruct.geometry.geometry_group import build_sections
         from openaerostruct.geometry.geometry_unification import unify_mesh
-        from openaerostruct.utils.testing import get_two_section_surface_sym
+        from openaerostruct.utils.testing import get_two_section_surface
 
-        surface, sec_chord_cp = get_two_section_surface_sym()
+        surface, sec_chord_cp = get_two_section_surface()
 
         # Create the OpenMDAO problem for the constrained version
         prob = om.Problem()
@@ -114,9 +115,9 @@ class Test(unittest.TestCase):
         from openaerostruct.geometry.geometry_group import build_sections
         from openaerostruct.geometry.geometry_unification import unify_mesh
         from openaerostruct.geometry.multi_unified_bspline_utils import build_multi_spline, connect_multi_spline
-        from openaerostruct.utils.testing import get_two_section_surface_sym
+        from openaerostruct.utils.testing import get_two_section_surface
 
-        surface, sec_chord_cp = get_two_section_surface_sym()
+        surface, sec_chord_cp = get_two_section_surface()
 
         # Create the OpenMDAO problem
         prob = om.Problem()
@@ -210,9 +211,9 @@ class Test(unittest.TestCase):
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
         from openaerostruct.geometry.geometry_group import build_sections
         from openaerostruct.geometry.geometry_unification import unify_mesh
-        from openaerostruct.utils.testing import get_two_section_surface_asym
+        from openaerostruct.utils.testing import get_two_section_surface
 
-        surface, sec_chord_cp = get_two_section_surface_asym()
+        surface, sec_chord_cp = get_two_section_surface(sym=False, visc=False)
 
         # Create the OpenMDAO problem
         prob = om.Problem()
@@ -295,9 +296,9 @@ class Test(unittest.TestCase):
         prob.setup()
         prob.run_driver()
 
-        assert_near_equal(prob["aero_point_0.surface_perf.CD"][0], 0.02849356, 1e-6)
+        assert_near_equal(prob["aero_point_0.surface_perf.CD"][0], 0.02902683, 1e-6)
         assert_near_equal(prob["aero_point_0.surface_perf.CL"][0], 0.29999999, 1e-6)
-        assert_near_equal(prob["aero_point_0.CM"][1], -0.05208008, 1e-6)
+        assert_near_equal(prob["aero_point_0.CM"][1], -0.07375071, 1e-6)
 
     def test_visc(self):
         import numpy as np
@@ -309,9 +310,9 @@ class Test(unittest.TestCase):
         from openaerostruct.geometry.geometry_group import build_sections
         from openaerostruct.geometry.geometry_unification import unify_mesh
         from openaerostruct.geometry.multi_unified_bspline_utils import build_multi_spline, connect_multi_spline
-        from openaerostruct.utils.testing import get_two_section_surface_sym_visc
+        from openaerostruct.utils.testing import get_two_section_surface
 
-        surface, sec_chord_cp = get_two_section_surface_sym_visc()
+        surface, sec_chord_cp = get_two_section_surface(sym=True, visc=True)
 
         # Create the OpenMDAO problem
         prob = om.Problem()

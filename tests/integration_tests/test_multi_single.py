@@ -12,7 +12,7 @@ class Test(unittest.TestCase):
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
         from openaerostruct.geometry.geometry_group import build_sections
         from openaerostruct.geometry.geometry_unification import unify_mesh
-        from openaerostruct.utils.testing import get_two_section_surface_sym, get_single_section_surface
+        from openaerostruct.utils.testing import get_two_section_surface, get_single_section_surface
 
         """Create a dictionary with info and options about the aerodynamic
         single section lifting surface"""
@@ -20,7 +20,7 @@ class Test(unittest.TestCase):
 
         """Create a dictionary with info and options about the multi-section aerodynamic
         lifting surface"""
-        surfaceMulti, sec_chord_cp = get_two_section_surface_sym()
+        surfaceMulti, sec_chord_cp = get_two_section_surface()
         surfaceMulti["name"] = "surfaceMulti"
 
         # Create the OpenMDAO problem

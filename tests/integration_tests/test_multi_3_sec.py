@@ -12,11 +12,11 @@ class Test(unittest.TestCase):
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
         from openaerostruct.geometry.geometry_group import build_sections
         from openaerostruct.geometry.geometry_unification import unify_mesh
-        from openaerostruct.utils.testing import get_three_section_surface_sym
+        from openaerostruct.utils.testing import get_three_section_surface
 
         # Create a dictionary with info and options about the multi-section aerodynamic
         # lifting surface
-        surface, sec_chord_cp = get_three_section_surface_sym()
+        surface, sec_chord_cp = get_three_section_surface(sym=True, visc=False)
 
         # Create the OpenMDAO problem
         prob = om.Problem()
@@ -116,9 +116,9 @@ class Test(unittest.TestCase):
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
         from openaerostruct.geometry.geometry_group import build_sections
         from openaerostruct.geometry.geometry_unification import unify_mesh
-        from openaerostruct.utils.testing import get_three_section_surface_asym
+        from openaerostruct.utils.testing import get_three_section_surface
 
-        surface, sec_chord_cp = get_three_section_surface_asym()
+        surface, sec_chord_cp = get_three_section_surface(sym=False, visc=False)
 
         # Create the OpenMDAO problem
         prob = om.Problem()
