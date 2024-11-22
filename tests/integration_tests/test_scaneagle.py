@@ -92,6 +92,7 @@ class Test(unittest.TestCase):
             "E": 85.0e9,
             "G": 25.0e9,
             "yield": 350.0e6,
+            "safety_factor": 1,
             "mrho": 1.6e3,
             "fem_origin": 0.35,  # normalized chordwise location of the spar
             "wing_weight_ratio": 1.0,  # multiplicative factor on the computed structural weight
