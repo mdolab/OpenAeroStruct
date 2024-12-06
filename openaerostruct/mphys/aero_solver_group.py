@@ -1,4 +1,5 @@
 import openmdao.api as om
+from mphys.core import MPhysVariables
 
 from openaerostruct.aerodynamics.compressible_states import CompressibleVLMStates
 from openaerostruct.aerodynamics.geometry import VLMGeometry
@@ -18,7 +19,10 @@ class AeroSolverGroup(om.Group):
         self.surfaces = self.options["surfaces"]
 
         # Loop through each surface and promote relevant parameters
-        proms_in = [("alpha", "aoa"), ("beta", "yaw")]
+        proms_in = [
+            ("alpha", MPhysVariables.Aerodynamics.FlowConditions.ANGLE_OF_ATTACK),
+            ("beta", MPhysVariables.Aerodynamics.FlowConditions.YAW_ANGLE),
+        ]
         proms_out = []
         for surface in self.surfaces:
             name = surface["name"]
@@ -29,7 +33,7 @@ class AeroSolverGroup(om.Group):
             self.add_subsystem(name, VLMGeometry(surface=surface), promotes_inputs=[("def_mesh", name + "_def_mesh")])
 
         if self.options["compressible"]:
-            proms_in.append(("Mach_number", "mach"))
+            proms_in.append(("Mach_number", MPhysVariables.Aerodynamics.FlowConditions.MACH_NUMBER))
             aero_states = CompressibleVLMStates(surfaces=self.surfaces)
         else:
             aero_states = VLMStates(surfaces=self.surfaces)
