@@ -5,6 +5,25 @@ import numpy as np
 from openaerostruct.geometry.utils import generate_mesh
 
 
+def assert_opt_successful(test, optResult):
+    """Check whether an OpenMDAO optimization successfully converged
+
+    Parameters
+    ----------
+    test : unittest.TestCase
+        The test case that is being run
+    optResult :
+        Result returned by OpenMDAO's run_driver() method
+    """
+    # In older versions of OpenMDAO, the run_driver() method returns a boolean that indicates whether the
+    # optimization failed, but in newer versions it returns an object that contains the optimization results,
+    # including a `success` attribute.
+    if isinstance(optResult, bool):
+        test.assertFalse(optResult)
+    else:
+        test.assertTrue(optResult.success)
+
+
 def view_mat(mat1, mat2=None, key="Title", tol=1e-10):  # pragma: no cover
     """
     Helper function used to visually examine matrices. It plots mat1 and mat2 side by side,
@@ -196,6 +215,155 @@ def get_ground_effect_surfaces():
     surfaces = [wing_dict, tail_dict]
 
     return surfaces
+
+
+def get_three_section_surface(sym=True, visc=False):
+    # Outputs a three section wing surface
+    # Set-up B-splines for each section. Done here since this information will be needed multiple times.
+    sec_chord_cp = [np.ones(2), np.ones(2), np.ones(2)]
+
+    surface_dict = {
+        # Wing definition
+        # Basic surface parameters
+        "name": "surface",
+        "is_multi_section": True,
+        "num_sections": 3,  # The number of sections in the multi-section surface
+        "sec_name": ["sec0", "sec1", "sec2"],  # names of the individual sections
+        "symmetry": sym,  # if true, model one half of wing. reflected across the midspan of the root section
+        "S_ref_type": "wetted",  # how we compute the wing area,
+        # can be 'wetted' or 'projected'
+        # Geometry Parameters
+        "taper": [1.0, 1.0, 1.0],  # Wing taper for each section
+        "span": [1.0, 1.0, 1.0],  # Wing span for each section
+        "sweep": [0.0, 0, 0.0],  # Wing sweep for each section
+        "twist_cp": [np.zeros(2), np.zeros(2), np.zeros(2)],
+        "chord_cp": sec_chord_cp,
+        "root_chord": 1.0,  # Wing root chord for each section
+        # Mesh Parameters
+        "meshes": "gen-meshes",  # Supply a mesh for each section or "gen-meshes" for automatic mesh generation
+        "nx": 2,  # Number of chordwise points. Same for all sections
+        "ny": [11, 11, 11],  # Number of spanwise points for each section
+        # Aerodynamic Parameters
+        "CL0": 0.0,  # CL of the surface at alpha=0
+        "CD0": 0.015,  # CD of the surface at alpha=0
+        # Airfoil properties for viscous drag calculation
+        "k_lam": 0.05,  # percentage of chord with laminar
+        # flow, used for viscous drag
+        "t_over_c_cp": [
+            np.array([0.15]),
+            np.array([0.15]),
+            np.array([0.15]),
+        ],  # thickness over chord ratio (NACA0015)
+        "c_max_t": 0.303,  # chordwise location of maximum (NACA0015)
+        # thickness
+        "with_viscous": visc,  # if true, compute viscous drag
+        "with_wave": False,  # if true, compute wave drag
+        "groundplane": False,
+    }
+
+    if sym is False:
+        surface_dict["root_section"] = 1
+
+    if visc is True:
+        surface_dict["t_over_c_cp"] = [np.array([0.15]), np.array([0.15])]
+        surface_dict["nx"] = 3
+
+    return surface_dict, sec_chord_cp
+
+
+def get_two_section_surface(sym=True, visc=False):
+    # Outputs a symmetric two section wing surface
+    # Set-up B-splines for each section. Done here since this information will be needed multiple times.
+    sec_chord_cp = [np.array([1.0, 1.0]), np.array([1.0, 1.0])]
+
+    # Create a dictionary with info and options about the multi-section aerodynamic
+    # lifting surface
+    surface_dict = {
+        # Wing definition
+        # Basic surface parameters
+        "name": "surface",
+        "is_multi_section": True,
+        "num_sections": 2,  # The number of sections in the multi-section surface
+        "sec_name": ["sec0", "sec1"],  # names of the individual sections
+        "symmetry": sym,  # if true, model one half of wing. reflected across the midspan of the root section
+        "S_ref_type": "wetted",  # how we compute the wing area, can be 'wetted' or 'projected'
+        "root_section": 1,
+        # Geometry Parameters
+        "taper": [1.0, 1.0],  # Wing taper for each section
+        "span": [1.0, 1.0],  # Wing span for each section
+        "sweep": [0.0, 0.0],  # Wing sweep for each section
+        "chord_cp": sec_chord_cp,
+        "twist_cp": [np.zeros(2), np.zeros(2)],
+        # "chord_cp": [np.ones(1),2*np.ones(1),3*np.ones(1)], #Chord B-spline control points for each section
+        "root_chord": 1.0,  # Wing root chord for each section
+        # Mesh Parameters
+        "meshes": "gen-meshes",  # Supply a mesh for each section or "gen-meshes" for automatic mesh generation
+        "nx": 2,  # Number of chordwise points. Same for all sections
+        "ny": [21, 21],  # Number of spanwise points for each section
+        # Aerodynamic Parameters
+        "CL0": 0.0,  # CL of the surface at alpha=0
+        "CD0": 0.015,  # CD of the surface at alpha=0
+        # Airfoil properties for viscous drag calculation
+        "k_lam": 0.05,  # percentage of chord with laminar
+        # flow, used for viscous drag
+        # "t_over_c_cp": [np.array([0.15]),np.array([0.15])],  # thickness over chord ratio (NACA0015)
+        "c_max_t": 0.303,  # chordwise location of maximum (NACA0015)
+        # thickness
+        "with_viscous": visc,  # if true, compute viscous drag
+        "with_wave": False,  # if true, compute wave drag
+        "groundplane": False,
+    }
+
+    if sym is False:
+        surface_dict["root_section"] = 1
+
+    if visc is True:
+        surface_dict["t_over_c_cp"] = [np.array([0.15]), np.array([0.15])]
+        surface_dict["nx"] = 3
+
+    return surface_dict, sec_chord_cp
+
+
+def get_single_section_surface():
+    """Create a dictionary with info and options about the aerodynamic
+    single section lifting surface"""
+
+    # Create a dictionary to store options about the mesh
+    mesh_dict = {
+        "num_y": 81,
+        "num_x": 2,
+        "wing_type": "rect",
+        "span": 2.0,
+        "root_chord": 1.0,
+        "symmetry": True,
+        "span_cos_spacing": 0,
+        "chord_cos_spacing": 0,
+    }
+
+    # Generate the aerodynamic mesh based on the previous dictionary
+    mesh = generate_mesh(mesh_dict)
+    surface_dict = {
+        # Wing definition
+        "name": "surface",  # name of the surface
+        "symmetry": True,  # if true, model one half of wing
+        # reflected across the plane y = 0
+        "S_ref_type": "wetted",  # how we compute the wing area,
+        # can be 'wetted' or 'projected'
+        "twist_cp": np.zeros(2),
+        "mesh": mesh,
+        "CL0": 0.0,  # CL of the surface at alpha=0
+        "CD0": 0.015,  # CD of the surface at alpha=0
+        # Airfoil properties for viscous drag calculation
+        "k_lam": 0.05,  # percentage of chord with laminar
+        # flow, used for viscous drag
+        "c_max_t": 0.303,  # chordwise location of maximum (NACA0015)
+        # thickness
+        "with_viscous": False,  # if true, compute viscous drag
+        "with_wave": False,  # if true, compute wave drag
+        "groundplane": False,
+    }
+
+    return surface_dict
 
 
 def assert_check_totals(totals, atol=1e-6, rtol=1e-6):

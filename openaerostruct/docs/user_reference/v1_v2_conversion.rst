@@ -38,7 +38,7 @@ v1 Script
 v2 Script
 ^^^^^^^^^
 
-.. literalinclude:: /../tests/test_v1_aero_opt.py
+.. literalinclude:: /../../tests/integration_tests/test_v1_aero_opt.py
   :start-after: checkpoint 0
   :end-before: checkpoint 1
   :dedent: 8
@@ -64,7 +64,7 @@ v1 Script
 v2 Script
 ^^^^^^^^^
 
-.. literalinclude:: /../tests/test_v1_aero_opt.py
+.. literalinclude:: /../../tests/integration_tests/test_v1_aero_opt.py
   :start-after: checkpoint 2
   :end-before: checkpoint 3
   :dedent: 8
@@ -92,7 +92,7 @@ v1 Script
 v2 Script
 ^^^^^^^^^
 
-.. literalinclude:: /../tests/test_v1_aero_opt.py
+.. literalinclude:: /../../tests/integration_tests/test_v1_aero_opt.py
   :start-after: checkpoint 4
   :end-before: checkpoint 5
   :dedent: 8
@@ -143,7 +143,7 @@ v1 Script
 v2 Script
 ^^^^^^^^^
 
-.. literalinclude:: /../tests/test_v1_aero_opt.py
+.. literalinclude:: /../../tests/integration_tests/test_v1_aero_opt.py
   :start-after: checkpoint 0
   :end-before: checkpoint 5
   :dedent: 8

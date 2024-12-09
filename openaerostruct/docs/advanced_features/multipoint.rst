@@ -11,9 +11,10 @@ Aerodynamic Optimization Example
 --------------------------------
 We optimize the aircraft at two cruise flight conditions below.
 
-.. embed-code::
-    openaerostruct.tests.test_multipoint_aero.Test.test
-    :layout: interleave
+.. literalinclude:: /../../tests/integration_tests/test_multipoint_aero.py
+    :start-after: docs checkpoint 0
+    :end-before: docs checkpoint 1
+    :dedent: 8
 
 
 Aerostructural Optimization Example (Q400)

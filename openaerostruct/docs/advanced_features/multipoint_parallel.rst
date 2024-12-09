@@ -43,7 +43,7 @@ Then, let's set up the problem in the same way as the serial runscript.
 
 Next, we need to add AS_points under a ``ParallelGroup`` instead of directly under the ``prob.model``.
 
-.. literalinclude:: ../../tests/test_multipoint_parallel.py
+.. literalinclude:: /../../tests/integration_tests/test_multipoint_parallel.py
     :dedent: 8
     :start-after: # [rst Setup ParallelGroup (beg)]
     :end-before: # [rst Setup ParallelGroup (end)]
@@ -55,7 +55,7 @@ Among 6 functions, 4 depend only on AS_point_0, and 2 depend only on AS_point_1.
 Therefore, we can form 2 pairs and perform linear solves in parallel.
 We specify ``parallel_deriv_color`` to tell OpenMDAO which function's derivatives can be solved for in parallel.
 
-.. literalinclude:: ../../tests/test_multipoint_parallel.py
+.. literalinclude:: /../../tests/integration_tests/test_multipoint_parallel.py
     :dedent: 8
     :start-after: # [rst Parallel deriv color setup 1 (beg)]
     :end-before: # [rst Parallel deriv color setup 1 (end)]
@@ -64,7 +64,7 @@ Furthermore, we will add another dummy (nonsense) constraint to explain how para
 This dummy constraint (sum of the fuel burns from AS_point_0 and AS_point_1) depends on both AS points.
 In this case, the linear solves of AS_point_0 and AS_point_1 will be parallelized.
 
-.. literalinclude:: ../../tests/test_multipoint_parallel.py
+.. literalinclude:: /../../tests/integration_tests/test_multipoint_parallel.py
     :dedent: 8
     :start-after: # [rst Parallel deriv color setup 2 (beg)]
     :end-before: # [rst Parallel deriv color setup 2 (end)]
@@ -72,7 +72,7 @@ In this case, the linear solves of AS_point_0 and AS_point_1 will be parallelize
 Finally, let's change the linear solver from default.
 This step is not necessary and not directly relevant to parallelization, but the ``LinearBlockGS`` solver works better on a fine mesh than the default ``DirectSolver``.
 
-.. literalinclude:: ../../tests/test_multipoint_parallel.py
+.. literalinclude:: /../../tests/integration_tests/test_multipoint_parallel.py
     :dedent: 8
     :start-after: # [rst Change linear solver (beg)]
     :end-before: # [rst Change linear solver (end)]
@@ -81,8 +81,10 @@ This step is not necessary and not directly relevant to parallelization, but the
 Complete runscript
 ------------------
 
-.. embed-code::
-    openaerostruct.tests.test_multipoint_parallel.Test.test_multipoint_MPI
+.. literalinclude:: /../../tests/integration_tests/test_multipoint_parallel.py
+    :start-after: docs checkpoint 0
+    :end-before: docs checkpoint 1
+    :dedent: 8
 
 To run this example in parallel with two processors, use the following command:
 
