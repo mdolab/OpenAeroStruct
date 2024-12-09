@@ -1,4 +1,5 @@
 import openmdao.api as om
+from mphys.core import MPhysVariables
 
 from openaerostruct.mphys.utils import get_number_of_nodes, get_src_indices
 
@@ -45,7 +46,7 @@ class MuxSurfaceForces(om.ExplicitComponent):
             )
 
         self.add_output(
-            "f_aero",
+            MPhysVariables.Aerodynamics.Surface.LOADS,
             distributed=False,
             shape=self.nnodes * 3,
             val=0.0,
@@ -57,17 +58,29 @@ class MuxSurfaceForces(om.ExplicitComponent):
     def compute(self, inputs, outputs):
         for surface in self.surfaces:
             surf_name = surface["name"]
-            outputs["f_aero"][self.src_indices[surf_name]] = inputs[surf_name + "_mesh_point_forces"]
+            outputs[MPhysVariables.Aerodynamics.Surface.LOADS][self.src_indices[surf_name]] = inputs[
+                surf_name + "_mesh_point_forces"
+            ]
 
     def compute_jacvec_product(self, inputs, d_inputs, d_outputs, mode):
         if mode == "fwd":
             for surface in self.surfaces:
                 surf_name = surface["name"]
-                if "f_aero" in d_outputs and surf_name + "_mesh_point_forces" in d_inputs:
-                    d_outputs["f_aero"][self.src_indices[surf_name]] += d_inputs[surf_name + "_mesh_point_forces"]
+                if (
+                    MPhysVariables.Aerodynamics.Surface.LOADS in d_outputs
+                    and surf_name + "_mesh_point_forces" in d_inputs
+                ):
+                    d_outputs[MPhysVariables.Aerodynamics.Surface.LOADS][self.src_indices[surf_name]] += d_inputs[
+                        surf_name + "_mesh_point_forces"
+                    ]
 
         if mode == "rev":
             for surface in self.surfaces:
                 surf_name = surface["name"]
-                if "f_aero" in d_outputs and surf_name + "_mesh_point_forces" in d_inputs:
-                    d_inputs[surf_name + "_mesh_point_forces"] += d_outputs["f_aero"][self.src_indices[surf_name]]
+                if (
+                    MPhysVariables.Aerodynamics.Surface.LOADS in d_outputs
+                    and surf_name + "_mesh_point_forces" in d_inputs
+                ):
+                    d_inputs[surf_name + "_mesh_point_forces"] += d_outputs[MPhysVariables.Aerodynamics.Surface.LOADS][
+                        self.src_indices[surf_name]
+                    ]
