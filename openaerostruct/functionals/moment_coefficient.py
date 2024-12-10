@@ -156,7 +156,8 @@ class MomentCoefficient(om.ExplicitComponent):
             panel_chords = (chords[1:] + chords[:-1]) * 0.5
             MAC = 1.0 / S_ref * np.sum(panel_chords**2 * widths)
 
-            # This transformation is used for multiple derivatives
+            # This produces a bi-diagonal matrix for the derivative of panel_chords with respect to chords
+            # This transformation matrix is further used for multiple derivatives
             dpc_dc = np.zeros((ny - 1, ny))
             idx = np.arange(ny - 1)
             dpc_dc[idx, idx] = 0.5
@@ -174,26 +175,44 @@ class MomentCoefficient(om.ExplicitComponent):
                 dMAC_dw *= 2.0
                 dMAC_dS *= 2.0
 
-            # diff derivs
+            # Compute the bound vortex(quarter chord) points at mid-panel
             pts = (b_pts[:, 1:, :] + b_pts[:, :-1, :]) * 0.5
+
+            # Compute the distances between the mid-panel bound vortex points and the cg
             diff = pts - cg
 
+            # Compute the cross product of the panel bound vortex distances from cg and the panel forces
+            # Compute the spanwise moment vector distribution by summing over each resulting column
             c = np.cross(diff, sec_forces, axis=2)
             moment = np.sum(c, axis=0)
 
+            # Compute the derviative of the moment vectors(c) with respect to the diff vectors(a)
             dcda = np.zeros((3, nx - 1, ny - 1, 3))
+
+            # Compute the derivative wrt to the first element of diff
             dcda[0, :, :, 1] = sec_forces[:, :, 2]
             dcda[0, :, :, 2] = -sec_forces[:, :, 1]
+
+            # Compute the derivative wrt to the second element of diff
             dcda[1, :, :, 0] = -sec_forces[:, :, 2]
             dcda[1, :, :, 2] = sec_forces[:, :, 0]
+
+            # Compute the derivative wrt to the third element of diff
             dcda[2, :, :, 0] = sec_forces[:, :, 1]
             dcda[2, :, :, 1] = -sec_forces[:, :, 0]
 
+            # Compute the derviative of the moment vectors(c) with respect to the sec_forces vectors(b)
             dcdb = np.zeros((3, nx - 1, ny - 1, 3))
+
+            # Compute the derivative wrt to the first element of sec_forces
             dcdb[0, :, :, 1] = -diff[:, :, 2]
             dcdb[0, :, :, 2] = diff[:, :, 1]
+
+            # Compute the derivative wrt to the second element of sec_forces
             dcdb[1, :, :, 0] = diff[:, :, 2]
             dcdb[1, :, :, 2] = -diff[:, :, 0]
+
+            # Compute the derivative wrt to the third element of sec_forces
             dcdb[2, :, :, 0] = -diff[:, :, 1]
             dcdb[2, :, :, 1] = diff[:, :, 0]
 
