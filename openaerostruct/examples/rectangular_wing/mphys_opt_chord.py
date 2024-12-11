@@ -10,8 +10,8 @@ import os
 import openmdao.api as om
 import numpy as np
 
-from mphys import Multipoint
-from mphys.scenario_aerodynamic import ScenarioAerodynamic
+from mphys.core import Multipoint, MPhysVariables
+from mphys.scenarios import ScenarioAerodynamic
 from pygeo.mphys import OM_DVGEOCOMP
 
 from openaerostruct.geometry.utils import generate_vsp_surfaces
@@ -62,12 +62,12 @@ class Top(Multipoint):
         re = 1e6
 
         dvs = self.add_subsystem("dvs", om.IndepVarComp(), promotes=["*"])
-        dvs.add_output("aoa", val=aoa, units="deg")
-        dvs.add_output("yaw", val=beta, units="deg")
+        dvs.add_output(MPhysVariables.Aerodynamics.FlowConditions.ANGLE_OF_ATTACK, val=aoa, units="deg")
+        dvs.add_output(MPhysVariables.Aerodynamics.FlowConditions.YAW_ANGLE, val=beta, units="deg")
         dvs.add_output("rho", val=rho, units="kg/m**3")
-        dvs.add_output("mach", mach)
+        dvs.add_output(MPhysVariables.Aerodynamics.FlowConditions.MACH_NUMBER, mach)
         dvs.add_output("v", vel, units="m/s")
-        dvs.add_output("reynolds", re, units="1/m")
+        dvs.add_output(MPhysVariables.Aerodynamics.FlowConditions.REYNOLDS_NUMBER, re, units="1/m")
         dvs.add_output("cg", val=np.zeros((3)), units="m")
 
         # Create mphys builder for aero solver
@@ -83,11 +83,25 @@ class Top(Multipoint):
         self.geometry.nom_add_discipline_coords("aero")
 
         self.mphys_add_scenario("cruise", ScenarioAerodynamic(aero_builder=aero_builder))
-        self.connect("mesh.x_aero0", "geometry.x_aero_in")
-        self.connect("geometry.x_aero0", "cruise.x_aero")
+        self.connect(
+            f"mesh.{MPhysVariables.Aerodynamics.Surface.COORDINATES}",
+            f"geometry.{MPhysVariables.Aerodynamics.Geometry.COORDINATES_INPUT}",
+        )
+        self.connect(
+            f"geometry.{MPhysVariables.Aerodynamics.Geometry.COORDINATES_OUTPUT}",
+            f"cruise.{MPhysVariables.Aerodynamics.Surface.COORDINATES}",
+        )
 
         # Connect dv ivc's to solver
-        for dv in ["aoa", "yaw", "rho", "mach", "v", "reynolds", "cg"]:
+        for dv in [
+            MPhysVariables.Aerodynamics.FlowConditions.ANGLE_OF_ATTACK,
+            MPhysVariables.Aerodynamics.FlowConditions.YAW_ANGLE,
+            MPhysVariables.Aerodynamics.FlowConditions.MACH_NUMBER,
+            MPhysVariables.Aerodynamics.FlowConditions.REYNOLDS_NUMBER,
+            "rho",
+            "v",
+            "cg",
+        ]:
             self.connect(dv, f"cruise.{dv}")
 
     def configure(self):
