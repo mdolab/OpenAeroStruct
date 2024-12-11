@@ -309,7 +309,7 @@ class MomentCoefficient(om.ExplicitComponent):
                 # the total references area of all surfaces including the main wing and the MAC of them main wing itself
                 # As result, this derivative has two parts only for the main wing.
                 # partials["CM", name + "_S_ref"] = -np.outer(M_j, dMAC_dS * term)
-                partials["CM", name + "_S_ref"] = np.outer(M_j * fact, (-1 / S_ref_total + 1 / S_ref))
+                partials["CM", name + "_S_ref"] = np.outer(M_j * fact, (1 / S_ref))
 
                 # Cache the main wing's MAC derivatives
                 base_name = name
@@ -323,5 +323,4 @@ class MomentCoefficient(om.ExplicitComponent):
                 partials["CM", base_name + "_chords"] -= np.outer(M_j * term, base_dMAC_dc)
                 partials["CM", base_name + "_widths"] -= np.outer(M_j * term, base_dMAC_dw)
                 # partials["CM", base_name + "_S_ref"] -= np.outer(M_j, base_dMAC_dS * term)
-                partials["CM", base_name + "_S_ref"] += np.outer(M_j * fact, (-1 / S_ref_total + 1 / S_ref_wing))
-                # partials["CM", name + "_S_ref"] = np.outer(M_j * fact, (-1 / S_ref_total))
+                partials["CM", base_name + "_S_ref"] += np.outer(M_j * fact, (1 / S_ref_wing))
