@@ -285,12 +285,12 @@ class MomentCoefficient(om.ExplicitComponent):
             # Compute the total surface moment vector by summing spanwise
             M_j = np.sum(moment, axis=0)
 
-            # Compute a term by dividing fact by MAC. Note that MAC is the mean aerodynamic chord for the surface and
-            # the MAC_wing terms already factored into fact is of the main wing surface
-            term = fact / MAC
-
             # For first surface, we need to save the deriv results
             if j == 0:
+                # Compute a term by dividing fact by MAC. Note that MAC is the mean aerodynamic chord for the surface and
+                # the MAC_wing terms already factored into fact is of the main wing surface
+                term = fact / MAC
+
                 # Compute the derivative of CM wrt to the chord distribution by taking the negative outer product of the
                 # moment vector(M_j) time the term with the derivative of MAC wrt to the chord distribution. We only do
                 # this for the main wing since CM only depends on the MAC of the main wing and the chord distribution of
@@ -308,7 +308,7 @@ class MomentCoefficient(om.ExplicitComponent):
                 # the total references area of all surfaces including the main wing and the MAC of them main wing itself
                 # As result, this derivative has two parts only for the main wing.
                 # partials["CM", name + "_S_ref"] = -np.outer(M_j, dMAC_dS * term)
-                partials["CM", name + "_S_ref"] = np.outer(M_j * fact, (-1/S_ref_total + 1/S_ref))
+                partials["CM", name + "_S_ref"] = np.outer(M_j * fact, (-1 / S_ref_total + 1 / S_ref))
 
                 # Cache the main wing's MAC derivatives
                 base_name = name
@@ -318,8 +318,9 @@ class MomentCoefficient(om.ExplicitComponent):
             else:
                 # Apply this surface's portion of the moment to the MAC_wing term.
                 # We need to do this because CM is normalized by the MAC of the main wing
-                term = fact / (MAC_wing * MAC)
+                term = fact / MAC_wing
                 partials["CM", base_name + "_chords"] -= np.outer(M_j * term, base_dMAC_dc)
                 partials["CM", base_name + "_widths"] -= np.outer(M_j * term, base_dMAC_dw)
                 # partials["CM", base_name + "_S_ref"] -= np.outer(M_j, base_dMAC_dS * term)
-                partials["CM", base_name + "_S_ref"] = np.outer(M_j * fact, (-1/S_ref_total + 1/S_ref_wing))
+                partials["CM", base_name + "_S_ref"] = np.outer(M_j * fact, (-1 / S_ref_total + 1 / S_ref_wing))
+                partials["CM", name + "_S_ref"] = np.outer(M_j * fact, (-1 / S_ref_total))
