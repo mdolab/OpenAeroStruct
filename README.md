@@ -94,12 +94,12 @@ Version Information
 The oldest and latest versions of the dependencies that we test regularly are the following (other versions may work, but no guarantees):
 
 | Dependency         | oldest | latest |
-| ------------------ |--------| ------ |
+|--------------------|--------| ------ |
 | Python             | 3.8    | 3.11   |
 | NumPy              | 1.20   | latest |
 | SciPy              | 1.6.0  | latest |
 | OpenMDAO           | 3.15   | latest |
-| MPhys              | 2.0.0  | latest |
+| MPhys (optional)   | 2.0.0  | latest |
 | Matplotlib         | latest | latest |
 | pyGeo (optional)   | 1.6.0  | latest |
 | OpenVSP (optional) | 3.27.1 | 3.27.1 |
