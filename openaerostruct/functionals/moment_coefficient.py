@@ -228,7 +228,7 @@ class MomentCoefficient(om.ExplicitComponent):
             # Compute derivative of CM wrt to the sec_forces of the section by reshaping to 3 rows and multiplying by fact.
             partials["CM", name + "_sec_forces"] += dcdb.reshape((3, 3 * (nx - 1) * (ny - 1))) * fact
 
-            # Compute derivative of M wrt to the sec_forces of the section by reshaping to 3 rows and multiplying by fact.
+            # Compute derivative of M wrt to the sec_forces of the section by reshaping to 3 rows
             partials["M", name + "_sec_forces"] += dcdb.reshape((3, 3 * (nx - 1) * (ny - 1)))
 
             # Project the derviative of the moment vectors(c) with respect to the diff vectors(a)
@@ -244,7 +244,6 @@ class MomentCoefficient(om.ExplicitComponent):
             partials["CM", name + "_b_pts"] += dc_dchord.reshape((3, 3 * (nx - 1) * ny)) * fact
 
             # Compute the derivative of M wrt to the bound vortex points(b_pts) by reshaping dc_dchord to three rows
-            # and multiplying by fact.
             partials["M", name + "_b_pts"] += dc_dchord.reshape((3, 3 * (nx - 1) * ny))
 
             # Reduce the derivative of the moment vectors(c) with respect to the diff vectors(a) by summing over all
@@ -278,7 +277,7 @@ class MomentCoefficient(om.ExplicitComponent):
             # Accumlate the derivative over each surface as the total moment vector is sum over all surfaces.
             partials["CM", "cg"] -= dcda * fact
 
-            # Compute the derivative of M wrt to the cg position which is negative dcda since diff = pts - cg times fact
+            # Compute the derivative of M wrt to the cg position which is negative dcda since diff = pts - cg
             # Accumlate the derivative over each surface as the total moment vector is sum over all surfaces.
             partials["M", "cg"] -= dcda
 
@@ -322,5 +321,5 @@ class MomentCoefficient(om.ExplicitComponent):
                 partials["CM", base_name + "_chords"] -= np.outer(M_j * term, base_dMAC_dc)
                 partials["CM", base_name + "_widths"] -= np.outer(M_j * term, base_dMAC_dw)
                 # partials["CM", base_name + "_S_ref"] -= np.outer(M_j, base_dMAC_dS * term)
-                partials["CM", base_name + "_S_ref"] = np.outer(M_j * fact, (-1 / S_ref_total + 1 / S_ref_wing))
+                partials["CM", base_name + "_S_ref"] += np.outer(M_j * fact, (-1 / S_ref_total + 1 / S_ref_wing))
                 partials["CM", name + "_S_ref"] = np.outer(M_j * fact, (-1 / S_ref_total))

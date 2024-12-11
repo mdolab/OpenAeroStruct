@@ -16,7 +16,7 @@ class Test(unittest.TestCase):
 
         comp = MomentCoefficient(surfaces=surfaces)
 
-        run_test(self, comp, complex_flag=True, method="cs")
+        run_test(self, comp)
 
     # This is known to have some issues for sufficiently small values of S_ref_total
     # There is probably a derivative bug somewhere in the moment_coefficient.py calcs
@@ -36,7 +36,7 @@ class Test(unittest.TestCase):
 
         group.connect("indep_var_comp.S_ref_total", "moment_calc.S_ref_total")
 
-        run_test(self, group, complex_flag=True, method="cs")
+        run_test(self, group)
 
 
 if __name__ == "__main__":
