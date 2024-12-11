@@ -121,6 +121,8 @@ class MomentCoefficient(om.ExplicitComponent):
 
         # Output the moment vector
         outputs["M"] = M
+        if not self.under_complex_step:
+            print(M)
 
         # Compute the normalized CM
         outputs["CM"] = M / (0.5 * inputs["rho"] * inputs["v"] ** 2 * inputs["S_ref_total"] * self.MAC_wing)
@@ -322,4 +324,4 @@ class MomentCoefficient(om.ExplicitComponent):
                 partials["CM", base_name + "_widths"] -= np.outer(M_j * term, base_dMAC_dw)
                 # partials["CM", base_name + "_S_ref"] -= np.outer(M_j, base_dMAC_dS * term)
                 partials["CM", base_name + "_S_ref"] += np.outer(M_j * fact, (-1 / S_ref_total + 1 / S_ref_wing))
-                partials["CM", name + "_S_ref"] = np.outer(M_j * fact, (-1 / S_ref_total))
+                # partials["CM", name + "_S_ref"] = np.outer(M_j * fact, (-1 / S_ref_total))
