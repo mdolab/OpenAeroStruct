@@ -12,7 +12,7 @@ optional_dependencies = {
     "docs": ["sphinx_mdolab_theme"],
     "test": ["testflo"],
     "ffd": ["pygeo>=1.6.0"],
-    "mphys": ["mphys>=2.0.0b1", "pygeo>=1.15.0"],
+    "mphys": ["mphys>=2.0.0", "pygeo>=1.15.0"],
 }
 
 # Add an optional dependency that concatenates all others
