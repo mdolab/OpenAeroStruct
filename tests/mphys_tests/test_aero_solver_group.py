@@ -7,6 +7,8 @@ from openaerostruct.mphys.aero_solver_group import AeroSolverGroup
 from openaerostruct.utils.testing import run_test, get_default_surfaces
 
 FlowVars = MPhysVariables.Aerodynamics.FlowConditions
+
+
 class Test(unittest.TestCase):
     def test_incompressible(self):
         group = self.setup_solver(compressible=False)

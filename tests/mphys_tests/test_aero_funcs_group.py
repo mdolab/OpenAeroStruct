@@ -8,6 +8,7 @@ from openaerostruct.utils.testing import run_test, get_default_surfaces
 
 FlowVars = MPhysVariables.Aerodynamics.FlowConditions
 
+
 class Test(unittest.TestCase):
     def test(self):
         surfaces = get_default_surfaces()
