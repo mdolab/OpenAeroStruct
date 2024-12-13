@@ -99,8 +99,8 @@ The oldest and latest versions of the dependencies that we test regularly are th
 | NumPy              | 1.20   | latest |
 | SciPy              | 1.6.0  | latest |
 | OpenMDAO           | 3.15   | latest |
-| MPhys (optional)   | 2.0.0  | latest |
 | Matplotlib         | latest | latest |
+| MPhys (optional)   | 2.0.0  | latest |
 | pyGeo (optional)   | 1.6.0  | latest |
 | OpenVSP (optional) | 3.27.1 | 3.27.1 |
 
