@@ -121,8 +121,6 @@ class MomentCoefficient(om.ExplicitComponent):
 
         # Output the moment vector
         outputs["M"] = M
-        if not self.under_complex_step:
-            print(M)
 
         # Compute the normalized CM
         outputs["CM"] = M / (0.5 * inputs["rho"] * inputs["v"] ** 2 * inputs["S_ref_total"] * self.MAC_wing)
