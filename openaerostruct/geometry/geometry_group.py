@@ -49,7 +49,7 @@ class Geometry(om.Group):
                         method="bsplines",
                         x_interp_val=x_interp,
                         num_cp=n_cp,
-                        interp_options={"order": min(n_cp, 4)},
+                        interp_options={"order": min(n_cp, 4), "x_cp_start": 0.0, "x_cp_end": 1.0},
                     ),
                     promotes_inputs=["t_over_c_cp"],
                     promotes_outputs=["t_over_c"],
