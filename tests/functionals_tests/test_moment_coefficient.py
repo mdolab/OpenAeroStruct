@@ -18,8 +18,6 @@ class Test(unittest.TestCase):
 
         run_test(self, comp, complex_flag=True, method="cs")
 
-    # This is known to have some issues for sufficiently small values of S_ref_total
-    # There is probably a derivative bug somewhere in the moment_coefficient.py calcs
     def test2(self):
         surfaces = get_default_surfaces()
 
