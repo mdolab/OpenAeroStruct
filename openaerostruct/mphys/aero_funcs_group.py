@@ -90,5 +90,5 @@ class AeroFuncsGroup(om.Group):
                     base_name=self.options["scenario_name"],
                     output_dir=self.options["output_dir"],
                 ),
-                promotes_inputs=proms_in + ["*"],
+                promotes_inputs=proms_in + [("alpha", MPhysVariables.Aerodynamics.FlowConditions.ANGLE_OF_ATTACK), "*"],
             )
