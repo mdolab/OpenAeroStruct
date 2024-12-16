@@ -109,8 +109,15 @@ class Test(unittest.TestCase):
                 )
 
                 # Connect dv ivc's to solver
-                for dv in [FlowVars.ANGLE_OF_ATTACK, FlowVars.YAW_ANGLE, FlowVars.MACH_NUMBER, FlowVars.REYNOLDS_NUMBER,
-                           "rho", "v", "cg"]:
+                for dv in [
+                    FlowVars.ANGLE_OF_ATTACK,
+                    FlowVars.YAW_ANGLE,
+                    FlowVars.MACH_NUMBER,
+                    FlowVars.REYNOLDS_NUMBER,
+                    "rho",
+                    "v",
+                    "cg"
+                ]:
                     self.connect(dv, f"aero_point_0.{dv}")
 
         prob = om.Problem()
