@@ -116,7 +116,7 @@ class Test(unittest.TestCase):
                     FlowVars.REYNOLDS_NUMBER,
                     "rho",
                     "v",
-                    "cg"
+                    "cg",
                 ]:
                     self.connect(dv, f"aero_point_0.{dv}")
 
