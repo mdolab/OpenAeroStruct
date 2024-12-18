@@ -5,7 +5,7 @@ import openmdao.api as om
 
 class MomentCoefficient(om.ExplicitComponent):
     """
-    Compute the coefficient of moment (CM) and moment(M) for the entire aircraft.
+    Compute the coefficient of moment (CM) and moment (M) for the entire aircraft.
 
     Parameters
     ----------
