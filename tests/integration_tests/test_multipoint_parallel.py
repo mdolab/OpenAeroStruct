@@ -379,7 +379,6 @@ class Test(unittest.TestCase):
 
         # compute derivatives
         start_time = time.time()
-        totals = prob.compute_totals()
         derivs_time = time.time() - start_time
 
         print("I am processor", MPI.COMM_WORLD.rank, ", finished run_model and compute_totals")
