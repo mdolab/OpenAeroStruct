@@ -20,7 +20,10 @@ class WingboxGroup(om.Group):
             comp = self.add_subsystem(
                 "spar_thickness_bsp",
                 om.SplineComp(
-                    method="bsplines", x_interp_val=x_interp, num_cp=n_cp, interp_options={"order": min(n_cp, 4)}
+                    method="bsplines",
+                    x_interp_val=x_interp,
+                    num_cp=n_cp,
+                    interp_options={"order": min(n_cp, 4), "x_cp_start": 0, "x_cp_end": 1},
                 ),
                 promotes_inputs=["spar_thickness_cp"],
                 promotes_outputs=["spar_thickness"],
@@ -35,7 +38,10 @@ class WingboxGroup(om.Group):
             comp = self.add_subsystem(
                 "skin_thickness_bsp",
                 om.SplineComp(
-                    method="bsplines", x_interp_val=x_interp, num_cp=n_cp, interp_options={"order": min(n_cp, 4)}
+                    method="bsplines",
+                    x_interp_val=x_interp,
+                    num_cp=n_cp,
+                    interp_options={"order": min(n_cp, 4), "x_cp_start": 0, "x_cp_end": 1},
                 ),
                 promotes_inputs=["skin_thickness_cp"],
                 promotes_outputs=["skin_thickness"],

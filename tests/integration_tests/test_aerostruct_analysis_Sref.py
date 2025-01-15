@@ -139,8 +139,8 @@ class Test(unittest.TestCase):
 
         prob.run_model()
 
-        assert_near_equal(prob["AS_point_0.CL"][0], 1.6210175228727655, 1e-6)
-        assert_near_equal(prob["AS_point_0.CM"][1], -1.8365760768848112, 1e-5)
+        assert_near_equal(prob["AS_point_0.CL"][0], 1.619784221965875, 1e-6)
+        assert_near_equal(prob["AS_point_0.CM"][1], -2.0008904315028193, 1e-5)
 
 
 if __name__ == "__main__":
