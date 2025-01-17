@@ -55,6 +55,9 @@ The oldest and latest versions of the dependencies that we test regularly are th
     * - OpenVSP (optional)
       - 3.27.1
       - 3.27.1
+    * - Mphys (optional)
+      - 2.0
+      - latest
 
 If you are unfamiliar with OpenMDAO and wish to modify the internals of OpenAeroStruct, you should examine the OpenMDAO documentation at http://openmdao.org/twodocs/versions/latest/index.html. The tutorials provided with OpenMDAO are helpful to understand the basics of using OpenMDAO to solve an optimization problem.
 
