@@ -112,7 +112,7 @@ class Test(unittest.TestCase):
         assert_opt_successful(self, optResult)
 
         assert_near_equal(prob["aero_point_0.CL"][0], 0.5, 1e-6)
-        assert_near_equal(prob["aero_point_0.CD"][0], 0.021353004050991248, 1e-6)
+        assert_near_equal(prob["aero_point_0.CD"][0], 0.020825781122528385, 1e-6)
         assert_near_equal(prob["aero_point_0.CM"][1], -2.0819892547514067, 1e-6)
 
 

@@ -401,9 +401,9 @@ class Test(unittest.TestCase):
         print(prob["wing.structural_mass"][0] / 1.25)
         print(prob["AS_point_0.wing_perf.failure"][0])
 
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 87760.55423816708, 1e-5)
-        assert_near_equal(prob["wing.structural_mass"][0], 34500.40422127632, 1e-5)
-        assert_near_equal(prob["AS_point_0.wing_perf.failure"][0], -0.15727437869018163, 1e-5)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 87095.16845081086, 1e-5)
+        assert_near_equal(prob["wing.structural_mass"][0], 29707.645593713547, 1e-5)
+        assert_near_equal(prob["AS_point_0.wing_perf.failure"][0], 0.004148750437858817, 1e-5)
 
 
 if __name__ == "__main__":

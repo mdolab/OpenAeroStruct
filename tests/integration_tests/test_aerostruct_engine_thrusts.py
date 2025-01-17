@@ -156,8 +156,8 @@ class Test(unittest.TestCase):
         print(prob["AS_point_0.fuelburn"][0])
         print(prob["AS_point_0.CM"][1])
 
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 263992.6780138112, 1e-4)
-        assert_near_equal(prob["AS_point_0.CM"][1], -0.6438933659444002, 1e-5)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 241937.85848709388, 1e-4)
+        assert_near_equal(prob["AS_point_0.CM"][1], -0.7013413978098743, 1e-5)
 
 
 if __name__ == "__main__":

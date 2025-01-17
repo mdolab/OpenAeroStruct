@@ -432,8 +432,8 @@ class Test(unittest.TestCase):
         optResult = prob.run_driver()
 
         assert_opt_successful(self, optResult)
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 85374.45357945036, 1e-5)
-        assert_near_equal(prob["wing.structural_mass"][0], 13048.465090719292, 1e-5)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 85400.83793743863, 1e-5)
+        assert_near_equal(prob["wing.structural_mass"][0], 13149.34611487464, 1e-5)
         assert_near_equal(prob["AS_point_0.CL"][0], 0.5, 1e-5)
 
 

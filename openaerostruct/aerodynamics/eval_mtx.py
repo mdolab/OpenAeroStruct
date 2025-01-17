@@ -210,7 +210,7 @@ class EvalVelMtx(om.ExplicitComponent):
                 (num_eval_points, nx - 1, ny - 1, 3, 3)
             )
             aic_base = np.einsum("ijkl,m->ijklm", vel_mtx_indices, np.ones(3, int))
-            aic_len = np.sum(np.product(aic_base.shape))
+            aic_len = np.sum(np.prod(aic_base.shape))
 
             if ground_effect:
                 # mirrored surface along the x mesh direction

@@ -152,7 +152,7 @@ class Test(unittest.TestCase):
         optResult = prob.run_driver()
         assert_opt_successful(self, optResult)
         # the fuel burn should be less in ground effect
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 86980.04655202407, 1e-6)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 86980.21117717, 1e-6)
         totals = prob.check_totals(
             of=["AS_point_0.L_equals_W", "AS_point_0.fuelburn", "AS_point_0.wing_perf.failure"],
             wrt=["wing.twist_cp", "alpha", "height_agl"],
