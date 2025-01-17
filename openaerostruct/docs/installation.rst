@@ -55,7 +55,7 @@ The oldest and latest versions of the dependencies that we test regularly are th
     * - OpenVSP (optional)
       - 3.27.1
       - 3.27.1
-    * - Mphys (optional)
+    * - MPhys (optional)
       - 2.0
       - latest
 
