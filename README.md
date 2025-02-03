@@ -95,15 +95,15 @@ The oldest and latest versions of the dependencies that we test regularly are th
 
 | Dependency         | oldest | latest |
 |--------------------|--------| ------ |
-| Python             | 3.8    | 3.11   |
-| NumPy              | 1.20   | latest |
-| SciPy              | 1.6.0  | latest |
+| Python             | 3.9    | 3.11   |
+| NumPy              | 1.21   | 1.26   |
+| SciPy              | 1.7    | 1.15   |
 | OpenMDAO           | 3.35   | latest |
-| Matplotlib         | latest | latest |
-| MPhys (optional)   | 2.0.0  | latest |
-| pyGeo (optional)   | 1.6.0  | latest |
-| OpenVSP (optional) | 3.27.1 | 3.27.1 |
+| MPhys (optional)   | 2.0    | latest |
+| pyGeo (optional)   | 1.15   | latest |
+| OpenVSP (optional) | 3.33   | 3.33   |
 
+Numpy 2.0 or later should also work, but we currently do not run tests with Numpy 2.
 If you are looking to use the previous version of OpenAeroStruct which uses OpenMDAO 1.7.4, use OpenAeroStruct 1.0 from [here](https://github.com/mdolab/OpenAeroStruct/releases).
 
 License
