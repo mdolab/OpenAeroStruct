@@ -103,7 +103,7 @@ The oldest and latest versions of the dependencies that we test regularly are th
 | pyGeo (optional)   | 1.15   | latest |
 | OpenVSP (optional) | 3.33   | 3.33   |
 
-Numpy 2.0 or later should also work, but we currently do not run tests with Numpy 2.
+Numpy 2.0 or later should also work, but we currently do not run tests with Numpy 2.  
 If you are looking to use the previous version of OpenAeroStruct which uses OpenMDAO 1.7.4, use OpenAeroStruct 1.0 from [here](https://github.com/mdolab/OpenAeroStruct/releases).
 
 License
