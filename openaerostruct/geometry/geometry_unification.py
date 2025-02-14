@@ -172,6 +172,7 @@ class GeomMultiUnification(om.ExplicitComponent):
             data = np.ones_like(rows)
 
             self.declare_partials(uni_mesh_name, mesh_name, val=data, rows=rows, cols=cols)
+            # TODO: update sparsity pattern to account for the shifting
 
         self.add_output(uni_mesh_name, shape=(uni_nx, uni_ny, 3), units="m")
 
@@ -200,21 +201,26 @@ class GeomMultiUnification(om.ExplicitComponent):
         uni_mesh_name = "{}_uni_mesh".format(surface_name)
 
         # Loop through all sections to unify the mesh
-        for i_sec in np.arange(0, len(sections) - 1):
+        for i_sec in np.arange(0, len(sections)):
             name = sections[i_sec]["name"]
             mesh_name = "{}_def_mesh".format(name)
 
             if i_sec == 0:
                 uni_mesh = inputs[mesh_name][:, :-1, :]
             else:
-                uni_mesh = np.concatenate([uni_mesh, inputs[mesh_name][:, :-1, :]], axis=1)
+                # translate uni_mesh (outer sections) to align leading edge at unification boundary
+                mesh_name_last = "{}_def_mesh".format(sections[i_sec - 1]["name"])
+                shift = inputs[mesh_name_last][0, -1, :] - inputs[mesh_name][0, 0, :]   # TODO: not sure if I use LE or 25% chord? Or maybe doesn't matter
+                uni_mesh -= shift
 
-        mesh_name = "{}_def_mesh".format(sections[len(sections) - 1]["name"])
-        if len(sections) == 1:
-            uni_mesh = inputs[mesh_name]
-        else:
-            uni_mesh = np.concatenate([uni_mesh, inputs[mesh_name]], axis=1)
+                if i_sec == len(sections) - 1:
+                    # concatenate the last (root) section
+                    uni_mesh = np.concatenate([uni_mesh, inputs[mesh_name]], axis=1)
+                else:
+                    # concatenate a middle section, so remove the inboard column not to overlap
+                    uni_mesh = np.concatenate([uni_mesh, inputs[mesh_name][:, :-1, :]], axis=1)
 
+        # TODO: need modification in t/c (probably not)? Haven't checked
         if "t_over_c_cp" in sections[0].keys():
             uni_tc_name = "{}_uni_t_over_c".format(self.options["surface_name"])
             for i_sec, section in enumerate(sections):
