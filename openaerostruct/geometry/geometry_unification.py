@@ -1,5 +1,6 @@
 import numpy as np
 import openmdao.api as om
+import copy
 
 
 def compute_uni_mesh_dims(sections):
@@ -70,7 +71,7 @@ def compute_uni_mesh_index_blocks(sections, uni_mesh_indices):
     return blocks
 
 
-def unify_mesh(sections):
+def unify_mesh(sections, shift_uni_mesh=True):
     """
     Function that produces a unified mesh from all the individual wing section meshes.
 
@@ -78,6 +79,10 @@ def unify_mesh(sections):
     ----------
     sections : list
         List of section OpenAeroStruct surface dictionaries
+
+    shift_uni_mesh : bool
+        Flag that shifts sections so that their leading edges are coincident. Intended to keep sections from seperating
+        or intersecting during scalar span or sweep operations without the use of the constraint component.
 
     Returns
     -------
@@ -87,24 +92,20 @@ def unify_mesh(sections):
     for i_sec in np.arange(0, len(sections) - 1):
         mesh = sections[i_sec]["mesh"]
 
-        import copy
-
         if i_sec == 0:
             uni_mesh = copy.deepcopy(mesh[:, :-1, :])
         else:
-            last_mesh = sections[i_sec - 1]["mesh"]
-            # translate uni_mesh (outer sections) to align leading edge at unification boundary
-            shift = (
-                last_mesh[0, -1, :] - mesh[0, 0, :]
-            )  # TODO: not sure if I use LE or 25% chord? Or maybe doesn't matter
-            uni_mesh -= shift
+            if shift_uni_mesh:
+                # translate or shift uni_mesh (outer sections) to align leading edge at unification boundary
+                last_mesh = sections[i_sec - 1]["mesh"]
+                shift = last_mesh[0, -1, :] - mesh[0, 0, :]
+                uni_mesh -= shift
 
             uni_mesh = np.concatenate([uni_mesh, mesh[:, :-1, :]], axis=1)
+
     # Stitch the results into a singular mesh
     mesh = sections[len(sections) - 1]["mesh"]
     if len(sections) == 1:
-        import copy
-
         uni_mesh = copy.deepcopy(mesh)
     else:
         uni_mesh = np.concatenate([uni_mesh, mesh], axis=1)
@@ -130,6 +131,13 @@ class GeomMultiUnification(om.ExplicitComponent):
     sections : list
         A list of section surface dictionaries in OAS format.
 
+    surface_name : str
+        The name of the multi-section surface.
+
+    shift_uni_mesh : bool
+        Flag that shifts sections so that their leading edges are coincident. Intended to keep sections from seperating
+        or intersecting during scalar span or sweep operations without the use of the constraint component.
+
     Returns
     -------
     mesh[nx, ny, 3] : numpy array
@@ -141,11 +149,18 @@ class GeomMultiUnification(om.ExplicitComponent):
         Declare options.
         """
         self.options.declare("sections", types=list, desc="A list of section surface dictionaries to be unified.")
-        self.options.declare("surface_name", types=str, desc="The name of the multi-section surface")
+        self.options.declare("surface_name", types=str, desc="The name of the multi-section surface.")
+        self.options.declare(
+            "shift_uni_mesh",
+            types=bool,
+            default=True,
+            desc="Flag that shifts sections so that their leading edges are coincident.",
+        )
 
     def setup(self):
         sections = self.options["sections"]
         name = self.options["surface_name"]
+        shift_uni_mesh = self.options["shift_uni_mesh"]
 
         # Get the unified mesh size, index array, and block of indicies for each section
         [uni_mesh_indices, uni_nx, uni_ny] = compute_uni_mesh_dims(sections)
@@ -178,39 +193,53 @@ class GeomMultiUnification(om.ExplicitComponent):
             # Fill non zero Jacobian entries with ones
             data = np.ones_like(rows)
 
-            # Update sparsity pattern for mesh shifting
-            if i_sec == 0:
+            if shift_uni_mesh:
+                # Update sparsity pattern for any possible uni_mesh shifting/translating(i.e span or sweep scalar changes)
+                if i_sec == 0:
 
-                cat_mesh = np.concatenate(uni_mesh_blocks[: i_sec + 1])
+                    # Concatenate the unified mesh jacobian row up to an including the current section
+                    acc_mesh = np.concatenate(uni_mesh_blocks[: i_sec + 1])
 
-                cols = np.concatenate([cols, np.tile(mesh_indices[0, -1, :].flatten(), len(cat_mesh) // 3)])
-                rows = np.concatenate([rows, cat_mesh])
-                data = np.concatenate([data, -1 * np.ones_like(cat_mesh)])
-            elif i_sec == len(sections) - 1:
+                    # The unified mesh up to and including this point is sensitive to the right tip of the first section
+                    cols = np.concatenate([cols, np.tile(mesh_indices[0, -1, :].flatten(), len(acc_mesh) // 3)])
+                    rows = np.concatenate([rows, acc_mesh])
+                    data = np.concatenate([data, -1 * np.ones_like(acc_mesh)])
+                elif i_sec == len(sections) - 1:
 
-                cat_mesh = np.concatenate(uni_mesh_blocks[:i_sec])
+                    # Concatenate the unified mesh jacobian row up to but not including the current section
+                    acc_mesh = np.concatenate(uni_mesh_blocks[:i_sec])
 
-                cols = np.concatenate([cols, np.tile(mesh_indices[0, 0, :].flatten(), len(cat_mesh) // 3)])
-                rows = np.concatenate([rows, cat_mesh])
-                data = np.concatenate([data, np.ones_like(cat_mesh)])
+                    # The unified mesh up to but not including this point is sensitive to the left tip of the last section
+                    cols = np.concatenate([cols, np.tile(mesh_indices[0, 0, :].flatten(), len(acc_mesh) // 3)])
+                    rows = np.concatenate([rows, acc_mesh])
+                    data = np.concatenate([data, np.ones_like(acc_mesh)])
 
-            else:
+                else:
 
-                cat_mesh = np.concatenate(uni_mesh_blocks[:i_sec])
+                    # Concatenate the unified mesh jacobian row up to but not including the current section
+                    acc_mesh = np.concatenate(uni_mesh_blocks[:i_sec])
 
-                cols = np.concatenate([cols, np.tile(mesh_indices[0, 0, :].flatten(), len(cat_mesh) // 3)])
-                rows = np.concatenate([rows, cat_mesh])
-                data = np.concatenate([data, np.ones_like(cat_mesh)])
+                    # The unified mesh up to and including this point is sensitive to the right tip of the section
+                    cols = np.concatenate([cols, np.tile(mesh_indices[0, 0, :].flatten(), len(acc_mesh) // 3)])
+                    rows = np.concatenate([rows, acc_mesh])
+                    data = np.concatenate([data, np.ones_like(acc_mesh)])
 
-                cat_mesh = np.concatenate([cat_mesh, uni_mesh_blocks[i_sec]])
+                    # Concatenate the unified mesh jacobian row up to an including the current section
+                    acc_mesh = np.concatenate([acc_mesh, uni_mesh_blocks[i_sec]])
 
-                cols = np.concatenate([cols, np.tile(mesh_indices[0, -1, :].flatten(), len(cat_mesh) // 3)])
-                rows = np.concatenate([rows, cat_mesh])
-                data = np.concatenate([data, -1 * np.ones_like(cat_mesh)])
+                    # The unified mesh up to but not including this point is sensitive to the left tip of the section
+                    cols = np.concatenate([cols, np.tile(mesh_indices[0, -1, :].flatten(), len(acc_mesh) // 3)])
+                    rows = np.concatenate([rows, acc_mesh])
+                    data = np.concatenate([data, -1 * np.ones_like(acc_mesh)])
 
             self.declare_partials(uni_mesh_name, mesh_name, val=data, rows=rows, cols=cols)
 
         self.add_output(uni_mesh_name, shape=(uni_nx, uni_ny, 3), units="m")
+
+        if shift_uni_mesh:
+            # Component is not complex safe when adding mesh shifting to it
+            for section in sections:
+                self.set_check_partial_options(section["name"] + "_def_mesh", method="fd")
 
         # Unify the t/c output of each section if that has been specified
         if "t_over_c_cp" in sections[0].keys():
@@ -234,6 +263,7 @@ class GeomMultiUnification(om.ExplicitComponent):
     def compute(self, inputs, outputs):
         sections = self.options["sections"]
         surface_name = self.options["surface_name"]
+        shift_uni_mesh = self.options["shift_uni_mesh"]
         uni_mesh_name = "{}_uni_mesh".format(surface_name)
 
         # Loop through all sections to unify the mesh
@@ -244,12 +274,11 @@ class GeomMultiUnification(om.ExplicitComponent):
             if i_sec == 0:
                 uni_mesh = inputs[mesh_name][:, :-1, :]
             else:
-                # translate uni_mesh (outer sections) to align leading edge at unification boundary
-                mesh_name_last = "{}_def_mesh".format(sections[i_sec - 1]["name"])
-                shift = (
-                    inputs[mesh_name_last][0, -1, :] - inputs[mesh_name][0, 0, :]
-                )  # TODO: not sure if I use LE or 25% chord? Or maybe doesn't matter
-                uni_mesh -= shift
+                if shift_uni_mesh:
+                    # translate or shift uni_mesh (outer sections) to align leading edge at unification boundary
+                    mesh_name_last = "{}_def_mesh".format(sections[i_sec - 1]["name"])
+                    shift = inputs[mesh_name_last][0, -1, :] - inputs[mesh_name][0, 0, :]
+                    uni_mesh -= shift
 
                 if i_sec == len(sections) - 1:
                     # concatenate the last (root) section
@@ -272,62 +301,3 @@ class GeomMultiUnification(om.ExplicitComponent):
             outputs[uni_tc_name] = uni_t_over_c
 
         outputs[uni_mesh_name] = uni_mesh
-
-
-if __name__ == "__main__":
-
-    from openaerostruct.geometry.geometry_group import Geometry
-    from openaerostruct.geometry.geometry_group import build_sections
-
-    from openaerostruct.utils.testing import get_two_section_surface, get_three_section_surface, view_mat
-
-    from numpy.testing import assert_almost_equal
-
-    surface, sec_chord_cp = get_three_section_surface()
-
-    sec_dicts = build_sections(surface)
-
-    prob = om.Problem()
-
-    section_names = []
-    for sec in sec_dicts:
-        geom_group = Geometry(surface=sec)
-        prob.model.add_subsystem(sec["name"], geom_group)
-        section_names.append(sec["name"])
-
-    # Add the mesh unification component
-    unification_name = "{}_unification".format(surface["name"])
-
-    uni_mesh = GeomMultiUnification(sections=sec_dicts, surface_name=surface["name"])
-    prob.model.add_subsystem(unification_name, uni_mesh)
-
-    # Connect each section mesh to mesh unification component inputs
-    for sec_name in section_names:
-        prob.model.connect("{}.mesh".format(sec_name), "{}.{}_def_mesh".format(unification_name, sec_name))
-
-    # Connect each section t over c B-spline to t over c unification component if needed
-    if "t_over_c_cp" in surface.keys():
-        for sec_name in section_names:
-            prob.model.connect("{}.t_over_c".format(sec_name), "{}.{}_t_over_c".format(unification_name, sec_name))
-
-    prob.setup(force_alloc_complex=True)
-
-    # om.n2(prob)
-
-    prob.run_model()
-
-    check = prob.check_partials(compact_print=False, method="fd")
-
-    # Loop through this `check` dictionary and visualize the approximated
-    # and computed derivatives
-    for key, subjac in check[list(check.keys())[27]].items():  # index = 18 for 2 section mesh
-        print()
-        print(key)
-        view_mat(subjac["J_fd"], subjac["J_fwd"], key)
-
-    # Loop through the `check` dictionary and perform assert that the
-    # approximated deriv must be very close to the computed deriv
-    # for key, subjac in check[list(check.keys())[0]].items():
-    #     if subjac["magnitude"].fd > 1e-6:
-    #         assert_almost_equal(subjac["rel error"].forward, 0.0, err_msg="deriv of %s wrt %s" % key)
-    #         assert_almost_equal(subjac["rel error"].reverse, 0.0, err_msg="deriv of %s wrt %s" % key)

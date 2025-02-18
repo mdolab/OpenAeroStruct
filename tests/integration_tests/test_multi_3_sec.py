@@ -19,7 +19,7 @@ class Test(unittest.TestCase):
         surface, sec_chord_cp = get_three_section_surface(sym=True, visc=False)
 
         # Create the OpenMDAO problem
-        prob = om.Problem()
+        prob = om.Problem(reports=False)
 
         # Create an independent variable component that will supply the flow
         # conditions to the problem.
@@ -121,7 +121,7 @@ class Test(unittest.TestCase):
         surface, sec_chord_cp = get_three_section_surface(sym=False, visc=False)
 
         # Create the OpenMDAO problem
-        prob = om.Problem()
+        prob = om.Problem(reports=False)
 
         # Create an independent variable component that will supply the flow
         # conditions to the problem.
