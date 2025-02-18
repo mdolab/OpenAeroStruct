@@ -92,6 +92,13 @@ def unify_mesh(sections):
         if i_sec == 0:
             uni_mesh = copy.deepcopy(mesh[:, :-1, :])
         else:
+            last_mesh = sections[i_sec - 1]["mesh"]
+            # translate uni_mesh (outer sections) to align leading edge at unification boundary
+            shift = (
+                last_mesh[0, -1, :] - mesh[0, 0, :]
+            )  # TODO: not sure if I use LE or 25% chord? Or maybe doesn't matter
+            uni_mesh -= shift
+
             uni_mesh = np.concatenate([uni_mesh, mesh[:, :-1, :]], axis=1)
     # Stitch the results into a singular mesh
     mesh = sections[len(sections) - 1]["mesh"]
@@ -171,8 +178,37 @@ class GeomMultiUnification(om.ExplicitComponent):
             # Fill non zero Jacobian entries with ones
             data = np.ones_like(rows)
 
+            # Update sparsity pattern for mesh shifting
+            if i_sec == 0:
+
+                cat_mesh = np.concatenate(uni_mesh_blocks[: i_sec + 1])
+
+                cols = np.concatenate([cols, np.tile(mesh_indices[0, -1, :].flatten(), len(cat_mesh) // 3)])
+                rows = np.concatenate([rows, cat_mesh])
+                data = np.concatenate([data, -1 * np.ones_like(cat_mesh)])
+            elif i_sec == len(sections) - 1:
+
+                cat_mesh = np.concatenate(uni_mesh_blocks[:i_sec])
+
+                cols = np.concatenate([cols, np.tile(mesh_indices[0, 0, :].flatten(), len(cat_mesh) // 3)])
+                rows = np.concatenate([rows, cat_mesh])
+                data = np.concatenate([data, np.ones_like(cat_mesh)])
+
+            else:
+
+                cat_mesh = np.concatenate(uni_mesh_blocks[:i_sec])
+
+                cols = np.concatenate([cols, np.tile(mesh_indices[0, 0, :].flatten(), len(cat_mesh) // 3)])
+                rows = np.concatenate([rows, cat_mesh])
+                data = np.concatenate([data, np.ones_like(cat_mesh)])
+
+                cat_mesh = np.concatenate([cat_mesh, uni_mesh_blocks[i_sec]])
+
+                cols = np.concatenate([cols, np.tile(mesh_indices[0, -1, :].flatten(), len(cat_mesh) // 3)])
+                rows = np.concatenate([rows, cat_mesh])
+                data = np.concatenate([data, -1 * np.ones_like(cat_mesh)])
+
             self.declare_partials(uni_mesh_name, mesh_name, val=data, rows=rows, cols=cols)
-            # TODO: update sparsity pattern to account for the shifting
 
         self.add_output(uni_mesh_name, shape=(uni_nx, uni_ny, 3), units="m")
 
@@ -210,7 +246,9 @@ class GeomMultiUnification(om.ExplicitComponent):
             else:
                 # translate uni_mesh (outer sections) to align leading edge at unification boundary
                 mesh_name_last = "{}_def_mesh".format(sections[i_sec - 1]["name"])
-                shift = inputs[mesh_name_last][0, -1, :] - inputs[mesh_name][0, 0, :]   # TODO: not sure if I use LE or 25% chord? Or maybe doesn't matter
+                shift = (
+                    inputs[mesh_name_last][0, -1, :] - inputs[mesh_name][0, 0, :]
+                )  # TODO: not sure if I use LE or 25% chord? Or maybe doesn't matter
                 uni_mesh -= shift
 
                 if i_sec == len(sections) - 1:
@@ -220,7 +258,6 @@ class GeomMultiUnification(om.ExplicitComponent):
                     # concatenate a middle section, so remove the inboard column not to overlap
                     uni_mesh = np.concatenate([uni_mesh, inputs[mesh_name][:, :-1, :]], axis=1)
 
-        # TODO: need modification in t/c (probably not)? Haven't checked
         if "t_over_c_cp" in sections[0].keys():
             uni_tc_name = "{}_uni_t_over_c".format(self.options["surface_name"])
             for i_sec, section in enumerate(sections):
@@ -235,3 +272,62 @@ class GeomMultiUnification(om.ExplicitComponent):
             outputs[uni_tc_name] = uni_t_over_c
 
         outputs[uni_mesh_name] = uni_mesh
+
+
+if __name__ == "__main__":
+
+    from openaerostruct.geometry.geometry_group import Geometry
+    from openaerostruct.geometry.geometry_group import build_sections
+
+    from openaerostruct.utils.testing import get_two_section_surface, get_three_section_surface, view_mat
+
+    from numpy.testing import assert_almost_equal
+
+    surface, sec_chord_cp = get_three_section_surface()
+
+    sec_dicts = build_sections(surface)
+
+    prob = om.Problem()
+
+    section_names = []
+    for sec in sec_dicts:
+        geom_group = Geometry(surface=sec)
+        prob.model.add_subsystem(sec["name"], geom_group)
+        section_names.append(sec["name"])
+
+    # Add the mesh unification component
+    unification_name = "{}_unification".format(surface["name"])
+
+    uni_mesh = GeomMultiUnification(sections=sec_dicts, surface_name=surface["name"])
+    prob.model.add_subsystem(unification_name, uni_mesh)
+
+    # Connect each section mesh to mesh unification component inputs
+    for sec_name in section_names:
+        prob.model.connect("{}.mesh".format(sec_name), "{}.{}_def_mesh".format(unification_name, sec_name))
+
+    # Connect each section t over c B-spline to t over c unification component if needed
+    if "t_over_c_cp" in surface.keys():
+        for sec_name in section_names:
+            prob.model.connect("{}.t_over_c".format(sec_name), "{}.{}_t_over_c".format(unification_name, sec_name))
+
+    prob.setup(force_alloc_complex=True)
+
+    # om.n2(prob)
+
+    prob.run_model()
+
+    check = prob.check_partials(compact_print=False, method="fd")
+
+    # Loop through this `check` dictionary and visualize the approximated
+    # and computed derivatives
+    for key, subjac in check[list(check.keys())[27]].items():  # index = 18 for 2 section mesh
+        print()
+        print(key)
+        view_mat(subjac["J_fd"], subjac["J_fwd"], key)
+
+    # Loop through the `check` dictionary and perform assert that the
+    # approximated deriv must be very close to the computed deriv
+    # for key, subjac in check[list(check.keys())[0]].items():
+    #     if subjac["magnitude"].fd > 1e-6:
+    #         assert_almost_equal(subjac["rel error"].forward, 0.0, err_msg="deriv of %s wrt %s" % key)
+    #         assert_almost_equal(subjac["rel error"].reverse, 0.0, err_msg="deriv of %s wrt %s" % key)

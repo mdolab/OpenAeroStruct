@@ -2,7 +2,7 @@ import unittest
 
 from openaerostruct.geometry.geometry_unification import GeomMultiUnification
 from openaerostruct.geometry.geometry_group import build_sections
-from openaerostruct.utils.testing import run_test, get_three_section_surface
+from openaerostruct.utils.testing import run_test, get_three_section_surface, get_two_section_surface
 
 
 class Test(unittest.TestCase):
@@ -12,7 +12,7 @@ class Test(unittest.TestCase):
 
         comp = GeomMultiUnification(sections=sec_dicts, surface_name=surface["name"])
 
-        run_test(self, comp, complex_flag=True, method="cs")
+        run_test(self, comp, complex_flag=True, method="fd")
 
 
 if __name__ == "__main__":
