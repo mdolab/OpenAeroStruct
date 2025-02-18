@@ -60,7 +60,7 @@ surface = {
     # Airfoil properties for viscous drag calculation
     "k_lam": 0.05,  # percentage of chord with laminar
     # flow, used for viscous drag
-    "c_max_t": 0.303,  # chordwise location of maximum (NACA0015)# docs checkpoint 1
+    "c_max_t": 0.303,  # chordwise location of maximum (NACA0015)
     # thickness
     "with_viscous": False,  # if true, compute viscous drag
     "with_wave": False,  # if true, compute wave drag
