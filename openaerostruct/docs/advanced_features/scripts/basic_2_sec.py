@@ -235,7 +235,5 @@ def plot_meshes(meshes):
     plt.savefig("opt_planform_constraint.png")
 
 
-# plot_meshes([mesh1,mesh2])
 plot_meshes([meshUni])
-# plt.show()
 # docs checkpoint 8

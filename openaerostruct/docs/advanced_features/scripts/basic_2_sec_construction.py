@@ -1,6 +1,8 @@
 """Optimizes the section chord distribution of a two section symmetrical wing using the construction-based approach for section
 joining. This example is referenced as part of the multi-section tutorial."""
 
+# docs checkpoint 0
+
 import numpy as np
 
 import openmdao.api as om
@@ -11,12 +13,8 @@ from openaerostruct.geometry.geometry_group import build_sections
 from openaerostruct.geometry.geometry_unification import unify_mesh
 import matplotlib.pyplot as plt
 
-# docs checkpoint 0
-
 # To use the construction based approach an additional import is required.
 from openaerostruct.geometry.multi_unified_bspline_utils import build_multi_spline, connect_multi_spline
-
-# docs checkpoint 1
 
 # Set-up B-splines for each section. Done here since this information will be needed multiple times.
 sec_chord_cp = [np.array([1, 1]), np.array([1.0, 0.2])]
@@ -91,7 +89,6 @@ section_surfaces = build_sections(surface)
 uniMesh = unify_mesh(section_surfaces)
 surface["mesh"] = uniMesh
 
-# docs checkpoint 2
 
 """This functions builds an OpenMDAO B-spline component for the surface with the correct number of control points
 corresponding to each section junction on the surface. Refer to the functions documentions for input details. After
@@ -138,7 +135,7 @@ component does not need to be specified as we are not joining the sections by co
 multi_geom_group = MultiSecGeometry(surface=surface)
 prob.model.add_subsystem(surface["name"], multi_geom_group)
 
-# docs checkpoint 3
+# docs checkpoint 1
 
 # Create the aero point group, which contains the actual aerodynamic
 # analyses
