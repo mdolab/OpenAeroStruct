@@ -313,7 +313,7 @@ class MultiSecGeometry(om.Group):
         )  # List of arrays corresponding to each shared edge between section along the surface. Each array inidicates along which axes the distance constarint is applied([x y z])
         self.options.declare(
             "shift_uni_mesh", types=bool, default=True
-        )  #  Flag that shifts sections so that their leading edges are coincident. Intended to keep sections from seperating
+        )  # Flag that shifts sections so that their leading edges are coincident. Intended to keep sections from seperating
         # or intersecting during scalar span or sweep operations without the use of the constraint component.
 
     def setup(self):

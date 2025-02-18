@@ -194,9 +194,8 @@ class GeomMultiUnification(om.ExplicitComponent):
             data = np.ones_like(rows)
 
             if shift_uni_mesh:
-                # Update sparsity pattern for any possible uni_mesh shifting/translating(i.e span or sweep scalar changes)
+                # Update sparsity pattern for any possible uni_mesh shifting/translating(i.e span scalar changes)
                 if i_sec == 0:
-
                     # Concatenate the unified mesh jacobian row up to an including the current section
                     acc_mesh = np.concatenate(uni_mesh_blocks[: i_sec + 1])
 
@@ -205,18 +204,15 @@ class GeomMultiUnification(om.ExplicitComponent):
                     rows = np.concatenate([rows, acc_mesh])
                     data = np.concatenate([data, -1 * np.ones_like(acc_mesh)])
                 elif i_sec == len(sections) - 1:
-
-                    # Concatenate the unified mesh jacobian row up to but not including the current section
+                    # Concatenate the unified mesh jacobian row up including the current section
                     acc_mesh = np.concatenate(uni_mesh_blocks[:i_sec])
 
-                    # The unified mesh up to but not including this point is sensitive to the left tip of the last section
+                    # The unified mesh up including this point is sensitive to the left tip of the last section
                     cols = np.concatenate([cols, np.tile(mesh_indices[0, 0, :].flatten(), len(acc_mesh) // 3)])
                     rows = np.concatenate([rows, acc_mesh])
                     data = np.concatenate([data, np.ones_like(acc_mesh)])
-
                 else:
-
-                    # Concatenate the unified mesh jacobian row up to but not including the current section
+                    # Concatenate the unified mesh jacobian row up including the current section
                     acc_mesh = np.concatenate(uni_mesh_blocks[:i_sec])
 
                     # The unified mesh up to and including this point is sensitive to the right tip of the section
