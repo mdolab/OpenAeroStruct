@@ -1,0 +1,31 @@
+cff-version: "1.2.0"
+authors:
+- family-names: Jasa
+  given-names: John P.
+  orcid: "https://orcid.org/0000-0001-5442-2792"
+- family-names: Hwang
+  given-names: John T.
+  orcid: "https://orcid.org/0009-0002-5789-6357"
+- family-names: Martins
+  given-names: Joaquim R. R. A.
+  orcid: "https://orcid.org/0000-0003-2143-1478"
+doi: 10.1007/s00158-018-1912-8
+message: If you use this software, please cite the following paper.
+preferred-citation:
+  authors:
+  - family-names: Jasa
+    given-names: John P.
+    orcid: "https://orcid.org/0000-0001-5442-2792"
+  - family-names: Hwang
+    given-names: John T.
+    orcid: "https://orcid.org/0009-0002-5789-6357"
+  - family-names: Martins
+    given-names: Joaquim R. R. A.
+    orcid: "https://orcid.org/0000-0003-2143-1478"
+  title: "Open-source coupled aerostructural optimization using Python"
+  journal: "Structural and Multidisciplinary Optimization"
+  volume: "57"
+  number: "4"
+  pages: "1815--1827"
+  date: "2018-04"
+  doi: "10.1007/s00158-018-1912-8"
