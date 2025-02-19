@@ -91,7 +91,7 @@ John P. Jasa, Shamsheer S. Chauhan, Justin S. Gray, and Joaquim R. R. A. Martins
 
 License
 -------
-Copyright 2018-2023 MDO Lab
+Copyright 2018 MDO Lab
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
