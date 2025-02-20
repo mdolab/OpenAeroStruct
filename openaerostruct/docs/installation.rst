@@ -35,31 +35,30 @@ The oldest and latest versions of the dependencies that we test regularly are th
       - oldest
       - latest
     * - Python
-      - 3.8
+      - 3.9
       - 3.11
     * - NumPy
-      - 1.20
-      - latest
+      - 1.21
+      - 1.26
     * - SciPy
-      - 1.6.0
-      - latest
+      - 1.7
+      - 1.15
     * - OpenMDAO
       - 3.35
       - latest
-    * - Matplotlib
-      - latest
-      - latest
     * - pyGeo (optional)
-      - 1.6.0
+      - 1.15.0
       - latest
     * - OpenVSP (optional)
-      - 3.27.1
-      - 3.27.1
+      - 3.33
+      - 3.33
     * - MPhys (optional)
       - 2.0
       - latest
 
-If you are unfamiliar with OpenMDAO and wish to modify the internals of OpenAeroStruct, you should examine the OpenMDAO documentation at http://openmdao.org/twodocs/versions/latest/index.html. The tutorials provided with OpenMDAO are helpful to understand the basics of using OpenMDAO to solve an optimization problem.
+Numpy 2.0 or later should also work, but we currently do not run tests with Numpy 2.
+
+If you are unfamiliar with OpenMDAO and wish to modify the internals of OpenAeroStruct, you should examine the OpenMDAO documentation at https://openmdao.org/newdocs/versions/latest/main.html. The tutorials provided with OpenMDAO are helpful to understand the basics of using OpenMDAO to solve an optimization problem.
 
 Advanced Options
 ~~~~~~~~~~~~~~~~
