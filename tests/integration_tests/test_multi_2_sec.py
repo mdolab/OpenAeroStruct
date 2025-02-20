@@ -23,7 +23,7 @@ class Test(unittest.TestCase):
         surface, sec_chord_cp = get_two_section_surface()
 
         # Create the OpenMDAO problem for the constrained version
-        prob = om.Problem()
+        prob = om.Problem(reports=False)
 
         # Create an independent variable component that will supply the flow
         # conditions to the problem.
@@ -47,7 +47,9 @@ class Test(unittest.TestCase):
         # Create and add a group that handles the geometry for the
         # aerodynamic lifting surface
         multi_geom_group = MultiSecGeometry(
-            surface=surface, joining_comp=True, dim_constr=[np.array([1, 0, 0]), np.array([1, 0, 0])]
+            surface=surface,
+            joining_comp=True,
+            dim_constr=[np.array([1, 0, 0]), np.array([1, 0, 0])],
         )
         prob.model.add_subsystem(surface["name"], multi_geom_group)
 
@@ -120,7 +122,7 @@ class Test(unittest.TestCase):
         surface, sec_chord_cp = get_two_section_surface()
 
         # Create the OpenMDAO problem
-        prob = om.Problem()
+        prob = om.Problem(reports=False)
 
         # Create an independent variable component that will supply the flow
         # conditions to the problem.
@@ -216,7 +218,7 @@ class Test(unittest.TestCase):
         surface, sec_chord_cp = get_two_section_surface(sym=False, visc=False)
 
         # Create the OpenMDAO problem
-        prob = om.Problem()
+        prob = om.Problem(reports=False)
 
         # Create an independent variable component that will supply the flow
         # conditions to the problem.
@@ -315,7 +317,7 @@ class Test(unittest.TestCase):
         surface, sec_chord_cp = get_two_section_surface(sym=True, visc=True)
 
         # Create the OpenMDAO problem
-        prob = om.Problem()
+        prob = om.Problem(reports=False)
 
         # Create an independent variable component that will supply the flow
         # conditions to the problem.
