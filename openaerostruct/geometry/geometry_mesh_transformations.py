@@ -64,18 +64,25 @@ class Taper(om.ExplicitComponent):
         # If symmetric, solve for the correct taper ratio, which is a linear
         # interpolation problem
         if symmetry:
-            xp = np.array([-span, 0.0])
+            # xp = np.array([-span, 0.0])
+            # Fix for symmetry axis not being at y = 0
+            xp = np.array([x[0], x[-1]])
             fp = np.array([taper_ratio, 1.0])
 
         # Otherwise, we set up an interpolation problem for the entire wing, which
         # consists of two linear segments
         else:
-            xp = np.array([-span / 2, 0.0, span / 2])
+            # xp = np.array([-span / 2, 0.0, span / 2])
+            # Fix for symmetry axis not being at y = 0
+            xp = np.array([x[0], x[((len(x) + 1) // 2) - 1], x[-1]])
             fp = np.array([taper_ratio, 1.0, taper_ratio])
 
-        taper = np.interp(x.real, xp.real, fp.real)
+        # Interpolate over quarter chord line to compute the taper at each spanwise stations
+        taper = np.interp(x, xp, fp)
 
         # Modify the mesh based on the taper amount computed per spanwise section
+        # j - spanwise station index (ny)
+        # Broadcast taper array over the mesh along spanwise(j) index multiply it by the x and z coordinates
         outputs["mesh"] = np.einsum("ijk,j->ijk", mesh - ref_axis, taper) + ref_axis
 
     def compute_partials(self, inputs, partials):
@@ -89,27 +96,70 @@ class Taper(om.ExplicitComponent):
         num_x, num_y, _ = mesh.shape
         ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
         x = ref_axis[:, 1]
-        span = x[-1] - x[0]
 
-        # If symmetric, solve for the correct taper ratio, which is a linear
-        # interpolation problem
+        # # If symmetric, solve for the correct taper ratio, which is a linear
+        # # interpolation problem
+        # if symmetry:
+        #     # xp = np.array([-span, 0.0])
+        #     # Fix for symmetry axis not being at y = 0
+        #     xp = np.array([x[0], x[-1]])
+        #     fp = np.array([taper_ratio, 1.0])
+
+        # # Otherwise, we set up an interpolation problem for the entire wing, which
+        # # consists of two linear segments
+        # else:
+        #     # xp = np.array([-span / 2, 0.0, span / 2])
+        #     # Fix for symmetry axis not being at y = 0
+        #     xp = np.array([x[0], x[((len(x) + 1) // 2) - 1], x[-1]])
+        #     fp = np.array([taper_ratio, 1.0, taper_ratio])
+
+        # # Interpolate over quarter chord line to compute the taper at each spanwise stations
+        # taper = np.interp(x, xp, fp)
+
+        # if taper_ratio == 1.0:
+        #     dtaper_old = np.zeros(taper.shape)
+        # else:
+        #     dtaper_old = (1.0 - taper) / (1.0 - taper_ratio)
+
+        # Enhanced derivative implementation that allows for taper_ratio = 1
         if symmetry:
-            xp = np.array([-span, 0.0])
-            fp = np.array([taper_ratio, 1.0])
+            # Compute the span
+            span = x[-1] - x[0]
 
-        # Otherwise, we set up an interpolation problem for the entire wing, which
-        # consists of two linear segments
+            # Distance of each station from left tip(incl. left tip)
+            dy = np.cumsum(np.diff(x, prepend=x[0]))
+
+            # Compute the derivative vector wrt to the taper_ratio
+            # Note that this isn't sensitive to the taper_ratio itself,
+            # only the span station spacing allowing for taper_ratio = 1
+            # This is simply the derivative of the linear interpolation
+            # wrt to the end point which is the taper_ratio
+            dtaper = np.ones(len(x)) + (-dy / span)
         else:
-            xp = np.array([-span / 2, 0.0, span / 2])
-            fp = np.array([taper_ratio, 1.0, taper_ratio])
+            # Compute the semi-span considering each semi-span might be
+            # perturbed
+            span1 = x[((len(x) + 1) // 2) - 1] - x[0]
 
-        taper = np.interp(x, xp, fp)
+            # Distance of each left span station from left tip(incl. left tip)
+            dy1 = np.cumsum(np.diff(x[: (len(x) + 1) // 2], prepend=x[0]))
 
-        if taper_ratio == 1.0:
-            dtaper = np.zeros(taper.shape)
-        else:
-            dtaper = (1.0 - taper) / (1.0 - taper_ratio)
+            # Compute the left half of the derivative vector wrt to the taper_ratio
+            dtaper1 = np.ones((len(x) + 1) // 2) + (-dy1 / span1)
 
+            # Compute the semi-span
+            span2 = x[-1] - x[((len(x) + 1) // 2) - 1]
+
+            # Distance of each right span station from centerline
+            dy2 = np.cumsum(np.diff(x[((len(x) + 1) // 2) - 1 :]))
+
+            # Compute the right half of the derivative vector wrt to the taper_ratio
+            dtaper2 = dy2 / span2
+
+            # Concatinate the two parts of the deritivative vector
+            dtaper = np.concatenate([dtaper1, dtaper2])
+
+        # Broadcast d (taper)/ d(taper_ratio) onto each mesh spanwise station in a similar fasion to the compute method
+        # This works as only taper is directly sensitive to taper_ratio
         partials["mesh", "taper"] = np.einsum("ijk, j->ijk", mesh - ref_axis, dtaper)
 
 
