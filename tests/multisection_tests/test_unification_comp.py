@@ -20,8 +20,7 @@ class Test(unittest.TestCase):
 
         comp = GeomMultiUnification(sections=sec_dicts, surface_name=surface["name"], shift_uni_mesh=True)
 
-        # Mesh shifting is not complex safe
-        run_test(self, comp, complex_flag=False, method="fd")
+        run_test(self, comp, complex_flag=False, method="cs")
 
 
 if __name__ == "__main__":
