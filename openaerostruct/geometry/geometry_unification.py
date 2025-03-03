@@ -98,11 +98,6 @@ def unify_mesh(sections, shift_uni_mesh=True):
             if shift_uni_mesh:
                 # translate or shift uni_mesh (outer sections) to align leading edge at unification boundary
                 last_mesh = sections[i_sec - 1]["mesh"]
-                # shift = last_mesh[0, -1, :] - mesh[0, 0, :]
-                # uni_mesh -= shift
-
-                # For some reason the previous two lines need to be written this way or check_partials will fail in the
-                # component. Also Written this way in the utility function for consistency
                 uni_mesh = uni_mesh - last_mesh[0, -1, :] + mesh[0, 0, :]
 
             uni_mesh = np.concatenate([uni_mesh, mesh[:, :-1, :]], axis=1)
@@ -236,11 +231,6 @@ class GeomMultiUnification(om.ExplicitComponent):
 
         self.add_output(uni_mesh_name, shape=(uni_nx, uni_ny, 3), units="m")
 
-        if shift_uni_mesh:
-            # Component is not complex safe when adding mesh shifting to it
-            for section in sections:
-                self.set_check_partial_options(section["name"] + "_def_mesh", method="fd")
-
         # Unify the t/c output of each section if that has been specified
         if "t_over_c_cp" in sections[0].keys():
             uni_tc_name = "{}_uni_t_over_c".format(self.options["surface_name"])
@@ -277,10 +267,6 @@ class GeomMultiUnification(om.ExplicitComponent):
                 if shift_uni_mesh:
                     # translate or shift uni_mesh (outer sections) to align leading edge at unification boundary
                     mesh_name_last = "{}_def_mesh".format(sections[i_sec - 1]["name"])
-                    # shift = inputs[mesh_name_last][0, -1, :] - inputs[mesh_name][0, 0, :]
-                    # uni_mesh -= shift
-
-                    # For some reason the previous two lines need to be written this way or check_partials will fail
                     uni_mesh = uni_mesh - inputs[mesh_name_last][0, -1, :] + inputs[mesh_name][0, 0, :]
 
                 if i_sec == len(sections) - 1:
