@@ -60,7 +60,7 @@ class Taper(om.ExplicitComponent):
         x = ref_axis[:, 1]
 
         # Spanwise(j) index of wing centerline
-        center_idx = (len(x) + 1) // 2 - 1
+        n_sym = (len(x) + 1) // 2 - 1
 
         # If symmetric, solve for the correct taper ratio, which is a linear
         # interpolation problem (assume symmetry axis is not necessarily at y = 0)
@@ -71,7 +71,7 @@ class Taper(om.ExplicitComponent):
         # Otherwise, we set up an interpolation problem for the entire wing, which
         # consists of two linear segments (assume symmetry axis is not necessarily at y = 0)
         else:
-            xp = np.array([x[0], x[center_idx], x[-1]])
+            xp = np.array([x[0], x[n_sym], x[-1]])
             fp = np.array([taper_ratio, 1.0, taper_ratio])
 
         # Interpolate over quarter chord line to compute the taper at each spanwise stations
@@ -93,7 +93,7 @@ class Taper(om.ExplicitComponent):
         x = ref_axis[:, 1]
 
         # Spanwise(j) index of wing centerline
-        center_idx = (len(x) + 1) // 2 - 1
+        n_sym = (len(x) + 1) // 2 - 1
 
         # Derivative implementation that allows for taper_ratio = 1
         if symmetry:
@@ -112,19 +112,19 @@ class Taper(om.ExplicitComponent):
         else:
             # Compute the semi-span considering each semi-span might be
             # perturbed
-            span1 = x[center_idx] - x[0]
+            span1 = x[n_sym] - x[0]
 
             # Distance of each left span station from left tip(incl. left tip)
-            dy1 = x[: center_idx + 1] - x[0]
+            dy1 = x[: n_sym + 1] - x[0]
 
             # Compute the left half of the derivative vector wrt to the taper_ratio
-            dtaper1 = np.ones(center_idx + 1) + (-dy1 / span1)
+            dtaper1 = np.ones(n_sym + 1) + (-dy1 / span1)
 
             # Compute the semi-span
-            span2 = x[-1] - x[center_idx]
+            span2 = x[-1] - x[n_sym]
 
             # Distance of each right span station from centerline
-            dy2 = x[center_idx + 1 :] - x[center_idx]
+            dy2 = x[n_sym + 1 :] - x[n_sym]
 
             # Compute the right half of the derivative vector wrt to the taper_ratio
             dtaper2 = dy2 / span2
@@ -197,11 +197,33 @@ class ScaleX(om.ExplicitComponent):
 
         self.declare_partials("mesh", "chord", rows=rows, cols=cols)
 
+        # Setup the  d mesh/ d in_mesh jacobian
+
+        # Diagonal part of jacobian. Mesh maps directly to in_mesh at first.
         p_rows = np.arange(nn)
+
+        # Off-diagonal part of the jacobian. Off-diagonal part exists as we translate the mesh to its
+        # references axis prior to applying the chord distribution. The ref_axis position itself is sensitive
+        # to the mesh LE and TE. The LE and TE parts of the mesh are already part of the main diagonal so the off diagonal
+        # terms the conver the sensitivies of the remainder of the mesh to the ref_axis.
+
+        # Entries sensitive to trailing edge contribution of ref_axis location. Note that
+        # the last row(TE) is dropped here as it's entries are covered as part
+        # of the main diagonal.
         te_rows = np.arange(((nx - 1) * ny * 3))
+
+        # Entries sensitive to leading edge contribution of ref_axis location. This is an offset
+        # of the te_rows but really it's the entire mesh except the leading edge row as it's entries are covered as part
+        # of the main diagonal.
         le_rows = te_rows + ny * 3
+
+        # Incidies of LE row repeated nx-1 times
         le_cols = np.tile(np.arange(3 * ny), nx - 1)
+
+        # Incidies of TE row. Done by offsetting le_cols
         te_cols = le_cols + ny * 3 * (nx - 1)
+
+        # Concactenate rows and cols together
         rows = np.concatenate([p_rows, te_rows, le_rows])
         cols = np.concatenate([p_rows, te_cols, le_cols])
 
@@ -211,34 +233,63 @@ class ScaleX(om.ExplicitComponent):
         mesh = inputs["in_mesh"]
         chord_dist = inputs["chord"]
 
+        # Get trailing edge coordinates (ny, 3)
         te = mesh[-1]
+        # Get leading edge coordinates (ny, 3)
         le = mesh[0]
+        # Linear interpolation to compute the ref_axis coordinates (ny, 3)
         ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
 
+        # Modify the mesh based on the chord scaling distribution
+        # j - spanwise station index (ny)
+        # Broadcast chord_dist array over the mesh along spanwise(j) index multiply it by the x and z coordinates
         outputs["mesh"] = np.einsum("ijk,j->ijk", mesh - ref_axis, chord_dist) + ref_axis
 
     def compute_partials(self, inputs, partials):
         mesh = inputs["in_mesh"]
         chord_dist = inputs["chord"]
 
+        # Get trailing edge coordinates (ny, 3)
         te = mesh[-1]
+        # Get leading edge coordinates (ny, 3)
         le = mesh[0]
+        # Linear interpolation to compute the ref_axis coordinates (ny, 3)
         ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
 
+        # Since we are multiplying the mesh at each spanwise station by chord_dist at that station
+        # the deritive with respect to chord is just the mesh itself(offset to ref_axis)
         partials["mesh", "chord"] = (mesh - ref_axis).flatten()
 
+        # Compute total number of array entries in mesh array
         nx, ny, _ = mesh.shape
         nn = nx * ny * 3
+
+        # The diagonol part of the d mesh/ d in_mesh jacobian is just the chord_dist broadcast over the
+        # leading edge row of ones then tiled nx times to account for the rest of the mesh rows
         d_mesh = np.einsum("i,ij->ij", chord_dist, np.ones((ny, 3))).flatten()
         partials["mesh", "in_mesh"][:nn] = np.tile(d_mesh, nx)
 
+        # Broadcast (1 - chord_dist) onto a single row of the mesh. Result is needed in all
+        # ref_axis related sensitivities.
         d_qc = (np.einsum("ij,i->ij", np.ones((ny, 3)), 1.0 - chord_dist)).flatten()
+
+        # Off-diagonal parts of the jacobian
         nnq = (nx - 1) * ny * 3
+
+        # Sensitivies of non-TE parts of mesh to TE contribution to ref_axis
         partials["mesh", "in_mesh"][nn : nn + nnq] = np.tile(self.ref_axis_pos * d_qc, nx - 1)
+
+        # Sensitivies of non-LE parts of mesh to LE contribution to ref_axis
         partials["mesh", "in_mesh"][nn + nnq :] = np.tile((1 - self.ref_axis_pos) * d_qc, nx - 1)
 
+        # ref_axis related sensitivities have contributions on the main diagonol for the LE and TE
+        # themselves.
         nnq = ny * 3
+
+        # Sentivities of TE part of mesh to TE contribution to ref_axis
         partials["mesh", "in_mesh"][nn - nnq : nn] += self.ref_axis_pos * d_qc
+
+        # Sentivities of LE part of mesh to LE contribution to ref_axis
         partials["mesh", "in_mesh"][:nnq] += (1 - self.ref_axis_pos) * d_qc
 
 
@@ -280,38 +331,87 @@ class Sweep(om.ExplicitComponent):
 
         self.add_output("mesh", shape=mesh_shape, units="m")
 
+        # Declare d mesh/ d sweep jacobian
+
+        # compute total number of points in mesh
         nx, ny, _ = mesh_shape
         nn = nx * ny
+
+        # x-coodinates of entire swept mesh are only sensitive to the scalar sweep(col 0)
         rows = 3 * np.arange(nn)
         cols = np.zeros(nn)
 
         self.declare_partials("mesh", "sweep", rows=rows, cols=cols)
 
+        # Declare d mesh/ d in_mesh jacobian
+
+        # Diagonal part just passes in_mesh to mesh
+        # compute total number of entries in mesh array
         nn = nx * ny * 3
+        # Entire swept mesh is sensitive to in_mesh
         n_rows = np.arange(nn)
 
+        # Off-diagonal part to account for distance from symmetry plane part of the sweep calculation
+        # This part has sensitive to the y-coordinate of the symmetry plane leading edge and the y-coordinates
+        # of the leading edge
         if self.options["symmetry"]:
+            # Sensitivity to symmetry plane position
+            # y-coodinate index of the symmetry plane leading edge
             y_cp = ny * 3 - 2
-            te_cols = np.tile(y_cp, nx * (ny - 1))
-            te_rows = np.tile(3 * np.arange(ny - 1), nx) + np.repeat(3 * ny * np.arange(nx), ny - 1)
-            se_cols = np.tile(3 * np.arange(ny - 1) + 1, nx)
+
+            # Fill array with y_cp to cover entire mesh except right tip
+            sym_cols = np.tile(y_cp, nx * (ny - 1))
+
+            # x-coordinates indicies of entire mesh except right tip(LE + offset for remainder of mesh)
+            sym_rows = np.tile(3 * np.arange(ny - 1), nx) + np.repeat(3 * ny * np.arange(nx), ny - 1)
+
+            # Sensitivity to spanwise station position
+
+            # y-coordinates indices of leading edge except right tip repeated for entire mesh
+            span_cols = np.tile(3 * np.arange(ny - 1) + 1, nx)
         else:
+
+            # Sensitivity to symmetry plane position
+
+            # y-coodinate of the center line leading edge
             y_cp = 3 * (ny + 1) // 2 - 2
+
+            # index of center line
             n_sym = (ny - 1) // 2
 
-            te_row = np.tile(3 * np.arange(n_sym), 2) + np.repeat([0, 3 * (n_sym + 1)], n_sym)
-            te_rows = np.tile(te_row, nx) + np.repeat(3 * ny * np.arange(nx), ny - 1)
+            # This line generates the x-coordiantes for the leading edge for both spans of the wing
+            # Start by tiling the x incicides for the first span twice then adding an offset for the second span.
+            # Note the first terms of the repeating addition is 0 so the left span stays as initially generated.
+            sym_row = np.tile(3 * np.arange(n_sym), 2) + np.repeat([0, 3 * (n_sym + 1)], n_sym)
 
-            te_col = np.tile(y_cp, n_sym)
-            se_col1 = 3 * np.arange(n_sym) + 1
-            se_col2 = 3 * np.arange(n_sym) + 4 + 3 * n_sym
+            # Repeat this nx times to cover all rows and add the offset so that jacobian covers rest of mesh
+            sym_rows = np.tile(sym_row, nx) + np.repeat(3 * ny * np.arange(nx), ny - 1)
+
+            # Repeat y_cp n_sym times
+            sym_col = np.tile(y_cp, n_sym)
+
+            # Sensitivity to spanwise station position
+
+            # y-coordinate indicies of left span of mesh
+            span_col1 = 3 * np.arange(n_sym) + 1
+
+            # y-coordiante indicies of right span of mesh
+            span_col2 = 3 * np.arange(n_sym) + 4 + 3 * n_sym
 
             # neat trick: swap columns on reflected side so we can assign in just two operations
-            te_cols = np.tile(np.concatenate([te_col, se_col2]), nx)
-            se_cols = np.tile(np.concatenate([se_col1, te_col]), nx)
+            # This is performance improving feature that takes advantage of the fact that this part of the
+            # jacobian will have either + or - tan(theta) in it. We are simply grouping the cols that will have +
+            # entries and - entries together. Ignore the variable naming here as we just want to able to use the
+            # same declare partials for both symmetry and no symmetry cases.
 
-        rows = np.concatenate(([n_rows, te_rows, te_rows]))
-        cols = np.concatenate(([n_rows, te_cols, se_cols]))
+            # Group + entries and repeat to cover all chordwise points
+            sym_cols = np.tile(np.concatenate([sym_col, span_col2]), nx)
+
+            # Group - entires and repeat to cover all chordwise points
+            span_cols = np.tile(np.concatenate([span_col1, sym_col]), nx)
+
+        rows = np.concatenate(([n_rows, sym_rows, sym_rows]))
+        cols = np.concatenate(([n_rows, sym_cols, span_cols]))
 
         self.declare_partials("mesh", "in_mesh", rows=rows, cols=cols)
 
@@ -341,7 +441,7 @@ class Sweep(om.ExplicitComponent):
             dx_left = -(le[:ny2, 1] - y0) * tan_theta
             dx = np.hstack((dx_left, dx_right))
 
-        # dx added spanwise.
+        # dx added to mesh x coordinates spanwise.
         outputs["mesh"][:] = mesh
         outputs["mesh"][:, :, 0] += dx
 
@@ -355,29 +455,32 @@ class Sweep(om.ExplicitComponent):
         le = mesh[0]
         p180 = np.pi / 180
         tan_theta = np.tan(p180 * sweep_angle)
+
+        # Derivative of tan(theta) wrt to theta
         dtan_dtheta = p180 / np.cos(p180 * sweep_angle) ** 2
 
-        # If symmetric, simply vary the x-coord based on the distance from the
-        # center of the wing
+        # Multiply derivative by distance from center of wing
         if symmetry:
             y0 = le[-1, 1]
 
-            dx_dtheta = -(le[:, 1] - y0)
-
-        # Else, vary the x-coord on either side of the wing
+            dx_dtheta = -(le[:, 1] - y0) * dtan_dtheta
         else:
+            # j index of centerline
             ny2 = (ny - 1) // 2
+            # y coordinate of centerline
             y0 = le[ny2, 1]
 
-            dx_dtheta_right = le[ny2:, 1] - y0
-            dx_dtheta_left = -(le[:ny2, 1] - y0)
+            dx_dtheta_right = (le[ny2:, 1] - y0) * dtan_dtheta
+            dx_dtheta_left = -(le[:ny2, 1] - y0) * dtan_dtheta
             dx_dtheta = np.hstack((dx_dtheta_left, dx_dtheta_right))
 
-        partials["mesh", "sweep"] = np.tile(dx_dtheta * dtan_dtheta, nx)
+        partials["mesh", "sweep"] = np.tile(dx_dtheta, nx)
 
+        # Diagonal part of d mesh/ d in_mesh is just 1 to pass the in_mesh through
         nn = nx * ny * 3
         partials["mesh", "in_mesh"][:nn] = 1.0
 
+        # Assign tan and then -tan to off diagonal parts to account for spanwise station sensitivity
         nn2 = nx * (ny - 1)
         partials["mesh", "in_mesh"][nn : nn + nn2] = tan_theta
         partials["mesh", "in_mesh"][nn + nn2 :] = -tan_theta
