@@ -4,7 +4,7 @@ import openmdao.api as om
 
 def build_multi_spline(out_name, num_sections, control_points):
     """This function returns an OpenMDAO Independent Variable Component with an output vector appropriately
-    named and sized to function as an unified B-spline that joins multiple sections by construction.
+    named and sized to function as an unified set of B-spline control poitns that join multiple sections by construction.
 
     Parameters
     ----------
@@ -18,7 +18,7 @@ def build_multi_spline(out_name, num_sections, control_points):
     Returns
     -------
     spline_control : OpenMDAO component object
-        The unified B-spline indpendent variable component
+        The unified B-spline control point indpendent variable component
 
     """
     if len(control_points) != num_sections:

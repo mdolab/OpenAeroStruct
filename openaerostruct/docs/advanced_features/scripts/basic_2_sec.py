@@ -132,7 +132,6 @@ multi_geom_group = MultiSecGeometry(
 )
 prob.model.add_subsystem(surface["name"], multi_geom_group)
 
-# docs checkpoint 4
 
 # In this next part, we will setup the aerodynamics group. First we use a utility function called build_sections which takes our multi-section surface dictionary and outputs a
 # surface dictionary for each individual section. We then inputs these dictionaries into the mesh unification function unify_mesh to produce a single mesh array for the the entire surface.
@@ -147,7 +146,6 @@ aero_group = AeroPoint(surfaces=[surface])
 point_name = "aero_point_0"
 prob.model.add_subsystem(point_name, aero_group, promotes_inputs=["v", "alpha", "Mach_number", "re", "rho", "cg"])
 
-# docs checkpoint 5
 
 # The following steps are similar to a normal OAS surface script but note the differences in surface naming. Note that
 # unified surface created by the multi-section geometry group needs to be connected to AeroPoint(be careful with the naming)
@@ -165,7 +163,6 @@ prob.model.connect(
     name + "." + unification_name + "." + name + "_uni_mesh", point_name + ".aero_states." + "surface" + "_def_mesh"
 )
 
-# docs checkpoint 6
 
 # Next, we add the DVs to the OpenMDAO problem. Note that each surface's geometeric parameters are under the given section names specified in the multi-surface dictionary earlier.
 # Here we use the chord B-spline that we specified earlier for each section and the angle-of-attack as DVs.
@@ -196,16 +193,13 @@ prob.driver.options["optimizer"] = "SLSQP"
 prob.driver.options["tol"] = 1e-3
 prob.driver.options["disp"] = True
 prob.driver.options["maxiter"] = 1000
-prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
 
 # Set up and run the optimization problem
 prob.setup()
-
-# prob.run_model()
 prob.run_driver()
 # om.n2(prob)
 
-# docs checkpoint 7
+# docs checkpoint 4
 
 # Get each section mesh
 mesh1 = prob.get_val("surface.sec0.mesh", units="m")
@@ -217,7 +211,7 @@ meshUni = prob.get_val(name + "." + unification_name + "." + name + "_uni_mesh")
 
 # Plot the results
 def plot_meshes(meshes):
-    """this function plots to plot the mesh"""
+    """this function plots a list of meshes on the same plot."""
     plt.figure(figsize=(8, 4))
     for i, mesh in enumerate(meshes):
         mesh_x = mesh[:, :, 0]
