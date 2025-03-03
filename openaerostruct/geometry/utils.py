@@ -354,23 +354,19 @@ def taper(mesh, taper_ratio, symmetry):
     span = x[-1] - x[0]
 
     # If symmetric, solve for the correct taper ratio, which is a linear
-    # interpolation problem
+    # interpolation problem (assume symmetry axis is not necessarily at y = 0)
     if symmetry:
-        # xp = np.array([-span, 0.0])
-        # Fix for symmetry axis not being at y = 0
         xp = np.array([x[0], x[-1]])
         fp = np.array([taper_ratio, 1.0])
 
     # Otherwise, we set up an interpolation problem for the entire wing, which
-    # consists of two linear segments
+    # consists of two linear segments (assume symmetry axis is not necessarily at y = 0)
     else:
-        # xp = np.array([-span / 2, 0.0, span / 2])
-        # Fix for symmetry axis not being at y = 0
         xp = np.array([x[0], x[((len(x) + 1) // 2) - 1], x[-1]])
         fp = np.array([taper_ratio, 1.0, taper_ratio])
 
     # Interpolate over quarter chord line to compute the taper at each spanwise stations
-    taper = np.interp(x.real, xp.real, fp.real)
+    taper = np.interp(x, xp, fp)
 
     # Modify the mesh based on the taper amount computed per spanwise section
     # j - spanwise station index (ny)
