@@ -56,25 +56,22 @@ class Taper(om.ExplicitComponent):
         # Get mesh parameters and the quarter-chord
         le = mesh[0]
         te = mesh[-1]
-        num_x, num_y, _ = mesh.shape
         ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
         x = ref_axis[:, 1]
-        span = x[-1] - x[0]
+
+        # Spanwise(j) index of wing centerline
+        center_idx = (len(x) + 1) // 2 - 1
 
         # If symmetric, solve for the correct taper ratio, which is a linear
-        # interpolation problem
+        # interpolation problem (assume symmetry axis is not necessarily at y = 0)
         if symmetry:
-            # xp = np.array([-span, 0.0])
-            # Fix for symmetry axis not being at y = 0
             xp = np.array([x[0], x[-1]])
             fp = np.array([taper_ratio, 1.0])
 
         # Otherwise, we set up an interpolation problem for the entire wing, which
-        # consists of two linear segments
+        # consists of two linear segments (assume symmetry axis is not necessarily at y = 0)
         else:
-            # xp = np.array([-span / 2, 0.0, span / 2])
-            # Fix for symmetry axis not being at y = 0
-            xp = np.array([x[0], x[((len(x) + 1) // 2) - 1], x[-1]])
+            xp = np.array([x[0], x[center_idx], x[-1]])
             fp = np.array([taper_ratio, 1.0, taper_ratio])
 
         # Interpolate over quarter chord line to compute the taper at each spanwise stations
@@ -88,46 +85,23 @@ class Taper(om.ExplicitComponent):
     def compute_partials(self, inputs, partials):
         mesh = self.options["mesh"]
         symmetry = self.options["symmetry"]
-        taper_ratio = inputs["taper"][0]
 
         # Get mesh parameters and the quarter-chord
         le = mesh[0]
         te = mesh[-1]
-        num_x, num_y, _ = mesh.shape
         ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
         x = ref_axis[:, 1]
 
-        # # If symmetric, solve for the correct taper ratio, which is a linear
-        # # interpolation problem
-        # if symmetry:
-        #     # xp = np.array([-span, 0.0])
-        #     # Fix for symmetry axis not being at y = 0
-        #     xp = np.array([x[0], x[-1]])
-        #     fp = np.array([taper_ratio, 1.0])
+        # Spanwise(j) index of wing centerline
+        center_idx = (len(x) + 1) // 2 - 1
 
-        # # Otherwise, we set up an interpolation problem for the entire wing, which
-        # # consists of two linear segments
-        # else:
-        #     # xp = np.array([-span / 2, 0.0, span / 2])
-        #     # Fix for symmetry axis not being at y = 0
-        #     xp = np.array([x[0], x[((len(x) + 1) // 2) - 1], x[-1]])
-        #     fp = np.array([taper_ratio, 1.0, taper_ratio])
-
-        # # Interpolate over quarter chord line to compute the taper at each spanwise stations
-        # taper = np.interp(x, xp, fp)
-
-        # if taper_ratio == 1.0:
-        #     dtaper_old = np.zeros(taper.shape)
-        # else:
-        #     dtaper_old = (1.0 - taper) / (1.0 - taper_ratio)
-
-        # Enhanced derivative implementation that allows for taper_ratio = 1
+        # Derivative implementation that allows for taper_ratio = 1
         if symmetry:
             # Compute the span
             span = x[-1] - x[0]
 
             # Distance of each station from left tip(incl. left tip)
-            dy = np.cumsum(np.diff(x, prepend=x[0]))
+            dy = x - x[0]
 
             # Compute the derivative vector wrt to the taper_ratio
             # Note that this isn't sensitive to the taper_ratio itself,
@@ -138,19 +112,19 @@ class Taper(om.ExplicitComponent):
         else:
             # Compute the semi-span considering each semi-span might be
             # perturbed
-            span1 = x[((len(x) + 1) // 2) - 1] - x[0]
+            span1 = x[center_idx] - x[0]
 
             # Distance of each left span station from left tip(incl. left tip)
-            dy1 = np.cumsum(np.diff(x[: (len(x) + 1) // 2], prepend=x[0]))
+            dy1 = x[: center_idx + 1] - x[0]
 
             # Compute the left half of the derivative vector wrt to the taper_ratio
-            dtaper1 = np.ones((len(x) + 1) // 2) + (-dy1 / span1)
+            dtaper1 = np.ones(center_idx + 1) + (-dy1 / span1)
 
             # Compute the semi-span
-            span2 = x[-1] - x[((len(x) + 1) // 2) - 1]
+            span2 = x[-1] - x[center_idx]
 
             # Distance of each right span station from centerline
-            dy2 = np.cumsum(np.diff(x[((len(x) + 1) // 2) - 1 :]))
+            dy2 = x[center_idx + 1 :] - x[center_idx]
 
             # Compute the right half of the derivative vector wrt to the taper_ratio
             dtaper2 = dy2 / span2
@@ -202,11 +176,23 @@ class ScaleX(om.ExplicitComponent):
 
         self.add_output("mesh", shape=mesh_shape, units="m")
 
+        # Compute total number of array entries in mesh array
         nx, ny, _ = mesh_shape
         nn = nx * ny * 3
 
+        # Setup the  d mesh/ d chord jacobian
+
+        # All mesh array entries are sensitive to chord
         rows = np.arange(nn)
-        col = np.tile(np.zeros(3), ny) + np.repeat(np.arange(ny), 3)
+
+        # Repeat each spanwise index 3 times since all three coordiantes of each
+        # spanwise point is sentive to chord
+        # col = np.tile(np.zeros(3), ny) + np.repeat(np.arange(ny), 3)
+        # Removed redundant preallocation step
+        col = np.repeat(np.arange(ny), 3)
+
+        # At each spanwise station there are nx chorwise point so repeat
+        # the pattern nx times
         cols = np.tile(col, nx)
 
         self.declare_partials("mesh", "chord", rows=rows, cols=cols)
