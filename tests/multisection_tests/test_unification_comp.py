@@ -1,5 +1,6 @@
 import unittest
 
+import openmdao.api as om
 from openaerostruct.geometry.geometry_unification import GeomMultiUnification
 from openaerostruct.geometry.geometry_group import build_sections
 from openaerostruct.utils.testing import run_test, get_three_section_surface
@@ -12,7 +13,15 @@ class Test(unittest.TestCase):
 
         comp = GeomMultiUnification(sections=sec_dicts, surface_name=surface["name"], shift_uni_mesh=False)
 
-        run_test(self, comp, complex_flag=True, method="cs")
+        group = om.Group()
+
+        group.add_subsystem("comp", comp, promotes=["*"])
+
+        group.set_input_defaults("sec0_def_mesh", sec_dicts[0]["mesh"])
+        group.set_input_defaults("sec1_def_mesh", sec_dicts[1]["mesh"])
+        group.set_input_defaults("sec2_def_mesh", sec_dicts[2]["mesh"])
+
+        run_test(self, group, complex_flag=True, method="cs")
 
     def test_shift(self):
         (surface, chord_bspline) = get_three_section_surface()
@@ -26,7 +35,15 @@ class Test(unittest.TestCase):
 
         comp = GeomMultiUnification(sections=sec_dicts, surface_name=surface["name"], shift_uni_mesh=True)
 
-        run_test(self, comp, complex_flag=True, method="cs")
+        group = om.Group()
+
+        group.add_subsystem("comp", comp, promotes=["*"])
+
+        group.set_input_defaults("sec0_def_mesh", sec_dicts[0]["mesh"])
+        group.set_input_defaults("sec1_def_mesh", sec_dicts[1]["mesh"])
+        group.set_input_defaults("sec2_def_mesh", sec_dicts[2]["mesh"])
+
+        run_test(self, group, complex_flag=True, method="cs")
 
 
 if __name__ == "__main__":
