@@ -156,12 +156,24 @@ class MultiSecAerostructGeometry(om.Group):
         # Add the mesh unification component
         unification_name = "{}_unification".format(surface["name"])
 
+<<<<<<< HEAD
         promotes_outputs = [("{}_uni_mesh".format(surface["name"]), "mesh")]
         if "t_over_c_cp" in surface.keys():
             promotes_outputs += [("{}_uni_t_over_c".format(surface["name"]), "t_over_c")]
 
         uni_mesh = GeomMultiUnification(sections=sec_dicts, surface_name=surface["name"])
         self.add_subsystem(unification_name, uni_mesh, promotes_outputs=promotes_outputs)
+=======
+        uni_mesh = GeomMultiUnification(sections=sec_dicts, surface_name=surface["name"])
+        self.add_subsystem(
+            unification_name,
+            uni_mesh,
+            promotes_outputs=[
+                ("{}_uni_mesh".format(surface["name"]), "mesh"),
+                ("{}_uni_t_over_c".format(surface["name"]), "t_over_c"),
+            ],
+        )
+>>>>>>> 71cb9bd9 (Add aerostructural support for multi-section)
 
         # Connect each section mesh to mesh unification component inputs
         for sec_name in section_names:
@@ -385,6 +397,7 @@ class AerostructPoint(om.Group):
                     "fuel_density",
                     "Wf_reserve",
                     "n_point_masses",
+<<<<<<< HEAD
                     # structural parameterization tube
                     "thickness_cp",
                     "radius_cp",
@@ -397,6 +410,8 @@ class AerostructPoint(om.Group):
                     "data_y_upper",
                     "data_x_lower",
                     "data_y_lower",
+=======
+>>>>>>> 71cb9bd9 (Add aerostructural support for multi-section)
                 ]
 
                 # Constructs a surface dictionary and adds the specified supported keys and values from the mult-section surface dictionary.
