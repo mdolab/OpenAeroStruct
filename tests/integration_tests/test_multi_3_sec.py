@@ -81,7 +81,6 @@ class Test(unittest.TestCase):
 
         # Add joined mesh constraint
         prob.model.add_constraint("surface.surface_joining.section_separation", upper=0, lower=0)
-        # prob.model.add_constraint('surface.surface_joining.section_separation',equals=0.0)
 
         # Add CL constraint
         prob.model.add_constraint(point_name + ".CL", equals=0.3)
@@ -182,7 +181,6 @@ class Test(unittest.TestCase):
 
         # Add joined mesh constraint
         prob.model.add_constraint("surface.surface_joining.section_separation", upper=0, lower=0)
-        # prob.model.add_constraint('surface.surface_joining.section_separation',equals=0.0,scaler=1e-4)
 
         # Add CL constraint
         prob.model.add_constraint(point_name + ".CL", equals=0.3)

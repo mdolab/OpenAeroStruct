@@ -147,7 +147,7 @@ class Test(unittest.TestCase):
         prob.model.add_subsystem("chord_bspline", chord_comp)
 
         # Connect the B-spline component to the section B-splines
-        connect_multi_spline(prob, section_surfaces, sec_chord_cp, "chord_cp", "chord_bspline")
+        connect_multi_spline(prob, section_surfaces, sec_chord_cp, "chord_cp", "chord_bspline", surface["name"])
 
         # Create and add a group that handles the geometry for the
         # aerodynamic lifting surface
@@ -276,7 +276,6 @@ class Test(unittest.TestCase):
 
         # Add joined mesh constraint
         prob.model.add_constraint("surface.surface_joining.section_separation", upper=0, lower=0)
-        # prob.model.add_constraint('surface.surface_joining.section_separation',equals=0.0,scaler=1e-4)
 
         # Add CL constraint
         prob.model.add_constraint(point_name + ".CL", equals=0.3)
@@ -342,7 +341,7 @@ class Test(unittest.TestCase):
         prob.model.add_subsystem("chord_bspline", chord_comp)
 
         # Connect the B-spline component to the section B-splines
-        connect_multi_spline(prob, section_surfaces, sec_chord_cp, "chord_cp", "chord_bspline")
+        connect_multi_spline(prob, section_surfaces, sec_chord_cp, "chord_cp", "chord_bspline", surface["name"])
 
         # Create and add a group that handles the geometry for the
         # aerodynamic lifting surface
@@ -397,7 +396,6 @@ class Test(unittest.TestCase):
         prob.driver.options["tol"] = 1e-7
         prob.driver.options["disp"] = True
         prob.driver.options["maxiter"] = 1000
-        # prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
 
         # Set up and run the optimization problem
         prob.setup()

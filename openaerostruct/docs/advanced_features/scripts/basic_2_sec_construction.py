@@ -160,7 +160,7 @@ An edge case in this process is when a section features a B-spline with a single
 cannot be assigned to two different control points on the surface B-spline. In these situations a constraint will need
 to be used to maintain C0 continuity. See the connect_multi_spline documentation for details.
 """
-connect_multi_spline(prob, section_surfaces, sec_chord_cp, "chord_cp", "chord_bspline")
+connect_multi_spline(prob, section_surfaces, sec_chord_cp, "chord_cp", "chord_bspline", surface["name"])
 
 
 """ With the surface B-spline connected we can add the multi-section geometry group."""
