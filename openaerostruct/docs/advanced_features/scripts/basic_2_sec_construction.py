@@ -1,29 +1,48 @@
 """Optimizes the section chord distribution of a two section symmetrical wing using the construction-based approach for section
 joining. This example is referenced as part of the multi-section tutorial."""
 
+# docs checkpoint 0
 import numpy as np
-
 import openmdao.api as om
-
 from openaerostruct.geometry.geometry_group import MultiSecGeometry
 from openaerostruct.aerodynamics.aero_groups import AeroPoint
 from openaerostruct.geometry.geometry_group import build_sections
 from openaerostruct.geometry.geometry_unification import unify_mesh
-import matplotlib.pyplot as plt
-
-# docs checkpoint 0
-
-# To use the construction based approach an additional import is required.
 from openaerostruct.geometry.multi_unified_bspline_utils import build_multi_spline, connect_multi_spline
+import matplotlib.pyplot as plt
 
 # docs checkpoint 1
 
-# Set-up B-splines for each section. Done here since this information will be needed multiple times.
-sec_chord_cp = [np.array([1, 1]), np.array([1.0, 0.2])]
+# The multi-section geometry parameterization number section from left to right starting with section #0. A two-section symmetric wing parameterization appears as follows.
+# For a symmetrical wing the last section in the sequence will always be marked as the "root section" as it's adjacent to the geometric centerline of the wing.
+# Geometeric parameters must be specified for each section using lists with values corresponding in order of the surface numbering. Section section supports all the
+# standard OpenAeroStruct geometery transformations including B-splines.
 
 
-# Create a dictionary with info and options about the multi-section aerodynamic
-# lifting surface
+"""
+
+-----------------------------------------------  ^
+|                      |                       | |
+|                      |                       | |
+|        sec 0         |         sec 1         | | root         symmetrical BC
+|                      |     "root section"    | | chord
+|______________________|_______________________| |
+                                                 _
+                                              y = 0 ------------------> + y
+
+"""
+
+
+# A multi-section surface dictionary is very similar to the standard one. However, it features some additional options and requires that the user specify
+# parameters for each desired section. The multi-section geometery group also features an built in mesh generator so the wing mesh parameters can be specified right
+# in the surface dictionary. Let's create a dictionary with info and options for a two-section aerodynamic lifting surface
+
+
+# We will set up our chord_cp as seperate variable since we will need to use it several times in this example.
+sec_chord_cp = [np.ones(2), np.ones(2)]
+
+
+# Create a dictionary with info and options about the multi-section aerodynamic lifting surface
 surface = {
     # Wing definition
     # Basic surface parameters
@@ -40,14 +59,11 @@ surface = {
     "taper": [1.0, 1.0],  # Wing taper for each section. The list length must match the specified number of sections.
     "span": [2.0, 2.0],  # Wing span for each section. The list length must match the specified number of sections.
     "sweep": [0.0, 0.0],  # Wing sweep for each section. The list length must match the specified number of sections.
-    "chord_cp": [
-        np.array([1, 1]),
-        np.array([1, 1]),
-    ],  # The chord B-spline parameterization for EACH SECTION. The list length must match the specified number of sections.
+    "chord_cp": sec_chord_cp,  # The chord B-spline parameterization for each section. The list length must match the specified number of sections.
     "twist_cp": [
         np.zeros(2),
         np.zeros(2),
-    ],  # The twist B-spline parameterization for EACH SECTION. The list length must match the specified number of sections.
+    ],  # The twist B-spline parameterization for each section. The list length must match the specified number of sections.
     "root_chord": 1.0,  # Root chord length of the section indicated as "root section"(required if using the built-in mesh generator)
     # Mesh Parameters
     "meshes": "gen-meshes",  # Supply a list of meshes for each section or "gen-meshes" for automatic mesh generation
@@ -62,12 +78,14 @@ surface = {
     # Airfoil properties for viscous drag calculation
     "k_lam": 0.05,  # percentage of chord with laminar
     # flow, used for viscous drag
-    "c_max_t": 0.303,  # chordwise location of maximum (NACA0015)# docs checkpoint 1
+    "c_max_t": 0.303,  # chordwise location of maximum (NACA0015)
     # thickness
     "with_viscous": False,  # if true, compute viscous drag
     "with_wave": False,  # if true, compute wave drag
     "groundplane": False,
 }
+
+# docs checkpoint 2
 
 # Create the OpenMDAO problem
 prob = om.Problem()
@@ -85,26 +103,38 @@ indep_var_comp.add_output("cg", val=np.zeros((3)), units="m")
 # Add this IndepVarComp to the problem model
 prob.model.add_subsystem("prob_vars", indep_var_comp, promotes=["*"])
 
+# docs checkpoint 3
 
-# Generate the sections and unified mesh here. It's needed to join the sections by construction.
+"""Instead of creating a standard geometery group, here we will create a multi-section geometry group that will accept our multi-section surface
+dictionary. In this example we will constrain the sections into a C0 continuous surface with a construction approach that assigns the chord B-spline
+control points at each section junction to an index of a global control vector. """
+
+# In order to construct this global B-spline control vector we first need to generate the unified surface mesh.
+# The unified surface mesh is simply all the individual section surface meshes combine into a single unified OAS mesh array.
+
+# First we will call the utility function build_sections which takes the surface dictionary and outputs a list of surface dictionaries corresponding to
+# each section.
 section_surfaces = build_sections(surface)
+
+# We can then call unify_mesh which outputs the unified mesh of all of the sections.
 uniMesh = unify_mesh(section_surfaces)
+
+# We can then assign the unified mesh as the mesh for the entire surface.
 surface["mesh"] = uniMesh
 
-# docs checkpoint 2
 
-"""This functions builds an OpenMDAO B-spline component for the surface with the correct number of control points
-corresponding to each section junction on the surface. Refer to the functions documentions for input details. After
+"""This functions builds an OpenMDAO Independent Variable Component with the correct length input vector
+corresponding to each section junction on the surface plus the wingtips. Refer to the functions documentions for input details. After
 the compnent has been generated it needs to be added to the model."""
-chord_comp = build_multi_spline("chord_cp", len(section_surfaces), sec_chord_cp)
+chord_comp = build_multi_spline("chord_cp", surface["num_sections"], sec_chord_cp)
 prob.model.add_subsystem("chord_bspline", chord_comp)
 
-"""In order to properly transform the surface geometry the surface B-spline's control points need to be connected
+"""In order to properly transform the surface geometry the surface's global input vector need to be connected
 to the corresponding control points of the local B-spline component on each section. This function automates this
 process as it can be tedious.
 
-The figure below explains how the surface B-spline's control points are connected to the control point of the local
-section B-spline. In this example, each section features a two point B-spline with control points at the section tips
+The figure below explains how the global control vector's outputs are connected to the control points of the local
+section B-splines. In this example, each section features a two point B-spline with control points at the section tips
 however the principle is the same for B-splines with more points.
 
 
@@ -130,23 +160,27 @@ An edge case in this process is when a section features a B-spline with a single
 cannot be assigned to two different control points on the surface B-spline. In these situations a constraint will need
 to be used to maintain C0 continuity. See the connect_multi_spline documentation for details.
 """
-connect_multi_spline(prob, section_surfaces, sec_chord_cp, "chord_cp", "chord_bspline")
+connect_multi_spline(prob, section_surfaces, sec_chord_cp, "chord_cp", "chord_bspline", surface["name"])
 
 
-""" With the surface B-spline connected we can add the multi-section geometry group. Note that in this case the joining
-component does not need to be specified as we are not joining the sections by constraint."""
+""" With the surface B-spline connected we can add the multi-section geometry group."""
 multi_geom_group = MultiSecGeometry(surface=surface)
 prob.model.add_subsystem(surface["name"], multi_geom_group)
 
-# docs checkpoint 3
+# docs checkpoint 4
 
 # Create the aero point group, which contains the actual aerodynamic
-# analyses
+# analyses. This step is exactly as it's normally done except the surface dictionary we pass in is the multi-surface one
 aero_group = AeroPoint(surfaces=[surface])
 point_name = "aero_point_0"
 prob.model.add_subsystem(point_name, aero_group, promotes_inputs=["v", "alpha", "Mach_number", "re", "rho", "cg"])
 
-# Get name of surface and construct unified mesh name
+# docs checkpoint 5
+
+# The following steps are similar to a normal OAS surface script but note the differences in surface naming. Note that
+# unified surface created by the multi-section geometry group needs to be connected to AeroPoint(be careful with the naming)
+
+# Get name of surface and construct the name of the unified surface mesh
 name = surface["name"]
 unification_name = "{}_unification".format(surface["name"])
 
@@ -159,15 +193,17 @@ prob.model.connect(
     name + "." + unification_name + "." + name + "_uni_mesh", point_name + ".aero_states." + "surface" + "_def_mesh"
 )
 
-# Add DVs
+# docs checkpoint 6
+
+# Next, we add the DVs to the OpenMDAO problem.
+# Here we use the global independent variable component vector and the angle-of-attack as DVs.
 prob.model.add_design_var("chord_bspline.chord_cp_spline", lower=0.1, upper=10.0, units=None)
 prob.model.add_design_var("alpha", lower=0.0, upper=10.0, units="deg")
-
 
 # Add CL constraint
 prob.model.add_constraint(point_name + ".CL", equals=0.3)
 
-# Add Area constraint
+# Add Wing total area constraint
 prob.model.add_constraint(point_name + ".total_perf.S_ref_total", equals=2.0)
 
 # Add objective
@@ -178,22 +214,25 @@ prob.driver.options["optimizer"] = "SLSQP"
 prob.driver.options["tol"] = 1e-7
 prob.driver.options["disp"] = True
 prob.driver.options["maxiter"] = 1000
-# prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
 
 # Set up and run the optimization problem
 prob.setup()
 prob.run_driver()
 # om.n2(prob)
 
+# docs checkpoint 7
 
+# Get each section mesh
 mesh1 = prob.get_val("surface.sec0.mesh", units="m")
 mesh2 = prob.get_val("surface.sec1.mesh", units="m")
 
+# Get the unified mesh
 meshUni = prob.get_val(name + "." + unification_name + "." + name + "_uni_mesh")
 
 
+# Plot the results
 def plot_meshes(meshes):
-    """this function plots to plot the mesh"""
+    """this function plots a list of meshes on the same plot."""
     plt.figure(figsize=(8, 4))
     for i, mesh in enumerate(meshes):
         mesh_x = mesh[:, :, 0]
@@ -212,4 +251,4 @@ def plot_meshes(meshes):
 
 
 plot_meshes([meshUni])
-# plt.show()
+# docs checkpoint 8

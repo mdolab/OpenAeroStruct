@@ -4,7 +4,7 @@ import openmdao.api as om
 
 def build_multi_spline(out_name, num_sections, control_points):
     """This function returns an OpenMDAO Independent Variable Component with an output vector appropriately
-    named and sized to function as an unified B-spline that joins multiple sections by construction.
+    named and sized to function as an unified set of B-spline control poitns that join multiple sections by construction.
 
     Parameters
     ----------
@@ -18,7 +18,7 @@ def build_multi_spline(out_name, num_sections, control_points):
     Returns
     -------
     spline_control : OpenMDAO component object
-        The unified B-spline indpendent variable component
+        The unified B-spline control point indpendent variable component
 
     """
     if len(control_points) != num_sections:
@@ -34,7 +34,7 @@ def build_multi_spline(out_name, num_sections, control_points):
     return spline_control
 
 
-def connect_multi_spline(prob, section_surfaces, sec_cp, out_name, comp_name, return_bind_inds=False):
+def connect_multi_spline(prob, section_surfaces, sec_cp, out_name, comp_name, geom_name, return_bind_inds=False):
     """This function connects the the unified B-spline component with the individual B-splines
     of each section. There is a point of overlap at each section so that each edge control point control the edge
     controls points of each section's B-spline. This is how section joining by consturction is acheived.
@@ -57,6 +57,8 @@ def connect_multi_spline(prob, section_surfaces, sec_cp, out_name, comp_name, re
         Name of the unified B-spline component output to connect from
     comp_name: string
         Name of the unified B-spline component added to the problem object
+    geom_name : string
+        Name of the multi-section geometry group
     return_bind_inds: bool
         Return list of unjoined unified B-spline inidices. Default is False.
 
@@ -77,7 +79,7 @@ def connect_multi_spline(prob, section_surfaces, sec_cp, out_name, comp_name, re
             bind_inds.append(acc)
         prob.model.connect(
             "{}.{}".format(comp_name, out_name) + "_spline",
-            "surface." + section["name"] + ".{}".format(out_name),
+            geom_name + "." + section["name"] + ".{}".format(out_name),
             src_indices=src_inds,
         )
 

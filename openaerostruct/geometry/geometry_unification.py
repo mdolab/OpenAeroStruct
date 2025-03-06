@@ -1,5 +1,6 @@
 import numpy as np
 import openmdao.api as om
+import copy
 
 
 def compute_uni_mesh_dims(sections):
@@ -70,7 +71,7 @@ def compute_uni_mesh_index_blocks(sections, uni_mesh_indices):
     return blocks
 
 
-def unify_mesh(sections):
+def unify_mesh(sections, shift_uni_mesh=True):
     """
     Function that produces a unified mesh from all the individual wing section meshes.
 
@@ -78,6 +79,10 @@ def unify_mesh(sections):
     ----------
     sections : list
         List of section OpenAeroStruct surface dictionaries
+
+    shift_uni_mesh : bool
+        Flag that shifts sections so that their leading edges are coincident. Intended to keep sections from seperating
+        or intersecting during scalar span or sweep operations without the use of the constraint component.
 
     Returns
     -------
@@ -87,17 +92,19 @@ def unify_mesh(sections):
     for i_sec in np.arange(0, len(sections) - 1):
         mesh = sections[i_sec]["mesh"]
 
-        import copy
-
         if i_sec == 0:
             uni_mesh = copy.deepcopy(mesh[:, :-1, :])
         else:
+            if shift_uni_mesh:
+                # translate or shift uni_mesh (outer sections) to align leading edge at unification boundary
+                last_mesh = sections[i_sec - 1]["mesh"]
+                uni_mesh = uni_mesh - last_mesh[0, -1, :] + mesh[0, 0, :]
+
             uni_mesh = np.concatenate([uni_mesh, mesh[:, :-1, :]], axis=1)
+
     # Stitch the results into a singular mesh
     mesh = sections[len(sections) - 1]["mesh"]
     if len(sections) == 1:
-        import copy
-
         uni_mesh = copy.deepcopy(mesh)
     else:
         uni_mesh = np.concatenate([uni_mesh, mesh], axis=1)
@@ -123,6 +130,13 @@ class GeomMultiUnification(om.ExplicitComponent):
     sections : list
         A list of section surface dictionaries in OAS format.
 
+    surface_name : str
+        The name of the multi-section surface.
+
+    shift_uni_mesh : bool
+        Flag that shifts sections so that their leading edges are coincident. Intended to keep sections from seperating
+        or intersecting during scalar span or sweep operations without the use of the constraint component.
+
     Returns
     -------
     mesh[nx, ny, 3] : numpy array
@@ -134,11 +148,18 @@ class GeomMultiUnification(om.ExplicitComponent):
         Declare options.
         """
         self.options.declare("sections", types=list, desc="A list of section surface dictionaries to be unified.")
-        self.options.declare("surface_name", types=str, desc="The name of the multi-section surface")
+        self.options.declare("surface_name", types=str, desc="The name of the multi-section surface.")
+        self.options.declare(
+            "shift_uni_mesh",
+            types=bool,
+            default=True,
+            desc="Flag that shifts sections so that their leading edges are coincident.",
+        )
 
     def setup(self):
         sections = self.options["sections"]
         name = self.options["surface_name"]
+        shift_uni_mesh = self.options["shift_uni_mesh"]
 
         # Get the unified mesh size, index array, and block of indicies for each section
         [uni_mesh_indices, uni_nx, uni_ny] = compute_uni_mesh_dims(sections)
@@ -171,6 +192,41 @@ class GeomMultiUnification(om.ExplicitComponent):
             # Fill non zero Jacobian entries with ones
             data = np.ones_like(rows)
 
+            if shift_uni_mesh:
+                # Update sparsity pattern for any possible uni_mesh shifting/translating(i.e span scalar changes)
+                if i_sec == 0:
+                    # Concatenate the unified mesh jacobian row up to and including the current section
+                    acc_mesh = np.concatenate(uni_mesh_blocks[: i_sec + 1])
+
+                    # The unified mesh up to and including this point is sensitive to the right tip of the first section
+                    cols = np.concatenate([cols, np.tile(mesh_indices[0, -1, :].flatten(), len(acc_mesh) // 3)])
+                    rows = np.concatenate([rows, acc_mesh])
+                    data = np.concatenate([data, -1 * np.ones_like(acc_mesh)])
+                elif i_sec == len(sections) - 1:
+                    # Concatenate the unified mesh jacobian row up including the current section
+                    acc_mesh = np.concatenate(uni_mesh_blocks[:i_sec])
+
+                    # The unified mesh up including this point is sensitive to the left tip of the last section
+                    cols = np.concatenate([cols, np.tile(mesh_indices[0, 0, :].flatten(), len(acc_mesh) // 3)])
+                    rows = np.concatenate([rows, acc_mesh])
+                    data = np.concatenate([data, np.ones_like(acc_mesh)])
+                else:
+                    # Concatenate the unified mesh jacobian rows up to but not including the current section
+                    acc_mesh = np.concatenate(uni_mesh_blocks[:i_sec])
+
+                    # The unified mesh up to and not including this point is sensitive to the left tip of the section
+                    cols = np.concatenate([cols, np.tile(mesh_indices[0, 0, :].flatten(), len(acc_mesh) // 3)])
+                    rows = np.concatenate([rows, acc_mesh])
+                    data = np.concatenate([data, np.ones_like(acc_mesh)])
+
+                    # Concatenate the unified mesh jacobian row up to an including the current section
+                    acc_mesh = np.concatenate([acc_mesh, uni_mesh_blocks[i_sec]])
+
+                    # The unified mesh up to and including this point is sensitive to the right tip of the section
+                    cols = np.concatenate([cols, np.tile(mesh_indices[0, -1, :].flatten(), len(acc_mesh) // 3)])
+                    rows = np.concatenate([rows, acc_mesh])
+                    data = np.concatenate([data, -1 * np.ones_like(acc_mesh)])
+
             self.declare_partials(uni_mesh_name, mesh_name, val=data, rows=rows, cols=cols)
 
         self.add_output(uni_mesh_name, shape=(uni_nx, uni_ny, 3), units="m")
@@ -197,23 +253,28 @@ class GeomMultiUnification(om.ExplicitComponent):
     def compute(self, inputs, outputs):
         sections = self.options["sections"]
         surface_name = self.options["surface_name"]
+        shift_uni_mesh = self.options["shift_uni_mesh"]
         uni_mesh_name = "{}_uni_mesh".format(surface_name)
 
         # Loop through all sections to unify the mesh
-        for i_sec in np.arange(0, len(sections) - 1):
+        for i_sec in np.arange(0, len(sections)):
             name = sections[i_sec]["name"]
             mesh_name = "{}_def_mesh".format(name)
 
             if i_sec == 0:
                 uni_mesh = inputs[mesh_name][:, :-1, :]
             else:
-                uni_mesh = np.concatenate([uni_mesh, inputs[mesh_name][:, :-1, :]], axis=1)
+                if shift_uni_mesh:
+                    # translate or shift uni_mesh (outer sections) to align leading edge at unification boundary
+                    mesh_name_last = "{}_def_mesh".format(sections[i_sec - 1]["name"])
+                    uni_mesh = uni_mesh - inputs[mesh_name_last][0, -1, :] + inputs[mesh_name][0, 0, :]
 
-        mesh_name = "{}_def_mesh".format(sections[len(sections) - 1]["name"])
-        if len(sections) == 1:
-            uni_mesh = inputs[mesh_name]
-        else:
-            uni_mesh = np.concatenate([uni_mesh, inputs[mesh_name]], axis=1)
+                if i_sec == len(sections) - 1:
+                    # concatenate the last (root) section
+                    uni_mesh = np.concatenate([uni_mesh, inputs[mesh_name]], axis=1)
+                else:
+                    # concatenate a middle section, so remove the inboard column not to overlap
+                    uni_mesh = np.concatenate([uni_mesh, inputs[mesh_name][:, :-1, :]], axis=1)
 
         if "t_over_c_cp" in sections[0].keys():
             uni_tc_name = "{}_uni_t_over_c".format(self.options["surface_name"])
