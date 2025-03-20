@@ -1,5 +1,5 @@
-""" A set of components that manipulate geometry mesh
-    based on high-level design parameters. """
+"""A set of components that manipulate geometry mesh
+based on high-level design parameters."""
 
 import numpy as np
 
@@ -523,12 +523,21 @@ class ShearX(om.ExplicitComponent):
         nx, ny, _ = mesh_shape
 
         nn = nx * ny
-        rows = 3.0 * np.arange(nn)
+
+        # Derivative of mesh wrt to xshear vector
+
+        # Vector of all mesh array x entries
+        rows = 3 * np.arange(nn)
+
+        # Tile vector of all spanwise stations by number of chordwise panels
         cols = np.tile(np.arange(ny), nx)
+
+        # Jacobian entries pass the columns to the rows one to one
         val = np.ones(nn)
 
         self.declare_partials("mesh", "xshear", rows=rows, cols=cols, val=val)
 
+        # Derivative of mesh wrt in_mesh is just identity
         nn = nx * ny * 3
         rows = np.arange(nn)
         cols = np.arange(nn)
@@ -538,6 +547,8 @@ class ShearX(om.ExplicitComponent):
 
     def compute(self, inputs, outputs):
         outputs["mesh"][:] = inputs["in_mesh"]
+
+        # Add the xshear distribution to all x coordinates
         outputs["mesh"][:, :, 0] += inputs["xshear"]
 
 
@@ -586,33 +597,61 @@ class Stretch(om.ExplicitComponent):
 
         self.add_output("mesh", shape=mesh_shape, units="m")
 
+        # Declare derivative of mesh wrt to span vector
         nx, ny, _ = mesh_shape
         nn = nx * ny
+
+        # All y components of every mesh point
         rows = 3 * np.arange(nn) + 1
+
+        # All mesh points sensitive to the scalar(col 0)
         cols = np.zeros(nn)
 
         self.declare_partials("mesh", "span", rows=rows, cols=cols)
 
+        # Declare derivative of the mesh wrt to the in_mesh
+
         # First: x and z on diag is identity.
+        # Note this is just the x diag. We will get z by offseting by 2 later.
         nn = nx * ny
         xz_diag = 3 * np.arange(nn)
 
-        # Four columns at le (root, tip) and te (root, tip)
+        # Second: y at the corners of the mesh
+        # Four columns at le (tip, root) and te (tip, root)
         i_le0 = 1
         i_le1 = ny * 3 - 2
         i_te0 = (nx - 1) * ny * 3 + 1
         i_te1 = nn * 3 - 2
 
+        # Tile all the y indices of the mesh 4 times for each corner
         rows_4c = np.tile(3 * np.arange(nn) + 1, 4)
+
+        # Tile each corner index nn times and concatenate them together
         cols_4c = np.concatenate([np.tile(i_le0, nn), np.tile(i_le1, nn), np.tile(i_te0, nn), np.tile(i_te1, nn)])
 
+        # Third: y indicies for the rest of the mesh
         # Diagonal stripes
+
+        # y incides of the LE other than corners
         base = 3 * np.arange(1, ny - 1) + 1
+
+        # Tile the base vector nx times to cover rest of mesh and add repeating offset so it covers the y indices only
         row_dg = np.tile(base, nx) + np.repeat(ny * 3 * np.arange(nx), ny - 2)
+
+        # Tile rows_dg twice to account for two contributions to the derivative(LE and TE)
         rows_dg = np.tile(row_dg, 2)
+
+        # Tile the base nx times so its size covers the rest of the mesh other than corners
         col_dg = np.tile(base, nx)
+
+        # Concatenate the result with a version offset by entire mesh minus the trailing edge so that TE is covered
         cols_dg = np.concatenate([col_dg, col_dg + 3 * ny * (nx - 1)])
 
+        # Concatenate all contributions together
+        # x diag
+        # z diag (x diag offset by 2)
+        # 4 corners of mesh
+        # diagonals for y indices of remaining mesh
         rows = np.concatenate([xz_diag, xz_diag + 2, rows_4c, rows_dg])
         cols = np.concatenate([xz_diag, xz_diag + 2, cols_4c, cols_dg])
 
@@ -647,7 +686,7 @@ class Stretch(om.ExplicitComponent):
         mesh = inputs["in_mesh"]
         nx, ny, _ = mesh.shape
 
-        # Set the span along the quarter-chord line
+        # Set the span along the reference axis line
         le = mesh[0]
         te = mesh[-1]
         ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
@@ -662,34 +701,56 @@ class Stretch(om.ExplicitComponent):
         prev_span = ref_axis[-1, 1] - ref_axis[0, 1]
         s = ref_axis[:, 1] / prev_span
 
-        d_prev_span = -ref_axis[:, 1] / prev_span**2
-        d_prev_span_qc0 = np.zeros((ny,))
-        d_prev_span_qc1 = np.zeros((ny,))
-        d_prev_span_qc0[0] = d_prev_span_qc1[-1] = 1.0 / prev_span
+        # Compute derivative of mesh wrt to span vector
 
         if symmetry:
+            # Tile half the scalar vector s by nx since we only consider half the span
             partials["mesh", "span"] = np.tile(0.5 * s, nx)
         else:
+            # Tile the scalar vector s by nx s
             partials["mesh", "span"] = np.tile(s, nx)
 
+        # Compute the derivative of mesh wrt to in_mesh
+
+        # derivative of s wrt to the prev_span
+        d_prev_span = -ref_axis[:, 1] / prev_span**2
+
+        # derivative of s wrt to the ref axis (first and last points)
+        d_prev_span_qc0 = np.zeros((ny,))
+        d_prev_span_qc1 = np.zeros((ny,))
+
+        # First point and last point only sensitive to ref_axis
+        d_prev_span_qc0[0] = d_prev_span_qc1[-1] = 1.0 / prev_span
+
+        # Cover the x and z diagonals with 1s
         nn = nx * ny * 2
         partials["mesh", "in_mesh"][:nn] = 1.0
 
+        # LE tip partials. d mesh / d(le tip position)
         nn2 = nx * ny
         partials["mesh", "in_mesh"][nn : nn + nn2] = np.tile(
             -(1 - self.ref_axis_pos) * span * (d_prev_span - d_prev_span_qc0), nx
         )
+
+        # LE root partials d mesh / d(le root position)
         nn3 = nn + nn2 * 2
         partials["mesh", "in_mesh"][nn + nn2 : nn3] = np.tile(
             (1 - self.ref_axis_pos) * span * (d_prev_span + d_prev_span_qc1), nx
         )
+
+        # TE tip partials d mesh / d(te tip position)
         nn4 = nn3 + nn2
         partials["mesh", "in_mesh"][nn3:nn4] = np.tile(-self.ref_axis_pos * span * (d_prev_span - d_prev_span_qc0), nx)
+
+        # TE root partials d mesh / d(te root position)
         nn5 = nn4 + nn2
         partials["mesh", "in_mesh"][nn4:nn5] = np.tile(self.ref_axis_pos * span * (d_prev_span + d_prev_span_qc1), nx)
 
+        # Non corner LE partials d mesh/ d(le except corners)
         nn6 = nn5 + nx * (ny - 2)
         partials["mesh", "in_mesh"][nn5:nn6] = (1 - self.ref_axis_pos) * span / prev_span
+
+        # Non corner TE partials d mesh/ d(te except corners)
         partials["mesh", "in_mesh"][nn6:] = self.ref_axis_pos * span / prev_span
 
 
