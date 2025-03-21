@@ -791,12 +791,21 @@ class ShearY(om.ExplicitComponent):
         nx, ny, _ = mesh_shape
 
         nn = nx * ny
-        rows = 3.0 * np.arange(nn) + 1
+
+        # Derivative of mesh wrt to yshear vector
+
+        # Vector of all mesh array y entries
+        rows = 3 * np.arange(nn) + 1
+
+        # Tile vector of all spanwise stations by number of chordwise panels
         cols = np.tile(np.arange(ny), nx)
+
+        # Jacobian entries pass the columns to the rows one to one
         val = np.ones(nn)
 
         self.declare_partials("mesh", "yshear", rows=rows, cols=cols, val=val)
 
+        # Derivative of mesh wrt in_mesh is just identity
         nn = nx * ny * 3
         rows = np.arange(nn)
         cols = np.arange(nn)
@@ -806,6 +815,8 @@ class ShearY(om.ExplicitComponent):
 
     def compute(self, inputs, outputs):
         outputs["mesh"][:] = inputs["in_mesh"]
+
+        # Add the yshear distribution to all y coordinates
         outputs["mesh"][:, :, 1] += inputs["yshear"]
 
 
@@ -847,38 +858,87 @@ class Dihedral(om.ExplicitComponent):
 
         self.add_output("mesh", shape=mesh_shape, units="m")
 
+        # Declare d mesh/ d dihedral jacobian
+
+        # compute total number of points in mesh
         nx, ny, _ = mesh_shape
         nn = nx * ny
+
+        # z-coodinates of entire dihedraled mesh are only sensitive to the scalar dihedral(col 0)
         rows = 3 * np.arange(nn) + 2
         cols = np.zeros(nn)
 
         self.declare_partials("mesh", "dihedral", rows=rows, cols=cols)
 
+        # Declare d mesh/ d in_mesh jacobian
+
+        # Diagonal part just passes in_mesh to mesh
+        # compute total number of entries in mesh array
         nn = nx * ny * 3
+        # Entire dihedral mesh is sensitive to in_mesh
         n_rows = np.arange(nn)
 
+        # Off-diagonal part to account for distance from symmetry plane part of the dihedral calculation
+        # This part has sensitive to the y-coordinate of the symmetry plane leading edge and the y-coordinates
+        # of the leading edge
         if self.options["symmetry"]:
+            # Sensitivity to symmetry plane position
+            # y-coodinate index of the symmetry plane leading edge
             y_cp = ny * 3 - 2
-            te_cols = np.tile(y_cp, nx * (ny - 1))
-            te_rows = np.tile(3 * np.arange(ny - 1) + 2, nx) + np.repeat(3 * ny * np.arange(nx), ny - 1)
-            se_cols = np.tile(3 * np.arange(ny - 1) + 1, nx)
+
+            # Fill array with y_cp to cover entire mesh except right tip
+            sym_cols = np.tile(y_cp, nx * (ny - 1))
+
+            # x-coordinates indicies of entire mesh except right tip(LE + offset for remainder of mesh)
+            sym_rows = np.tile(3 * np.arange(ny - 1) + 2, nx) + np.repeat(3 * ny * np.arange(nx), ny - 1)
+
+            # Sensitivity to spanwise station position
+
+            # y-coordinates indices of leading edge except right tip repeated for entire mesh
+            span_cols = np.tile(3 * np.arange(ny - 1) + 1, nx)
         else:
+
+            # Sensitivity to symmetry plane position
+
+            # y-coodinate of the center line leading edge
             y_cp = 3 * (ny + 1) // 2 - 2
+
+            # index of center line
             n_sym = (ny - 1) // 2
 
-            te_row = np.tile(3 * np.arange(n_sym) + 2, 2) + np.repeat([0, 3 * (n_sym + 1)], n_sym)
-            te_rows = np.tile(te_row, nx) + np.repeat(3 * ny * np.arange(nx), ny - 1)
+            # This line generates the x-coordiantes for the leading edge for both spans of the wing
+            # Start by tiling the x incicides for the first span twice then adding an offset for the second span.
+            # Note the first terms of the repeating addition is 0 so the left span stays as initially generated.
+            sym_row = np.tile(3 * np.arange(n_sym) + 2, 2) + np.repeat([0, 3 * (n_sym + 1)], n_sym)
 
-            te_col = np.tile(y_cp, n_sym)
-            se_col1 = 3 * np.arange(n_sym) + 1
-            se_col2 = 3 * np.arange(n_sym) + 4 + 3 * n_sym
+            # Repeat this nx times to cover all rows and add the offset so that jacobian covers rest of mesh
+            sym_rows = np.tile(sym_row, nx) + np.repeat(3 * ny * np.arange(nx), ny - 1)
+
+            # Repeat y_cp n_sym times
+            sym_col = np.tile(y_cp, n_sym)
+
+            # Sensitivity to spanwise station position
+
+            # y-coordinate indicies of left span of mesh
+            span_col1 = 3 * np.arange(n_sym) + 1
+
+            # y-coordiante indicies of right span of mesh
+            span_col2 = 3 * np.arange(n_sym) + 4 + 3 * n_sym
 
             # neat trick: swap columns on reflected side so we can assign in just two operations
-            te_cols = np.tile(np.concatenate([te_col, se_col2]), nx)
-            se_cols = np.tile(np.concatenate([se_col1, te_col]), nx)
+            # This is performance improving feature that takes advantage of the fact that this part of the
+            # jacobian will have either + or - tan(theta) in it. We are simply grouping the cols that will have +
+            # entries and - entries together. Ignore the variable naming here as we just want to able to use the
+            # same declare partials for both symmetry and no symmetry cases.
 
-        rows = np.concatenate(([n_rows, te_rows, te_rows]))
-        cols = np.concatenate(([n_rows, te_cols, se_cols]))
+            # Group + entries and repeat to cover all chordwise points
+            sym_cols = np.tile(np.concatenate([sym_col, span_col2]), nx)
+
+            # Group - entires and repeat to cover all chordwise points
+            span_cols = np.tile(np.concatenate([span_col1, sym_col]), nx)
+
+        rows = np.concatenate(([n_rows, sym_rows, sym_rows]))
+        cols = np.concatenate(([n_rows, sym_cols, span_cols]))
 
         self.declare_partials("mesh", "in_mesh", rows=rows, cols=cols)
 
@@ -899,6 +959,7 @@ class Dihedral(om.ExplicitComponent):
             y0 = le[-1, 1]
             dz = -(le[:, 1] - y0) * tan_theta
 
+        # Else, vary the z-coord on either side of the wing
         else:
             ny2 = (ny - 1) // 2
             y0 = le[ny2, 1]
@@ -906,7 +967,7 @@ class Dihedral(om.ExplicitComponent):
             dz_left = -(le[:ny2, 1] - y0) * tan_theta
             dz = np.hstack((dz_left, dz_right))
 
-        # dz added spanwise.
+        # dz added to mesh z coordinates spanwise.
         outputs["mesh"][:] = mesh
         outputs["mesh"][:, :, 2] += dz
 
@@ -915,36 +976,42 @@ class Dihedral(om.ExplicitComponent):
         dihedral_angle = inputs["dihedral"][0]
         mesh = inputs["in_mesh"]
 
-        # Get the mesh parameters and desired sweep angle
+        # Get the mesh parameters and desired dihedral angle
         nx, ny, _ = mesh.shape
         le = mesh[0]
         p180 = np.pi / 180
-        tan_theta = np.tan(p180 * dihedral_angle)
+        tan_phi = np.tan(p180 * dihedral_angle)
+
+        # Derivative of tan(phi) wrt to phi
         dtan_dangle = p180 / np.cos(p180 * dihedral_angle) ** 2
 
         # If symmetric, simply vary the z-coord based on the distance from the
         # center of the wing
         if symmetry:
             y0 = le[-1, 1]
-            dz_dtheta = -(le[:, 1] - y0) * dtan_dangle
+            dz_dphi = -(le[:, 1] - y0) * dtan_dangle
 
         else:
+            # j index of centerline
             ny2 = (ny - 1) // 2
+            # y coordinate of centerline
             y0 = le[ny2, 1]
 
             ddz_right = (le[ny2:, 1] - y0) * dtan_dangle
             ddz_left = -(le[:ny2, 1] - y0) * dtan_dangle
-            dz_dtheta = np.hstack((ddz_left, ddz_right))
+            dz_dphi = np.hstack((ddz_left, ddz_right))
 
         # dz added spanwise.
-        partials["mesh", "dihedral"] = np.tile(dz_dtheta, nx)
+        partials["mesh", "dihedral"] = np.tile(dz_dphi, nx)
 
+        # Diagonal part of d mesh/ d in_mesh is just 1 to pass the in_mesh through
         nn = nx * ny * 3
         partials["mesh", "in_mesh"][:nn] = 1.0
 
+        # Assign tan and then -tan to off diagonal parts to account for spanwise station sensitivity
         nn2 = nx * (ny - 1)
-        partials["mesh", "in_mesh"][nn : nn + nn2] = tan_theta
-        partials["mesh", "in_mesh"][nn + nn2 :] = -tan_theta
+        partials["mesh", "in_mesh"][nn : nn + nn2] = tan_phi
+        partials["mesh", "in_mesh"][nn + nn2 :] = -tan_phi
 
 
 class ShearZ(om.ExplicitComponent):
