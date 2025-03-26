@@ -91,9 +91,18 @@ def view_mat(mat1, mat2=None, key="Title", tol=1e-10):  # pragma: no cover
 
 
 def run_test(
-    test_obj, comp, complex_flag=False, compact_print=True, method="fd", step=1e-6, atol=1e-5, rtol=1e-5, view=False
+    test_obj,
+    comp,
+    complex_flag=False,
+    compact_print=True,
+    method="fd",
+    step=1e-6,
+    atol=1e-5,
+    rtol=1e-5,
+    view=False,
+    reports=False,
 ):
-    prob = om.Problem()
+    prob = om.Problem(reports=reports)
     prob.model.add_subsystem("comp", comp)
     prob.setup(force_alloc_complex=complex_flag)
 
@@ -236,6 +245,7 @@ def get_three_section_surface(sym=True, visc=False):
         "taper": [1.0, 1.0, 1.0],  # Wing taper for each section
         "span": [1.0, 1.0, 1.0],  # Wing span for each section
         "sweep": [0.0, 0, 0.0],  # Wing sweep for each section
+        "dihedral": [0.0, 0.0, 0.0],
         "twist_cp": [np.zeros(2), np.zeros(2), np.zeros(2)],
         "chord_cp": sec_chord_cp,
         "root_chord": 1.0,  # Wing root chord for each section

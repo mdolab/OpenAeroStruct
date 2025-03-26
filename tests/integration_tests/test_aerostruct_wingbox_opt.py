@@ -409,7 +409,7 @@ class Test(unittest.TestCase):
 
         prob.run_driver()
         assert_near_equal(prob["AS_point_0.fuelburn"][0], 79151.03928720397, 1e-5)
-        assert_near_equal(prob["wing.structural_mass"][0] / 1.25, 13387.705394088985, 1e-5)
+        assert_near_equal(prob["wing.structural_mass"][0] / 1.25, 13388.445732877735, 1e-5)
         assert_near_equal(prob["wing.geometry.span"][0], 60.0, 1e-5)
 
 

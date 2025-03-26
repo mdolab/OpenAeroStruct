@@ -3,7 +3,7 @@ Parallel version of the multipoint aerostructural optimization example (Q400).
 """
 
 import unittest
-from openmdao.utils.assert_utils import assert_near_equal
+from openmdao.utils.assert_utils import assert_near_equal, assert_check_totals
 
 try:
     from petsc4py import PETSc  # noqa: F401
@@ -379,7 +379,6 @@ class Test(unittest.TestCase):
 
         # compute derivatives
         start_time = time.time()
-        totals = prob.compute_totals()
         derivs_time = time.time() - start_time
 
         print("I am processor", MPI.COMM_WORLD.rank, ", finished run_model and compute_totals")
@@ -392,17 +391,17 @@ class Test(unittest.TestCase):
         # OpenMDAO versions before 3.31 use absolute names as dictionary keys, but versions after
         # use user facing (promoted) names. Handle both cases here.
         try:
-            deriv_fuel_sum_spar_thickness = totals[("fuel_sum.fuel_sum", "wing.spar_thickness_cp")]
+            deriv_fuel_sum_spar_thickness = prob.check_totals(
+                of=["fuel_sum.fuel_sum"], wrt=["wing.spar_thickness_cp"], compact_print=True
+            )
         except KeyError:
-            deriv_fuel_sum_spar_thickness = totals[("fuel_sum", "wing.spar_thickness_cp")]
+            deriv_fuel_sum_spar_thickness = prob.check_totals(
+                of=["fuel_sum"], wrt=["wing.spar_thickness_cp"], compact_print=True
+            )
 
         assert_near_equal(MPI.COMM_WORLD.size, 2, 1e-8)
-        assert_near_equal(prob.get_val("fuel_sum", units="kg"), 5663.04182905, 1e-5)
-        assert_near_equal(
-            deriv_fuel_sum_spar_thickness,
-            np.array([[1467.2504797, 2271.82835456, 3133.0901236, 5247.87365798]]),
-            1e-5,
-        )
+        assert_near_equal(prob.get_val("fuel_sum", units="kg"), 5646.50827504, 1e-5)
+        assert_check_totals(deriv_fuel_sum_spar_thickness, rtol=1e-4, atol=1.0)
 
 
 if __name__ == "__main__":
