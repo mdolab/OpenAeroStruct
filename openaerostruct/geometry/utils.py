@@ -52,6 +52,7 @@ def rotate(mesh, theta_y, symmetry, rotate_x=True):
     if rotate_x:
         # Compute x-axis rotation angle distribution using spanwise z displacements along quarter chord
         if symmetry:
+            # This computes the change in dihedral angle along the references axis
             dz_qc = quarter_chord[:-1, 2] - quarter_chord[1:, 2]
             dy_qc = quarter_chord[:-1, 1] - quarter_chord[1:, 1]
             theta_x = np.arctan(dz_qc / dy_qc)
