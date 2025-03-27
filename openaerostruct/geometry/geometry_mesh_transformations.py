@@ -1124,62 +1124,129 @@ class Rotate(om.ExplicitComponent):
 
         self.add_output("mesh", shape=mesh_shape, units="m")
 
+        # Get mesh shape and size
         nx, ny, _ = mesh_shape
         nn = nx * ny * 3
+
+        # Declare d mesh/ d twist partials
+
+        # All mesh points sensitive
         rows = np.arange(nn)
+
+        # Each spanwise station is sensitive to the twist at that station
         col = np.tile(np.zeros(3), ny) + np.repeat(np.arange(ny), 3)
+
+        # Tile result for all points chordwise
         cols = np.tile(col, nx)
 
         self.declare_partials("mesh", "twist", rows=rows, cols=cols)
 
+        # Declare d mesh/ d in_mesh partial
+
+        # Declare base array for rows and cols that will be used several times
+        # The base pattern here says that each entry in mesh is sensitive to each entry in in_mesh
         row_base = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2])
         col_base = np.array([0, 1, 2, 0, 1, 2, 0, 1, 2])
 
         # Diagonal
+
+        # Total number of mesh points
         nn = nx * ny
+
+        # Tile the base pattern nn times and then add offsets so that entry in mesh is covered
         dg_row = np.tile(row_base, nn) + np.repeat(3 * np.arange(nn), 9)
+
+        # Tile the base pattern nn times and then add offsets so that entry in in_mesh is covered
         dg_col = np.tile(col_base, nn) + np.repeat(3 * np.arange(nn), 9)
 
         # Leading and Trailing edge on diagonal terms.
+
+        # Tile the row and col base patterns by the number of spanwise points and offset to cover all spanwise stations
         row_base_y = np.tile(row_base, ny) + np.repeat(3 * np.arange(ny), 9)
         col_base_y = np.tile(col_base, ny) + np.repeat(3 * np.arange(ny), 9)
+
+        # Number of array entries covering a row of mesh points
         nn2 = 3 * ny
+
+        # Tile the spanwise row points nx - 1 times and then offset to cover up to but not including the trailing edge
         te_dg_row = np.tile(row_base_y, nx - 1) + np.repeat(nn2 * np.arange(nx - 1), 9 * ny)
+
+        # Tile the spanwise column points nx-1 times.  No offset since mesh is sensitive to LE only for this part.
         le_dg_col = np.tile(col_base_y, nx - 1)
+
+        # Offset the TE rows by a single row so that the TE is covered and the LE is not
         le_dg_row = te_dg_row + nn2
+
+        # Offset the leading edge col points by the remainder of the mesh from the leading edge to get the trailing edge
         te_dg_col = le_dg_col + 3 * ny * (nx - 1)
 
         # Leading and Trailing edge off diagonal terms.
         if self.options["symmetry"]:
+
+            # Since these are off diagonal terms we will tile ny-1 times and then offset to cover that portion of the spanwise stations
             row_base_y = np.tile(row_base, ny - 1) + np.repeat(3 * np.arange(ny - 1), 9)
+
+            # Offset col_base by 3 to exclude the left tip then offset to cover the remainder of the wing
             col_base_y = np.tile(col_base + 3, ny - 1) + np.repeat(3 * np.arange(ny - 1), 9)
 
+            # Number of array entries covering a row of mesh points
             nn2 = 3 * ny
+
+            # Tile the spanwise row points nx times and then offset to cover the entire mesh chordwise
             te_od_row = np.tile(row_base_y, nx) + np.repeat(nn2 * np.arange(nx), 9 * (ny - 1))
+
+            # Tile the spanwise column points nx times.  No offset since mesh is sensitive to LE only for this part.
             le_od_col = np.tile(col_base_y, nx)
+
+            # Offset the leading edge col points by the remainder of the mesh from the leading edge to get the trailing edge
             te_od_col = le_od_col + 3 * ny * (nx - 1)
 
+            # Concatenate the arrays and double the off diagonal to account for both the left and right tip ODs
             rows = np.concatenate([dg_row, le_dg_row, te_dg_row, te_od_row, te_od_row])
             cols = np.concatenate([dg_col, le_dg_col, te_dg_col, le_od_col, te_od_col])
 
         else:
+            # Index of symmetry plane
             n_sym = (ny - 1) // 2
 
+            # Tile n_sym times and offset to cover the left span
             row_base_y1 = np.tile(row_base, n_sym) + np.repeat(3 * np.arange(n_sym), 9)
+
+            # Offset col_base by 3 to exclude the left tip then offset to cover the remainder of the wing
             col_base_y1 = np.tile(col_base + 3, n_sym) + np.repeat(3 * np.arange(n_sym), 9)
 
+            # Offset the left span rows by the span to get the right span
             row_base_y2 = row_base_y1 + 3 * n_sym + 3
+
+            # Offset the left span cols by the span but subtract 3 so the right tip is not covered
             col_base_y2 = col_base_y1 + 3 * n_sym - 3
 
+            # Number of array entries covering a row of mesh points
             nn2 = 3 * ny
 
+            # Left span
+
+            # Tile the spanwise row points nx times and then offset to cover the entire mesh chordwise
             te_od_row1 = np.tile(row_base_y1, nx) + np.repeat(nn2 * np.arange(nx), 9 * n_sym)
+
+            # Tile the spanwise column points nx times.  No offset since mesh is sensitive to LE only for this part.
             le_od_col1 = np.tile(col_base_y1, nx)
+
+            # Offset the leading edge col points by the remainder of the mesh from the leading edge to get the trailing edge
             te_od_col1 = le_od_col1 + 3 * ny * (nx - 1)
+
+            # Right span
+
+            # Offset the leading edge col points by the remainder of the mesh from the leading edge to get the trailing edge
             te_od_row2 = np.tile(row_base_y2, nx) + np.repeat(nn2 * np.arange(nx), 9 * n_sym)
+
+            # Tile the spanwise column points nx times.  No offset since mesh is sensitive to LE only for this part.
             le_od_col2 = np.tile(col_base_y2, nx)
+
+            # Offset the left span cols by the span but subtract 3 so the right tip is not covered
             te_od_col2 = le_od_col2 + 3 * ny * (nx - 1)
 
+            # Concatenate the arrays and double the off diagonal to account for both ODs for each span
             rows = np.concatenate([dg_row, le_dg_row, te_dg_row, te_od_row1, te_od_row2, te_od_row1, te_od_row2])
             cols = np.concatenate([dg_col, le_dg_col, te_dg_col, le_od_col1, le_od_col2, te_od_col1, te_od_col2])
 
@@ -1191,14 +1258,19 @@ class Rotate(om.ExplicitComponent):
         theta_y = inputs["twist"]
         mesh = inputs["in_mesh"]
 
+        # Get trailing edge coordinates (ny, 3)
         te = mesh[-1]
+        # Get leading edge coordinates (ny, 3)
         le = mesh[0]
+        # Linear interpolation to compute the quarter chord coordinates (ny, 3)
         ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
 
+        # Get number of spanwise stations (ny)
         _, ny, _ = mesh.shape
 
+        # Option to include mesh rotations about x-axis
         if rotate_x:
-            # Compute spanwise z displacements along quarter chord
+            # Compute x-axis rotation angle distribution using spanwise z displacements along quarter chord
             if symmetry:
                 dz_qc = ref_axis[:-1, 2] - ref_axis[1:, 2]
                 dy_qc = ref_axis[:-1, 1] - ref_axis[1:, 1]
@@ -1215,20 +1287,30 @@ class Rotate(om.ExplicitComponent):
                 dy_qc_right = ref_axis[root_index + 1 :, 1] - ref_axis[root_index:-1, 1]
                 theta_x_right = np.arctan(dz_qc_right / dy_qc_right)
 
-                # Concatenate thetas
+                # Concatenate thetas with 0 at the root so it's not rotated
                 rad_theta_x = np.concatenate((theta_x_left, np.zeros(1), theta_x_right))
 
         else:
+            # If there is no rotation about x applied then the angle is 0
             rad_theta_x = 0.0
 
         rad_theta_y = theta_y * np.pi / 180.0
 
+        # Initialize rotation matrix
+        # Each spanwise (ny) station needs it's own 3x3 rotation matrix so this is 3D array of size (ny, 3, 3)
         mats = np.zeros((ny, 3, 3), dtype=type(rad_theta_y[0]))
 
+        # Compute sin and cos of angles for the matrix
         cos_rtx = np.cos(rad_theta_x)
         cos_rty = np.cos(rad_theta_y)
         sin_rtx = np.sin(rad_theta_x)
         sin_rty = np.sin(rad_theta_y)
+
+        # Each rotation matrix is 3x3 and is the product Rx(rad_theta_x)Ry(rad_theta_y)
+        # Rx = [[0, 0, 0], [0, cos(rad_theta_x), -sin(rad_theta_x)], [0, sin(rad_theta_x), cos(rad_theta_x)]]
+        # Ry = [[cos(rad_theta_y),0,-sin(rad_theta_y)], [0, 0, 0], [-sin(rad_theta_y), 0, cos(rad_theta_y)]]
+        # RxRy = [[cos(rad_theta_y), 0, sin(rad_theta_y)],[sin(rad_theta_x)*sin(rad_theta_y), cos(rad_theta_x), -sin(rad_theta_x)*cos(rad_theta_y)], ...
+        # [-cos(rad_theta_x)*sin(rad_theta_y), sin(rad_theta_x), cos(rad_theta_x)*cos(rad_theta_y)]]
 
         mats[:, 0, 0] = cos_rty
         mats[:, 0, 2] = sin_rty
@@ -1239,6 +1321,11 @@ class Rotate(om.ExplicitComponent):
         mats[:, 2, 1] = sin_rtx
         mats[:, 2, 2] = cos_rtx * cos_rty
 
+        # Multiply each point on the mesh by the rotation matrix associated with its spanwise station
+        # i - spanwise station index (ny)
+        # m - chordwise station index
+        # k - output vector(After rotation)
+        # j - inputs vector(Before rotation)
         outputs["mesh"] = np.einsum("ikj, mij -> mik", mats, mesh - ref_axis) + ref_axis
 
     def compute_partials(self, inputs, partials):
@@ -1247,15 +1334,19 @@ class Rotate(om.ExplicitComponent):
         theta_y = inputs["twist"]
         mesh = inputs["in_mesh"]
 
+        # Compute the reference axis
         te = mesh[-1]
         le = mesh[0]
         ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
 
+        # Get mesh size
         nx, ny, _ = mesh.shape
 
+        # Option to include mesh rotations about x-axis
         if rotate_x:
-            # Compute spanwise z displacements along quarter chord
+            # Compute x-axis rotation angle distribution using spanwise z displacements along quarter chord
             if symmetry:
+                # This computes the change in dihedral angle along the references axis
                 dz_qc = ref_axis[:-1, 2] - ref_axis[1:, 2]
                 dy_qc = ref_axis[:-1, 1] - ref_axis[1:, 1]
                 theta_x = np.arctan(dz_qc / dy_qc)
@@ -1263,46 +1354,69 @@ class Rotate(om.ExplicitComponent):
                 # Prepend with 0 so that root is not rotated
                 rad_theta_x = np.append(theta_x, 0.0)
 
+                # Compute a common factor used in several partial computations
                 fact = 1.0 / (1.0 + (dz_qc / dy_qc) ** 2)
 
+                # Compute the derivative of theta_x along the ref_axis
                 dthx_dq = np.zeros((ny, 3))
+
+                # Derivative of y component of ref_axis
                 dthx_dq[:-1, 1] = -dz_qc * fact / dy_qc**2
+
+                # Derivative of z component of ref_axis
                 dthx_dq[:-1, 2] = fact / dy_qc
 
             else:
+                # Symmetry plane index
                 root_index = int((ny - 1) / 2)
+
+                # This computes the change in dihedral angle along the references axis for the left span
                 dz_qc_left = ref_axis[:root_index, 2] - ref_axis[1 : root_index + 1, 2]
                 dy_qc_left = ref_axis[:root_index, 1] - ref_axis[1 : root_index + 1, 1]
                 theta_x_left = np.arctan(dz_qc_left / dy_qc_left)
+
+                # This computes the change in dihedral angle along the references axis for the right span
                 dz_qc_right = ref_axis[root_index + 1 :, 2] - ref_axis[root_index:-1, 2]
                 dy_qc_right = ref_axis[root_index + 1 :, 1] - ref_axis[root_index:-1, 1]
                 theta_x_right = np.arctan(dz_qc_right / dy_qc_right)
 
-                # Concatenate thetas
+                # Concatenate thetas and put a 0 at the root
                 rad_theta_x = np.concatenate((theta_x_left, np.zeros(1), theta_x_right))
 
+                # Compute a common factors used in several partial computations for each span
                 fact_left = 1.0 / (1.0 + (dz_qc_left / dy_qc_left) ** 2)
                 fact_right = 1.0 / (1.0 + (dz_qc_right / dy_qc_right) ** 2)
 
+                # Compute the derivative of theta_x along the ref_axis
                 dthx_dq = np.zeros((ny, 3))
+
+                # Derivative of y component of ref_axis for both spans
                 dthx_dq[:root_index, 1] = -dz_qc_left * fact_left / dy_qc_left**2
                 dthx_dq[root_index + 1 :, 1] = -dz_qc_right * fact_right / dy_qc_right**2
+
+                # Derivative of z component of ref_axis for both spans
                 dthx_dq[:root_index, 2] = fact_left / dy_qc_left
                 dthx_dq[root_index + 1 :, 2] = fact_right / dy_qc_right
 
         else:
             rad_theta_x = 0.0
 
+        # Why not use numpy deg2rad?
         deg2rad = np.pi / 180.0
+
+        # Twist angle in radians
         rad_theta_y = theta_y * deg2rad
 
+        # Initialize the rotation matrices at all spanwise stations
         mats = np.zeros((ny, 3, 3), dtype=type(rad_theta_y[0]))
 
+        # Precompute sins and cos
         cos_rtx = np.cos(rad_theta_x)
         cos_rty = np.cos(rad_theta_y)
         sin_rtx = np.sin(rad_theta_x)
         sin_rty = np.sin(rad_theta_y)
 
+        # Assemble the rotation matricies for every spanwise station
         mats[:, 0, 0] = cos_rty
         mats[:, 0, 2] = sin_rty
         mats[:, 1, 0] = sin_rtx * sin_rty
@@ -1312,6 +1426,7 @@ class Rotate(om.ExplicitComponent):
         mats[:, 2, 1] = sin_rtx
         mats[:, 2, 2] = cos_rtx * cos_rty
 
+        # Assemble the derivative of the rotation matrix entries
         dmats_dthy = np.zeros((ny, 3, 3))
         dmats_dthy[:, 0, 0] = -sin_rty * deg2rad
         dmats_dthy[:, 0, 2] = cos_rty * deg2rad
@@ -1320,21 +1435,40 @@ class Rotate(om.ExplicitComponent):
         dmats_dthy[:, 2, 0] = -cos_rtx * cos_rty * deg2rad
         dmats_dthy[:, 2, 2] = -cos_rtx * sin_rty * deg2rad
 
+        # Apply the derivative of the rotation matrix to the mesh using the same tensor operation used in compute
         d_dthetay = np.einsum("ikj, mij -> mik", dmats_dthy, mesh - ref_axis)
+
+        # Declare the d mesh/ d twist partial
         partials["mesh", "twist"] = d_dthetay.flatten()
 
+        # Length of initial diagonal
         nn = nx * ny * 9
+
+        # Assign the transformation matrices to it and tile nx times to cover the whole mesh
         partials["mesh", "in_mesh"][:nn] = np.tile(mats.flatten(), nx)
 
-        # Quarter chord direct contribution.
+        # Reference axis direct contribution.
+        # Create a set of identity matrices for each spanwise station
         eye = np.tile(np.eye(3).flatten(), ny).reshape(ny, 3, 3)
+
+        # Subtract the rotation matrices at each spanwise station
         d_qch = (eye - mats).flatten()
 
+        # Length of the ref_axis contribution to diagonal
         nqc = ny * 9
+
+        # LE derivative contribution
         partials["mesh", "in_mesh"][:nqc] += (1 - self.ref_axis_pos) * d_qch
+
+        # TE derivative contribution
         partials["mesh", "in_mesh"][nn - nqc : nn] += self.ref_axis_pos * d_qch
 
+        # Option to include mesh rotations about x-axis
         if rotate_x:
+            # This part computes the leading and trailing edge diagonal terms that exist when theta_x is computed
+            # from the reference axis geometry which is sensitive to the leading and trailing edge points
+
+            # Generate derviative of rotation matrices wrt to theta_x at each spanwise station
             dmats_dthx = np.zeros((ny, 3, 3))
             dmats_dthx[:, 1, 0] = cos_rtx * sin_rty
             dmats_dthx[:, 1, 1] = -sin_rtx
@@ -1343,46 +1477,80 @@ class Rotate(om.ExplicitComponent):
             dmats_dthx[:, 2, 1] = cos_rtx
             dmats_dthx[:, 2, 2] = -sin_rtx * cos_rty
 
+            # Apply each rotation matrix to its spanwise station using a tensor operation
             d_dthetax = np.einsum("ikj, mij -> mik", dmats_dthx, mesh - ref_axis)
+
+            # Multiply the dervative of the ref_axis in the y and z directions at each spanwise station
             d_dq = np.einsum("ijk, jm -> ijkm", d_dthetax, dthx_dq)
 
+            # Flatten the result
             d_dq_flat = d_dq.flatten()
 
+            # Subtract a row from the full mesh
             del_n = nn - 9 * ny
+
+            # Compute incides for the next two blocks of partials
             nn2 = nn + del_n
             nn3 = nn2 + del_n
+
+            # LE contribution: excludes LE partials
             partials["mesh", "in_mesh"][nn:nn2] = (1 - self.ref_axis_pos) * d_dq_flat[-del_n:]
+
+            # TE contribution: excludes TE partials
             partials["mesh", "in_mesh"][nn2:nn3] = self.ref_axis_pos * d_dq_flat[:del_n]
 
-            # Contribution back to main diagonal.
+            # This also includes contributions back to main diagonal.
+
+            # Contribution only covers a single mesh row (le or te)
             del_n = 9 * ny
+
+            # LE contribution: main diagonal contribution excludes TE
             partials["mesh", "in_mesh"][:nqc] += (1 - self.ref_axis_pos) * d_dq_flat[:del_n]
+
+            # TE contribution: main diagonal contribution excludes LE
             partials["mesh", "in_mesh"][nn - nqc : nn] += self.ref_axis_pos * d_dq_flat[-del_n:]
 
-            # Quarter chord direct contribution.
+            # This contribution accounts for the position of the reference axis itself.
+
+            # Tile the result from the earlier main diagonal reference axis contribution
             d_qch_od = np.tile(d_qch.flatten(), nx - 1)
+
+            # Add to the le and te diagonal terms
             partials["mesh", "in_mesh"][nn:nn2] += (1 - self.ref_axis_pos) * d_qch_od
             partials["mesh", "in_mesh"][nn2:nn3] += self.ref_axis_pos * d_qch_od
 
-            # off-off diagonal pieces
+            # off-off diagonal pieces: OD contributions that exist when theta_x is computed from the reference axis
+            # geometry which is sensitive to the positions of the spanwise stations relative to the root.
             if symmetry:
+                # Compute d_dq_flat again but with the right tip(symmetry plane) excluded
                 d_dq_flat = d_dq[:, :-1, :, :].flatten()
 
+                # Entire mesh size minus a row
                 del_n = nn - 9 * nx
+
+                # LE contribution
                 nn4 = nn3 + del_n
                 partials["mesh", "in_mesh"][nn3:nn4] = -(1 - self.ref_axis_pos) * d_dq_flat
+
+                # TE contribution
                 nn5 = nn4 + del_n
                 partials["mesh", "in_mesh"][nn4:nn5] = -self.ref_axis_pos * d_dq_flat
 
             else:
+                # Compute d_dq_flat again but with the root excluded
                 d_dq_flat1 = d_dq[:, :root_index, :, :].flatten()
                 d_dq_flat2 = d_dq[:, root_index + 1 :, :, :].flatten()
 
+                # Half mesh size minus a row
                 del_n = nx * root_index * 9
+
+                # LE contribution for both spans
                 nn4 = nn3 + del_n
                 partials["mesh", "in_mesh"][nn3:nn4] = -(1 - self.ref_axis_pos) * d_dq_flat1
                 nn5 = nn4 + del_n
                 partials["mesh", "in_mesh"][nn4:nn5] = -(1 - self.ref_axis_pos) * d_dq_flat2
+
+                # TE contribution for both spans
                 nn6 = nn5 + del_n
                 partials["mesh", "in_mesh"][nn5:nn6] = -self.ref_axis_pos * d_dq_flat1
                 nn7 = nn6 + del_n
