@@ -13,7 +13,7 @@ except ImportError:
 from openaerostruct.geometry.CRM_definitions import get_crm_points
 
 
-def rotate(mesh, theta_y, symmetry, rotate_x=True):
+def rotate(mesh, theta_y, symmetry, rotate_x=True, ref_axis_pos=0.25):
     """
     Compute rotation matrices given mesh and rotation angles in degrees.
 
@@ -27,7 +27,9 @@ def rotate(mesh, theta_y, symmetry, rotate_x=True):
         Flag set to True if surface is reflected about y=0 plane.
     rotate_x : boolean
         Flag set to True if the user desires the twist variable to always be
-        applied perpendicular to the wing (say, in the case of a winglet).
+        applied perpendicular to the wing. To clarify, this is to ensure that non-planar surfaces
+        such as winglets are twisted correctly about their axis. The winglets themselves have
+        to be created with zshear or a user created mesh.
 
     Returns
     -------
@@ -35,44 +37,61 @@ def rotate(mesh, theta_y, symmetry, rotate_x=True):
         Nodal mesh defining the twisted aerodynamic surface.
 
     """
-    te = mesh[-1]
-    le = mesh[0]
-    quarter_chord = 0.25 * te + 0.75 * le
 
+    # Get trailing edge coordinates (ny, 3)
+    te = mesh[-1]
+    # Get leading edge coordinates (ny, 3)
+    le = mesh[0]
+    # Linear interpolation to compute the ref_axis coordinates (ny, 3)
+    ref_axis = ref_axis_pos * te + (1 - ref_axis_pos) * le
+
+    # Get number of spanwise stations (ny)
     nx, ny, _ = mesh.shape
 
+    # Option to include mesh rotations about x-axis
     if rotate_x:
-        # Compute spanwise z displacements along quarter chord
+        # Compute x-axis rotation angle distribution using spanwise z displacements along quarter chord
         if symmetry:
-            dz_qc = quarter_chord[:-1, 2] - quarter_chord[1:, 2]
-            dy_qc = quarter_chord[:-1, 1] - quarter_chord[1:, 1]
+            # This computes the change in dihedral angle along the references axis
+            dz_qc = ref_axis[:-1, 2] - ref_axis[1:, 2]
+            dy_qc = ref_axis[:-1, 1] - ref_axis[1:, 1]
             theta_x = np.arctan(dz_qc / dy_qc)
 
             # Prepend with 0 so that root is not rotated
             rad_theta_x = np.append(theta_x, 0.0)
         else:
             root_index = int((ny - 1) / 2)
-            dz_qc_left = quarter_chord[:root_index, 2] - quarter_chord[1 : root_index + 1, 2]
-            dy_qc_left = quarter_chord[:root_index, 1] - quarter_chord[1 : root_index + 1, 1]
+            dz_qc_left = ref_axis[:root_index, 2] - ref_axis[1 : root_index + 1, 2]
+            dy_qc_left = ref_axis[:root_index, 1] - ref_axis[1 : root_index + 1, 1]
             theta_x_left = np.arctan(dz_qc_left / dy_qc_left)
-            dz_qc_right = quarter_chord[root_index + 1 :, 2] - quarter_chord[root_index:-1, 2]
-            dy_qc_right = quarter_chord[root_index + 1 :, 1] - quarter_chord[root_index:-1, 1]
+            dz_qc_right = ref_axis[root_index + 1 :, 2] - ref_axis[root_index:-1, 2]
+            dy_qc_right = ref_axis[root_index + 1 :, 1] - ref_axis[root_index:-1, 1]
             theta_x_right = np.arctan(dz_qc_right / dy_qc_right)
 
-            # Concatenate thetas
+            # Concatenate thetas with 0 at the root so it's not rotated
             rad_theta_x = np.concatenate((theta_x_left, np.zeros(1), theta_x_right))
 
     else:
+        # If there is no rotation about x applied then the angle is 0
         rad_theta_x = 0.0
 
     rad_theta_y = theta_y * np.pi / 180.0
 
+    # Initialize rotation matrix
+    # Each spanwise (ny) station needs it's own 3x3 rotation matrix so this is 3D array of size (ny, 3, 3)
     mats = np.zeros((ny, 3, 3), dtype=type(rad_theta_y[0]))
 
+    # Compute sin and cos of angles for the matrix
     cos_rtx = cos(rad_theta_x)
     cos_rty = cos(rad_theta_y)
     sin_rtx = sin(rad_theta_x)
     sin_rty = sin(rad_theta_y)
+
+    # Each rotation matrix is 3x3 and is the product Rx(rad_theta_x)Ry(rad_theta_y)
+    # Rx = [[0, 0, 0], [0, cos(rad_theta_x), -sin(rad_theta_x)], [0, sin(rad_theta_x), cos(rad_theta_x)]]
+    # Ry = [[cos(rad_theta_y),0,-sin(rad_theta_y)], [0, 0, 0], [-sin(rad_theta_y), 0, cos(rad_theta_y)]]
+    # RxRy = [[cos(rad_theta_y), 0, sin(rad_theta_y)],[sin(rad_theta_x)*sin(rad_theta_y), cos(rad_theta_x), -sin(rad_theta_x)*cos(rad_theta_y)], ...
+    # [-cos(rad_theta_x)*sin(rad_theta_y), sin(rad_theta_x), cos(rad_theta_x)*cos(rad_theta_y)]]
 
     mats[:, 0, 0] = cos_rty
     mats[:, 0, 2] = sin_rty
@@ -83,10 +102,15 @@ def rotate(mesh, theta_y, symmetry, rotate_x=True):
     mats[:, 2, 1] = sin_rtx
     mats[:, 2, 2] = cos_rtx * cos_rty
 
-    mesh[:] = np.einsum("ikj, mij -> mik", mats, mesh - quarter_chord) + quarter_chord
+    # Multiply each point on the mesh by the rotation matrix associated with its spanwise station
+    # i - spanwise station index (ny)
+    # m - chordwise station index
+    # k - output vector(After rotation)
+    # j - inputs vector(Before rotation)
+    mesh[:] = np.einsum("ikj, mij -> mik", mats, mesh - ref_axis) + ref_axis
 
 
-def scale_x(mesh, chord_dist):
+def scale_x(mesh, chord_dist, ref_axis_pos=0.25):
     """
     Modify the chords along the span of the wing by scaling only the x-coord.
 
@@ -102,14 +126,19 @@ def scale_x(mesh, chord_dist):
     mesh[nx, ny, 3] : numpy array
         Nodal mesh with the new chord lengths.
     """
+    # Get trailing edge coordinates (ny, 3)
     te = mesh[-1]
+    # Get leading edge coordinates (ny, 3)
     le = mesh[0]
-    quarter_chord = 0.25 * te + 0.75 * le
+    # Linear interpolation to compute the reference axis coordinates (ny, 3)
+    ref_axis = ref_axis_pos * te + (1 - ref_axis_pos) * le
 
+    # Get number of spanwise stations (ny)
     ny = mesh.shape[1]
 
+    # Loop over each spanwise station and scale its x coodinates by chord_dist[i]
     for i in range(ny):
-        mesh[:, i, 0] = (mesh[:, i, 0] - quarter_chord[i, 0]) * chord_dist[i] + quarter_chord[i, 0]
+        mesh[:, i, 0] = (mesh[:, i, 0] - ref_axis[i, 0]) * chord_dist[i] + ref_axis[i, 0]
 
 
 def shear_x(mesh, xshear):
@@ -128,6 +157,7 @@ def shear_x(mesh, xshear):
     mesh[nx, ny, 3] : numpy array
         Nodal mesh with the new chord lengths.
     """
+    # Add the xshear distribution to all x coordinates
     mesh[:, :, 0] += xshear
 
 
@@ -146,6 +176,7 @@ def shear_y(mesh, yshear):
     mesh[nx, ny, 3] : numpy array
         Nodal mesh with the new span widths.
     """
+    # Add the yshear distribution to all x coordinates
     mesh[:, :, 1] += yshear
 
 
@@ -165,6 +196,7 @@ def shear_z(mesh, zshear):
     mesh[nx, ny, 3] : numpy array
         Nodal mesh with the new chord lengths.
     """
+    # Add the zshear distribution to all x coordinates
     mesh[:, :, 2] += zshear
 
 
@@ -209,7 +241,7 @@ def sweep(mesh, sweep_angle, symmetry):
         dx_left = -(le[:ny2, 1] - y0) * tan_theta
         dx = np.hstack((dx_left, dx_right))
 
-    # dx added spanwise.
+    # dx added to mesh x coordinates spanwise.
     mesh[:, :, 0] += dx
 
 
@@ -252,11 +284,11 @@ def dihedral(mesh, dihedral_angle, symmetry):
         dz_left = -(le[:ny2, 1] - y0) * tan_theta
         dz = np.hstack((dz_left, dz_right))
 
-    # dz added spanwise.
+    # dz added to z coordinates spanwise.
     mesh[:, :, 2] += dz
 
 
-def stretch(mesh, span, symmetry):
+def stretch(mesh, span, symmetry, ref_axis_pos=0.25):
     """
     Stretch mesh in spanwise direction to reach specified span.
 
@@ -276,10 +308,10 @@ def stretch(mesh, span, symmetry):
 
     """
 
-    # Set the span along the quarter-chord line
+    # Set the span along the reference axis
     le = mesh[0]
     te = mesh[-1]
-    quarter_chord = 0.25 * te + 0.75 * le
+    ref_axis = ref_axis_pos * te + (1 - ref_axis_pos) * le
 
     # The user always deals with the full span, so if they input a specific
     # span value and have symmetry enabled, we divide this value by 2.
@@ -288,12 +320,12 @@ def stretch(mesh, span, symmetry):
 
     # Compute the previous span and determine the scalar needed to reach the
     # desired span
-    prev_span = quarter_chord[-1, 1] - quarter_chord[0, 1]
-    s = quarter_chord[:, 1] / prev_span
+    prev_span = ref_axis[-1, 1] - ref_axis[0, 1]
+    s = ref_axis[:, 1] / prev_span
     mesh[:, :, 1] = s * span
 
 
-def taper(mesh, taper_ratio, symmetry):
+def taper(mesh, taper_ratio, symmetry, ref_axis_pos=0.25):
     """
     Alter the spanwise chord linearly to produce a tapered wing. Note that
     we apply taper around the quarter-chord line.
@@ -317,27 +349,28 @@ def taper(mesh, taper_ratio, symmetry):
     # Get mesh parameters and the quarter-chord
     le = mesh[0]
     te = mesh[-1]
-    num_x, num_y, _ = mesh.shape
-    quarter_chord = 0.25 * te + 0.75 * le
-    x = quarter_chord[:, 1]
-    span = x[-1] - x[0]
+    ref_axis = ref_axis_pos * te + (1 - ref_axis_pos) * le
+    x = ref_axis[:, 1]
 
     # If symmetric, solve for the correct taper ratio, which is a linear
-    # interpolation problem
+    # interpolation problem (assume symmetry axis is not necessarily at y = 0)
     if symmetry:
-        xp = np.array([-span, 0.0])
+        xp = np.array([x[0], x[-1]])
         fp = np.array([taper_ratio, 1.0])
 
     # Otherwise, we set up an interpolation problem for the entire wing, which
-    # consists of two linear segments
+    # consists of two linear segments (assume symmetry axis is not necessarily at y = 0)
     else:
-        xp = np.array([-span / 2, 0.0, span / 2])
+        xp = np.array([x[0], x[((len(x) + 1) // 2) - 1], x[-1]])
         fp = np.array([taper_ratio, 1.0, taper_ratio])
 
-    taper = np.interp(x.real, xp.real, fp.real)
+    # Interpolate over quarter chord line to compute the taper at each spanwise stations
+    taper = np.interp(x, xp, fp)
 
     # Modify the mesh based on the taper amount computed per spanwise section
-    mesh[:] = np.einsum("ijk, j->ijk", mesh - quarter_chord, taper) + quarter_chord
+    # j - spanwise station index (ny)
+    # Broadcast taper array over the mesh along spanwise(j) index multiply it by the x and z coordinates
+    mesh[:] = np.einsum("ijk, j->ijk", mesh - ref_axis, taper) + ref_axis
 
 
 def gen_rect_mesh(num_x, num_y, span, chord, span_cos_spacing=0.0, chord_cos_spacing=0.0):
