@@ -405,19 +405,21 @@ def gen_rect_mesh(num_x, num_y, span, chord, span_cos_spacing=0.0, chord_cos_spa
         specified parameters.
     """
 
+    # Preallocate the mesh array
     mesh = np.zeros((num_x, num_y, 3))
+    # Compute the symmetry index of the mesh
     ny2 = (num_y + 1) // 2
 
     # --- spanwise discretization ---
-    # Hotfix a special case for spacing bunched at the root and tips
-    if span_cos_spacing == 2.0:
+    # Spacings >= 2.0 bunch panels at both the root and tips
+    if span_cos_spacing >= 2.0:
         beta = np.linspace(0, np.pi, ny2)
 
         # mixed spacing with span_cos_spacing as a weighting factor
         # this is for the spanwise spacing
-        cosine = 0.25 * (1 - np.cos(beta))  # cosine spacing
+        cosine = 0.5 * (1 - np.cos(beta))  # cosine spacing
         uniform = np.linspace(0, 0.5, ny2)[::-1]  # uniform spacing
-        half_wing = cosine[::-1] * span_cos_spacing + (1 - span_cos_spacing) * uniform
+        half_wing = cosine[::-1] * (span_cos_spacing - 2.0) + (1 - (span_cos_spacing - 2.0)) * uniform
         full_wing = np.hstack((-half_wing[:-1], half_wing[::-1])) * span
 
     else:
