@@ -4,7 +4,7 @@ import unittest
 class Test(unittest.TestCase):
     def test(self):
         # docs checkpoint 0
-        from openaerostruct.geometry.utils import generate_mesh
+        from openaerostruct.meshing.mesh_generator import generate_mesh
 
         from openmdao.utils.assert_utils import assert_near_equal
         from openaerostruct.utils.testing import assert_check_totals

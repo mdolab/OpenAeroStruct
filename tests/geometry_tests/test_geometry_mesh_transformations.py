@@ -1,4 +1,4 @@
-""" Unit tests for each geometry mesh transformation component."""
+"""Unit tests for each geometry mesh transformation component."""
 
 import numpy as np
 
@@ -18,7 +18,7 @@ from openaerostruct.geometry.geometry_mesh_transformations import (
     ShearZ,
     Rotate,
 )
-from openaerostruct.geometry.utils import generate_mesh
+from openaerostruct.meshing.mesh_generator import generate_mesh
 
 # These have been chosen so that each dimension of the intermediate ndarrays is unique.
 NY = 7

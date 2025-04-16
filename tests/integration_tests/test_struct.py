@@ -7,7 +7,7 @@ class Test(unittest.TestCase):
         # docs checkpoint 0
         import numpy as np
 
-        from openaerostruct.geometry.utils import generate_mesh
+        from openaerostruct.meshing.mesh_generator import generate_mesh
         from openaerostruct.structures.struct_groups import SpatialBeamAlone
 
         import openmdao.api as om
