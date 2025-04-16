@@ -1,5 +1,4 @@
-""" Utility for quickly generating a multi-section user specificed OAS mesh
-"""
+"""Utility for quickly generating a multi-section user specificed OAS mesh"""
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,7 +6,7 @@ import matplotlib.pyplot as plt
 
 def generate_mesh(surface):
     """
-    Automatically generates meshes for single and multi-section wings using the OpenAeroStruct surface dictionary.
+    Generate a single or multi-section OAS mesh using an input surface dictionary.
 
     Parameters
     ----------

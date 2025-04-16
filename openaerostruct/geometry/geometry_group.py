@@ -2,7 +2,7 @@ import numpy as np
 
 import openmdao.api as om
 from openaerostruct.utils.check_surface_dict import check_surface_dict_keys
-import openaerostruct.geometry.geometry_mesh_gen as meshGen
+from openaerostruct.meshing.section_mesh_generator import generate_mesh
 from openaerostruct.geometry.geometry_unification import GeomMultiUnification
 from openaerostruct.geometry.geometry_multi_join import GeomMultiJoin
 from openaerostruct.utils.interpolation import get_normalized_span_coords
@@ -233,7 +233,7 @@ def build_sections(surface):
             raise ValueError("Sweep needs to be provided for each section")
 
         # Generate unified and individual section meshes
-        mesh, sec_meshes = meshGen.generate_mesh(surface)
+        mesh, sec_meshes = generate_mesh(surface)
     else:
         # Allow user to provide mesh for each section
         if len(surface["meshes"]) != num_sections:
