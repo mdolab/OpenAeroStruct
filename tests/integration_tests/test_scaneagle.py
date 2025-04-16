@@ -218,7 +218,7 @@ class Test(unittest.TestCase):
         totals = self.prob.check_totals(
             method="fd",
             form="central",
-            step=5e-4,
+            step=1e-3,
             step_calc="rel",
             compact_print=True,
             abs_err_tol=1e-4,

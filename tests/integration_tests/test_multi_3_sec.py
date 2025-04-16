@@ -19,7 +19,7 @@ class Test(unittest.TestCase):
         surface, sec_chord_cp = get_three_section_surface(sym=True, visc=False)
 
         # Create the OpenMDAO problem
-        prob = om.Problem()
+        prob = om.Problem(reports=False)
 
         # Create an independent variable component that will supply the flow
         # conditions to the problem.
@@ -81,7 +81,6 @@ class Test(unittest.TestCase):
 
         # Add joined mesh constraint
         prob.model.add_constraint("surface.surface_joining.section_separation", upper=0, lower=0)
-        # prob.model.add_constraint('surface.surface_joining.section_separation',equals=0.0)
 
         # Add CL constraint
         prob.model.add_constraint(point_name + ".CL", equals=0.3)
@@ -121,7 +120,7 @@ class Test(unittest.TestCase):
         surface, sec_chord_cp = get_three_section_surface(sym=False, visc=False)
 
         # Create the OpenMDAO problem
-        prob = om.Problem()
+        prob = om.Problem(reports=False)
 
         # Create an independent variable component that will supply the flow
         # conditions to the problem.
@@ -182,7 +181,6 @@ class Test(unittest.TestCase):
 
         # Add joined mesh constraint
         prob.model.add_constraint("surface.surface_joining.section_separation", upper=0, lower=0)
-        # prob.model.add_constraint('surface.surface_joining.section_separation',equals=0.0,scaler=1e-4)
 
         # Add CL constraint
         prob.model.add_constraint(point_name + ".CL", equals=0.3)

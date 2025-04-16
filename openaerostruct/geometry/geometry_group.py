@@ -203,8 +203,9 @@ class Geometry(om.Group):
 
 # Function that constructs the individual section surface data dictionaries
 def build_sections(surface):
-    """This function returns an OpenMDAO Independent Variable Component with an output vector appropriately
-    named and sized to function as an unified B-spline that joins multiple sections by construction.
+    """This utility function takes a multi-section surface dictionary and outputs a list
+    of individual section surface dictionaries so the geometry group for each individual
+    section can be initialized.
 
     Parameters
     ----------
@@ -290,7 +291,7 @@ def build_sections(surface):
 
 class MultiSecGeometry(om.Group):
     """
-    Group that contains the section geometery groups for the multi-section surface
+    Group that contains the section geometery groups for a multi-section surface.
 
 
     This group handles the creation of each section geometry group based on parameters
@@ -310,11 +311,16 @@ class MultiSecGeometry(om.Group):
         self.options.declare(
             "dim_constr", types=list, default=[]
         )  # List of arrays corresponding to each shared edge between section along the surface. Each array inidicates along which axes the distance constarint is applied([x y z])
+        self.options.declare(
+            "shift_uni_mesh", types=bool, default=True
+        )  # Flag that shifts sections so that their leading edges are coincident. Intended to keep sections from seperating
+        # or intersecting during scalar span or sweep operations without the use of the constraint component.
 
     def setup(self):
         surface = self.options["surface"]
         joining_comp = self.options["joining_comp"]
         dc = self.options["dim_constr"]
+        shift_uni_mesh = self.options["shift_uni_mesh"]
 
         # key validation of the surface dict
         check_surface_dict_keys(surface)
@@ -330,7 +336,7 @@ class MultiSecGeometry(om.Group):
         # Add the mesh unification component
         unification_name = "{}_unification".format(surface["name"])
 
-        uni_mesh = GeomMultiUnification(sections=sec_dicts, surface_name=surface["name"])
+        uni_mesh = GeomMultiUnification(sections=sec_dicts, surface_name=surface["name"], shift_uni_mesh=shift_uni_mesh)
         self.add_subsystem(unification_name, uni_mesh)
 
         # Connect each section mesh to mesh unification component inputs
