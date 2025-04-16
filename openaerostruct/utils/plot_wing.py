@@ -257,9 +257,6 @@ class Display(object):
         else:
             self.symmetry = False
 
-        # Temp Fix for FFD meshes
-        self.symmetry = True
-
         if self.symmetry:
             new_mesh = []
             if self.show_tube:
