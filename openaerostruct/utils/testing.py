@@ -2,7 +2,7 @@ import openmdao.api as om
 
 from openmdao.utils.assert_utils import assert_check_partials
 import numpy as np
-from openaerostruct.geometry.utils import generate_mesh
+from openaerostruct.meshing.mesh_generator import generate_mesh
 
 
 def assert_opt_successful(test, optResult):
