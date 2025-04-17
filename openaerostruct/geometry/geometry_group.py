@@ -31,6 +31,11 @@ class Geometry(om.Group):
         # key validation of the surface dict
         check_surface_dict_keys(surface)
 
+        # use the section mesh generator to generate a mesh from surface dict if user specifies
+        if surface["mesh"] == "gen-mesh":
+            # Generate unified and individual section meshes
+            surface["mesh"], _ = generate_mesh(surface)
+
         # Get the surface name and create a group to contain components
         # only for this surface
 
