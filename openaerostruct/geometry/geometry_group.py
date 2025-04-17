@@ -33,7 +33,7 @@ class Geometry(om.Group):
 
         # use the section mesh generator to generate a mesh from surface dict if user specifies
         if surface["mesh"] == "gen-mesh":
-            # Generate unified and individual section meshes
+            surface["num_sections"] = 1
             surface["mesh"], _ = generate_mesh(surface)
 
         # Get the surface name and create a group to contain components

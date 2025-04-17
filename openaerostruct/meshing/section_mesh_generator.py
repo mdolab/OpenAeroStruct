@@ -28,6 +28,16 @@ def generate_mesh(surface):
 
     if symmetry or num_sections == 1:
         root_section = num_sections - 1
+
+        if type(surface["taper"]) != "list":
+            surface["taper"] = [surface["taper"]]
+        if type(surface["span"]) != "list":
+            surface["span"] = [surface["span"]]
+        if type(surface["sweep"]) != "list":
+            surface["sweep"] = [surface["sweep"]]
+        if type(surface["ny"]) != "list":
+            surface["ny"] = [surface["ny"]]
+
     else:
         if "root_section" not in surface.keys():
             raise Exception("The root section of an asymmetrical mesh needs to be identified")
