@@ -157,7 +157,7 @@ def generate_section_geometry(sections, symmetry, section_data, ny, nx, root_sec
             taper = section_data["taper"][sec]
             b = section_data["span"][sec]
             # Invert the sweep to match OAS convention (+ is backward, - is forward) and convert to rad
-            le_lambda = 1 * np.deg2rad(section_data["sweep"][sec])
+            le_lambda = -1 * np.deg2rad(section_data["sweep"][sec])
 
             root_c = np.abs(panel_gx[sec - 1][0, -1] - panel_gx[sec - 1][nx - 1, -1])
             tip_c = root_c * taper
@@ -288,8 +288,8 @@ if __name__ == "__main__":
     #     # Geometry Parameters
     #     "taper": np.array([1.0, 1.0]),  # Wing taper for each section
     #     "span": np.array([1.0, 1.0]),  # Wing span for each section
-    #     "sweep": np.array([40.0, 0.0]),  # Wing sweep for each section
-    #     "chord_cp": [np.array([1, 1]), np.array([1.0, 0.2])],
+    #     "sweep": np.array([0.0, 0.0]),  # Wing sweep for each section
+    #     "chord_cp": [np.array([1, 1]), np.array([1.0, 1.0])],
     #     # "sec_chord_cp": [np.ones(1),2*np.ones(1),3*np.ones(1)], #Chord B-spline control points for each section
     #     "root_chord": 1.0,  # Wing root chord for each section
     #     # Mesh Parameters
@@ -317,14 +317,14 @@ if __name__ == "__main__":
         "name": "surface",
         "num_sections": 1,  # The number of sections in the multi-section surface
         # "sec_name": ["sec0", "sec1"],  # names of the individual sections
-        "symmetry": False,  # if true, model one half of wing. reflected across the midspan of the root section
+        "symmetry": True,  # if true, model one half of wing. reflected across the midspan of the root section
         "S_ref_type": "wetted",  # how we compute the wing area,
         # can be 'wetted' or 'projected'
         "root_section": 0,
         # Geometry Parameters
         "taper": 0.5,  # Wing taper for each section
-        "span": 4.0,  # Wing span for each section
-        "sweep": 45.0,  # Wing sweep for each section
+        "span": 1.0,  # Wing span for each section
+        "sweep": 0.0,  # Wing sweep for each section
         # "chord_cp": [np.array([1, 1]), np.array([1.0, 0.2])],
         # "sec_chord_cp": [np.ones(1),2*np.ones(1),3*np.ones(1)], #Chord B-spline control points for each section
         "root_chord": 1.0,  # Wing root chord for each section
@@ -365,5 +365,6 @@ if __name__ == "__main__":
         plt.xlabel("y (m)")
         plt.ylabel("x (m)")
 
-    plot_meshes([meshT])
+    # plot_meshes([meshT])
+    plot_meshes(sec_meshes)
     plt.show()

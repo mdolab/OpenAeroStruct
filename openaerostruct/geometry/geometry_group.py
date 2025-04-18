@@ -32,9 +32,14 @@ class Geometry(om.Group):
         check_surface_dict_keys(surface)
 
         # use the section mesh generator to generate a mesh from surface dict if user specifies
-        if surface["mesh"] == "gen-mesh":
+        if isinstance(surface["mesh"], str) and surface["mesh"] == "gen-mesh":
             surface["num_sections"] = 1
             surface["mesh"], _ = generate_mesh(surface)
+
+            # Reset taper, sweep, and span so that OAS doesn't apply the the transformations again
+            surface["taper"] = 1.0
+            surface["span"] = 1.0
+            surface["sweep"] = 0.0
 
         # Get the surface name and create a group to contain components
         # only for this surface
@@ -285,7 +290,18 @@ def build_sections(surface):
         section = {}
         for k in set(surface).intersection(target_keys):
             if type(surface[k]) is list:
-                section[k] = surface[k][i]
+                # Reset taper, sweep, and span so that OAS doesn't apply the the transformations again
+                if k == "taper":
+                    section[k] = 1.0
+                elif k == "sweep":
+                    section[k] = 0.0
+                elif k == "span":
+                    if surface["symmetry"]:
+                        section[k] = 2.0
+                    else:
+                        section[k] = 1.0
+                else:
+                    section[k] = surface[k][i]
             else:
                 section[k] = surface[k]
         section["mesh"] = sec_meshes[i]
