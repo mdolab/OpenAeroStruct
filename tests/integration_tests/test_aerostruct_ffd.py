@@ -17,7 +17,8 @@ except ImportError:
 class Test(unittest.TestCase):
     def test(self):
         # docs checkpoint 0
-        from openaerostruct.meshing.mesh_generator import generate_mesh, write_FFD_file
+        from openaerostruct.meshing.mesh_generator import generate_mesh
+        from openaerostruct.geometry.utils import write_FFD_file
 
         from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
 

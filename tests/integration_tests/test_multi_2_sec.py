@@ -16,8 +16,7 @@ class Test(unittest.TestCase):
 
         from openaerostruct.geometry.geometry_group import MultiSecGeometry
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
-        from openaerostruct.geometry.utils import build_section_dicts
-        from openaerostruct.geometry.utils import unify_mesh
+        from openaerostruct.geometry.utils import build_section_dicts, unify_mesh
         from openaerostruct.utils.testing import get_two_section_surface
 
         surface, sec_chord_cp = get_two_section_surface()
@@ -114,9 +113,12 @@ class Test(unittest.TestCase):
 
         from openaerostruct.geometry.geometry_group import MultiSecGeometry
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
-        from openaerostruct.geometry.utils import build_section_dicts
-        from openaerostruct.geometry.utils import unify_mesh
-        from openaerostruct.geometry.utils import build_multi_spline, connect_multi_spline
+        from openaerostruct.geometry.utils import (
+            build_section_dicts,
+            unify_mesh,
+            build_multi_spline,
+            connect_multi_spline,
+        )
         from openaerostruct.utils.testing import get_two_section_surface
 
         surface, sec_chord_cp = get_two_section_surface()
@@ -211,8 +213,7 @@ class Test(unittest.TestCase):
 
         from openaerostruct.geometry.geometry_group import MultiSecGeometry
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
-        from openaerostruct.geometry.utils import build_section_dicts
-        from openaerostruct.geometry.utils import unify_mesh
+        from openaerostruct.geometry.utils import build_section_dicts, unify_mesh
         from openaerostruct.utils.testing import get_two_section_surface
 
         surface, sec_chord_cp = get_two_section_surface(sym=False, visc=False)
@@ -308,9 +309,12 @@ class Test(unittest.TestCase):
 
         from openaerostruct.geometry.geometry_group import MultiSecGeometry
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
-        from openaerostruct.geometry.utils import build_section_dicts
-        from openaerostruct.geometry.utils import unify_mesh
-        from openaerostruct.geometry.utils import build_multi_spline, connect_multi_spline
+        from openaerostruct.geometry.utils import (
+            build_section_dicts,
+            unify_mesh,
+            build_multi_spline,
+            connect_multi_spline,
+        )
         from openaerostruct.utils.testing import get_two_section_surface
 
         surface, sec_chord_cp = get_two_section_surface(sym=True, visc=True)

@@ -810,9 +810,9 @@ def build_section_dicts(surface):
                     section[k] = 0.0
                 elif k == "span":
                     if surface["symmetry"]:
-                        section[k] = 2.0
+                        section[k] = 2.0 * surface[k][i]
                     else:
-                        section[k] = 1.0
+                        section[k] = surface[k][i]
                 else:
                     section[k] = surface[k][i]
             else:

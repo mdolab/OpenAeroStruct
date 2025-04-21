@@ -10,8 +10,7 @@ class Test(unittest.TestCase):
 
         from openaerostruct.geometry.geometry_group import MultiSecGeometry
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
-        from openaerostruct.geometry.utils import build_section_dicts
-        from openaerostruct.geometry.utils import unify_mesh
+        from openaerostruct.geometry.utils import build_section_dicts, unify_mesh
         from openaerostruct.utils.testing import get_three_section_surface
 
         # Create a dictionary with info and options about the multi-section aerodynamic
@@ -113,8 +112,7 @@ class Test(unittest.TestCase):
 
         from openaerostruct.geometry.geometry_group import MultiSecGeometry
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
-        from openaerostruct.geometry.utils import build_section_dicts
-        from openaerostruct.geometry.utils import unify_mesh
+        from openaerostruct.geometry.utils import build_section_dicts, unify_mesh
         from openaerostruct.utils.testing import get_three_section_surface
 
         surface, sec_chord_cp = get_three_section_surface(sym=False, visc=False)
