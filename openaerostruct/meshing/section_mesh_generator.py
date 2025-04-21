@@ -44,6 +44,10 @@ def generate_mesh(surface):
         if not (isinstance(surface["ny"], np.ndarray) or isinstance(surface["ny"], list)):
             surface["ny"] = [surface["ny"]]
 
+        # When using single section the user should deal with the full span
+        if num_sections == 1:
+            surface["span"][0] = surface["span"][0] / 2
+
     else:
         if "root_section" not in surface.keys():
             raise Exception("The root section of an asymmetrical mesh needs to be identified")
@@ -365,9 +369,9 @@ if __name__ == "__main__":
         # can be 'wetted' or 'projected'
         "root_section": 0,
         # Geometry Parameters
-        "taper": 0.5,  # Wing taper for each section
+        "taper": 0.2,  # Wing taper for each section
         "span": 1.0,  # Wing span for each section
-        "sweep": 10.0,  # Wing sweep for each section
+        "sweep": 0.0,  # Wing sweep for each section
         # "chord_cp": [np.array([1, 1]), np.array([1.0, 0.2])],
         # "sec_chord_cp": [np.ones(1),2*np.ones(1),3*np.ones(1)], #Chord B-spline control points for each section
         "root_chord": 1.0,  # Wing root chord for each section
