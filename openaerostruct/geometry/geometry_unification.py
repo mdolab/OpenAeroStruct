@@ -3,115 +3,6 @@ import openmdao.api as om
 import copy
 
 
-def compute_uni_mesh_dims(sections):
-    """
-    Function computes the dimensions of the unified mesh as well as an index array
-
-    Parameters
-    ----------
-    sections : list
-        List of section OpenAeroStruct surface dictionaries
-
-    Returns
-    -------
-    uni_mesh_indices : numpy array
-        Array of indicies matching the size of the mesh array
-    uni_nx : int
-        Number of chordwise points in the unified mesh
-    uni_ny : int
-        Number of spanwise points in the unified mesh
-    """
-    uni_nx = sections[0]["mesh"].shape[0]
-    uni_ny = 0
-    for i_sec in range(len(sections)):
-        if i_sec == len(sections) - 1:
-            uni_ny += sections[i_sec]["mesh"].shape[1]
-        else:
-            uni_ny += sections[i_sec]["mesh"].shape[1] - 1
-    uni_mesh_indices = np.arange(uni_nx * uni_ny * 3).reshape((uni_nx, uni_ny, 3))
-
-    return uni_mesh_indices, uni_nx, uni_ny
-
-
-def compute_uni_mesh_index_blocks(sections, uni_mesh_indices):
-    """
-    Function that computes the index block that corresponds to each individual wing section
-
-    Parameters
-    ----------
-    sections : list
-        List of section OpenAeroStruct surface dictionaries
-    uni_mesh_indices : numpy array
-        Array of indicies matching the size of the mesh array
-
-    Returns
-    -------
-    blocks : list
-        List of numpy arrays containing the incidies corresponding to each section. Basically breaks the uni_mesh_indices
-        array up into pieces that correspond to each section.
-    """
-    blocks = []
-
-    # cursor to track the y position of each section along the unified mesh
-    y_curr = 0
-
-    for i_sec in range(len(sections)):
-        mesh = sections[i_sec]["mesh"]
-        ny = mesh.shape[1]
-
-        if i_sec == len(sections) - 1:
-            block = uni_mesh_indices[:, y_curr:, :]
-            y_curr += ny
-        else:
-            block = uni_mesh_indices[:, y_curr : y_curr + (ny - 1), :]
-            y_curr += ny - 1
-
-        blocks.append(block.flatten())
-
-    return blocks
-
-
-def unify_mesh(sections, shift_uni_mesh=True):
-    """
-    Function that produces a unified mesh from all the individual wing section meshes.
-
-    Parameters
-    ----------
-    sections : list
-        List of section OpenAeroStruct surface dictionaries
-
-    shift_uni_mesh : bool
-        Flag that shifts sections so that their leading edges are coincident. Intended to keep sections from seperating
-        or intersecting during scalar span or sweep operations without the use of the constraint component.
-
-    Returns
-    -------
-    uni_mesh : numpy array
-        Unfied surface mesh in OAS format
-    """
-    for i_sec in np.arange(0, len(sections) - 1):
-        mesh = sections[i_sec]["mesh"]
-
-        if i_sec == 0:
-            uni_mesh = copy.deepcopy(mesh[:, :-1, :])
-        else:
-            if shift_uni_mesh:
-                # translate or shift uni_mesh (outer sections) to align leading edge at unification boundary
-                last_mesh = sections[i_sec - 1]["mesh"]
-                uni_mesh = uni_mesh - last_mesh[0, -1, :] + mesh[0, 0, :]
-
-            uni_mesh = np.concatenate([uni_mesh, mesh[:, :-1, :]], axis=1)
-
-    # Stitch the results into a singular mesh
-    mesh = sections[len(sections) - 1]["mesh"]
-    if len(sections) == 1:
-        uni_mesh = copy.deepcopy(mesh)
-    else:
-        uni_mesh = np.concatenate([uni_mesh, mesh], axis=1)
-
-    return uni_mesh
-
-
 class GeomMultiUnification(om.ExplicitComponent):
     """
     OpenMDAO component that combines the meshes associated with each individual section
@@ -156,14 +47,80 @@ class GeomMultiUnification(om.ExplicitComponent):
             desc="Flag that shifts sections so that their leading edges are coincident.",
         )
 
+    def compute_uni_mesh_dims(self, sections):
+        """
+        Function computes the dimensions of the unified mesh as well as an index array
+
+        Parameters
+        ----------
+        sections : list
+            List of section OpenAeroStruct surface dictionaries
+
+        Returns
+        -------
+        uni_mesh_indices : numpy array
+            Array of indicies matching the size of the mesh array
+        uni_nx : int
+            Number of chordwise points in the unified mesh
+        uni_ny : int
+            Number of spanwise points in the unified mesh
+        """
+        uni_nx = sections[0]["mesh"].shape[0]
+        uni_ny = 0
+        for i_sec in range(len(sections)):
+            if i_sec == len(sections) - 1:
+                uni_ny += sections[i_sec]["mesh"].shape[1]
+            else:
+                uni_ny += sections[i_sec]["mesh"].shape[1] - 1
+        uni_mesh_indices = np.arange(uni_nx * uni_ny * 3).reshape((uni_nx, uni_ny, 3))
+
+        return uni_mesh_indices, uni_nx, uni_ny
+
+    def compute_uni_mesh_index_blocks(self, sections, uni_mesh_indices):
+        """
+        Function that computes the index block that corresponds to each individual wing section
+
+        Parameters
+        ----------
+        sections : list
+            List of section OpenAeroStruct surface dictionaries
+        uni_mesh_indices : numpy array
+            Array of indicies matching the size of the mesh array
+
+        Returns
+        -------
+        blocks : list
+            List of numpy arrays containing the incidies corresponding to each section. Basically breaks the uni_mesh_indices
+            array up into pieces that correspond to each section.
+        """
+        blocks = []
+
+        # cursor to track the y position of each section along the unified mesh
+        y_curr = 0
+
+        for i_sec in range(len(sections)):
+            mesh = sections[i_sec]["mesh"]
+            ny = mesh.shape[1]
+
+            if i_sec == len(sections) - 1:
+                block = uni_mesh_indices[:, y_curr:, :]
+                y_curr += ny
+            else:
+                block = uni_mesh_indices[:, y_curr : y_curr + (ny - 1), :]
+                y_curr += ny - 1
+
+            blocks.append(block.flatten())
+
+        return blocks
+
     def setup(self):
         sections = self.options["sections"]
         name = self.options["surface_name"]
         shift_uni_mesh = self.options["shift_uni_mesh"]
 
         # Get the unified mesh size, index array, and block of indicies for each section
-        [uni_mesh_indices, uni_nx, uni_ny] = compute_uni_mesh_dims(sections)
-        uni_mesh_blocks = compute_uni_mesh_index_blocks(sections, uni_mesh_indices)
+        [uni_mesh_indices, uni_nx, uni_ny] = self.compute_uni_mesh_dims(sections)
+        uni_mesh_blocks = self.compute_uni_mesh_index_blocks(sections, uni_mesh_indices)
         uni_mesh_name = "{}_uni_mesh".format(name)
 
         # Loop through each section to build the sparsity pattern for the Jacobian. This Jacobian is fixed based on the mesh size so can be declared here

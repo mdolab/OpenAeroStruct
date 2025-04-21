@@ -8,9 +8,9 @@ import openmdao.api as om
 
 from openaerostruct.geometry.geometry_group import MultiSecGeometry
 from openaerostruct.aerodynamics.aero_groups import AeroPoint
-from openaerostruct.geometry.geometry_group import build_sections
-from openaerostruct.geometry.geometry_unification import unify_mesh
-from openaerostruct.geometry.multi_unified_bspline_utils import build_multi_spline, connect_multi_spline
+from openaerostruct.geometry.utils import build_section_dicts
+from openaerostruct.geometry.utils import unify_mesh
+from openaerostruct.geometry.utils import build_multi_spline, connect_multi_spline
 import matplotlib.pyplot as plt
 
 
@@ -86,7 +86,7 @@ indep_var_comp.add_output("cg", val=np.zeros((3)), units="m")
 prob.model.add_subsystem("prob_vars", indep_var_comp, promotes=["*"])
 
 # Generate the sections and unified mesh here. It's needed to join the sections by construction.
-section_surfaces = build_sections(surface)
+section_surfaces = build_section_dicts(surface)
 uniMesh = unify_mesh(section_surfaces)
 surface["mesh"] = uniMesh
 

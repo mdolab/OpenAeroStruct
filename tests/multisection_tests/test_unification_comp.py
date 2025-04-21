@@ -2,7 +2,7 @@ import unittest
 
 import openmdao.api as om
 from openaerostruct.geometry.geometry_unification import GeomMultiUnification
-from openaerostruct.geometry.geometry_group import build_sections
+from openaerostruct.geometry.utils import build_section_dicts
 from openaerostruct.geometry.utils import stretch, sweep, dihedral
 from openaerostruct.utils.testing import run_test, get_three_section_surface
 
@@ -10,7 +10,7 @@ from openaerostruct.utils.testing import run_test, get_three_section_surface
 class Test(unittest.TestCase):
     def test_no_shift(self):
         (surface, chord_bspline) = get_three_section_surface()
-        sec_dicts = build_sections(surface)
+        sec_dicts = build_section_dicts(surface)
 
         comp = GeomMultiUnification(sections=sec_dicts, surface_name=surface["name"], shift_uni_mesh=False)
 
@@ -32,7 +32,7 @@ class Test(unittest.TestCase):
         surface["sweep"] = [-10.0, 10.0, -20.0]
         surface["dihedral"] = [-10.0, 10.0, -20.0]
 
-        sec_dicts = build_sections(surface)
+        sec_dicts = build_section_dicts(surface)
 
         for i in range(surface["num_sections"]):
             sweep(sec_dicts[i]["mesh"], surface["sweep"][i], True)

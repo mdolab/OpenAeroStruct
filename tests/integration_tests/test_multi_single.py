@@ -10,8 +10,8 @@ class Test(unittest.TestCase):
 
         from openaerostruct.geometry.geometry_group import Geometry, MultiSecGeometry
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
-        from openaerostruct.geometry.geometry_group import build_sections
-        from openaerostruct.geometry.geometry_unification import unify_mesh
+        from openaerostruct.geometry.utils import build_section_dicts
+        from openaerostruct.geometry.utils import unify_mesh
         from openaerostruct.utils.testing import get_two_section_surface, get_single_section_surface
 
         """Create a dictionary with info and options about the aerodynamic
@@ -74,7 +74,7 @@ class Test(unittest.TestCase):
 
         # Generate the sections and unified mesh here in addition to adding the components.
         # This has to also be done here since AeroPoint has to know the unified mesh size.
-        section_surfaces = build_sections(surfaceMulti)
+        section_surfaces = build_section_dicts(surfaceMulti)
         uni_mesh = unify_mesh(section_surfaces)
         surfaceMulti["mesh"] = uni_mesh
 

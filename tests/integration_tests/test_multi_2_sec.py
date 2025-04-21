@@ -16,8 +16,8 @@ class Test(unittest.TestCase):
 
         from openaerostruct.geometry.geometry_group import MultiSecGeometry
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
-        from openaerostruct.geometry.geometry_group import build_sections
-        from openaerostruct.geometry.geometry_unification import unify_mesh
+        from openaerostruct.geometry.utils import build_section_dicts
+        from openaerostruct.geometry.utils import unify_mesh
         from openaerostruct.utils.testing import get_two_section_surface
 
         surface, sec_chord_cp = get_two_section_surface()
@@ -40,7 +40,7 @@ class Test(unittest.TestCase):
 
         # Generate the sections and unified mesh here in addition to adding the components.
         # This has to also be done here since AeroPoint has to know the unified mesh size.
-        section_surfaces = build_sections(surface)
+        section_surfaces = build_section_dicts(surface)
         uni_mesh = unify_mesh(section_surfaces)
         surface["mesh"] = uni_mesh
 
@@ -114,9 +114,9 @@ class Test(unittest.TestCase):
 
         from openaerostruct.geometry.geometry_group import MultiSecGeometry
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
-        from openaerostruct.geometry.geometry_group import build_sections
-        from openaerostruct.geometry.geometry_unification import unify_mesh
-        from openaerostruct.geometry.multi_unified_bspline_utils import build_multi_spline, connect_multi_spline
+        from openaerostruct.geometry.utils import build_section_dicts
+        from openaerostruct.geometry.utils import unify_mesh
+        from openaerostruct.geometry.utils import build_multi_spline, connect_multi_spline
         from openaerostruct.utils.testing import get_two_section_surface
 
         surface, sec_chord_cp = get_two_section_surface()
@@ -138,7 +138,7 @@ class Test(unittest.TestCase):
         prob.model.add_subsystem("prob_vars", indep_var_comp, promotes=["*"])
 
         # Generate the sections and unified mesh here. It's needed to join the sections by construction.
-        section_surfaces = build_sections(surface)
+        section_surfaces = build_section_dicts(surface)
         uni_mesh = unify_mesh(section_surfaces)
         surface["mesh"] = uni_mesh
 
@@ -211,8 +211,8 @@ class Test(unittest.TestCase):
 
         from openaerostruct.geometry.geometry_group import MultiSecGeometry
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
-        from openaerostruct.geometry.geometry_group import build_sections
-        from openaerostruct.geometry.geometry_unification import unify_mesh
+        from openaerostruct.geometry.utils import build_section_dicts
+        from openaerostruct.geometry.utils import unify_mesh
         from openaerostruct.utils.testing import get_two_section_surface
 
         surface, sec_chord_cp = get_two_section_surface(sym=False, visc=False)
@@ -242,7 +242,7 @@ class Test(unittest.TestCase):
 
         # Generate the sections and unified mesh here in addition to adding the components.
         # This has to ALSO be done here since AeroPoint has to know the unified mesh size.
-        section_surfaces = build_sections(surface)
+        section_surfaces = build_section_dicts(surface)
         uni_mesh = unify_mesh(section_surfaces)
         surface["mesh"] = uni_mesh
 
@@ -308,9 +308,9 @@ class Test(unittest.TestCase):
 
         from openaerostruct.geometry.geometry_group import MultiSecGeometry
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
-        from openaerostruct.geometry.geometry_group import build_sections
-        from openaerostruct.geometry.geometry_unification import unify_mesh
-        from openaerostruct.geometry.multi_unified_bspline_utils import build_multi_spline, connect_multi_spline
+        from openaerostruct.geometry.utils import build_section_dicts
+        from openaerostruct.geometry.utils import unify_mesh
+        from openaerostruct.geometry.utils import build_multi_spline, connect_multi_spline
         from openaerostruct.utils.testing import get_two_section_surface
 
         surface, sec_chord_cp = get_two_section_surface(sym=True, visc=True)
@@ -332,7 +332,7 @@ class Test(unittest.TestCase):
         prob.model.add_subsystem("prob_vars", indep_var_comp, promotes=["*"])
 
         # Generate the sections and unified mesh here. It's needed to join the sections by construction.
-        section_surfaces = build_sections(surface)
+        section_surfaces = build_section_dicts(surface)
         uni_mesh = unify_mesh(section_surfaces)
         surface["mesh"] = uni_mesh
 
