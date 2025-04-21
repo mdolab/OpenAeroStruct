@@ -1,6 +1,7 @@
 import numpy as np
 from numpy import cos, sin, tan
 import warnings
+import copy
 
 # openvsp python interface
 try:
@@ -9,6 +10,9 @@ try:
 except ImportError:
     vsp = None
     dg = None
+
+import openmdao.api as om
+from openaerostruct.meshing.section_mesh_generator import generate_mesh as generate_section_mesh
 
 # import functions for backward compatibility with old scripts
 from openaerostruct.meshing.mesh_generator import (
@@ -719,6 +723,230 @@ def plot3D_meshes(file_name, zero_tol=0):
         mesh_dict[name] = mesh_list[i]
 
     return mesh_dict
+
+
+def build_section_dicts(surface):
+    """This utility function takes a multi-section surface dictionary and outputs a list
+    of individual section surface dictionaries so the geometry group for each individual
+    section can be initialized.
+
+    Parameters
+    ----------
+    surface: dict
+        OpenAeroStruct multi-section surface dictionary
+
+    Returns
+    -------
+    section_surfaces : list
+        List of OpenAeroStruct surface dictionaries for each individual surface
+
+    """
+    # Get number of sections
+    num_sections = surface["num_sections"]
+
+    if surface["meshes"] == "gen-meshes":
+        # Verify that all required inputs for automatic mesh generation are provided for each section
+        if len(surface["ny"]) != num_sections:
+            raise ValueError("Number of spanwise points needs to be provided for each section")
+        if len(surface["taper"]) != num_sections:
+            raise ValueError("Taper needs to be provided for each section")
+        if len(surface["span"]) != num_sections:
+            raise ValueError("Span needs to be provided for each section")
+        if len(surface["sweep"]) != num_sections:
+            raise ValueError("Sweep needs to be provided for each section")
+
+        # Generate unified and individual section meshes
+        _, sec_meshes = generate_section_mesh(surface)
+    else:
+        # Allow user to provide mesh for each section
+        if len(surface["meshes"]) != num_sections:
+            raise ValueError("A mesh needs to be provided for each section.")
+        sec_meshes = surface["meshes"]
+
+    if len(surface["sec_name"]) != num_sections:
+        raise ValueError("A name needs to be provided for each section.")
+
+    # List of support keys for multi-section wings
+    # NOTE: make sure this is consistent to the documentation's surface dict page
+    target_keys = [
+        # Essential Info
+        "num_section",
+        "symmetry",
+        "S_ref_type",
+        "ref_axis_pos",
+        # wing definition
+        "span",
+        "taper",
+        "sweep",
+        "dihedral",
+        "twist_cp",
+        "chord_cp",
+        "xshear_cp",
+        "yshear_cp",
+        "zshear_cp",
+        # aerodynamics
+        "CL0",
+        "CD0",
+        "with_viscous",
+        "with_wave",
+        "groundplane",
+        "k_lam",
+        "t_over_c_cp",
+        "c_max_t",
+    ]
+
+    # Constructs a list of section dictionaries and adds the specified supported keys and values from the mult-section surface dictionary.
+    surface_sections = []
+    num_sections = surface["num_sections"]
+
+    for i in range(num_sections):
+        section = {}
+        for k in set(surface).intersection(target_keys):
+            if type(surface[k]) is list:
+                # Reset taper, sweep, and span so that OAS doesn't apply the the transformations again
+                if k == "taper":
+                    section[k] = 1.0
+                elif k == "sweep":
+                    section[k] = 0.0
+                elif k == "span":
+                    if surface["symmetry"]:
+                        section[k] = 2.0
+                    else:
+                        section[k] = 1.0
+                else:
+                    section[k] = surface[k][i]
+            else:
+                section[k] = surface[k]
+        section["mesh"] = sec_meshes[i]
+        section["name"] = surface["sec_name"][i]
+        surface_sections.append(section)
+    return surface_sections
+
+
+def unify_mesh(sections, shift_uni_mesh=True):
+    """
+    Function that produces a unified mesh from all the individual wing section meshes.
+
+    Parameters
+    ----------
+    sections : list
+        List of section OpenAeroStruct surface dictionaries
+
+    shift_uni_mesh : bool
+        Flag that shifts sections so that their leading edges are coincident. Intended to keep sections from seperating
+        or intersecting during scalar span or sweep operations without the use of the constraint component.
+
+    Returns
+    -------
+    uni_mesh : numpy array
+        Unfied surface mesh in OAS format
+    """
+    for i_sec in np.arange(0, len(sections) - 1):
+        mesh = sections[i_sec]["mesh"]
+
+        if i_sec == 0:
+            uni_mesh = copy.deepcopy(mesh[:, :-1, :])
+        else:
+            if shift_uni_mesh:
+                # translate or shift uni_mesh (outer sections) to align leading edge at unification boundary
+                last_mesh = sections[i_sec - 1]["mesh"]
+                uni_mesh = uni_mesh - last_mesh[0, -1, :] + mesh[0, 0, :]
+
+            uni_mesh = np.concatenate([uni_mesh, mesh[:, :-1, :]], axis=1)
+
+    # Stitch the results into a singular mesh
+    mesh = sections[len(sections) - 1]["mesh"]
+    if len(sections) == 1:
+        uni_mesh = copy.deepcopy(mesh)
+    else:
+        uni_mesh = np.concatenate([uni_mesh, mesh], axis=1)
+
+    return uni_mesh
+
+
+def build_multi_spline(out_name, num_sections, control_points):
+    """This function returns an OpenMDAO Independent Variable Component with an output vector appropriately
+    named and sized to function as an unified set of B-spline control poitns that join multiple sections by construction.
+
+    Parameters
+    ----------
+    out_name: string
+        Name of the output to assign to the B-spline
+    num_sections : int
+        Number of sections
+    control_points: list
+        List of B-spline control point arrays corresponding to each section
+
+    Returns
+    -------
+    spline_control : OpenMDAO component object
+        The unified B-spline control point indpendent variable component
+
+    """
+    if len(control_points) != num_sections:
+        raise Exception("Target sections need to match with control points!")
+
+    single_sections = len([cp for cp in control_points if len(cp) == 1])
+
+    control_poin_vec = np.ones(len(np.concatenate(control_points)) - (num_sections - 1 - single_sections))
+
+    spline_control = om.IndepVarComp()
+    spline_control.add_output("{}_spline".format(out_name), val=control_poin_vec)
+
+    return spline_control
+
+
+def connect_multi_spline(prob, section_surfaces, sec_cp, out_name, comp_name, geom_name, return_bind_inds=False):
+    """This function connects the the unified B-spline component with the individual B-splines
+    of each section. There is a point of overlap at each section so that each edge control point control the edge
+    controls points of each section's B-spline. This is how section joining by consturction is acheived.
+    An issue occurs however when a B-spline in a particular section only has one control point. In this case the one
+    section control point is bound to the left edge B-spline component control point. As result, there is nothing to
+    maintain C0 continuity with the next section. As result a constraint will need to be manually set. To facilitate this,
+    the array bind_inds will contain a list of the B-spline control point indicies that will need to be manually constrained to
+    their previous sections.
+
+
+    Parameters
+    ----------
+    prob : OpenMDAO problem object
+        The OpenAeroStruct problem object with the unified B-spline component added.
+    section_surfaces : list
+        List of the surface dictionaries for each section.
+    sec_cp : list
+        List of B-spline control point arrays for each section.
+    out_name: string
+        Name of the unified B-spline component output to connect from
+    comp_name: string
+        Name of the unified B-spline component added to the problem object
+    geom_name : string
+        Name of the multi-section geometry group
+    return_bind_inds: bool
+        Return list of unjoined unified B-spline inidices. Default is False.
+
+    Returns
+    -------
+    bind_inds : list
+        List of unified B-spline control point indicies not connected due to the presence of a single control point section.(Only if return bind_inds specified)
+
+    """
+    acc = 0
+    bind_inds = []
+    for i, section in enumerate(section_surfaces):
+        point_count = len(sec_cp[i])
+        src_inds = np.arange(acc, acc + point_count)
+        acc += point_count - 1
+        if point_count == 1:
+            acc += 1
+            bind_inds.append(acc)
+        prob.model.connect(
+            "{}.{}".format(comp_name, out_name) + "_spline",
+            geom_name + "." + section["name"] + ".{}".format(out_name),
+            src_indices=src_inds,
+        )
+
+    if return_bind_inds:
+        return bind_inds
 
 
 def generate_mesh(input_dict):
