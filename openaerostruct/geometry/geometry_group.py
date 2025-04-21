@@ -37,9 +37,9 @@ class Geometry(om.Group):
             surface["num_sections"] = 1
             surface["mesh"], _ = generate_mesh(surface)
 
-            # Reset taper, sweep, and span so that OAS doesn't apply the the transformations again
+            # Reset taper and sweep so that OAS doesn't apply the the transformations again
             surface["taper"] = 1.0
-            surface["span"] = 1.0
+            # surface["span"] = 1.0
             surface["sweep"] = 0.0
 
         # Get the surface name and create a group to contain components

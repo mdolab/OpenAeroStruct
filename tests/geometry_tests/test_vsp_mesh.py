@@ -2,7 +2,8 @@ import os
 import unittest
 from openmdao.utils.assert_utils import assert_near_equal
 
-from openaerostruct.meshing.mesh_generator import generate_mesh, generate_vsp_surfaces
+from openaerostruct.meshing.mesh_generator import generate_mesh
+from openaerostruct.geometry.utils import generate_vsp_surfaces
 
 vsp_file = os.path.join(os.path.dirname(__file__), "rect_wing.vsp3")
 
