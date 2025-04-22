@@ -156,32 +156,12 @@ class MultiSecAerostructGeometry(om.Group):
         # Add the mesh unification component
         unification_name = "{}_unification".format(surface["name"])
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 5cb02be2 (Add support for struct design variables and fixed uni_t_over_c and uni_mesh output naming)
         promotes_outputs = [("{}_uni_mesh".format(surface["name"]), "mesh")]
         if "t_over_c_cp" in surface.keys():
             promotes_outputs += [("{}_uni_t_over_c".format(surface["name"]), "t_over_c")]
 
-<<<<<<< HEAD
         uni_mesh = GeomMultiUnification(sections=sec_dicts, surface_name=surface["name"])
         self.add_subsystem(unification_name, uni_mesh, promotes_outputs=promotes_outputs)
-=======
-        uni_mesh = GeomMultiUnification(sections=sec_dicts, surface_name=surface["name"])
-        self.add_subsystem(
-            unification_name,
-            uni_mesh,
-            promotes_outputs=[
-                ("{}_uni_mesh".format(surface["name"]), "mesh"),
-                ("{}_uni_t_over_c".format(surface["name"]), "t_over_c"),
-            ],
-        )
->>>>>>> 71cb9bd9 (Add aerostructural support for multi-section)
-=======
-        uni_mesh = GeomMultiUnification(sections=sec_dicts, surface_name=surface["name"])
-        self.add_subsystem(unification_name, uni_mesh, promotes_outputs=promotes_outputs)
->>>>>>> 5cb02be2 (Add support for struct design variables and fixed uni_t_over_c and uni_mesh output naming)
 
         # Connect each section mesh to mesh unification component inputs
         for sec_name in section_names:
@@ -405,10 +385,6 @@ class AerostructPoint(om.Group):
                     "fuel_density",
                     "Wf_reserve",
                     "n_point_masses",
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 5cb02be2 (Add support for struct design variables and fixed uni_t_over_c and uni_mesh output naming)
                     # structural parameterization tube
                     "thickness_cp",
                     "radius_cp",
@@ -421,11 +397,6 @@ class AerostructPoint(om.Group):
                     "data_y_upper",
                     "data_x_lower",
                     "data_y_lower",
-<<<<<<< HEAD
-=======
->>>>>>> 71cb9bd9 (Add aerostructural support for multi-section)
-=======
->>>>>>> 5cb02be2 (Add support for struct design variables and fixed uni_t_over_c and uni_mesh output naming)
                 ]
 
                 # Constructs a surface dictionary and adds the specified supported keys and values from the mult-section surface dictionary.
