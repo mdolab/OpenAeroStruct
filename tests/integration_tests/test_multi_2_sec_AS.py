@@ -5,7 +5,7 @@ import unittest
 class Test(unittest.TestCase):
     def assert_check_results_sym(self, prob):
         """We put the assert_near_equal for the test_constraint and test construction cases here since they should both return the same results."""
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 109110.19599915, 1e-2)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 109110.19599915, 1e-3)
 
     def test_constraint(self):
         import numpy as np
@@ -113,7 +113,7 @@ class Test(unittest.TestCase):
         prob.model.add_constraint("surface.surface_joining.section_separation", upper=0, lower=0, scaler=1e5)
 
         # Add objective
-        prob.model.add_objective(point_name + ".fuelburn", scaler=1e-5)
+        prob.model.add_objective(point_name + ".fuelburn", scaler=5e-1)
 
         prob.driver = om.ScipyOptimizeDriver()
         prob.driver.options["optimizer"] = "SLSQP"
