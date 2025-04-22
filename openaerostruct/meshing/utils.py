@@ -163,9 +163,8 @@ def getFullMesh(left_mesh=None, right_mesh=None):
     return full_mesh
 
 
-def write_tecplot(mesh, filename):
-    """
-    Writes the OAS mesh in Tecplot .dat file format, for visualization and debugging purposes.
+def write_tecplot(mesh, filename, solutionTime=None):
+    """A Generic function to write a 2D data zone to a tecplot file.
 
     Parameters
     ----------
@@ -173,21 +172,22 @@ def write_tecplot(mesh, filename):
         The OAS mesh to be written.
     filename : str
         The file name including the .dat extension.
+    SolutionTime : float
+        Solution time to write to the file. This could be a fictitious time to
+        make visualization easier in tecplot.
     """
-    num_y = mesh.shape[0]
-    num_x = mesh.shape[1]
-    f = open(filename, "w")
-    f.write("\t\t1\n")
-    f.write("\t\t%d\t\t%d\t\t%d\n" % (num_y, num_x, 1))
+    nx = mesh.shape[0]
+    ny = mesh.shape[1]
+    ndim = mesh.shape[2]
 
-    x = mesh[:, :, 0]
-    y = mesh[:, :, 1]
-    z = mesh[:, :, 2]
-
-    for dim in [x, y, z]:
-        for iy in range(num_x):
-            row = dim[:, iy]
-            for val in row:
-                f.write("\t{: 3.6f}".format(val))
-            f.write("\n")
+    with open(filename, "w") as f:
+        f.write('Zone T="%s" I=%d J=%d\n' % (filename, nx, ny))
+        if solutionTime is not None:
+            f.write("SOLUTIONTIME=%f\n" % (solutionTime))
+        f.write("DATAPACKING=POINT\n")
+        for j in range(ny):
+            for i in range(nx):
+                for idim in range(ndim):
+                    f.write("%20.16g " % (mesh[i, j, idim]))
+                f.write("\n")
     f.close()
