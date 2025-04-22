@@ -131,12 +131,14 @@ class MultiSecAerostructGeometry(om.Group):
         self.options.declare(
             "dim_constr", types=list, default=[]
         )  # List of arrays corresponding to each shared edge between section along the surface. Each array inidicates along which axes the distance constarint is applied([x y z])
+        self.options.declare("shift_uni_mesh", types=bool, default=True)  # Flag to apply mesh shifting or not
 
     def setup(self):
         surface = self.options["surface"]
         connect_geom_DVs = self.options["connect_geom_DVs"]
         joining_comp = self.options["joining_comp"]
         dc = self.options["dim_constr"]
+        shift_uni_mesh = self.options["shift_uni_mesh"]
 
         # key validation of the surface dict
         check_surface_dict_keys(surface)
@@ -160,7 +162,7 @@ class MultiSecAerostructGeometry(om.Group):
         if "t_over_c_cp" in surface.keys():
             promotes_outputs += [("{}_uni_t_over_c".format(surface["name"]), "t_over_c")]
 
-        uni_mesh = GeomMultiUnification(sections=sec_dicts, surface_name=surface["name"])
+        uni_mesh = GeomMultiUnification(sections=sec_dicts, surface_name=surface["name"], shift_uni_mesh=shift_uni_mesh)
         self.add_subsystem(unification_name, uni_mesh, promotes_outputs=promotes_outputs)
 
         # Connect each section mesh to mesh unification component inputs
@@ -403,7 +405,6 @@ class AerostructPoint(om.Group):
                 aeroStructSurface = {}
                 for k in set(surface).intersection(target_keys):
                     aeroStructSurface[k] = surface[k]
-                # print(aeroSurface["name"])
                 surfaces[i] = copy.deepcopy(aeroStructSurface)
 
         coupled = om.Group()
