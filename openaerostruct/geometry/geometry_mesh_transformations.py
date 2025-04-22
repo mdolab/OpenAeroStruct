@@ -893,13 +893,11 @@ class Dihedral(om.ExplicitComponent):
             sym_rows = np.tile(3 * np.arange(ny - 1) + 2, nx) + np.repeat(3 * ny * np.arange(nx), ny - 1)
 
             # Sensitivity to spanwise station position
-
             # y-coordinates indices of leading edge except right tip repeated for entire mesh
             span_cols = np.tile(3 * np.arange(ny - 1) + 1, nx)
         else:
 
             # Sensitivity to symmetry plane position
-
             # y-coodinate of the center line leading edge
             y_cp = 3 * (ny + 1) // 2 - 2
 
@@ -918,7 +916,6 @@ class Dihedral(om.ExplicitComponent):
             sym_col = np.tile(y_cp, n_sym)
 
             # Sensitivity to spanwise station position
-
             # y-coordinate indicies of left span of mesh
             span_col1 = 3 * np.arange(n_sym) + 1
 
@@ -1182,7 +1179,6 @@ class Rotate(om.ExplicitComponent):
 
         # Leading and Trailing edge off diagonal terms.
         if self.options["symmetry"]:
-
             # Since these are off diagonal terms we will tile ny-1 times and then offset to cover that portion of the spanwise stations
             row_base_y = np.tile(row_base, ny - 1) + np.repeat(3 * np.arange(ny - 1), 9)
 
