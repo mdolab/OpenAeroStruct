@@ -1,6 +1,5 @@
 import numpy as np
 import openmdao.api as om
-import copy
 
 
 class GeomMultiUnification(om.ExplicitComponent):

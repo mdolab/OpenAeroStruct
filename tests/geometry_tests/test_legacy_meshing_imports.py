@@ -1,6 +1,4 @@
-import numpy as np
 import unittest
-import warnings
 
 
 class Test(unittest.TestCase):

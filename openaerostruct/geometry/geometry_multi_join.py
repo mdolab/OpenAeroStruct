@@ -1,6 +1,8 @@
 import numpy as np
 import openmdao.api as om
 
+default_vec = np.ones(3)
+
 
 class GeomMultiJoin(om.ExplicitComponent):
     """
@@ -32,7 +34,7 @@ class GeomMultiJoin(om.ExplicitComponent):
             desc="A list of vectors of length three corresponding to each edge. Entries corresponding the dimension([x,y,z]) the user wishes to constraint should be set to 1. Remaining entries should be zero.",
         )
 
-    def get_section_edge_left(self, mesh, v=np.ones(3), edge_cur=0, edges_all_constraints=np.ones(3)):
+    def get_section_edge_left(self, mesh, v=default_vec, edge_cur=0, edges_all_constraints=default_vec):
         """
         Function that gets the coordinates of the leading and trailing edge points of the left edge of a section. The output can be masked to only retreive the x,y, or z coordinate.
         The function also returns the row and column vectors of non zero entries in the edge coordinate jacobian.
@@ -68,7 +70,7 @@ class GeomMultiJoin(om.ExplicitComponent):
 
         return mesh[[0, -1], 0][:, np.arange(0, 3)[mask]], rows, cols
 
-    def get_section_edge_right(self, mesh, v=np.ones(3), edge_cur=0, edges_all_constraints=np.ones(3)):
+    def get_section_edge_right(self, mesh, v=default_vec, edge_cur=0, edges_all_constraints=default_vec):
         """
         Function that gets the coordinates of the leading and trailing edge points of the right edge of a section. The output can be masked to only retreive the x,y, or z coordinate.
         The function also returns the row and column vectors of non zero entries in the edge coordinate jacobian.
