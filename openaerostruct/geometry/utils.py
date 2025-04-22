@@ -976,22 +976,13 @@ def gen_crm_mesh(num_x, num_y, span_cos_spacing=0.0, chord_cos_spacing=0.0, wing
     return _gen_crm_mesh(num_x, num_y, span_cos_spacing=0.0, chord_cos_spacing=0.0, wing_type="CRM:jig")
 
 
-def add_chordwise_panels(num_x, num_y, span_cos_spacing=0.0, chord_cos_spacing=0.0, wing_type="CRM:jig"):
+def add_chordwise_panels(mesh, num_x, chord_cos_spacing):
     warnings.warn(
         "add_chordwise_panels has been moved to mesh_generator.py and renamed to regen_chordwise_panels. Importing from utils.py is deprecated and will be removed in a future release.",
         DeprecationWarning,
         stacklevel=2,
     )
-    return _regen_chordwise_panels(num_x, num_y, span_cos_spacing=0.0, chord_cos_spacing=0.0, wing_type="CRM:jig")
-
-
-def add_chordwise_panels(num_x, num_y, span_cos_spacing=0.0, chord_cos_spacing=0.0, wing_type="CRM:jig"):
-    warnings.warn(
-        "add_chordwise_panels has been moved to mesh_generator.py and renamed to regen_chordwise_panels. Importing from utils.py is deprecated and will be removed in a future release.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    return _regen_chordwise_panels(num_x, num_y, span_cos_spacing=0.0, chord_cos_spacing=0.0, wing_type="CRM:jig")
+    return _regen_chordwise_panels(mesh, num_x, chord_cos_spacing)
 
 
 def get_default_geo_dict():
@@ -1003,19 +994,19 @@ def get_default_geo_dict():
     return _get_default_geo_dict()
 
 
-def writeMesh():
+def writeMesh(mesh, filename):
     warnings.warn(
         "writeMesh has been moved to mesh_generator.py and renamed to write_tecplot. Importing from utils.py is deprecated and will be removed in a future release.",
         DeprecationWarning,
         stacklevel=2,
     )
-    return _write_tecplot()
+    return _write_tecplot(mesh, filename)
 
 
-def getFullMesh():
+def getFullMesh(left_mesh=None, right_mesh=None):
     warnings.warn(
         "getFullMesh has been moved to mesh_generator.py. Importing from utils.py is deprecated and will be removed in a future release.",
         DeprecationWarning,
         stacklevel=2,
     )
-    return _getFullMesh()
+    return _getFullMesh(left_mesh=None, right_mesh=None)
