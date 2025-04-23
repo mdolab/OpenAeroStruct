@@ -1,6 +1,6 @@
 from openaerostruct.aerodynamics.geometry import VLMGeometry
-from openaerostruct.geometry.geometry_group import Geometry, build_sections
-import openaerostruct.geometry.geometry_mesh_gen as meshGen
+from openaerostruct.geometry.geometry_group import Geometry
+from openaerostruct.geometry.utils import build_section_dicts
 from openaerostruct.geometry.geometry_unification import GeomMultiUnification
 from openaerostruct.geometry.geometry_multi_join import GeomMultiJoin
 from openaerostruct.transfer.displacement_transfer_group import DisplacementTransferGroup
@@ -147,7 +147,7 @@ class MultiSecAerostructGeometry(om.Group):
         ### Multi-section surface geometry setup ###
         """
 
-        sec_dicts = build_sections(surface)
+        sec_dicts = build_section_dicts(surface)
 
         section_names = []
         for sec in sec_dicts:

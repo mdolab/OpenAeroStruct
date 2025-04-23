@@ -94,10 +94,6 @@ class Test(unittest.TestCase):
 
         # Add DVs
         prob.model.add_design_var("alpha", lower=-20.0, upper=20.0)
-        # prob.model.add_design_var("surface.twist_cp", lower=-10.0, upper=15.0)
-        # prob.model.add_design_var("surface.thickness_cp", lower=0.01, upper=0.5, scaler=1e2)
-        # prob.model.add_constraint("AS_point_0.surface_perf.failure", upper=0.0)
-        # prob.model.add_constraint("AS_point_0.surface_perf.thickness_intersects", upper=0.0)
 
         # Add L=W constraint
         prob.model.add_constraint("AS_point_0.L_equals_W", equals=0.0)
@@ -111,19 +107,6 @@ class Test(unittest.TestCase):
         prob.driver.options["disp"] = True
         prob.driver.options["maxiter"] = 1000
         # prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
-
-        # prob.driver = om.pyOptSparseDriver()
-        # prob.driver.options["optimizer"] = "SNOPT"
-        # prob.driver.opt_settings["Iterations limit"] = 30000
-        # prob.driver.opt_settings["Major iterations limit"] = 300
-        # prob.driver.opt_settings["Major feasibility tolerance"] = 1e-6
-        # prob.driver.opt_settings["Major optimality tolerance"] = 1e-6
-        # prob.driver.opt_settings["Verify level"] = -1  # do not check gradient
-        # prob.driver.opt_settings["Function precision"] = 1e-10
-        # prob.driver.opt_settings["Hessian full memory"] = 1
-        # prob.driver.opt_settings["Hessian frequency"] = 100
-        # prob.driver.opt_settings["Print file"] = "SNOPT_print.out"
-        # prob.driver.opt_settings["Summary file"] = "SNOPT_summary.out"
 
         # Set up and run the optimization problem
         prob.setup()
@@ -215,10 +198,6 @@ class Test(unittest.TestCase):
 
         # Add DVs
         prob2.model.add_design_var("alpha", lower=-20.0, upper=20.0)
-        # prob2.model.add_design_var("twist_bspline.twist_cp_spline", lower=-10.0, upper=15.0)
-        # prob2.model.add_design_var("surfaceMulti.thickness_cp", lower=0.01, upper=0.5, scaler=1e2)
-        # prob2.model.add_constraint("AS_point_1.surfaceMulti_perf.failure", upper=0.0)
-        # prob2.model.add_constraint("AS_point_1.surfaceMulti_perf.thickness_intersects", upper=0.0)
 
         # Add L=W constraint
         prob2.model.add_constraint("AS_point_1.L_equals_W", equals=0.0)
@@ -233,26 +212,11 @@ class Test(unittest.TestCase):
         prob2.driver.options["maxiter"] = 1000
         # prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
 
-        # prob2.driver = om.pyOptSparseDriver()
-        # prob2.driver.options["optimizer"] = "SNOPT"
-        # prob2.driver.opt_settings["Iterations limit"] = 30000
-        # prob2.driver.opt_settings["Major iterations limit"] = 300
-        # prob2.driver.opt_settings["Major feasibility tolerance"] = 1e-6
-        # prob2.driver.opt_settings["Major optimality tolerance"] = 1e-6
-        # prob2.driver.opt_settings["Verify level"] = -1  # do not check gradient
-        # prob2.driver.opt_settings["Function precision"] = 1e-10
-        # prob2.driver.opt_settings["Hessian full memory"] = 1
-        # prob2.driver.opt_settings["Hessian frequency"] = 100
-        # prob2.driver.opt_settings["Print file"] = "SNOPT_print.out"
-        # prob2.driver.opt_settings["Summary file"] = "SNOPT_summary.out"
-
         # Set up and run the optimization problem
         prob2.setup()
         prob2.run_driver()
 
         fuelburndiff = np.abs(prob[point_name0 + ".fuelburn"][0] - prob2[point_name1 + ".fuelburn"][0])
-        print(prob[point_name0 + ".fuelburn"][0])
-        print(prob2[point_name1 + ".fuelburn"][0])
 
         assert_near_equal(fuelburndiff, 0.0, 1e-6)
 
