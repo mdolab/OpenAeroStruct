@@ -1,6 +1,5 @@
 import numpy as np
 from numpy import cos, sin, tan
-import warnings
 import copy
 
 # openvsp python interface
@@ -12,6 +11,7 @@ except ImportError:
     dg = None
 
 import openmdao.api as om
+from openmdao.utils.om_warnings import warn_deprecation
 from openaerostruct.meshing.section_mesh_generator import generate_mesh as generate_section_mesh
 
 # import functions for backward compatibility with old scripts
@@ -950,63 +950,49 @@ def connect_multi_spline(prob, section_surfaces, sec_cp, out_name, comp_name, ge
 
 
 def generate_mesh(input_dict):
-    warnings.warn(
-        "generate_mesh has been moved to mesh_generator.py. Importing from utils.py is deprecated and will be removed in a future release.",
-        DeprecationWarning,
-        stacklevel=2,
+    warn_deprecation(
+        "generate_mesh has been moved to mesh_generator.py. Importing from utils.py is deprecated and will be removed in a future release."
     )
     return _generate_mesh(input_dict)
 
 
 def gen_rect_mesh(num_x, num_y, span, chord, span_cos_spacing=0.0, chord_cos_spacing=0.0):
-    warnings.warn(
-        "gen_rect_mesh has been moved to mesh_generator.py. Importing from utils.py is deprecated and will be removed in a future release.",
-        DeprecationWarning,
-        stacklevel=2,
+    warn_deprecation(
+        "gen_rect_mesh has been moved to mesh_generator.py. Importing from utils.py is deprecated and will be removed in a future release."
     )
     return _gen_rect_mesh(num_x, num_y, span, chord, span_cos_spacing=0.0, chord_cos_spacing=0.0)
 
 
 def gen_crm_mesh(num_x, num_y, span_cos_spacing=0.0, chord_cos_spacing=0.0, wing_type="CRM:jig"):
-    warnings.warn(
-        "gen_crm_mesh has been moved to mesh_generator.py. Importing from utils.py is deprecated and will be removed in a future release.",
-        DeprecationWarning,
-        stacklevel=2,
+    warn_deprecation(
+        "gen_crm_mesh has been moved to mesh_generator.py. Importing from utils.py is deprecated and will be removed in a future release."
     )
     return _gen_crm_mesh(num_x, num_y, span_cos_spacing=0.0, chord_cos_spacing=0.0, wing_type="CRM:jig")
 
 
 def add_chordwise_panels(mesh, num_x, chord_cos_spacing):
-    warnings.warn(
-        "add_chordwise_panels has been moved to mesh_generator.py and renamed to regen_chordwise_panels. Importing from utils.py is deprecated and will be removed in a future release.",
-        DeprecationWarning,
-        stacklevel=2,
+    warn_deprecation(
+        "add_chordwise_panels has been moved to mesh_generator.py and renamed to regen_chordwise_panels. Importing from utils.py is deprecated and will be removed in a future release."
     )
     return _regen_chordwise_panels(mesh, num_x, chord_cos_spacing)
 
 
 def get_default_geo_dict():
-    warnings.warn(
-        "get_default_geo_dict has been moved to mesh_generator.py and renamed to regen_chordwise_panels. Importing from utils.py is deprecated and will be removed in a future release.",
-        DeprecationWarning,
-        stacklevel=2,
+    warn_deprecation(
+        "get_default_geo_dict has been moved to mesh_generator.py and renamed to regen_chordwise_panels. Importing from utils.py is deprecated and will be removed in a future release."
     )
     return _get_default_geo_dict()
 
 
 def writeMesh(mesh, filename):
-    warnings.warn(
-        "writeMesh has been moved to mesh_generator.py and renamed to write_tecplot. Importing from utils.py is deprecated and will be removed in a future release.",
-        DeprecationWarning,
-        stacklevel=2,
+    warn_deprecation(
+        "writeMesh has been moved to mesh_generator.py and renamed to write_tecplot. Importing from utils.py is deprecated and will be removed in a future release."
     )
     return _write_tecplot(mesh, filename)
 
 
 def getFullMesh(left_mesh=None, right_mesh=None):
-    warnings.warn(
-        "getFullMesh has been moved to mesh_generator.py. Importing from utils.py is deprecated and will be removed in a future release.",
-        DeprecationWarning,
-        stacklevel=2,
+    warn_deprecation(
+        "getFullMesh has been moved to mesh_generator.py. Importing from utils.py is deprecated and will be removed in a future release."
     )
     return _getFullMesh(left_mesh=None, right_mesh=None)
