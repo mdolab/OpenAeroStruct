@@ -5,7 +5,6 @@ from openmdao.utils.assert_utils import assert_near_equal
 class Test(unittest.TestCase):
     def test_span_regen_rect(self):
         # Checks if a valid mesh is returned for various spanwise spacing factors and numbers of points
-        import numpy as np
         from openaerostruct.meshing.mesh_generator import gen_rect_mesh
         from openaerostruct.meshing.utils import regen_spanwise_panels
 
@@ -23,7 +22,6 @@ class Test(unittest.TestCase):
 
         for nny in new_num_y:
             for csp in span_cos_spacing:
-
                 newMesh = regen_spanwise_panels(mesh, nny, span_cos_spacing=csp)
 
                 new_rc = newMesh[0, -1, 0] - newMesh[-1, -1, 0]
@@ -36,7 +34,6 @@ class Test(unittest.TestCase):
 
     def test_span_regen_crm(self):
         # Checks if a valid mesh is returned for various spanwise spacing factors and numbers of points
-        import numpy as np
         from openaerostruct.meshing.mesh_generator import gen_crm_mesh
         from openaerostruct.meshing.utils import regen_spanwise_panels
 
@@ -54,7 +51,6 @@ class Test(unittest.TestCase):
 
         for nny in new_num_y:
             for csp in span_cos_spacing:
-
                 newMesh = regen_spanwise_panels(mesh, nny, span_cos_spacing=csp)
 
                 new_rc = newMesh[0, -1, 0] - newMesh[-1, -1, 0]
