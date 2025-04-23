@@ -102,6 +102,25 @@ class Test(unittest.TestCase):
         check = prob.check_partials(compact_print=True, abs_err_tol=1e-5, rel_err_tol=1e-5)
         assert_check_partials(check, atol=1e-6, rtol=1e-6)
 
+    def test_taper_symmetry_one(self):
+        symmetry = True
+        mesh = get_mesh(symmetry)
+
+        prob = om.Problem(reports=GENERATE_OM_REPORTS)
+        group = prob.model
+
+        val = 1.0
+        ref_axis_pos = self.rng.random(1)
+
+        comp = Taper(val=val, mesh=mesh, symmetry=symmetry, ref_axis_pos=ref_axis_pos)
+        group.add_subsystem("comp", comp)
+
+        prob.setup()
+        prob.run_model()
+
+        check = prob.check_partials(compact_print=True, abs_err_tol=1e-5, rel_err_tol=1e-5)
+        assert_check_partials(check, atol=1e-6, rtol=1e-6)
+
     def test_scalex(self):
         symmetry = False
         mesh = get_mesh(symmetry)
