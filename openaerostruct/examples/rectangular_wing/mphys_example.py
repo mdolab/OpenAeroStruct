@@ -4,7 +4,7 @@ import numpy as np
 from mphys.core import Multipoint, MPhysVariables
 from mphys.scenarios import ScenarioAerodynamic
 
-from openaerostruct.geometry.utils import generate_mesh
+from openaerostruct.meshing.mesh_generator import generate_mesh
 from openaerostruct.mphys import AeroBuilder
 
 

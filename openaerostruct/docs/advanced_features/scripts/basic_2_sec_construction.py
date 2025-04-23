@@ -6,9 +6,7 @@ import numpy as np
 import openmdao.api as om
 from openaerostruct.geometry.geometry_group import MultiSecGeometry
 from openaerostruct.aerodynamics.aero_groups import AeroPoint
-from openaerostruct.geometry.geometry_group import build_sections
-from openaerostruct.geometry.geometry_unification import unify_mesh
-from openaerostruct.geometry.multi_unified_bspline_utils import build_multi_spline, connect_multi_spline
+from openaerostruct.geometry.utils import build_section_dicts, unify_mesh, build_multi_spline, connect_multi_spline
 import matplotlib.pyplot as plt
 
 # docs checkpoint 1
@@ -57,7 +55,7 @@ surface = {
     "S_ref_type": "wetted",  # how we compute the wing area, can be 'wetted' or 'projected'
     # Geometry Parameters
     "taper": [1.0, 1.0],  # Wing taper for each section. The list length must match the specified number of sections.
-    "span": [2.0, 2.0],  # Wing span for each section. The list length must match the specified number of sections.
+    "span": [1.0, 1.0],  # Span length of each section. The list length must match the specified number of sections.
     "sweep": [0.0, 0.0],  # Wing sweep for each section. The list length must match the specified number of sections.
     "chord_cp": sec_chord_cp,  # The chord B-spline parameterization for each section. The list length must match the specified number of sections.
     "twist_cp": [
@@ -112,9 +110,9 @@ control points at each section junction to an index of a global control vector. 
 # In order to construct this global B-spline control vector we first need to generate the unified surface mesh.
 # The unified surface mesh is simply all the individual section surface meshes combine into a single unified OAS mesh array.
 
-# First we will call the utility function build_sections which takes the surface dictionary and outputs a list of surface dictionaries corresponding to
+# First we will call the utility function build_section_dicts which takes the surface dictionary and outputs a list of surface dictionaries corresponding to
 # each section.
-section_surfaces = build_sections(surface)
+section_surfaces = build_section_dicts(surface)
 
 # We can then call unify_mesh which outputs the unified mesh of all of the sections.
 uniMesh = unify_mesh(section_surfaces)

@@ -2,10 +2,11 @@ import numpy as np
 
 import openmdao.api as om
 from openaerostruct.utils.check_surface_dict import check_surface_dict_keys
-import openaerostruct.geometry.geometry_mesh_gen as meshGen
+from openaerostruct.meshing.section_mesh_generator import generate_mesh
 from openaerostruct.geometry.geometry_unification import GeomMultiUnification
 from openaerostruct.geometry.geometry_multi_join import GeomMultiJoin
 from openaerostruct.utils.interpolation import get_normalized_span_coords
+from openaerostruct.geometry.utils import build_section_dicts
 
 
 class Geometry(om.Group):
@@ -30,6 +31,16 @@ class Geometry(om.Group):
 
         # key validation of the surface dict
         check_surface_dict_keys(surface)
+
+        # use the section mesh generator to generate a mesh from surface dict if user specifies
+        if isinstance(surface["mesh"], str) and surface["mesh"] == "gen-mesh":
+            surface["num_sections"] = 1
+            surface["mesh"], _ = generate_mesh(surface)
+
+            # Reset taper and sweep so that OAS doesn't apply the the transformations again
+            surface["taper"] = 1.0
+            # surface["span"] = 1.0
+            surface["sweep"] = 0.0
 
         # Get the surface name and create a group to contain components
         # only for this surface
@@ -201,94 +212,6 @@ class Geometry(om.Group):
             )
 
 
-# Function that constructs the individual section surface data dictionaries
-def build_sections(surface):
-    """This utility function takes a multi-section surface dictionary and outputs a list
-    of individual section surface dictionaries so the geometry group for each individual
-    section can be initialized.
-
-    Parameters
-    ----------
-    surface: dict
-        OpenAeroStruct multi-section surface dictionary
-
-    Returns
-    -------
-    section_surfaces : list
-        List of OpenAeroStruct surface dictionaries for each individual surface
-
-    """
-    # Get number of sections
-    num_sections = surface["num_sections"]
-
-    if surface["meshes"] == "gen-meshes":
-        # Verify that all required inputs for automatic mesh generation are provided for each section
-        if len(surface["ny"]) != num_sections:
-            raise ValueError("Number of spanwise points needs to be provided for each section")
-        if len(surface["taper"]) != num_sections:
-            raise ValueError("Taper needs to be provided for each section")
-        if len(surface["span"]) != num_sections:
-            raise ValueError("Span needs to be provided for each section")
-        if len(surface["sweep"]) != num_sections:
-            raise ValueError("Sweep needs to be provided for each section")
-
-        # Generate unified and individual section meshes
-        mesh, sec_meshes = meshGen.generate_mesh(surface)
-    else:
-        # Allow user to provide mesh for each section
-        if len(surface["meshes"]) != num_sections:
-            raise ValueError("A mesh needs to be provided for each section.")
-        sec_meshes = surface["meshes"]
-
-    if len(surface["sec_name"]) != num_sections:
-        raise ValueError("A name needs to be provided for each section.")
-
-    # List of support keys for multi-section wings
-    # NOTE: make sure this is consistent to the documentation's surface dict page
-    target_keys = [
-        # Essential Info
-        "num_section",
-        "symmetry",
-        "S_ref_type",
-        "ref_axis_pos",
-        # wing definition
-        "span",
-        "taper",
-        "sweep",
-        "dihedral",
-        "twist_cp",
-        "chord_cp",
-        "xshear_cp",
-        "yshear_cp",
-        "zshear_cp",
-        # aerodynamics
-        "CL0",
-        "CD0",
-        "with_viscous",
-        "with_wave",
-        "groundplane",
-        "k_lam",
-        "t_over_c_cp",
-        "c_max_t",
-    ]
-
-    # Constructs a list of section dictionaries and adds the specified supported keys and values from the mult-section surface dictionary.
-    surface_sections = []
-    num_sections = surface["num_sections"]
-
-    for i in range(num_sections):
-        section = {}
-        for k in set(surface).intersection(target_keys):
-            if type(surface[k]) is list:
-                section[k] = surface[k][i]
-            else:
-                section[k] = surface[k]
-        section["mesh"] = sec_meshes[i]
-        section["name"] = surface["sec_name"][i]
-        surface_sections.append(section)
-    return surface_sections
-
-
 class MultiSecGeometry(om.Group):
     """
     Group that contains the section geometery groups for a multi-section surface.
@@ -325,7 +248,7 @@ class MultiSecGeometry(om.Group):
         # key validation of the surface dict
         check_surface_dict_keys(surface)
 
-        sec_dicts = build_sections(surface)
+        sec_dicts = build_section_dicts(surface)
 
         section_names = []
         for sec in sec_dicts:

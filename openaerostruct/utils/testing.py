@@ -2,7 +2,7 @@ import openmdao.api as om
 
 from openmdao.utils.assert_utils import assert_check_partials
 import numpy as np
-from openaerostruct.geometry.utils import generate_mesh
+from openaerostruct.meshing.mesh_generator import generate_mesh
 
 
 def assert_opt_successful(test, optResult):
@@ -231,6 +231,11 @@ def get_three_section_surface(sym=True, visc=False):
     # Set-up B-splines for each section. Done here since this information will be needed multiple times.
     sec_chord_cp = [np.ones(2), np.ones(2), np.ones(2)]
 
+    if sym:
+        span = [0.5, 0.5, 0.5]
+    else:
+        span = [1.0, 1.0, 1.0]
+
     surface_dict = {
         # Wing definition
         # Basic surface parameters
@@ -243,11 +248,12 @@ def get_three_section_surface(sym=True, visc=False):
         # can be 'wetted' or 'projected'
         # Geometry Parameters
         "taper": [1.0, 1.0, 1.0],  # Wing taper for each section
-        "span": [1.0, 1.0, 1.0],  # Wing span for each section
+        "span": span,  # Wing span for each section
         "sweep": [0.0, 0, 0.0],  # Wing sweep for each section
         "dihedral": [0.0, 0.0, 0.0],
         "twist_cp": [np.zeros(2), np.zeros(2), np.zeros(2)],
         "chord_cp": sec_chord_cp,
+        "ref_axis_pos": 0.25,
         "root_chord": 1.0,  # Wing root chord for each section
         # Mesh Parameters
         "meshes": "gen-meshes",  # Supply a mesh for each section or "gen-meshes" for automatic mesh generation
@@ -286,6 +292,11 @@ def get_two_section_surface(sym=True, visc=False):
     # Set-up B-splines for each section. Done here since this information will be needed multiple times.
     sec_chord_cp = [np.array([1.0, 1.0]), np.array([1.0, 1.0])]
 
+    if sym:
+        span = [0.5, 0.5]
+    else:
+        span = [1.0, 1.0]
+
     # Create a dictionary with info and options about the multi-section aerodynamic
     # lifting surface
     surface_dict = {
@@ -300,11 +311,12 @@ def get_two_section_surface(sym=True, visc=False):
         "root_section": 1,
         # Geometry Parameters
         "taper": [1.0, 1.0],  # Wing taper for each section
-        "span": [1.0, 1.0],  # Wing span for each section
+        "span": span,  # Wing span for each section
         "sweep": [0.0, 0.0],  # Wing sweep for each section
         "chord_cp": sec_chord_cp,
         "twist_cp": [np.zeros(2), np.zeros(2)],
         # "chord_cp": [np.ones(1),2*np.ones(1),3*np.ones(1)], #Chord B-spline control points for each section
+        "ref_axis_pos": 0.25,
         "root_chord": 1.0,  # Wing root chord for each section
         # Mesh Parameters
         "meshes": "gen-meshes",  # Supply a mesh for each section or "gen-meshes" for automatic mesh generation
@@ -368,6 +380,7 @@ def get_single_section_surface():
         # flow, used for viscous drag
         "c_max_t": 0.303,  # chordwise location of maximum (NACA0015)
         # thickness
+        "ref_axis_pos": 0.25,
         "with_viscous": False,  # if true, compute viscous drag
         "with_wave": False,  # if true, compute wave drag
         "groundplane": False,

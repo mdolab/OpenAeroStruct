@@ -4,81 +4,6 @@ import openmdao.api as om
 default_vec = np.ones(3)
 
 
-def get_section_edge_left(mesh, v=default_vec, edge_cur=0, edges_all_constraints=default_vec):
-    """
-    Function that gets the coordinates of the leading and trailing edge points of the left edge of a section. The output can be masked to only retreive the x,y, or z coordinate.
-    The function also returns the row and column vectors of non zero entries in the edge coordinate jacobian.
-
-    Parameters
-    ----------
-    mesh : numpy array
-        OAS mesh of a given section
-    v : numpy array[3]
-        Numpy array of length three populuted with ones and zeros used to mask the output so that only the specified of the x, y, and z coordinates are returned.
-    edge_cur : int
-        Integer indicating which unique intersection of edges this particular edge is associated with. Required to return the correct jacobian sparsity pattern.
-    edges_all_constraints: list
-        See dim_constr in the GeomMultiJoin component. This array needs to passed into this function from the component in order to return the correct jacobian sparsity pattern.
-
-    Returns
-    -------
-    edge points : numpy array
-        Array of points corresponding to the leading and trailing edges of the left section edge. Masked according to input.
-    rows : numpy array
-        Array of the rows of the non-zero jacobian entries
-    cols : numpy array
-        Array of the columns of the non-zero jacobian entries
-
-    """
-    nx = mesh.shape[0]
-    le_index = 0
-    te_index = np.ravel_multi_index((nx - 1, 0, 0), mesh.shape)
-    mask = np.array(v, dtype="bool")
-
-    rows = np.arange(0, 2 * np.sum(v)) + 2 * int(np.sum(edges_all_constraints[:edge_cur]))
-    cols = np.concatenate([np.arange(le_index, le_index + 3)[mask], np.arange(te_index, te_index + 3)[mask]])
-
-    return mesh[[0, -1], 0][:, np.arange(0, 3)[mask]], rows, cols
-
-
-def get_section_edge_right(mesh, v=default_vec, edge_cur=0, edges_all_constraints=default_vec):
-    """
-    Function that gets the coordinates of the leading and trailing edge points of the right edge of a section. The output can be masked to only retreive the x,y, or z coordinate.
-    The function also returns the row and column vectors of non zero entries in the edge coordinate jacobian.
-
-    Parameters
-    ----------
-    mesh : numpy array
-        OAS mesh of a given section
-    v : numpy array[3]
-        Numpy array of length three populuted with ones and zeros used to mask the output so that only the specified of the x, y, and z coordinates are returned.
-    edge_cur : int
-        Integer indicating which unique intersection of edges this particular edge is associated with. Required to return the correct jacobian sparsity pattern.
-    edges_all_constraints: list
-        See dim_constr in the GeomMultiJoin component. This array needs to passed into this function from the component in order to return the correct jacobian sparsity pattern.
-
-    Returns
-    -------
-    edge points : numpy array
-        Array of points corresponding to the leading and trailing edges of the right section edge. Masked according to input.
-    rows : numpy array
-        Array of the rows of the non-zero jacobian entries
-    cols : numpy array
-        Array of the columns of the non-zero jacobian entries
-    """
-
-    nx = mesh.shape[0]
-    ny = mesh.shape[1]
-    le_index = np.ravel_multi_index((0, ny - 1, 0), mesh.shape)
-    te_index = np.ravel_multi_index((nx - 1, ny - 1, 0), mesh.shape)
-    mask = np.array(v, dtype="bool")
-
-    rows = np.arange(0, 2 * np.sum(v)) + 2 * int(np.sum(edges_all_constraints[:edge_cur]))
-    cols = np.concatenate([np.arange(le_index, le_index + 3)[mask], np.arange(te_index, te_index + 3)[mask]])
-
-    return mesh[[0, -1], -1][:, np.arange(0, 3)[mask]], rows, cols
-
-
 class GeomMultiJoin(om.ExplicitComponent):
     """
     OpenMDAO component that outputs the distance between the leading and trailing edge corners of each section corresponding to each shared edge.
@@ -108,6 +33,79 @@ class GeomMultiJoin(om.ExplicitComponent):
             default=[np.ones(3)],
             desc="A list of vectors of length three corresponding to each edge. Entries corresponding the dimension([x,y,z]) the user wishes to constraint should be set to 1. Remaining entries should be zero.",
         )
+
+    def get_section_edge_left(self, mesh, v=default_vec, edge_cur=0, edges_all_constraints=default_vec):
+        """
+        Function that gets the coordinates of the leading and trailing edge points of the left edge of a section. The output can be masked to only retreive the x,y, or z coordinate.
+        The function also returns the row and column vectors of non zero entries in the edge coordinate jacobian.
+
+        Parameters
+        ----------
+        mesh : numpy array
+            OAS mesh of a given section
+        v : numpy array[3]
+            Numpy array of length three populuted with ones and zeros used to mask the output so that only the specified of the x, y, and z coordinates are returned.
+        edge_cur : int
+            Integer indicating which unique intersection of edges this particular edge is associated with. Required to return the correct jacobian sparsity pattern.
+        edges_all_constraints: list
+            See dim_constr in the GeomMultiJoin component. This array needs to passed into this function from the component in order to return the correct jacobian sparsity pattern.
+
+        Returns
+        -------
+        edge points : numpy array
+            Array of points corresponding to the leading and trailing edges of the left section edge. Masked according to input.
+        rows : numpy array
+            Array of the rows of the non-zero jacobian entries
+        cols : numpy array
+            Array of the columns of the non-zero jacobian entries
+
+        """
+        nx = mesh.shape[0]
+        le_index = 0
+        te_index = np.ravel_multi_index((nx - 1, 0, 0), mesh.shape)
+        mask = np.array(v, dtype="bool")
+
+        rows = np.arange(0, 2 * np.sum(v)) + 2 * int(np.sum(edges_all_constraints[:edge_cur]))
+        cols = np.concatenate([np.arange(le_index, le_index + 3)[mask], np.arange(te_index, te_index + 3)[mask]])
+
+        return mesh[[0, -1], 0][:, np.arange(0, 3)[mask]], rows, cols
+
+    def get_section_edge_right(self, mesh, v=default_vec, edge_cur=0, edges_all_constraints=default_vec):
+        """
+        Function that gets the coordinates of the leading and trailing edge points of the right edge of a section. The output can be masked to only retreive the x,y, or z coordinate.
+        The function also returns the row and column vectors of non zero entries in the edge coordinate jacobian.
+
+        Parameters
+        ----------
+        mesh : numpy array
+            OAS mesh of a given section
+        v : numpy array[3]
+            Numpy array of length three populuted with ones and zeros used to mask the output so that only the specified of the x, y, and z coordinates are returned.
+        edge_cur : int
+            Integer indicating which unique intersection of edges this particular edge is associated with. Required to return the correct jacobian sparsity pattern.
+        edges_all_constraints: list
+            See dim_constr in the GeomMultiJoin component. This array needs to passed into this function from the component in order to return the correct jacobian sparsity pattern.
+
+        Returns
+        -------
+        edge points : numpy array
+            Array of points corresponding to the leading and trailing edges of the right section edge. Masked according to input.
+        rows : numpy array
+            Array of the rows of the non-zero jacobian entries
+        cols : numpy array
+            Array of the columns of the non-zero jacobian entries
+        """
+
+        nx = mesh.shape[0]
+        ny = mesh.shape[1]
+        le_index = np.ravel_multi_index((0, ny - 1, 0), mesh.shape)
+        te_index = np.ravel_multi_index((nx - 1, ny - 1, 0), mesh.shape)
+        mask = np.array(v, dtype="bool")
+
+        rows = np.arange(0, 2 * np.sum(v)) + 2 * int(np.sum(edges_all_constraints[:edge_cur]))
+        cols = np.concatenate([np.arange(le_index, le_index + 3)[mask], np.arange(te_index, te_index + 3)[mask]])
+
+        return mesh[[0, -1], -1][:, np.arange(0, 3)[mask]], rows, cols
 
     def setup(self):
         sections = self.options["sections"]
@@ -143,21 +141,23 @@ class GeomMultiJoin(om.ExplicitComponent):
 
             # Get the sparsity patterns for each section. First and last sections only have one edge intersection.
             if i_sec == 0:
-                rows, cols = get_section_edge_right(mesh, self.dim_constr[i_sec], edge_cur, self.dim_constr)[1:]
+                rows, cols = self.get_section_edge_right(mesh, self.dim_constr[i_sec], edge_cur, self.dim_constr)[1:]
                 vals = -1 * np.ones_like(rows)
             elif i_sec < len(sections) - 1:
-                rows1, cols1 = get_section_edge_left(mesh, self.dim_constr[i_sec - 1], edge_cur, self.dim_constr)[1:]
+                rows1, cols1 = self.get_section_edge_left(mesh, self.dim_constr[i_sec - 1], edge_cur, self.dim_constr)[
+                    1:
+                ]
                 vals1 = np.ones_like(rows1)
 
                 edge_cur += 1
-                rows2, cols2 = get_section_edge_right(mesh, self.dim_constr[i_sec], edge_cur, self.dim_constr)[1:]
+                rows2, cols2 = self.get_section_edge_right(mesh, self.dim_constr[i_sec], edge_cur, self.dim_constr)[1:]
                 vals2 = -1 * np.ones_like(rows2)
 
                 rows = np.concatenate([rows1, rows2])
                 cols = np.concatenate([cols1, cols2])
                 vals = np.concatenate([vals1, vals2])
             else:
-                rows, cols = get_section_edge_left(mesh, self.dim_constr[i_sec - 1], edge_cur, self.dim_constr)[1:]
+                rows, cols = self.get_section_edge_left(mesh, self.dim_constr[i_sec - 1], edge_cur, self.dim_constr)[1:]
                 vals = np.ones_like(rows)
 
             # Declare partials for the current section
@@ -173,12 +173,12 @@ class GeomMultiJoin(om.ExplicitComponent):
             mesh_name = "{}_join_mesh".format(name)
 
             if i_sec == 0:
-                edges.append(get_section_edge_right(inputs[mesh_name], self.dim_constr[i_sec])[0])
+                edges.append(self.get_section_edge_right(inputs[mesh_name], self.dim_constr[i_sec])[0])
             elif i_sec < len(sections) - 1:
-                edges.append(get_section_edge_left(inputs[mesh_name], self.dim_constr[i_sec - 1])[0])
-                edges.append(get_section_edge_right(inputs[mesh_name], self.dim_constr[i_sec])[0])
+                edges.append(self.get_section_edge_left(inputs[mesh_name], self.dim_constr[i_sec - 1])[0])
+                edges.append(self.get_section_edge_right(inputs[mesh_name], self.dim_constr[i_sec])[0])
             else:
-                edges.append(get_section_edge_left(inputs[mesh_name], self.dim_constr[i_sec - 1])[0])
+                edges.append(self.get_section_edge_left(inputs[mesh_name], self.dim_constr[i_sec - 1])[0])
 
         for i in range(self.num_sections - 1):
             edge_constraints.append((edges[2 * i + 1] - edges[2 * i]).flatten())

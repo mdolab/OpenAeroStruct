@@ -45,6 +45,7 @@ setup(
         "openaerostruct/transfer",
         "openaerostruct/functionals",
         "openaerostruct/integration",
+        "openaerostruct/meshing",
         "openaerostruct/common",
         "openaerostruct/utils",
         "openaerostruct/mphys",

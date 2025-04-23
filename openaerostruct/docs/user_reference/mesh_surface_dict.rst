@@ -84,9 +84,9 @@ The surface dict will be provided to Groups, including ``Geometry``, ``AeroPoint
       - 
       - How we compute the wing reference area.
     * - mesh
-      - 3D ndarray
+      - 3D ndarray or "gen-mesh"
       - m
-      - ``x, y, z`` coordinates of the mesh vertices, can be created by ``generate_mesh``.
+      - ``x, y, z`` coordinates of the mesh vertices, can be created by ``generate_mesh``. Can also specify "gen-mesh" to generate a mesh based on taper, sweep, and span variables given in the surface dictionary.
     * - span
       - 10.0
       - m

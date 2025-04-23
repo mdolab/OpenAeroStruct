@@ -6,8 +6,8 @@ import numpy as np
 import openmdao.api as om
 from openaerostruct.geometry.geometry_group import MultiSecGeometry
 from openaerostruct.aerodynamics.aero_groups import AeroPoint
-from openaerostruct.geometry.geometry_group import build_sections
-from openaerostruct.geometry.geometry_unification import unify_mesh
+from openaerostruct.geometry.utils import build_section_dicts
+from openaerostruct.geometry.utils import unify_mesh
 import matplotlib.pyplot as plt
 
 
@@ -133,10 +133,10 @@ multi_geom_group = MultiSecGeometry(
 prob.model.add_subsystem(surface["name"], multi_geom_group)
 
 
-# In this next part, we will setup the aerodynamics group. First we use a utility function called build_sections which takes our multi-section surface dictionary and outputs a
+# In this next part, we will setup the aerodynamics group. First we use a utility function called build_section_dicts which takes our multi-section surface dictionary and outputs a
 # surface dictionary for each individual section. We then inputs these dictionaries into the mesh unification function unify_mesh to produce a single mesh array for the the entire surface.
 # We then add this mesh to the multi-section surface dictionary
-section_surfaces = build_sections(surface)
+section_surfaces = build_section_dicts(surface)
 uniMesh = unify_mesh(section_surfaces)
 surface["mesh"] = uniMesh
 

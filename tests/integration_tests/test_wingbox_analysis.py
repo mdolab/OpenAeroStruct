@@ -1,6 +1,6 @@
 import numpy as np
 import unittest
-from openaerostruct.geometry.utils import generate_mesh
+from openaerostruct.meshing.mesh_generator import generate_mesh
 from openaerostruct.structures.struct_groups import SpatialBeamAlone
 from openmdao.utils.assert_utils import assert_check_partials, assert_near_equal
 import openmdao.api as om
