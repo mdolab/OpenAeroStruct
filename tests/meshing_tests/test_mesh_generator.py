@@ -29,7 +29,7 @@ class Test(unittest.TestCase):
         chord_cos_spacing = [0.0, 0.25, 0.5, 0.75, 1.0]
 
         for csp in chord_cos_spacing:
-            mesh = gen_rect_mesh(2, num_y, span, chord=2, span_cos_spacing=0.0, chord_cos_spacing=csp)
+            mesh = gen_rect_mesh(num_x, num_y, span, chord=2, span_cos_spacing=0.0, chord_cos_spacing=csp)
 
             self.assertTrue(np.all(np.diff(mesh[0, :, 1]) > 0.0))
             self.assertTrue(np.all(np.diff(mesh[:, 0, 0]) > 0.0))
