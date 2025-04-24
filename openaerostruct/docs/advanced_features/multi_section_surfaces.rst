@@ -7,8 +7,6 @@ OpenAeroStruct features the ability to specify surfaces as a series of sequentia
 Rather than controling the geometry of the surface as a whole, the optimizer can control the geometric parameters of each section individually using any of the geometric transformations available in OpenAeroStruct. 
 This feature was developed for the modular wing morphing applications but can be useful in situations where the user wishes to optimize a particular wing section while leaving the others fixed. 
 
-*Please note that aerostructural optimization with multi-section wings is currently not supported*
-
 This example script demonstrate the usage of the multi-section wing geometry features in OpenAeroStruct.
 We first start with the induced drag minimization of a simple two-section symmetrical wing.
 
@@ -125,4 +123,50 @@ The steps required to setup the multi-section geometry group by constraint featu
    :end-before: checkpoint 4
 
 
+Multi-section surfaces for aerostructural problems
+==========================
 
+Both multi-section geometery parameterization approaches in OpenAeroStruct are fully compatible with the aerostructural simulation capability through the multi-section aerostructural geometery class.
+Both the tube and wingbox models can be used however note that the structural model itself is not multi-section.
+The structural member geometery is not defined for each section but rather the entire surface as it normally is.
+The finite-element beam model is therefore coupled with the unified surface mesh which is where the aerodynamic simulation is done.
+
+
+We start by making the necessary imports for an aerostructural optimization in OpenAeroStruct.
+Note that we also import a special geometry group for multi-section aerostructural problems.
+
+.. literalinclude:: /advanced_features/scripts/basic_2_sec_AS.py
+   :start-after: checkpoint 0
+   :end-before: checkpoint 1
+
+Next, we define the surface dictionary as we did for the construction-based multi-section geometry parameterization but also include the structural parameters.
+
+
+.. literalinclude:: /advanced_features/scripts/basic_2_sec_AS.py
+   :start-after: checkpoint 1
+   :end-before: checkpoint 2
+
+The independent variables and unified twist spline are setup in the same way as in the construction-based multi-section geometry parameterization.
+
+.. literalinclude:: /advanced_features/scripts/basic_2_sec_AS.py
+   :start-after: checkpoint 2
+   :end-before: checkpoint 3
+
+Next, we add the multi-section aerostructural geometery and aerostructural analysis point groups and make the necessary connections.
+Note that this step is very similar to the single section aerostructural problem setup with only the geometery group being replaced.
+
+.. literalinclude:: /advanced_features/scripts/basic_2_sec_AS.py
+   :start-after: checkpoint 3
+   :end-before: checkpoint 4
+
+We can now setup our optimization problem, configure the optimizer and run the optimization.
+
+.. literalinclude:: /advanced_features/scripts/basic_2_sec_AS.py
+   :start-after: checkpoint 4
+   :end-before: checkpoint 5
+
+Lastly, we plot and print the results.
+
+.. literalinclude:: /advanced_features/scripts/basic_2_sec_AS.py
+   :start-after: checkpoint 5
+   :end-before: checkpoint 6
