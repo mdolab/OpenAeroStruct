@@ -481,6 +481,9 @@ class AerostructPoint(om.Group):
         if ground_effect:
             prom_in.append("height_agl")
 
+        if rotational:
+            prom_in.extend(["omega", ("cg", "empty_cg")])
+
         # Add a single 'aero_states' component for the whole system within the
         # coupled group.
         coupled.add_subsystem("aero_states", aero_states, promotes_inputs=prom_in)
@@ -524,6 +527,8 @@ class AerostructPoint(om.Group):
             prom_in.append("Mach_number")
         if ground_effect:
             prom_in.append("height_agl")
+        if rotational:
+            prom_in.extend(["omega", "empty_cg"])
 
         # Add the coupled group to the model problem
         self.add_subsystem("coupled", coupled, promotes_inputs=prom_in)
