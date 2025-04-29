@@ -1,3 +1,6 @@
+"""We verify the results of the two-section aerostructural analysis to the same wing analysed with single section
+geometry. We verify the results are the same."""
+
 from openmdao.utils.assert_utils import assert_near_equal
 import unittest
 

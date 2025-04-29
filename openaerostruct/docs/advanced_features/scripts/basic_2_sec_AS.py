@@ -181,33 +181,6 @@ optResult = prob.run_driver()
 
 # docs checkpoint 5
 
-# Get the unified mesh and plot the results
-meshUni = prob.get_val(name + "." + "surface_unification" + "." + name + "_uni_mesh")
-
-
-def plot_meshes(meshes):
-    """this function plots to plot the mesh"""
-    plt.figure(figsize=(8, 4))
-    ax = plt.gca()
-    for i, mesh in enumerate(meshes):
-        mesh_x = mesh[:, :, 0]
-        mesh_y = mesh[:, :, 1]
-        color = "k"
-        for i in range(mesh_x.shape[0]):
-            plt.plot(mesh_y[i, :], mesh_x[i, :], color, lw=1)
-            plt.plot(-mesh_y[i, :], mesh_x[i, :], color, lw=1)  # plots the other side of symmetric wing
-        for j in range(mesh_x.shape[1]):
-            plt.plot(mesh_y[:, j], mesh_x[:, j], color, lw=1)
-            plt.plot(-mesh_y[:, j], mesh_x[:, j], color, lw=1)  # plots the other side of symmetric wing
-    plt.axis("equal")
-    plt.xlabel("y (m)")
-    plt.ylabel("x (m)")
-    plt.savefig("opt_planform_AS.pdf")
-
-
-# plot_meshes([mesh1,mesh2])
-plot_meshes([meshUni])
-
 # Print fuelburn
 print(prob.get_val("AS_point_0.fuelburn"))
 # docs checkpoint 6

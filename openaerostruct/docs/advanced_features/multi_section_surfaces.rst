@@ -1,6 +1,6 @@
 .. _Custom_Mesh:
 
-Multi-section Surfaces
+Multi-section surfaces for aerodynamic problems
 ==========================
 
 OpenAeroStruct features the ability to specify surfaces as a series of sequentially connected sections. 
