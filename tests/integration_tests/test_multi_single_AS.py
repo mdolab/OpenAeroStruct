@@ -16,7 +16,6 @@ class Test(unittest.TestCase):
             AerostructPoint,
             MultiSecAerostructGeometry,
         )
-        from openaerostruct.aerodynamics.aero_groups import AeroPoint
         from openaerostruct.utils.constants import grav_constant
         from openaerostruct.geometry.utils import (
             build_section_dicts,
