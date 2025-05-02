@@ -7,8 +7,6 @@ import openmdao.api as om
 from openaerostruct.integration.aerostruct_groups import MultiSecAerostructGeometry, AerostructPoint
 from openaerostruct.utils.constants import grav_constant
 from openaerostruct.geometry.utils import build_section_dicts, unify_mesh, build_multi_spline, connect_multi_spline
-import matplotlib.pyplot as plt
-
 
 # docs checkpoint 1
 
