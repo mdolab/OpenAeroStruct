@@ -31,7 +31,7 @@ class ComputeNodes(om.ExplicitComponent):
         nx = mesh.shape[0]
         ny = mesh.shape[1]
 
-        if surface["fem_model_type"] == "tube":
+        if surface["fem_model_type"].lower() == "tube":
             self.fem_origin = surface["fem_origin"]
         else:
             y_upper = surface["data_y_upper"]

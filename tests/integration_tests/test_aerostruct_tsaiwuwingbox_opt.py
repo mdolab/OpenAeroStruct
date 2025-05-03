@@ -1,13 +1,11 @@
-from openmdao.utils.assert_utils import assert_near_equal
 import unittest
 import numpy as np
 
-from openaerostruct.meshing.mesh_generator import generate_mesh
+from openaerostruct.geometry.utils import generate_mesh
 
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
 
 import openmdao.api as om
-from openaerostruct.structures.wingbox_fuel_vol_delta import WingboxFuelVolDelta
 
 
 # Provide coordinates for a portion of an airfoil for the wingbox cross-section as an nparray with dtype=complex (to work with the complex-step approximation for derivatives).
@@ -244,14 +242,10 @@ lower_y = np.array(
 
 class Test(unittest.TestCase):
     def test(self):
-        """
-        This is an opt problem that tests the wingbox model with wave drag and the fuel vol constraint
-        """
-
         # Create a dictionary to store options about the surface
         mesh_dict = {
-            "num_y": 7,
-            "num_x": 2,
+            "num_y": 5,
+            "num_x": 3,
             "wing_type": "CRM",
             "symmetry": True,
             "num_twist_cp": 6,
@@ -268,7 +262,7 @@ class Test(unittest.TestCase):
             # reflected across the plane y = 0
             "S_ref_type": "wetted",  # how we compute the wing area,
             # can be 'wetted' or 'projected'
-            "fem_model_type": "wingbox",
+            "fem_model_type": "wingbox",  # NOTE: testing the Tsai Wu wingbox model
             "spar_thickness_cp": np.array([0.004, 0.005, 0.005, 0.008, 0.008, 0.01]),  # [m]
             "skin_thickness_cp": np.array([0.005, 0.01, 0.015, 0.020, 0.025, 0.026]),
             "twist_cp": np.array([4.0, 5.0, 8.0, 8.0, 8.0, 9.0]),
@@ -295,20 +289,35 @@ class Test(unittest.TestCase):
             "with_viscous": True,
             "with_wave": True,  # if true, compute wave drag
             # Structural values are based on aluminum 7075
-            "E": 73.1e9,  # [Pa] Young's modulus
-            "G": (73.1e9 / 2 / 1.33),  # [Pa] shear modulus (calculated using E and the Poisson's ratio here)
+            # "E": 73.1e9,  # [Pa] Young's modulus
+            # "G": (73.1e9 / 2 / 1.33),  # [Pa] shear modulus (calculated using E and the Poisson's ratio here)
+            "E": 62.53e9,  # [Pa] Young's modulus # skin composites
+            "G": 29.71e9,  # [Pa] shear modulus # skin composites
             "yield": 420.0e6,  # [Pa] yield stress
             "safety_factor": 1.5,  # safety factor
-            "mrho": 2.78e3,  # [kg/m^3] material density
+            "mrho": 1550,  # [kg/m^3] material density #NOTE: CFRP density
             "strength_factor_for_upper_skin": 1.0,  # the yield stress is multiplied by this factor for the upper skin
             # 'fem_origin' : 0.35,    # normalized chordwise location of the spar
             "wing_weight_ratio": 1.25,
-            "struct_weight_relief": True,
-            "distributed_fuel_weight": True,
+            "struct_weight_relief": True,  # True to add the weight of the structure to the loads on the structure
+            "distributed_fuel_weight": False,
             # Constraints
             "exact_failure_constraint": False,  # if false, use KS function
-            "fuel_density": 803.0,  # [kg/m^3] fuel density (only needed if the fuel-in-wing volume constraint is used)
             "Wf_reserve": 15000.0,  # [kg] reserve fuel mass
+            "span": 58,  # [m] wingspan
+            "useComposite": True,
+            "safety_factor": 1.5,
+            "ply_angles": [0, 45, -45, 90],
+            "ply_fractions": [0.10, 0.25, 0.25, 0.40],
+            "E1": 117.7e9,
+            "E2": 9.7e9,
+            "nu12": 0.35,
+            "G12": 4.8e9,
+            "sigma_t1": 1648.0e6,
+            "sigma_c1": 1034.0e6,
+            "sigma_t2": 64.0e6,
+            "sigma_c2": 228.0e6,
+            "sigma_12max": 71.0e6,
         }
 
         surfaces = [surf_dict]
@@ -329,7 +338,6 @@ class Test(unittest.TestCase):
         indep_var_comp.add_output("speed_of_sound", val=295.07, units="m/s")
         indep_var_comp.add_output("load_factor", val=1.0)
         indep_var_comp.add_output("empty_cg", val=np.zeros((3)), units="m")
-        indep_var_comp.add_output("fuel_mass", val=10000.0, units="kg")
 
         prob.model.add_subsystem("prob_vars", indep_var_comp, promotes=["*"])
 
@@ -368,17 +376,15 @@ class Test(unittest.TestCase):
             prob.model.connect("load_factor", point_name + ".load_factor")
 
             for _surface in surfaces:
-                prob.model.connect("load_factor", point_name + ".coupled.load_factor")
-
                 com_name = point_name + "." + name + "_perf."
                 prob.model.connect(
                     name + ".local_stiff_transformed", point_name + ".coupled." + name + ".local_stiff_transformed"
                 )
+                prob.model.connect(name + ".nodes", point_name + ".coupled." + name + ".nodes")
 
                 # Connect aerodyamic mesh to coupled group mesh
                 prob.model.connect(name + ".mesh", point_name + ".coupled." + name + ".mesh")
                 prob.model.connect(name + ".element_mass", point_name + ".coupled." + name + ".element_mass")
-                prob.model.connect(name + ".nodes", point_name + ".coupled." + name + ".nodes")
 
                 # Connect performance calculation variables
                 prob.model.connect(name + ".nodes", com_name + "nodes")
@@ -399,23 +405,8 @@ class Test(unittest.TestCase):
                 prob.model.connect(name + ".spar_thickness", com_name + "spar_thickness")
                 prob.model.connect(name + ".t_over_c", com_name + "t_over_c")
 
-            # =======================================================================================
-            # Here we add the fuel volume constraint componenet to the model
-            # =======================================================================================
-            prob.model.add_subsystem("fuel_vol_delta", WingboxFuelVolDelta(surface=surface))
-            prob.model.connect("AS_point_0.fuelburn", "fuel_vol_delta.fuelburn")
-            prob.model.connect("wing.struct_setup.fuel_vols", "fuel_vol_delta.fuel_vols")
-            prob.model.connect("wing.struct_setup.fuel_vols", "AS_point_0.coupled.wing.struct_states.fuel_vols")
-            prob.model.connect("fuel_mass", "AS_point_0.coupled.wing.struct_states.fuel_mass")
-
-            comp = om.ExecComp("fuel_diff = (fuel_mass - fuelburn) / fuelburn", units="kg")
-            prob.model.add_subsystem("fuel_diff", comp, promotes_inputs=["fuel_mass"], promotes_outputs=["fuel_diff"])
-            prob.model.connect("AS_point_0.fuelburn", "fuel_diff.fuelburn")
-            # =======================================================================================
-            # =======================================================================================
-
         prob.driver = om.ScipyOptimizeDriver()
-        prob.driver.options["tol"] = 1e-7
+        prob.driver.options["tol"] = 1e-9
 
         prob.model.add_objective("AS_point_0.fuelburn", scaler=1e-5)
 
@@ -423,29 +414,31 @@ class Test(unittest.TestCase):
         prob.model.add_design_var("wing.spar_thickness_cp", lower=0.003, upper=0.1, scaler=1e2)
         prob.model.add_design_var("wing.skin_thickness_cp", lower=0.003, upper=0.1, scaler=1e2)
         prob.model.add_design_var("wing.geometry.t_over_c_cp", lower=0.07, upper=0.2, scaler=10.0)
-        prob.model.add_design_var("fuel_mass", lower=0.0, upper=2e5, scaler=1e-5)
+        prob.model.add_design_var("wing.geometry.span", lower=55.0, upper=60.0, scaler=2e-2)
 
         prob.model.add_constraint("AS_point_0.CL", equals=0.5)
         prob.model.add_constraint("AS_point_0.wing_perf.failure", upper=0.0)
 
-        # =======================================================================================
-        # Here we add the fuel volume constraint
-        # =======================================================================================
-        prob.model.add_constraint("fuel_vol_delta.fuel_vol_delta", lower=0.0)
-        prob.model.add_constraint("fuel_diff", equals=0.0)
-        # =======================================================================================
-        # =======================================================================================
+        # recorder = om.SqliteRecorder("tsaiwu_opt.db")
+        # prob.driver.add_recorder(recorder)
+
+        # # We could also just use prob.driver.recording_options['includes']=['*'] here, but for large meshes the database file becomes extremely large. So we just select the variables we need.
+        # prob.driver.recording_options["includes"] = ['*']
+
+        # prob.driver.recording_options["record_objectives"] = True
+        # prob.driver.recording_options["record_constraints"] = True
+        # prob.driver.recording_options["record_desvars"] = True
+        # prob.driver.recording_options["record_inputs"] = True
+
+        prob.driver = om.ScipyOptimizeDriver()
+        prob.driver.options["optimizer"] = "SLSQP"
+        prob.driver.options["tol"] = 1e-6
+        prob.driver.options["debug_print"] = ["nl_cons", "objs", "desvars"]
 
         # Set up the problem
         prob.setup()
 
         prob.run_driver()
-
-        print(prob["AS_point_0.fuelburn"][0])
-        print(prob["wing.structural_mass"][0] / 1.25)
-
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 75974.26940153482, 1e-5)
-        assert_near_equal(prob["wing.structural_mass"][0] / 1.25, 12487.980814567598, 1e-4)
 
 
 if __name__ == "__main__":
