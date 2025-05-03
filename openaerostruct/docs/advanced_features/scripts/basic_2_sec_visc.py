@@ -167,6 +167,7 @@ mesh2 = prob.get_val("surface.sec1.mesh", units="m")
 meshUni = prob.get_val(name + "." + unification_name + "." + name + "_uni_mesh")
 
 
+# Plot the results
 def plot_meshes(meshes):
     """this function plots to plot the mesh"""
     plt.figure(figsize=(8, 4))
