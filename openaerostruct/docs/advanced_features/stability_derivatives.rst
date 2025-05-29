@@ -21,4 +21,3 @@ Note that this example does not solve the trim (CM=0).
 
 .. embed-code::
    ../examples/stability_derivatives.py
-   :layout: interleave
