@@ -12,8 +12,7 @@ class Test(unittest.TestCase):
         from openaerostruct.geometry.geometry_group import Geometry
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
 
-        from openmdao.utils.assert_utils import assert_near_equal
-        from openaerostruct.utils.testing import assert_check_totals
+        from openmdao.utils.assert_utils import assert_near_equal, assert_check_totals
 
         # Create a dictionary to store options about the mesh
         mesh_dict = {"num_y": 7, "num_x": 2, "wing_type": "CRM", "symmetry": True, "num_twist_cp": 5}
@@ -126,7 +125,7 @@ class Test(unittest.TestCase):
             compact_print=True,
             out_stream=None,
         )
-        assert_check_totals(totals, atol=1e-2, rtol=1e-5)
+        assert_check_totals(totals, atol=1e-5, rtol=1e-5)
 
 
 if __name__ == "__main__":

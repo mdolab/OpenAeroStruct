@@ -1,6 +1,6 @@
-from openmdao.utils.assert_utils import assert_near_equal
+from openmdao.utils.assert_utils import assert_near_equal, assert_check_totals
 import unittest
-from openaerostruct.utils.testing import assert_check_totals, assert_opt_successful
+from openaerostruct.utils.testing import assert_opt_successful
 
 
 class Test(unittest.TestCase):
@@ -160,7 +160,7 @@ class Test(unittest.TestCase):
             abs_err_tol=1e-2,
             rel_err_tol=1e-5,
         )
-        assert_check_totals(totals, atol=1e-2, rtol=1e-5)
+        assert_check_totals(totals, atol=1e-5, rtol=1e-5)
 
 
 if __name__ == "__main__":

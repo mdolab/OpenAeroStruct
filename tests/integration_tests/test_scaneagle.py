@@ -3,12 +3,11 @@ import unittest
 import numpy as np
 
 import openmdao.api as om
-from openmdao.utils.assert_utils import assert_near_equal
+from openmdao.utils.assert_utils import assert_near_equal, assert_check_totals
 
 from openaerostruct.meshing.mesh_generator import generate_mesh
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
 from openaerostruct.utils.constants import grav_constant
-from openaerostruct.utils.testing import assert_check_totals
 
 
 class Test(unittest.TestCase):
@@ -221,10 +220,10 @@ class Test(unittest.TestCase):
             step=1e-3,
             step_calc="rel",
             compact_print=True,
-            abs_err_tol=1e-4,
-            rel_err_tol=1e-4,
+            abs_err_tol=1e-5,
+            rel_err_tol=1e-5,
         )
-        assert_check_totals(totals, atol=1e-4, rtol=1e-4)
+        assert_check_totals(totals, atol=1e-5, rtol=1e-5)
 
 
 if __name__ == "__main__":
