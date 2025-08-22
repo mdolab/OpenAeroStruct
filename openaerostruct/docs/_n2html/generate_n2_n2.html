@@ -356,7 +356,7 @@
     /* transition: opacity 0.25s; */
     box-shadow: 3px 3px 3px 1px rgba(0, 0, 0, 0.2);
     border-radius: 10px;
-    
+
     overflow: hidden;
 }
 
@@ -487,7 +487,7 @@
 .window-theme-value-info .window-body table tbody tr td {
     text-align: left;
     font-size: 9pt;
-    margin: 0;    
+    margin: 0;
     border-top: 0;
     border-left: 0;
     border-bottom: 1px solid #a0a0a0;
@@ -507,7 +507,7 @@
 .show_value_button {
     background-color: #c1c1c1;
  }
- 
+
  .copy_value_button {
     background-color: #c1c1c1;
  }
@@ -2858,7 +2858,7 @@ return _;
 </script>
      <script type="text/javascript">
 (function(e){if(typeof exports=="object"&&typeof module!="undefined")module.exports=
-e();else if(typeof define=="function"&&define.amd)define([],e);else{var t;typeof 
+e();else if(typeof define=="function"&&define.amd)define([],e);else{var t;typeof
 window!="undefined"?t=window:typeof global!="undefined"?t=global:typeof self!="undefined"?
 t=self:t=this,t.pako=e()}})(function(){var e,t,n;return function(){function e(t,
 n,i){function s(u,a){if(!n[u]){if(!t[u]){var f="function"==typeof require&&require
@@ -2867,7 +2867,7 @@ u+"'");throw l.code="MODULE_NOT_FOUND",l}var c=n[u]={exports:{}};t[u][0].call(c.
 exports,function(e){var n=t[u][1][e];return s(n||e)},c,c.exports,e,t,n,i)}return n
 [u].exports}for(var o="function"==typeof require&&require,u=0;u<i.length;u++)s(i
 [u]);return s}return e}()({1:[function(e,t,n){"use strict";function i(e,t){return Object
-.prototype.hasOwnProperty.call(e,t)}var r=typeof Uint8Array!="undefined"&&typeof 
+.prototype.hasOwnProperty.call(e,t)}var r=typeof Uint8Array!="undefined"&&typeof
 Uint16Array!="undefined"&&typeof Int32Array!="undefined";n.assign=function(e){var t=
 Array.prototype.slice.call(arguments,1);while(t.length){var n=t.shift();if(!n)continue;
 if(typeof n!="object")throw new TypeError(n+"must be non-object");for(var r in n
@@ -2947,7 +2947,7 @@ e>>>24&255)+(e>>>8&65280)+((e&65280)<<8)+((e&255)<<24)}function st(){this.mode=0
 this.work=new r.Buf16(288),this.lendyn=null,this.distdyn=null,this.sane=0,this.back=0
 ,this.was=0}function ot(e){var t;return!e||!e.state?g:(t=e.state,e.total_in=e.total_out=
 t.total=0,e.msg="",t.wrap&&(e.adler=t.wrap&1),t.mode=S,t.last=0,t.havedict=0,t.dmax=32768
-,t.head=null,t.hold=0,t.bits=0,t.lencode=t.lendyn=new r.Buf32(et),t.distcode=t.distdyn=new 
+,t.head=null,t.hold=0,t.bits=0,t.lencode=t.lendyn=new r.Buf32(et),t.distcode=t.distdyn=new
 r.Buf32(tt),t.sane=1,t.back=-1,d)}function ut(e){var t;return!e||!e.state?g:(t=e
 .state,t.wsize=0,t.whave=0,t.wnext=0,ot(e))}function at(e,t){var n,r;return!e||!
 e.state?g:(r=e.state,t<0?(n=0,t=-t):(n=(t>>4)+1,t<48&&(t&=15)),t&&(t<8||t>15)?g:
@@ -2958,12 +2958,12 @@ null),n):g}function lt(e){return ft(e,rt)}function dt(e){if(ct){var t;ht=new r.B
 ;while(t<280)e.lens[t++]=7;while(t<288)e.lens[t++]=8;u(f,e.lens,0,288,ht,0,e.work
 ,{bits:9}),t=0;while(t<32)e.lens[t++]=5;u(l,e.lens,0,32,pt,0,e.work,{bits:5}),ct=!1
 }e.lencode=ht,e.lenbits=9,e.distcode=pt,e.distbits=5}function vt(e,t,n,i){var s,
-o=e.state;return o.window===null&&(o.wsize=1<<o.wbits,o.wnext=0,o.whave=0,o.window=new 
+o=e.state;return o.window===null&&(o.wsize=1<<o.wbits,o.wnext=0,o.whave=0,o.window=new
 r.Buf8(o.wsize)),i>=o.wsize?(r.arraySet(o.window,t,n-o.wsize,o.wsize,0),o.wnext=0
 ,o.whave=o.wsize):(s=o.wsize-o.wnext,s>i&&(s=i),r.arraySet(o.window,t,n-i,s,o.wnext
 ),i-=s,i?(r.arraySet(o.window,t,n-i,i,0),o.wnext=i,o.whave=o.wsize):(o.wnext+=s,
 o.wnext===o.wsize&&(o.wnext=0),o.whave<o.wsize&&(o.whave+=s))),0}function mt(e,t
-){var n,et,tt,nt,rt,st,ot,ut,at,ft,lt,ct,ht,pt,mt=0,gt,yt,bt,wt,Et,St,xt,Tt,Nt=new 
+){var n,et,tt,nt,rt,st,ot,ut,at,ft,lt,ct,ht,pt,mt=0,gt,yt,bt,wt,Et,St,xt,Tt,Nt=new
 r.Buf8(4),Ct,kt,Lt=[16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];if(!e||!e.state||!
 e.output||!e.input&&e.avail_in!==0)return g;n=e.state,n.mode===D&&(n.mode=P),rt=
 e.next_out,tt=e.output,ot=e.avail_out,nt=e.next_in,et=e.input,st=e.avail_in,ut=n
@@ -3112,7 +3112,7 @@ O]=E-k<<24|64<<16|0),b.bits=N,0}},{"../utils/common":1}],10:[function(e,t,n){"us
 }},{}],11:[function(e,t,n){"use strict";function r(){this.input=null,this.next_in=0
 ,this.avail_in=0,this.total_in=0,this.output=null,this.next_out=0,this.avail_out=0
 ,this.total_out=0,this.msg="",this.state=null,this.data_type=2,this.adler=0}t.exports=
-r},{}],"/lib/inflate.js":[function(e,t,n){"use strict";function c(e){if(!(this instanceof 
+r},{}],"/lib/inflate.js":[function(e,t,n){"use strict";function c(e){if(!(this instanceof
 c))return new c(e);this.options=i.assign({chunkSize:16384,windowBits:0,to:""},e||
 {});var t=this.options;t.raw&&t.windowBits>=0&&t.windowBits<16&&(t.windowBits=-t
 .windowBits,t.windowBits===0&&(t.windowBits=-15)),t.windowBits>=0&&t.windowBits<16&&
@@ -3121,7 +3121,7 @@ c))return new c(e);this.options=i.assign({chunkSize:16384,windowBits:0,to:""},e|
 .strm=new a,this.strm.avail_out=0;var n=r.inflateInit2(this.strm,t.windowBits);if(
 n!==o.Z_OK)throw new Error(u[n]);this.header=new f,r.inflateGetHeader(this.strm,
 this.header);if(t.dictionary){typeof t.dictionary=="string"?t.dictionary=s.string2buf
-(t.dictionary):l.call(t.dictionary)==="[object ArrayBuffer]"&&(t.dictionary=new 
+(t.dictionary):l.call(t.dictionary)==="[object ArrayBuffer]"&&(t.dictionary=new
 Uint8Array(t.dictionary));if(t.raw){n=r.inflateSetDictionary(this.strm,t.dictionary
 );if(n!==o.Z_OK)throw new Error(u[n])}}}function h(e,t){var n=new c(t);n.push(e,!0
 );if(n.err)throw n.msg||u[n.err];return n.result}function p(e,t){return t=t||{},
@@ -3219,7 +3219,7 @@ Object.defineProperty(Object.prototype, 'propExists', {
 });
 
 /**
- * Since checking for an Array's existance as well as 
+ * Since checking for an Array's existance as well as
  * length > 0 is very common, combine the two.
  */
 Array.isPopulatedArray = function (arr) {
@@ -3330,7 +3330,7 @@ class SymbolType {
         }
     }
 
-    /** 
+    /**
      * Decide what object the cell will be drawn as, based on its position
      * in the matrix, type, source, target, and/or other conditions.
      * @param {N2MatrixCell} cell The cell to operate on.
@@ -3728,13 +3728,13 @@ class ModelData {
     static uncompressModel(b64str) {
         const compressedData = atob(b64str);
         const jsonStr = window.pako.inflate(compressedData, { to: 'string' });
-            
+
         /* for ( let pos = 0; pos < jsonStr.length; pos += 100) {
             console.log(pos, jsonStr.substring(pos, pos+99));
         } */
 
         // JSON5 can handle Inf and NaN
-        return JSON5.parse(jsonStr); 
+        return JSON5.parse(jsonStr);
     }
 
     /**
@@ -4882,7 +4882,7 @@ class N2Window {
             this.bringToFront(true, 2);
             modalDiv.attr('style', style)
                 .style('z-index', N2Window.zIndex - 1)
-                
+
         }
         else {
             modalDiv.attr('style', null);
@@ -5007,7 +5007,7 @@ class N2WindowResizable extends N2WindowDraggable {
         this.header.style('cursor', cursor);
         this.window.style('cursor', cursor);
         this.window.select('.window-close-button').style('cursor', cursor);
-        this.resizerDiv.selectAll('div').style('cursor', cursor);        
+        this.resizerDiv.selectAll('div').style('cursor', cursor);
 
         return this;
     }
@@ -5867,7 +5867,7 @@ class N2ScalarBase extends N2CellRenderer {
             .attr("ry", dims.bottomRight.y * .6);
     }
 
-    /** 
+    /**
      * Get the D3 selection for the appropriate group and append a filled ellipse.
      * @param {Object} svgGroup Reference to SVG <g> element associated with data.
      * @param {Object} dims The cell spec to use while rendering.
@@ -5916,7 +5916,7 @@ class N2VectorBase extends N2CellRenderer {
         return ret;
     }
 
-    /** 
+    /**
      * Get the D3 selection for the appropriate group and append a filled rectangle.
      * @param {Object} svgGroup Reference to SVG <g> element associated with data.
      * @param {Object} dims The cell spec to use while rendering.
@@ -5960,7 +5960,7 @@ class N2Connector extends N2CellRenderer {
         return ret;
     }
 
-    /** 
+    /**
      * Get the D3 selection for the appropriate group and append a filled arrow.
      * @param {Object} svgGroup Reference to SVG <g> element associated with data.
      * @param {Object} dims The cell spec to use while rendering.
@@ -6062,7 +6062,7 @@ class N2GroupBase extends N2CellRenderer {
             .attr("height", dims.size.height * .6);
     }
 
-    /** 
+    /**
      * Get the D3 selection for the appropriate group and append a filled rectangle,
      * then call _renderBorder() to put a border around it.
      * @param {Object} svgGroup Reference to SVG <g> element associated with data.
@@ -6218,7 +6218,7 @@ class N2MatrixCell {
 
     static makeId(srcId, tgtId = null) {
         if (! tgtId || srcId == tgtId) return "node_" + srcId;
-        
+
         return "conn_" + srcId + "_to_" + tgtId;
     }
 
@@ -6886,7 +6886,7 @@ class N2Matrix {
      */
     findCellByNodeId(nodeId) {
         const node = this.model.nodeIds[nodeId];
-        let ret = { 
+        let ret = {
             'cell': undefined,    // Changed to refer to a related cell if found
             'exactMatch': false,  // True if nodeId matches a cell
             'parentMatch': false, // True if nodeId's ancestor is a cell
@@ -6925,7 +6925,7 @@ class N2Matrix {
                 return ret;
             }
         }
-    
+
         // Shouldn't really get here due to zoomedElement check at top
         debugInfo(`findCellByNodeId: ${debugStr} fell through all checks!`)
         return ret;
@@ -10661,7 +10661,7 @@ class InfoPropYesNo extends InfoPropDefault {
 }
 
 /**
- * Output a message if the value is True. 
+ * Output a message if the value is True.
  * @typedef InfoPropMessage
  */
 class InfoPropMessage extends InfoPropYesNo {
@@ -10671,8 +10671,8 @@ class InfoPropMessage extends InfoPropYesNo {
     }
 
     /** Return message when value is True */
-    output(boolVal) { 
-        return boolVal ? this.message : ''; 
+    output(boolVal) {
+        return boolVal ? this.message : '';
     }
 }
 
@@ -11072,7 +11072,7 @@ class NodeInfo extends N2Window {
     /** Toggle the active mode */
     toggle() {
         if (this.active) return this.deactivate();
-        
+
         return this.activate();
     }
 

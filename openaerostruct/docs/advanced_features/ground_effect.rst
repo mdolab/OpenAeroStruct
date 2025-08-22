@@ -39,5 +39,3 @@ These results are consistent with published values in the literature, for exampl
 
 .. image:: /advanced_features/figs/ground_effect_polars.png
     :width: 600
-
-
