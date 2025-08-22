@@ -1,3 +1,5 @@
+extend = "ruff.toml-global"
+
 # OpenAeroStruct-specific settings in addition to the MDO Lab standard config file.
 extend-exclude = [
     openaerostruct/docs/conf.py,
