@@ -1,6 +1,9 @@
 # Ignore OpenMDAO reports folders
 **/reports/
 
+ruff.toml
+.pre-commit-config.yaml
+
 *.pyc
 *.py~
 *.db
