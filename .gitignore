@@ -1,8 +1,7 @@
 # Ignore OpenMDAO reports folders
 **/reports/
 
-# ruff and pre-commit config files that should be manually copied from the mdolab/.github repo.
-ruff.toml-global
+# pre-commit config file that should be manually copied from the mdolab/.github repo.
 .pre-commit-config.yaml
 
 *.pyc
