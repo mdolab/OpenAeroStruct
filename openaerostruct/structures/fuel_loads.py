@@ -13,11 +13,7 @@ class FuelLoads(om.ExplicitComponent):
     Compute the nodal loads from the distributed fuel within the wing
     to be applied to the wing structure.
 
-    Parameters
-    ----------
 
-    Returns
-    -------
 
     """
 
