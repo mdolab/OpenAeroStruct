@@ -1,4 +1,4 @@
-""" Group that manipulates geometry mesh based on high-level design parameters. """
+"""Group that manipulates geometry mesh based on high-level design parameters."""
 
 import numpy as np
 

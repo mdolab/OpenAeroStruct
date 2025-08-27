@@ -1,6 +1,7 @@
 """
 Class definition for CompressibleVLMStates.
 """
+
 import openmdao.api as om
 
 from openaerostruct.aerodynamics.get_vectors import GetVectors

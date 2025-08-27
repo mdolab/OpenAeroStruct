@@ -396,7 +396,7 @@ if __name__ == "__main__":
     meshT, sec_meshes = generate_mesh(surface)
 
     def plot_meshes(meshes):
-        """this function plots to plot the mesh"""
+        """This function plots to plot the mesh"""
         plt.figure(figsize=(8, 4))
         for i, mesh in enumerate(meshes):
             mesh_x = mesh[:, :, 0]

@@ -1,5 +1,6 @@
 """Optimizes the section chord distribution of a two section symmetrical wing using the constraint-based approach for section
-joining. This example is referenced as part of the multi-section tutorial."""
+joining. This example is referenced as part of the multi-section tutorial.
+"""
 
 # docs checkpoint 0
 import numpy as np
@@ -211,7 +212,7 @@ meshUni = prob.get_val(name + "." + unification_name + "." + name + "_uni_mesh")
 
 # Plot the results
 def plot_meshes(meshes):
-    """this function plots a list of meshes on the same plot."""
+    """This function plots a list of meshes on the same plot."""
     plt.figure(figsize=(8, 4))
     for i, mesh in enumerate(meshes):
         mesh_x = mesh[:, :, 0]

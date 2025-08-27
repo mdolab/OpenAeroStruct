@@ -23,7 +23,7 @@ class AeroPoint(om.Group):
             "compressible",
             types=bool,
             default=False,
-            desc="Turns on compressibility correction for moderate Mach number " "flows. Defaults to False.",
+            desc="Turns on compressibility correction for moderate Mach number flows. Defaults to False.",
         )
 
     def setup(self):

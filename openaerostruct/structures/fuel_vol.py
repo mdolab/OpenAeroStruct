@@ -11,7 +11,7 @@ class WingboxFuelVol(om.ExplicitComponent):
     """
     Computes the internal volumes of the wingbox segments.
 
-    parameters
+    Parameters
     ----------
     nodes[ny, 3] : numpy array
         Coordinates of FEM nodes.

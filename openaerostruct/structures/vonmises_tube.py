@@ -8,7 +8,7 @@ from openaerostruct.structures.utils import norm, unit, norm_d, unit_d, cross_d
 class VonMisesTube(om.ExplicitComponent):
     """Compute the von Mises stress in each element.
 
-    parameters
+    Parameters
     ----------
     nodes[ny, 3] : numpy array
         Flattened array with coordinates for each FEM node.
