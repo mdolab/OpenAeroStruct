@@ -82,8 +82,6 @@ class TsaiWuWingbox(om.ExplicitComponent):
         self.sigma_t2 = surface["sigma_t2"]
         self.sigma_12max = surface["sigma_12max"]
 
-        self.tssf = surface["strength_factor_for_upper_skin"]
-
         self.declare_partials("*", "*", method="cs")
 
     def compute(self, inputs, outputs):
