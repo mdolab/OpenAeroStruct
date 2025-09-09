@@ -15,76 +15,8 @@ from openaerostruct.aerodynamics.compressible_states import CompressibleVLMState
 from openaerostruct.structures.tube_group import TubeGroup
 from openaerostruct.structures.wingbox_group import WingboxGroup
 from openaerostruct.utils.check_surface_dict import check_surface_dict_keys
-import numpy as np
+from openaerostruct.structures.utils import compute_composite_stiffness
 import openmdao.api as om
-
-
-def TransformationMatrix(theta):
-    """
-    function to find the transformation matrix for a given angle
-    input: theta (angle in degrees)
-    output: transformation (T) matrix
-    """
-    theta = theta * np.pi / 180
-    c = np.cos(theta)
-    s = np.sin(theta)
-    T = np.zeros((3, 3))
-    T[0, 0] = c**2
-    T[0, 1] = s**2
-    T[0, 2] = 2 * s * c
-    T[1, 0] = s**2
-    T[1, 1] = c**2
-    T[1, 2] = -2 * s * c
-    T[2, 0] = -s * c
-    T[2, 1] = s * c
-    T[2, 2] = c**2 - s**2
-    return T
-
-
-def computeCompositeStiffness(surface):
-    """
-    Function to compute the effective E and G stiffness values for a composite material,
-    based on the ply_fractions, ply angles and individual fiber and matrix properties.
-    """
-    E1 = surface["E1"]
-    E2 = surface["E2"]
-    v12 = surface["nu12"]
-    G12 = surface["G12"]
-    v21 = (E2 / E1) * v12
-    ply_fractions = surface["ply_fractions"]
-    ply_angles = surface["ply_angles"]
-    num_plies = len(ply_fractions)
-
-    # finding the Q matrix
-    Q = np.zeros((3, 3))
-    Q[0, 0] = E1 / (1 - v12 * v21)
-    Q[0, 1] = v12 * E2 / (1 - v12 * v21)
-    Q[0, 2] = 0
-    Q[1, 0] = v21 * E1 / (1 - v12 * v21)
-    Q[1, 1] = E2 / (1 - v12 * v21)
-    Q[1, 2] = 0
-    Q[2, 0] = 0
-    Q[2, 1] = 0
-    Q[2, 2] = G12
-
-    # finding the Q_bar matrix for each ply in the form of a 3D Array
-    Q_bar = np.zeros((num_plies, 3, 3))
-    Q_bar_eff = np.zeros((3, 3))
-    for i in range(num_plies):
-        theta = ply_angles[i]
-        T = TransformationMatrix(theta)
-        Q_bar[i] = np.dot(np.dot(np.linalg.inv(T), Q), T)
-        Q_bar_eff += ply_fractions[i] * Q_bar[i]
-
-    S_bar_eff = np.linalg.inv(Q_bar_eff)
-    E_eff = 1 / S_bar_eff[0, 0]
-    G_eff = 1 / S_bar_eff[2, 2]
-
-    # replacing the values in the surface dictionary
-    surface["E"] = E_eff
-    surface["G"] = G_eff
-
-    # no need to return anything as the values are updated in the surface dictionary (call by reference)
 
 
 class AerostructGeometry(om.Group):
@@ -502,7 +434,7 @@ class AerostructPoint(om.Group):
             # if useComposite is enabled, compute the effective E and G values for the composite material
             useComposite = "useComposite" in surface.keys() and surface["useComposite"]
             if useComposite:
-                computeCompositeStiffness(surface)
+                compute_composite_stiffness(surface)
 
             # Connect the output of the loads component with the FEM
             # displacement parameter. This links the coupling within the coupled
