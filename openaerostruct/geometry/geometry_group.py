@@ -2,7 +2,11 @@ import numpy as np
 
 import openmdao.api as om
 from openaerostruct.utils.check_surface_dict import check_surface_dict_keys
+from openaerostruct.meshing.section_mesh_generator import generate_mesh
+from openaerostruct.geometry.geometry_unification import GeomMultiUnification
+from openaerostruct.geometry.geometry_multi_join import GeomMultiJoin
 from openaerostruct.utils.interpolation import get_normalized_span_coords
+from openaerostruct.geometry.utils import build_section_dicts
 
 
 class Geometry(om.Group):
@@ -28,6 +32,16 @@ class Geometry(om.Group):
         # key validation of the surface dict
         check_surface_dict_keys(surface)
 
+        # use the section mesh generator to generate a mesh from surface dict if user specifies
+        if isinstance(surface["mesh"], str) and surface["mesh"] == "gen-mesh":
+            surface["num_sections"] = 1
+            surface["mesh"], _ = generate_mesh(surface)
+
+            # Reset taper and sweep so that OAS doesn't apply the the transformations again
+            surface["taper"] = 1.0
+            # surface["span"] = 1.0
+            surface["sweep"] = 0.0
+
         # Get the surface name and create a group to contain components
         # only for this surface
 
@@ -43,7 +57,10 @@ class Geometry(om.Group):
                 comp = self.add_subsystem(
                     "t_over_c_bsp",
                     om.SplineComp(
-                        method="bsplines", x_interp_val=x_interp, num_cp=n_cp, interp_options={"order": min(n_cp, 4)}
+                        method="bsplines",
+                        x_interp_val=x_interp,
+                        num_cp=n_cp,
+                        interp_options={"order": min(n_cp, 4), "x_cp_start": 0.0, "x_cp_end": 1.0},
                     ),
                     promotes_inputs=["t_over_c_cp"],
                     promotes_outputs=["t_over_c"],
@@ -107,7 +124,10 @@ class Geometry(om.Group):
                 comp = self.add_subsystem(
                     "t_over_c_bsp",
                     om.SplineComp(
-                        method="bsplines", x_interp_val=x_interp, num_cp=n_cp, interp_options={"order": min(n_cp, 4)}
+                        method="bsplines",
+                        x_interp_val=x_interp,
+                        num_cp=n_cp,
+                        interp_options={"order": min(n_cp, 4), "x_cp_start": 0, "x_cp_end": 1},
                     ),
                     promotes_inputs=["t_over_c_cp"],
                     promotes_outputs=["t_over_c"],
@@ -190,3 +210,73 @@ class Geometry(om.Group):
             self.add_subsystem(
                 "mesh", GeometryMesh(surface=surface), promotes_inputs=bsp_inputs, promotes_outputs=["mesh"]
             )
+
+
+class MultiSecGeometry(om.Group):
+    """
+    Group that contains the section geometery groups for a multi-section surface.
+
+
+    This group handles the creation of each section geometry group based on parameters
+    supplied in the multi-section surface dictionary. Meshes for each section can be
+    provided by the user or automatically generated based on parameters supplied in the
+    surface dictionary. The group also adds a mesh unification component that combines the
+    individual section for each mesh into a singular unified mesh for use in aero components.
+    Optionally, the joining component can be added that computes the edge distances between sections.
+    This information can be used to set a distance constraint along the specified axes if needed.
+    """
+
+    def initialize(self):
+        self.options.declare("surface", types=dict)  # Multi-section surface dictionary
+        self.options.declare(
+            "joining_comp", types=bool, default=False
+        )  # Specify if a distance computation component should be added
+        self.options.declare(
+            "dim_constr", types=list, default=[]
+        )  # List of arrays corresponding to each shared edge between section along the surface. Each array inidicates along which axes the distance constarint is applied([x y z])
+        self.options.declare(
+            "shift_uni_mesh", types=bool, default=True
+        )  # Flag that shifts sections so that their leading edges are coincident. Intended to keep sections from seperating
+        # or intersecting during scalar span or sweep operations without the use of the constraint component.
+
+    def setup(self):
+        surface = self.options["surface"]
+        joining_comp = self.options["joining_comp"]
+        dc = self.options["dim_constr"]
+        shift_uni_mesh = self.options["shift_uni_mesh"]
+
+        # key validation of the surface dict
+        check_surface_dict_keys(surface)
+
+        sec_dicts = build_section_dicts(surface)
+
+        section_names = []
+        for sec in sec_dicts:
+            geom_group = Geometry(surface=sec)
+            self.add_subsystem(sec["name"], geom_group)
+            section_names.append(sec["name"])
+
+        # Add the mesh unification component
+        unification_name = "{}_unification".format(surface["name"])
+
+        uni_mesh = GeomMultiUnification(sections=sec_dicts, surface_name=surface["name"], shift_uni_mesh=shift_uni_mesh)
+        self.add_subsystem(unification_name, uni_mesh)
+
+        # Connect each section mesh to mesh unification component inputs
+        for sec_name in section_names:
+            self.connect("{}.mesh".format(sec_name), "{}.{}_def_mesh".format(unification_name, sec_name))
+
+        # Connect each section t over c B-spline to t over c unification component if needed
+        if "t_over_c_cp" in surface.keys():
+            for sec_name in section_names:
+                self.connect("{}.t_over_c".format(sec_name), "{}.{}_t_over_c".format(unification_name, sec_name))
+
+        if joining_comp:
+            # Add section joining component to output edge distances
+            joining_name = "{}_joining".format(surface["name"])
+
+            join = GeomMultiJoin(sections=sec_dicts, dim_constr=dc)
+            self.add_subsystem(joining_name, join)
+
+            for sec_name in section_names:
+                self.connect("{}.mesh".format(sec_name), "{}.{}_join_mesh".format(joining_name, sec_name))

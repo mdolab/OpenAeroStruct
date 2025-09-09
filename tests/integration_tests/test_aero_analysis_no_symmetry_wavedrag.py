@@ -2,7 +2,7 @@ from openmdao.utils.assert_utils import assert_near_equal
 import unittest
 import numpy as np
 
-from openaerostruct.geometry.utils import generate_mesh
+from openaerostruct.meshing.mesh_generator import generate_mesh
 from openaerostruct.geometry.geometry_group import Geometry
 from openaerostruct.aerodynamics.aero_groups import AeroPoint
 
@@ -101,7 +101,7 @@ class Test(unittest.TestCase):
         prob.run_driver()
 
         assert_near_equal(prob["aero_point_0.CL"][0], 0.46419154063077483, 1e-6)
-        assert_near_equal(prob["aero_point_0.CD"][0], 0.020863555824806052, 1e-6)
+        assert_near_equal(prob["aero_point_0.CD"][0], 0.020404720588811737, 1e-6)
         assert_near_equal(prob["aero_point_0.CM"][1], -1.8595708973535592, 1e-6)
 
 

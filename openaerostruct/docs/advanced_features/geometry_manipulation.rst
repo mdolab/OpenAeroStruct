@@ -129,7 +129,7 @@ Only two components need to have information from all lifting surfaces -- `Assem
 
 Utility Scripts
 ---------------
-A few useful scripts can be found in geometry/utils.py, such as
-:py:meth:`writing the mesh to a Tecplot file <openaerostruct.geometry.utils.writeMesh>`
+A few useful scripts can be found in geometry/utils.py and meshing/utils.py, such as
+:py:meth:`writing the mesh to a Tecplot file <openaerostruct.meshing.utils.write_tecplot>`
 and
-:py:meth:`mirroring half-meshes to obtain the full mesh <openaerostruct.geometry.utils.getFullMesh>`.
+:py:meth:`mirroring half-meshes to obtain the full mesh <openaerostruct.meshing.utils.getFullMesh>`.

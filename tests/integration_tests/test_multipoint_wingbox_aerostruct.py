@@ -3,7 +3,7 @@ from openaerostruct.utils.testing import assert_opt_successful
 import unittest
 import numpy as np
 
-from openaerostruct.geometry.utils import generate_mesh
+from openaerostruct.meshing.mesh_generator import generate_mesh
 
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
 
@@ -460,8 +460,8 @@ class Test(unittest.TestCase):
 
         assert_opt_successful(self, optResult)
 
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 87326.95014538494, 1e-5)
-        assert_near_equal(prob["wing.structural_mass"][0], 32947.84007488438, 1e-5)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 87326.71090049665, 1e-5)
+        assert_near_equal(prob["wing.structural_mass"][0], 32943.97274107966, 1e-5)
         assert_near_equal(prob["AS_point_0.CL"][0], 0.5, 1e-5)
         assert_near_equal(prob["AS_point_1.L_equals_W"][0], 0.0, 1e-5)
 

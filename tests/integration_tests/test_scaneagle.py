@@ -3,12 +3,11 @@ import unittest
 import numpy as np
 
 import openmdao.api as om
-from openmdao.utils.assert_utils import assert_near_equal
+from openmdao.utils.assert_utils import assert_near_equal, assert_check_totals
 
-from openaerostruct.geometry.utils import generate_mesh
+from openaerostruct.meshing.mesh_generator import generate_mesh
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
 from openaerostruct.utils.constants import grav_constant
-from openaerostruct.utils.testing import assert_check_totals
 
 
 class Test(unittest.TestCase):
@@ -208,9 +207,9 @@ class Test(unittest.TestCase):
         self.prob.run_driver()
 
         assert_near_equal(self.prob["AS_point_0.fuelburn"][0], 4.518756027353296, 1e-5)
-        assert_near_equal(self.prob["wing.twist_cp"], np.array([2.74161203, 12.22389255, 5.0]), 1e-5)
-        assert_near_equal(self.prob["wing.sweep"][0], 18.909083171987344, 1e-5)
-        assert_near_equal(self.prob["alpha"][0], 1.4756577579439902, 1e-5)
+        assert_near_equal(self.prob["wing.twist_cp"], np.array([2.74343152, 12.2239185, 5.0]), 1e-5)
+        assert_near_equal(self.prob["wing.sweep"][0], 18.908583449616266, 1e-5)
+        assert_near_equal(self.prob["alpha"][0], 1.475153325082263, 1e-5)
 
     def test_totals(self):
         # Set up the problem
@@ -219,13 +218,13 @@ class Test(unittest.TestCase):
         totals = self.prob.check_totals(
             method="fd",
             form="central",
-            step=5e-4,
+            step=1e-3,
             step_calc="rel",
             compact_print=True,
-            abs_err_tol=1e-4,
-            rel_err_tol=1e-4,
+            abs_err_tol=1e-5,
+            rel_err_tol=1e-5,
         )
-        assert_check_totals(totals, atol=1e-4, rtol=1e-4)
+        assert_check_totals(totals, atol=1e-5, rtol=1e-5)
 
 
 if __name__ == "__main__":

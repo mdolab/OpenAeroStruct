@@ -2,7 +2,7 @@ from openmdao.utils.assert_utils import assert_near_equal
 import numpy as np
 import unittest
 
-from openaerostruct.geometry.utils import generate_mesh
+from openaerostruct.meshing.mesh_generator import generate_mesh
 from openaerostruct.geometry.geometry_group import Geometry
 
 from openaerostruct.aerodynamics.aero_groups import AeroPoint

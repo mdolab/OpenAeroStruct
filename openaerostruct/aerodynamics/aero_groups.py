@@ -30,6 +30,37 @@ class AeroPoint(om.Group):
         surfaces = self.options["surfaces"]
         rotational = self.options["rotational"]
 
+        # Check for multi-section surfaces and create suitable surface dictionaries for them
+        for i, surface in enumerate(surfaces):
+            # If multisection mesh then build a single surface with the unified mesh data
+            if "is_multi_section" in surface.keys():
+                import copy
+
+                target_keys = [
+                    # Essential Info
+                    "name",
+                    "symmetry",
+                    "S_ref_type",
+                    "ref_axis_pos",
+                    "mesh",
+                    # aerodynamics
+                    "CL0",
+                    "CD0",
+                    "with_viscous",
+                    "with_wave",
+                    "groundplane",
+                    "k_lam",
+                    "t_over_c_cp",
+                    "c_max_t",
+                ]
+
+                # Constructs a surface dictionary and adds the specified supported keys and values from the mult-section surface dictionary.
+                aeroSurface = {}
+                for k in set(surface).intersection(target_keys):
+                    aeroSurface[k] = surface[k]
+                # print(aeroSurface["name"])
+                surfaces[i] = copy.deepcopy(aeroSurface)
+
         # Loop through each surface and connect relevant parameters
         for surface in surfaces:
             name = surface["name"]

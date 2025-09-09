@@ -3,16 +3,16 @@ import unittest
 
 class Test(unittest.TestCase):
     def test(self):
+        # docs checkpoint 0
         import numpy as np
 
         import openmdao.api as om
 
-        from openaerostruct.geometry.utils import generate_mesh
+        from openaerostruct.meshing.mesh_generator import generate_mesh
         from openaerostruct.geometry.geometry_group import Geometry
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
 
-        from openmdao.utils.assert_utils import assert_near_equal
-        from openaerostruct.utils.testing import assert_check_totals
+        from openmdao.utils.assert_utils import assert_near_equal, assert_check_totals
 
         # Create a dictionary to store options about the mesh
         mesh_dict = {"num_y": 7, "num_x": 2, "wing_type": "CRM", "symmetry": True, "num_twist_cp": 5}
@@ -107,6 +107,7 @@ class Test(unittest.TestCase):
         prob.setup()
 
         prob.run_driver()
+        # docs checkpoint 1
 
         assert_near_equal(prob["aero_point_0.wing_perf.CD"][0], 0.03157578980832382, 1e-6)
         assert_near_equal(prob["aero_point_0.wing_perf.CL"][0], 0.5, 1e-6)
@@ -124,7 +125,7 @@ class Test(unittest.TestCase):
             compact_print=True,
             out_stream=None,
         )
-        assert_check_totals(totals, atol=1e-2, rtol=1e-5)
+        assert_check_totals(totals, atol=1e-5, rtol=1e-5)
 
 
 if __name__ == "__main__":

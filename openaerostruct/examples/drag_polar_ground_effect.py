@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pylab as plt
 
 import openmdao.api as om
-from openaerostruct.geometry.utils import generate_mesh
+from openaerostruct.meshing.mesh_generator import generate_mesh
 from openaerostruct.geometry.geometry_group import Geometry
 from openaerostruct.aerodynamics.aero_groups import AeroPoint
 

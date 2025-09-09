@@ -9,5 +9,7 @@ This allows for more general design shape changes and helps sync up geometry cha
 .. warning::
   This example requires `pyGeo`, an external code developed by the MDO Lab. You can install it from `here <https://github.com/mdolab/pygeo>`_.
 
-.. embed-code::
-  openaerostruct.tests.test_aerostruct_ffd.Test.test
+.. literalinclude:: /../../tests/integration_tests/test_aerostruct_ffd.py
+    :start-after: docs checkpoint 0
+    :end-before: docs checkpoint 1
+    :dedent: 8

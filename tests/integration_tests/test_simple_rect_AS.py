@@ -3,7 +3,7 @@ from openaerostruct.utils.testing import assert_opt_successful
 import unittest
 import numpy as np
 
-from openaerostruct.geometry.utils import generate_mesh
+from openaerostruct.meshing.mesh_generator import generate_mesh
 
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
 

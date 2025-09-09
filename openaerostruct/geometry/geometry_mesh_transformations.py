@@ -1,5 +1,5 @@
-""" A set of components that manipulate geometry mesh
-    based on high-level design parameters. """
+"""A set of components that manipulate geometry mesh
+based on high-level design parameters."""
 
 import numpy as np
 
@@ -56,60 +56,84 @@ class Taper(om.ExplicitComponent):
         # Get mesh parameters and the quarter-chord
         le = mesh[0]
         te = mesh[-1]
-        num_x, num_y, _ = mesh.shape
         ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
         x = ref_axis[:, 1]
-        span = x[-1] - x[0]
+
+        # Spanwise(j) index of wing centerline
+        n_sym = (len(x) + 1) // 2 - 1
 
         # If symmetric, solve for the correct taper ratio, which is a linear
-        # interpolation problem
+        # interpolation problem (assume symmetry axis is not necessarily at y = 0)
         if symmetry:
-            xp = np.array([-span, 0.0])
+            xp = np.array([x[0], x[-1]])
             fp = np.array([taper_ratio, 1.0])
 
         # Otherwise, we set up an interpolation problem for the entire wing, which
-        # consists of two linear segments
+        # consists of two linear segments (assume symmetry axis is not necessarily at y = 0)
         else:
-            xp = np.array([-span / 2, 0.0, span / 2])
+            xp = np.array([x[0], x[n_sym], x[-1]])
             fp = np.array([taper_ratio, 1.0, taper_ratio])
 
-        taper = np.interp(x.real, xp.real, fp.real)
+        # Interpolate over quarter chord line to compute the taper at each spanwise stations
+        taper = np.interp(x, xp, fp)
 
         # Modify the mesh based on the taper amount computed per spanwise section
+        # j - spanwise station index (ny)
+        # Broadcast taper array over the mesh along spanwise(j) index multiply it by the x and z coordinates
         outputs["mesh"] = np.einsum("ijk,j->ijk", mesh - ref_axis, taper) + ref_axis
 
     def compute_partials(self, inputs, partials):
         mesh = self.options["mesh"]
         symmetry = self.options["symmetry"]
-        taper_ratio = inputs["taper"][0]
 
         # Get mesh parameters and the quarter-chord
         le = mesh[0]
         te = mesh[-1]
-        num_x, num_y, _ = mesh.shape
         ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
         x = ref_axis[:, 1]
-        span = x[-1] - x[0]
 
-        # If symmetric, solve for the correct taper ratio, which is a linear
-        # interpolation problem
+        # Spanwise(j) index of wing centerline
+        n_sym = (len(x) + 1) // 2 - 1
+
+        # Derivative implementation that allows for taper_ratio = 1
         if symmetry:
-            xp = np.array([-span, 0.0])
-            fp = np.array([taper_ratio, 1.0])
+            # Compute the span
+            span = x[-1] - x[0]
 
-        # Otherwise, we set up an interpolation problem for the entire wing, which
-        # consists of two linear segments
+            # Distance of each station from left tip(incl. left tip)
+            dy = x - x[0]
+
+            # Compute the derivative vector wrt to the taper_ratio
+            # Note that this isn't sensitive to the taper_ratio itself,
+            # only the span station spacing allowing for taper_ratio = 1
+            # This is simply the derivative of the linear interpolation
+            # wrt to the end point which is the taper_ratio
+            dtaper = np.ones(len(x)) + (-dy / span)
         else:
-            xp = np.array([-span / 2, 0.0, span / 2])
-            fp = np.array([taper_ratio, 1.0, taper_ratio])
+            # Compute the semi-span considering each semi-span might be
+            # perturbed
+            span1 = x[n_sym] - x[0]
 
-        taper = np.interp(x, xp, fp)
+            # Distance of each left span station from left tip(incl. left tip)
+            dy1 = x[: n_sym + 1] - x[0]
 
-        if taper_ratio == 1.0:
-            dtaper = np.zeros(taper.shape)
-        else:
-            dtaper = (1.0 - taper) / (1.0 - taper_ratio)
+            # Compute the left half of the derivative vector wrt to the taper_ratio
+            dtaper1 = np.ones(n_sym + 1) + (-dy1 / span1)
 
+            # Compute the semi-span
+            span2 = x[-1] - x[n_sym]
+
+            # Distance of each right span station from centerline
+            dy2 = x[n_sym + 1 :] - x[n_sym]
+
+            # Compute the right half of the derivative vector wrt to the taper_ratio
+            dtaper2 = dy2 / span2
+
+            # Concatinate the two parts of the deritivative vector
+            dtaper = np.concatenate([dtaper1, dtaper2])
+
+        # Broadcast d (taper)/ d(taper_ratio) onto each mesh spanwise station in a similar fasion to the compute method
+        # This works as only taper is directly sensitive to taper_ratio
         partials["mesh", "taper"] = np.einsum("ijk, j->ijk", mesh - ref_axis, dtaper)
 
 
@@ -152,20 +176,54 @@ class ScaleX(om.ExplicitComponent):
 
         self.add_output("mesh", shape=mesh_shape, units="m")
 
+        # Compute total number of array entries in mesh array
         nx, ny, _ = mesh_shape
         nn = nx * ny * 3
 
+        # Setup the  d mesh/ d chord jacobian
+
+        # All mesh array entries are sensitive to chord
         rows = np.arange(nn)
-        col = np.tile(np.zeros(3), ny) + np.repeat(np.arange(ny), 3)
+
+        # Repeat each spanwise index 3 times since all three coordiantes of each
+        # spanwise point is sentive to chord
+        # col = np.tile(np.zeros(3), ny) + np.repeat(np.arange(ny), 3)
+        # Removed redundant preallocation step
+        col = np.repeat(np.arange(ny), 3)
+
+        # At each spanwise station there are nx chorwise point so repeat
+        # the pattern nx times
         cols = np.tile(col, nx)
 
         self.declare_partials("mesh", "chord", rows=rows, cols=cols)
 
+        # Setup the  d mesh/ d in_mesh jacobian
+
+        # Diagonal part of jacobian. Mesh maps directly to in_mesh at first.
         p_rows = np.arange(nn)
+
+        # Off-diagonal part of the jacobian. Off-diagonal part exists as we translate the mesh to its
+        # references axis prior to applying the chord distribution. The ref_axis position itself is sensitive
+        # to the mesh LE and TE. The LE and TE parts of the mesh are already part of the main diagonal so the off diagonal
+        # terms the conver the sensitivies of the remainder of the mesh to the ref_axis.
+
+        # Entries sensitive to trailing edge contribution of ref_axis location. Note that
+        # the last row(TE) is dropped here as it's entries are covered as part
+        # of the main diagonal.
         te_rows = np.arange(((nx - 1) * ny * 3))
+
+        # Entries sensitive to leading edge contribution of ref_axis location. This is an offset
+        # of the te_rows but really it's the entire mesh except the leading edge row as it's entries are covered as part
+        # of the main diagonal.
         le_rows = te_rows + ny * 3
+
+        # Incidies of LE row repeated nx-1 times
         le_cols = np.tile(np.arange(3 * ny), nx - 1)
+
+        # Incidies of TE row. Done by offsetting le_cols
         te_cols = le_cols + ny * 3 * (nx - 1)
+
+        # Concactenate rows and cols together
         rows = np.concatenate([p_rows, te_rows, le_rows])
         cols = np.concatenate([p_rows, te_cols, le_cols])
 
@@ -175,34 +233,63 @@ class ScaleX(om.ExplicitComponent):
         mesh = inputs["in_mesh"]
         chord_dist = inputs["chord"]
 
+        # Get trailing edge coordinates (ny, 3)
         te = mesh[-1]
+        # Get leading edge coordinates (ny, 3)
         le = mesh[0]
+        # Linear interpolation to compute the ref_axis coordinates (ny, 3)
         ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
 
+        # Modify the mesh based on the chord scaling distribution
+        # j - spanwise station index (ny)
+        # Broadcast chord_dist array over the mesh along spanwise(j) index multiply it by the x and z coordinates
         outputs["mesh"] = np.einsum("ijk,j->ijk", mesh - ref_axis, chord_dist) + ref_axis
 
     def compute_partials(self, inputs, partials):
         mesh = inputs["in_mesh"]
         chord_dist = inputs["chord"]
 
+        # Get trailing edge coordinates (ny, 3)
         te = mesh[-1]
+        # Get leading edge coordinates (ny, 3)
         le = mesh[0]
+        # Linear interpolation to compute the ref_axis coordinates (ny, 3)
         ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
 
+        # Since we are multiplying the mesh at each spanwise station by chord_dist at that station
+        # the deritive with respect to chord is just the mesh itself(offset to ref_axis)
         partials["mesh", "chord"] = (mesh - ref_axis).flatten()
 
+        # Compute total number of array entries in mesh array
         nx, ny, _ = mesh.shape
         nn = nx * ny * 3
+
+        # The diagonol part of the d mesh/ d in_mesh jacobian is just the chord_dist broadcast over the
+        # leading edge row of ones then tiled nx times to account for the rest of the mesh rows
         d_mesh = np.einsum("i,ij->ij", chord_dist, np.ones((ny, 3))).flatten()
         partials["mesh", "in_mesh"][:nn] = np.tile(d_mesh, nx)
 
+        # Broadcast (1 - chord_dist) onto a single row of the mesh. Result is needed in all
+        # ref_axis related sensitivities.
         d_qc = (np.einsum("ij,i->ij", np.ones((ny, 3)), 1.0 - chord_dist)).flatten()
+
+        # Off-diagonal parts of the jacobian
         nnq = (nx - 1) * ny * 3
+
+        # Sensitivies of non-TE parts of mesh to TE contribution to ref_axis
         partials["mesh", "in_mesh"][nn : nn + nnq] = np.tile(self.ref_axis_pos * d_qc, nx - 1)
+
+        # Sensitivies of non-LE parts of mesh to LE contribution to ref_axis
         partials["mesh", "in_mesh"][nn + nnq :] = np.tile((1 - self.ref_axis_pos) * d_qc, nx - 1)
 
+        # ref_axis related sensitivities have contributions on the main diagonol for the LE and TE
+        # themselves.
         nnq = ny * 3
+
+        # Sentivities of TE part of mesh to TE contribution to ref_axis
         partials["mesh", "in_mesh"][nn - nnq : nn] += self.ref_axis_pos * d_qc
+
+        # Sentivities of LE part of mesh to LE contribution to ref_axis
         partials["mesh", "in_mesh"][:nnq] += (1 - self.ref_axis_pos) * d_qc
 
 
@@ -244,38 +331,83 @@ class Sweep(om.ExplicitComponent):
 
         self.add_output("mesh", shape=mesh_shape, units="m")
 
+        # Declare d mesh/ d sweep jacobian
+
+        # compute total number of points in mesh
         nx, ny, _ = mesh_shape
         nn = nx * ny
+
+        # x-coodinates of entire swept mesh are only sensitive to the scalar sweep(col 0)
         rows = 3 * np.arange(nn)
         cols = np.zeros(nn)
 
         self.declare_partials("mesh", "sweep", rows=rows, cols=cols)
 
+        # Declare d mesh/ d in_mesh jacobian
+
+        # Diagonal part just passes in_mesh to mesh
+        # compute total number of entries in mesh array
         nn = nx * ny * 3
+        # Entire swept mesh is sensitive to in_mesh
         n_rows = np.arange(nn)
 
+        # Off-diagonal part to account for distance from symmetry plane part of the sweep calculation
+        # This part has sensitive to the y-coordinate of the symmetry plane leading edge and the y-coordinates
+        # of the leading edge
         if self.options["symmetry"]:
+            # Sensitivity to symmetry plane position
+            # y-coodinate index of the symmetry plane leading edge
             y_cp = ny * 3 - 2
-            te_cols = np.tile(y_cp, nx * (ny - 1))
-            te_rows = np.tile(3 * np.arange(ny - 1), nx) + np.repeat(3 * ny * np.arange(nx), ny - 1)
-            se_cols = np.tile(3 * np.arange(ny - 1) + 1, nx)
+
+            # Fill array with y_cp to cover entire mesh except right tip
+            sym_cols = np.tile(y_cp, nx * (ny - 1))
+
+            # x-coordinates indicies of entire mesh except right tip(LE + offset for remainder of mesh)
+            sym_rows = np.tile(3 * np.arange(ny - 1), nx) + np.repeat(3 * ny * np.arange(nx), ny - 1)
+
+            # Sensitivity to spanwise station position
+            # y-coordinates indices of leading edge except right tip repeated for entire mesh
+            span_cols = np.tile(3 * np.arange(ny - 1) + 1, nx)
         else:
+            # Sensitivity to symmetry plane position
+            # y-coodinate of the center line leading edge
             y_cp = 3 * (ny + 1) // 2 - 2
+
+            # index of center line
             n_sym = (ny - 1) // 2
 
-            te_row = np.tile(3 * np.arange(n_sym), 2) + np.repeat([0, 3 * (n_sym + 1)], n_sym)
-            te_rows = np.tile(te_row, nx) + np.repeat(3 * ny * np.arange(nx), ny - 1)
+            # This line generates the x-coordiantes for the leading edge for both spans of the wing
+            # Start by tiling the x incicides for the first span twice then adding an offset for the second span.
+            # Note the first terms of the repeating addition is 0 so the left span stays as initially generated.
+            sym_row = np.tile(3 * np.arange(n_sym), 2) + np.repeat([0, 3 * (n_sym + 1)], n_sym)
 
-            te_col = np.tile(y_cp, n_sym)
-            se_col1 = 3 * np.arange(n_sym) + 1
-            se_col2 = 3 * np.arange(n_sym) + 4 + 3 * n_sym
+            # Repeat this nx times to cover all rows and add the offset so that jacobian covers rest of mesh
+            sym_rows = np.tile(sym_row, nx) + np.repeat(3 * ny * np.arange(nx), ny - 1)
+
+            # Repeat y_cp n_sym times
+            sym_col = np.tile(y_cp, n_sym)
+
+            # Sensitivity to spanwise station position
+            # y-coordinate indicies of left span of mesh
+            span_col1 = 3 * np.arange(n_sym) + 1
+
+            # y-coordiante indicies of right span of mesh
+            span_col2 = 3 * np.arange(n_sym) + 4 + 3 * n_sym
 
             # neat trick: swap columns on reflected side so we can assign in just two operations
-            te_cols = np.tile(np.concatenate([te_col, se_col2]), nx)
-            se_cols = np.tile(np.concatenate([se_col1, te_col]), nx)
+            # This is performance improving feature that takes advantage of the fact that this part of the
+            # jacobian will have either + or - tan(theta) in it. We are simply grouping the cols that will have +
+            # entries and - entries together. Ignore the variable naming here as we just want to able to use the
+            # same declare partials for both symmetry and no symmetry cases.
 
-        rows = np.concatenate(([n_rows, te_rows, te_rows]))
-        cols = np.concatenate(([n_rows, te_cols, se_cols]))
+            # Group + entries and repeat to cover all chordwise points
+            sym_cols = np.tile(np.concatenate([sym_col, span_col2]), nx)
+
+            # Group - entires and repeat to cover all chordwise points
+            span_cols = np.tile(np.concatenate([span_col1, sym_col]), nx)
+
+        rows = np.concatenate(([n_rows, sym_rows, sym_rows]))
+        cols = np.concatenate(([n_rows, sym_cols, span_cols]))
 
         self.declare_partials("mesh", "in_mesh", rows=rows, cols=cols)
 
@@ -305,7 +437,7 @@ class Sweep(om.ExplicitComponent):
             dx_left = -(le[:ny2, 1] - y0) * tan_theta
             dx = np.hstack((dx_left, dx_right))
 
-        # dx added spanwise.
+        # dx added to mesh x coordinates spanwise.
         outputs["mesh"][:] = mesh
         outputs["mesh"][:, :, 0] += dx
 
@@ -319,29 +451,32 @@ class Sweep(om.ExplicitComponent):
         le = mesh[0]
         p180 = np.pi / 180
         tan_theta = np.tan(p180 * sweep_angle)
+
+        # Derivative of tan(theta) wrt to theta
         dtan_dtheta = p180 / np.cos(p180 * sweep_angle) ** 2
 
-        # If symmetric, simply vary the x-coord based on the distance from the
-        # center of the wing
+        # Multiply derivative by distance from center of wing
         if symmetry:
             y0 = le[-1, 1]
 
-            dx_dtheta = -(le[:, 1] - y0)
-
-        # Else, vary the x-coord on either side of the wing
+            dx_dtheta = -(le[:, 1] - y0) * dtan_dtheta
         else:
+            # j index of centerline
             ny2 = (ny - 1) // 2
+            # y coordinate of centerline
             y0 = le[ny2, 1]
 
-            dx_dtheta_right = le[ny2:, 1] - y0
-            dx_dtheta_left = -(le[:ny2, 1] - y0)
+            dx_dtheta_right = (le[ny2:, 1] - y0) * dtan_dtheta
+            dx_dtheta_left = -(le[:ny2, 1] - y0) * dtan_dtheta
             dx_dtheta = np.hstack((dx_dtheta_left, dx_dtheta_right))
 
-        partials["mesh", "sweep"] = np.tile(dx_dtheta * dtan_dtheta, nx)
+        partials["mesh", "sweep"] = np.tile(dx_dtheta, nx)
 
+        # Diagonal part of d mesh/ d in_mesh is just 1 to pass the in_mesh through
         nn = nx * ny * 3
         partials["mesh", "in_mesh"][:nn] = 1.0
 
+        # Assign tan and then -tan to off diagonal parts to account for spanwise station sensitivity
         nn2 = nx * (ny - 1)
         partials["mesh", "in_mesh"][nn : nn + nn2] = tan_theta
         partials["mesh", "in_mesh"][nn + nn2 :] = -tan_theta
@@ -384,12 +519,21 @@ class ShearX(om.ExplicitComponent):
         nx, ny, _ = mesh_shape
 
         nn = nx * ny
-        rows = 3.0 * np.arange(nn)
+
+        # Derivative of mesh wrt to xshear vector
+
+        # Vector of all mesh array x entries
+        rows = 3 * np.arange(nn)
+
+        # Tile vector of all spanwise stations by number of chordwise panels
         cols = np.tile(np.arange(ny), nx)
+
+        # Jacobian entries pass the columns to the rows one to one
         val = np.ones(nn)
 
         self.declare_partials("mesh", "xshear", rows=rows, cols=cols, val=val)
 
+        # Derivative of mesh wrt in_mesh is just identity
         nn = nx * ny * 3
         rows = np.arange(nn)
         cols = np.arange(nn)
@@ -399,6 +543,8 @@ class ShearX(om.ExplicitComponent):
 
     def compute(self, inputs, outputs):
         outputs["mesh"][:] = inputs["in_mesh"]
+
+        # Add the xshear distribution to all x coordinates
         outputs["mesh"][:, :, 0] += inputs["xshear"]
 
 
@@ -447,33 +593,61 @@ class Stretch(om.ExplicitComponent):
 
         self.add_output("mesh", shape=mesh_shape, units="m")
 
+        # Declare derivative of mesh wrt to span vector
         nx, ny, _ = mesh_shape
         nn = nx * ny
+
+        # All y components of every mesh point
         rows = 3 * np.arange(nn) + 1
+
+        # All mesh points sensitive to the scalar(col 0)
         cols = np.zeros(nn)
 
         self.declare_partials("mesh", "span", rows=rows, cols=cols)
 
+        # Declare derivative of the mesh wrt to the in_mesh
+
         # First: x and z on diag is identity.
+        # Note this is just the x diag. We will get z by offseting by 2 later.
         nn = nx * ny
         xz_diag = 3 * np.arange(nn)
 
-        # Four columns at le (root, tip) and te (root, tip)
+        # Second: y at the corners of the mesh
+        # Four columns at le (tip, root) and te (tip, root)
         i_le0 = 1
         i_le1 = ny * 3 - 2
         i_te0 = (nx - 1) * ny * 3 + 1
         i_te1 = nn * 3 - 2
 
+        # Tile all the y indices of the mesh 4 times for each corner
         rows_4c = np.tile(3 * np.arange(nn) + 1, 4)
+
+        # Tile each corner index nn times and concatenate them together
         cols_4c = np.concatenate([np.tile(i_le0, nn), np.tile(i_le1, nn), np.tile(i_te0, nn), np.tile(i_te1, nn)])
 
+        # Third: y indicies for the rest of the mesh
         # Diagonal stripes
+
+        # y incides of the LE other than corners
         base = 3 * np.arange(1, ny - 1) + 1
+
+        # Tile the base vector nx times to cover rest of mesh and add repeating offset so it covers the y indices only
         row_dg = np.tile(base, nx) + np.repeat(ny * 3 * np.arange(nx), ny - 2)
+
+        # Tile rows_dg twice to account for two contributions to the derivative(LE and TE)
         rows_dg = np.tile(row_dg, 2)
+
+        # Tile the base nx times so its size covers the rest of the mesh other than corners
         col_dg = np.tile(base, nx)
+
+        # Concatenate the result with a version offset by entire mesh minus the trailing edge so that TE is covered
         cols_dg = np.concatenate([col_dg, col_dg + 3 * ny * (nx - 1)])
 
+        # Concatenate all contributions together
+        # x diag
+        # z diag (x diag offset by 2)
+        # 4 corners of mesh
+        # diagonals for y indices of remaining mesh
         rows = np.concatenate([xz_diag, xz_diag + 2, rows_4c, rows_dg])
         cols = np.concatenate([xz_diag, xz_diag + 2, cols_4c, cols_dg])
 
@@ -508,7 +682,7 @@ class Stretch(om.ExplicitComponent):
         mesh = inputs["in_mesh"]
         nx, ny, _ = mesh.shape
 
-        # Set the span along the quarter-chord line
+        # Set the span along the reference axis line
         le = mesh[0]
         te = mesh[-1]
         ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
@@ -523,34 +697,56 @@ class Stretch(om.ExplicitComponent):
         prev_span = ref_axis[-1, 1] - ref_axis[0, 1]
         s = ref_axis[:, 1] / prev_span
 
-        d_prev_span = -ref_axis[:, 1] / prev_span**2
-        d_prev_span_qc0 = np.zeros((ny,))
-        d_prev_span_qc1 = np.zeros((ny,))
-        d_prev_span_qc0[0] = d_prev_span_qc1[-1] = 1.0 / prev_span
+        # Compute derivative of mesh wrt to span vector
 
         if symmetry:
+            # Tile half the scalar vector s by nx since we only consider half the span
             partials["mesh", "span"] = np.tile(0.5 * s, nx)
         else:
+            # Tile the scalar vector s by nx s
             partials["mesh", "span"] = np.tile(s, nx)
 
+        # Compute the derivative of mesh wrt to in_mesh
+
+        # derivative of s wrt to the prev_span
+        d_prev_span = -ref_axis[:, 1] / prev_span**2
+
+        # derivative of s wrt to the ref axis (first and last points)
+        d_prev_span_qc0 = np.zeros((ny,))
+        d_prev_span_qc1 = np.zeros((ny,))
+
+        # First point and last point only sensitive to ref_axis
+        d_prev_span_qc0[0] = d_prev_span_qc1[-1] = 1.0 / prev_span
+
+        # Cover the x and z diagonals with 1s
         nn = nx * ny * 2
         partials["mesh", "in_mesh"][:nn] = 1.0
 
+        # LE tip partials. d mesh / d(le tip position)
         nn2 = nx * ny
         partials["mesh", "in_mesh"][nn : nn + nn2] = np.tile(
             -(1 - self.ref_axis_pos) * span * (d_prev_span - d_prev_span_qc0), nx
         )
+
+        # LE root partials d mesh / d(le root position)
         nn3 = nn + nn2 * 2
         partials["mesh", "in_mesh"][nn + nn2 : nn3] = np.tile(
             (1 - self.ref_axis_pos) * span * (d_prev_span + d_prev_span_qc1), nx
         )
+
+        # TE tip partials d mesh / d(te tip position)
         nn4 = nn3 + nn2
         partials["mesh", "in_mesh"][nn3:nn4] = np.tile(-self.ref_axis_pos * span * (d_prev_span - d_prev_span_qc0), nx)
+
+        # TE root partials d mesh / d(te root position)
         nn5 = nn4 + nn2
         partials["mesh", "in_mesh"][nn4:nn5] = np.tile(self.ref_axis_pos * span * (d_prev_span + d_prev_span_qc1), nx)
 
+        # Non corner LE partials d mesh/ d(le except corners)
         nn6 = nn5 + nx * (ny - 2)
         partials["mesh", "in_mesh"][nn5:nn6] = (1 - self.ref_axis_pos) * span / prev_span
+
+        # Non corner TE partials d mesh/ d(te except corners)
         partials["mesh", "in_mesh"][nn6:] = self.ref_axis_pos * span / prev_span
 
 
@@ -591,12 +787,21 @@ class ShearY(om.ExplicitComponent):
         nx, ny, _ = mesh_shape
 
         nn = nx * ny
-        rows = 3.0 * np.arange(nn) + 1
+
+        # Derivative of mesh wrt to yshear vector
+
+        # Vector of all mesh array y entries
+        rows = 3 * np.arange(nn) + 1
+
+        # Tile vector of all spanwise stations by number of chordwise panels
         cols = np.tile(np.arange(ny), nx)
+
+        # Jacobian entries pass the columns to the rows one to one
         val = np.ones(nn)
 
         self.declare_partials("mesh", "yshear", rows=rows, cols=cols, val=val)
 
+        # Derivative of mesh wrt in_mesh is just identity
         nn = nx * ny * 3
         rows = np.arange(nn)
         cols = np.arange(nn)
@@ -606,6 +811,8 @@ class ShearY(om.ExplicitComponent):
 
     def compute(self, inputs, outputs):
         outputs["mesh"][:] = inputs["in_mesh"]
+
+        # Add the yshear distribution to all y coordinates
         outputs["mesh"][:, :, 1] += inputs["yshear"]
 
 
@@ -647,38 +854,83 @@ class Dihedral(om.ExplicitComponent):
 
         self.add_output("mesh", shape=mesh_shape, units="m")
 
+        # Declare d mesh/ d dihedral jacobian
+
+        # compute total number of points in mesh
         nx, ny, _ = mesh_shape
         nn = nx * ny
+
+        # z-coodinates of entire dihedraled mesh are only sensitive to the scalar dihedral(col 0)
         rows = 3 * np.arange(nn) + 2
         cols = np.zeros(nn)
 
         self.declare_partials("mesh", "dihedral", rows=rows, cols=cols)
 
+        # Declare d mesh/ d in_mesh jacobian
+
+        # Diagonal part just passes in_mesh to mesh
+        # compute total number of entries in mesh array
         nn = nx * ny * 3
+        # Entire dihedral mesh is sensitive to in_mesh
         n_rows = np.arange(nn)
 
+        # Off-diagonal part to account for distance from symmetry plane part of the dihedral calculation
+        # This part has sensitive to the y-coordinate of the symmetry plane leading edge and the y-coordinates
+        # of the leading edge
         if self.options["symmetry"]:
+            # Sensitivity to symmetry plane position
+            # y-coodinate index of the symmetry plane leading edge
             y_cp = ny * 3 - 2
-            te_cols = np.tile(y_cp, nx * (ny - 1))
-            te_rows = np.tile(3 * np.arange(ny - 1) + 2, nx) + np.repeat(3 * ny * np.arange(nx), ny - 1)
-            se_cols = np.tile(3 * np.arange(ny - 1) + 1, nx)
+
+            # Fill array with y_cp to cover entire mesh except right tip
+            sym_cols = np.tile(y_cp, nx * (ny - 1))
+
+            # x-coordinates indicies of entire mesh except right tip(LE + offset for remainder of mesh)
+            sym_rows = np.tile(3 * np.arange(ny - 1) + 2, nx) + np.repeat(3 * ny * np.arange(nx), ny - 1)
+
+            # Sensitivity to spanwise station position
+            # y-coordinates indices of leading edge except right tip repeated for entire mesh
+            span_cols = np.tile(3 * np.arange(ny - 1) + 1, nx)
         else:
+            # Sensitivity to symmetry plane position
+            # y-coodinate of the center line leading edge
             y_cp = 3 * (ny + 1) // 2 - 2
+
+            # index of center line
             n_sym = (ny - 1) // 2
 
-            te_row = np.tile(3 * np.arange(n_sym) + 2, 2) + np.repeat([0, 3 * (n_sym + 1)], n_sym)
-            te_rows = np.tile(te_row, nx) + np.repeat(3 * ny * np.arange(nx), ny - 1)
+            # This line generates the x-coordiantes for the leading edge for both spans of the wing
+            # Start by tiling the x incicides for the first span twice then adding an offset for the second span.
+            # Note the first terms of the repeating addition is 0 so the left span stays as initially generated.
+            sym_row = np.tile(3 * np.arange(n_sym) + 2, 2) + np.repeat([0, 3 * (n_sym + 1)], n_sym)
 
-            te_col = np.tile(y_cp, n_sym)
-            se_col1 = 3 * np.arange(n_sym) + 1
-            se_col2 = 3 * np.arange(n_sym) + 4 + 3 * n_sym
+            # Repeat this nx times to cover all rows and add the offset so that jacobian covers rest of mesh
+            sym_rows = np.tile(sym_row, nx) + np.repeat(3 * ny * np.arange(nx), ny - 1)
+
+            # Repeat y_cp n_sym times
+            sym_col = np.tile(y_cp, n_sym)
+
+            # Sensitivity to spanwise station position
+            # y-coordinate indicies of left span of mesh
+            span_col1 = 3 * np.arange(n_sym) + 1
+
+            # y-coordiante indicies of right span of mesh
+            span_col2 = 3 * np.arange(n_sym) + 4 + 3 * n_sym
 
             # neat trick: swap columns on reflected side so we can assign in just two operations
-            te_cols = np.tile(np.concatenate([te_col, se_col2]), nx)
-            se_cols = np.tile(np.concatenate([se_col1, te_col]), nx)
+            # This is performance improving feature that takes advantage of the fact that this part of the
+            # jacobian will have either + or - tan(theta) in it. We are simply grouping the cols that will have +
+            # entries and - entries together. Ignore the variable naming here as we just want to able to use the
+            # same declare partials for both symmetry and no symmetry cases.
 
-        rows = np.concatenate(([n_rows, te_rows, te_rows]))
-        cols = np.concatenate(([n_rows, te_cols, se_cols]))
+            # Group + entries and repeat to cover all chordwise points
+            sym_cols = np.tile(np.concatenate([sym_col, span_col2]), nx)
+
+            # Group - entires and repeat to cover all chordwise points
+            span_cols = np.tile(np.concatenate([span_col1, sym_col]), nx)
+
+        rows = np.concatenate(([n_rows, sym_rows, sym_rows]))
+        cols = np.concatenate(([n_rows, sym_cols, span_cols]))
 
         self.declare_partials("mesh", "in_mesh", rows=rows, cols=cols)
 
@@ -699,6 +951,7 @@ class Dihedral(om.ExplicitComponent):
             y0 = le[-1, 1]
             dz = -(le[:, 1] - y0) * tan_theta
 
+        # Else, vary the z-coord on either side of the wing
         else:
             ny2 = (ny - 1) // 2
             y0 = le[ny2, 1]
@@ -706,7 +959,7 @@ class Dihedral(om.ExplicitComponent):
             dz_left = -(le[:ny2, 1] - y0) * tan_theta
             dz = np.hstack((dz_left, dz_right))
 
-        # dz added spanwise.
+        # dz added to mesh z coordinates spanwise.
         outputs["mesh"][:] = mesh
         outputs["mesh"][:, :, 2] += dz
 
@@ -715,36 +968,42 @@ class Dihedral(om.ExplicitComponent):
         dihedral_angle = inputs["dihedral"][0]
         mesh = inputs["in_mesh"]
 
-        # Get the mesh parameters and desired sweep angle
+        # Get the mesh parameters and desired dihedral angle
         nx, ny, _ = mesh.shape
         le = mesh[0]
         p180 = np.pi / 180
-        tan_theta = np.tan(p180 * dihedral_angle)
+        tan_phi = np.tan(p180 * dihedral_angle)
+
+        # Derivative of tan(phi) wrt to phi
         dtan_dangle = p180 / np.cos(p180 * dihedral_angle) ** 2
 
         # If symmetric, simply vary the z-coord based on the distance from the
         # center of the wing
         if symmetry:
             y0 = le[-1, 1]
-            dz_dtheta = -(le[:, 1] - y0) * dtan_dangle
+            dz_dphi = -(le[:, 1] - y0) * dtan_dangle
 
         else:
+            # j index of centerline
             ny2 = (ny - 1) // 2
+            # y coordinate of centerline
             y0 = le[ny2, 1]
 
             ddz_right = (le[ny2:, 1] - y0) * dtan_dangle
             ddz_left = -(le[:ny2, 1] - y0) * dtan_dangle
-            dz_dtheta = np.hstack((ddz_left, ddz_right))
+            dz_dphi = np.hstack((ddz_left, ddz_right))
 
         # dz added spanwise.
-        partials["mesh", "dihedral"] = np.tile(dz_dtheta, nx)
+        partials["mesh", "dihedral"] = np.tile(dz_dphi, nx)
 
+        # Diagonal part of d mesh/ d in_mesh is just 1 to pass the in_mesh through
         nn = nx * ny * 3
         partials["mesh", "in_mesh"][:nn] = 1.0
 
+        # Assign tan and then -tan to off diagonal parts to account for spanwise station sensitivity
         nn2 = nx * (ny - 1)
-        partials["mesh", "in_mesh"][nn : nn + nn2] = tan_theta
-        partials["mesh", "in_mesh"][nn + nn2 :] = -tan_theta
+        partials["mesh", "in_mesh"][nn : nn + nn2] = tan_phi
+        partials["mesh", "in_mesh"][nn + nn2 :] = -tan_phi
 
 
 class ShearZ(om.ExplicitComponent):
@@ -857,62 +1116,128 @@ class Rotate(om.ExplicitComponent):
 
         self.add_output("mesh", shape=mesh_shape, units="m")
 
+        # Get mesh shape and size
         nx, ny, _ = mesh_shape
         nn = nx * ny * 3
+
+        # Declare d mesh/ d twist partials
+
+        # All mesh points sensitive
         rows = np.arange(nn)
+
+        # Each spanwise station is sensitive to the twist at that station
         col = np.tile(np.zeros(3), ny) + np.repeat(np.arange(ny), 3)
+
+        # Tile result for all points chordwise
         cols = np.tile(col, nx)
 
         self.declare_partials("mesh", "twist", rows=rows, cols=cols)
 
+        # Declare d mesh/ d in_mesh partial
+
+        # Declare base array for rows and cols that will be used several times
+        # The base pattern here says that each entry in mesh is sensitive to each entry in in_mesh
         row_base = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2])
         col_base = np.array([0, 1, 2, 0, 1, 2, 0, 1, 2])
 
         # Diagonal
+
+        # Total number of mesh points
         nn = nx * ny
+
+        # Tile the base pattern nn times and then add offsets so that entry in mesh is covered
         dg_row = np.tile(row_base, nn) + np.repeat(3 * np.arange(nn), 9)
+
+        # Tile the base pattern nn times and then add offsets so that entry in in_mesh is covered
         dg_col = np.tile(col_base, nn) + np.repeat(3 * np.arange(nn), 9)
 
         # Leading and Trailing edge on diagonal terms.
+
+        # Tile the row and col base patterns by the number of spanwise points and offset to cover all spanwise stations
         row_base_y = np.tile(row_base, ny) + np.repeat(3 * np.arange(ny), 9)
         col_base_y = np.tile(col_base, ny) + np.repeat(3 * np.arange(ny), 9)
+
+        # Number of array entries covering a row of mesh points
         nn2 = 3 * ny
+
+        # Tile the spanwise row points nx - 1 times and then offset to cover up to but not including the trailing edge
         te_dg_row = np.tile(row_base_y, nx - 1) + np.repeat(nn2 * np.arange(nx - 1), 9 * ny)
+
+        # Tile the spanwise column points nx-1 times.  No offset since mesh is sensitive to LE only for this part.
         le_dg_col = np.tile(col_base_y, nx - 1)
+
+        # Offset the TE rows by a single row so that the TE is covered and the LE is not
         le_dg_row = te_dg_row + nn2
+
+        # Offset the leading edge col points by the remainder of the mesh from the leading edge to get the trailing edge
         te_dg_col = le_dg_col + 3 * ny * (nx - 1)
 
         # Leading and Trailing edge off diagonal terms.
         if self.options["symmetry"]:
+            # Since these are off diagonal terms we will tile ny-1 times and then offset to cover that portion of the spanwise stations
             row_base_y = np.tile(row_base, ny - 1) + np.repeat(3 * np.arange(ny - 1), 9)
+
+            # Offset col_base by 3 to exclude the left tip then offset to cover the remainder of the wing
             col_base_y = np.tile(col_base + 3, ny - 1) + np.repeat(3 * np.arange(ny - 1), 9)
 
+            # Number of array entries covering a row of mesh points
             nn2 = 3 * ny
+
+            # Tile the spanwise row points nx times and then offset to cover the entire mesh chordwise
             te_od_row = np.tile(row_base_y, nx) + np.repeat(nn2 * np.arange(nx), 9 * (ny - 1))
+
+            # Tile the spanwise column points nx times.  No offset since mesh is sensitive to LE only for this part.
             le_od_col = np.tile(col_base_y, nx)
+
+            # Offset the leading edge col points by the remainder of the mesh from the leading edge to get the trailing edge
             te_od_col = le_od_col + 3 * ny * (nx - 1)
 
+            # Concatenate the arrays and double the off diagonal to account for both the left and right tip ODs
             rows = np.concatenate([dg_row, le_dg_row, te_dg_row, te_od_row, te_od_row])
             cols = np.concatenate([dg_col, le_dg_col, te_dg_col, le_od_col, te_od_col])
 
         else:
+            # Index of symmetry plane
             n_sym = (ny - 1) // 2
 
+            # Tile n_sym times and offset to cover the left span
             row_base_y1 = np.tile(row_base, n_sym) + np.repeat(3 * np.arange(n_sym), 9)
+
+            # Offset col_base by 3 to exclude the left tip then offset to cover the remainder of the wing
             col_base_y1 = np.tile(col_base + 3, n_sym) + np.repeat(3 * np.arange(n_sym), 9)
 
+            # Offset the left span rows by the span to get the right span
             row_base_y2 = row_base_y1 + 3 * n_sym + 3
+
+            # Offset the left span cols by the span but subtract 3 so the right tip is not covered
             col_base_y2 = col_base_y1 + 3 * n_sym - 3
 
+            # Number of array entries covering a row of mesh points
             nn2 = 3 * ny
 
+            # Left span
+
+            # Tile the spanwise row points nx times and then offset to cover the entire mesh chordwise
             te_od_row1 = np.tile(row_base_y1, nx) + np.repeat(nn2 * np.arange(nx), 9 * n_sym)
+
+            # Tile the spanwise column points nx times.  No offset since mesh is sensitive to LE only for this part.
             le_od_col1 = np.tile(col_base_y1, nx)
+
+            # Offset the leading edge col points by the remainder of the mesh from the leading edge to get the trailing edge
             te_od_col1 = le_od_col1 + 3 * ny * (nx - 1)
+
+            # Right span
+
+            # Offset the leading edge col points by the remainder of the mesh from the leading edge to get the trailing edge
             te_od_row2 = np.tile(row_base_y2, nx) + np.repeat(nn2 * np.arange(nx), 9 * n_sym)
+
+            # Tile the spanwise column points nx times.  No offset since mesh is sensitive to LE only for this part.
             le_od_col2 = np.tile(col_base_y2, nx)
+
+            # Offset the left span cols by the span but subtract 3 so the right tip is not covered
             te_od_col2 = le_od_col2 + 3 * ny * (nx - 1)
 
+            # Concatenate the arrays and double the off diagonal to account for both ODs for each span
             rows = np.concatenate([dg_row, le_dg_row, te_dg_row, te_od_row1, te_od_row2, te_od_row1, te_od_row2])
             cols = np.concatenate([dg_col, le_dg_col, te_dg_col, le_od_col1, le_od_col2, te_od_col1, te_od_col2])
 
@@ -924,14 +1249,19 @@ class Rotate(om.ExplicitComponent):
         theta_y = inputs["twist"]
         mesh = inputs["in_mesh"]
 
+        # Get trailing edge coordinates (ny, 3)
         te = mesh[-1]
+        # Get leading edge coordinates (ny, 3)
         le = mesh[0]
+        # Linear interpolation to compute the quarter chord coordinates (ny, 3)
         ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
 
+        # Get number of spanwise stations (ny)
         _, ny, _ = mesh.shape
 
+        # Option to include mesh rotations about x-axis
         if rotate_x:
-            # Compute spanwise z displacements along quarter chord
+            # Compute x-axis rotation angle distribution using spanwise z displacements along quarter chord
             if symmetry:
                 dz_qc = ref_axis[:-1, 2] - ref_axis[1:, 2]
                 dy_qc = ref_axis[:-1, 1] - ref_axis[1:, 1]
@@ -948,20 +1278,30 @@ class Rotate(om.ExplicitComponent):
                 dy_qc_right = ref_axis[root_index + 1 :, 1] - ref_axis[root_index:-1, 1]
                 theta_x_right = np.arctan(dz_qc_right / dy_qc_right)
 
-                # Concatenate thetas
+                # Concatenate thetas with 0 at the root so it's not rotated
                 rad_theta_x = np.concatenate((theta_x_left, np.zeros(1), theta_x_right))
 
         else:
+            # If there is no rotation about x applied then the angle is 0
             rad_theta_x = 0.0
 
         rad_theta_y = theta_y * np.pi / 180.0
 
+        # Initialize rotation matrix
+        # Each spanwise (ny) station needs it's own 3x3 rotation matrix so this is 3D array of size (ny, 3, 3)
         mats = np.zeros((ny, 3, 3), dtype=type(rad_theta_y[0]))
 
+        # Compute sin and cos of angles for the matrix
         cos_rtx = np.cos(rad_theta_x)
         cos_rty = np.cos(rad_theta_y)
         sin_rtx = np.sin(rad_theta_x)
         sin_rty = np.sin(rad_theta_y)
+
+        # Each rotation matrix is 3x3 and is the product Rx(rad_theta_x)Ry(rad_theta_y)
+        # Rx = [[0, 0, 0], [0, cos(rad_theta_x), -sin(rad_theta_x)], [0, sin(rad_theta_x), cos(rad_theta_x)]]
+        # Ry = [[cos(rad_theta_y),0,-sin(rad_theta_y)], [0, 0, 0], [-sin(rad_theta_y), 0, cos(rad_theta_y)]]
+        # RxRy = [[cos(rad_theta_y), 0, sin(rad_theta_y)],[sin(rad_theta_x)*sin(rad_theta_y), cos(rad_theta_x), -sin(rad_theta_x)*cos(rad_theta_y)], ...
+        # [-cos(rad_theta_x)*sin(rad_theta_y), sin(rad_theta_x), cos(rad_theta_x)*cos(rad_theta_y)]]
 
         mats[:, 0, 0] = cos_rty
         mats[:, 0, 2] = sin_rty
@@ -972,6 +1312,11 @@ class Rotate(om.ExplicitComponent):
         mats[:, 2, 1] = sin_rtx
         mats[:, 2, 2] = cos_rtx * cos_rty
 
+        # Multiply each point on the mesh by the rotation matrix associated with its spanwise station
+        # i - spanwise station index (ny)
+        # m - chordwise station index
+        # k - output vector(After rotation)
+        # j - inputs vector(Before rotation)
         outputs["mesh"] = np.einsum("ikj, mij -> mik", mats, mesh - ref_axis) + ref_axis
 
     def compute_partials(self, inputs, partials):
@@ -980,15 +1325,19 @@ class Rotate(om.ExplicitComponent):
         theta_y = inputs["twist"]
         mesh = inputs["in_mesh"]
 
+        # Compute the reference axis
         te = mesh[-1]
         le = mesh[0]
         ref_axis = self.ref_axis_pos * te + (1 - self.ref_axis_pos) * le
 
+        # Get mesh size
         nx, ny, _ = mesh.shape
 
+        # Option to include mesh rotations about x-axis
         if rotate_x:
-            # Compute spanwise z displacements along quarter chord
+            # Compute x-axis rotation angle distribution using spanwise z displacements along quarter chord
             if symmetry:
+                # This computes the change in dihedral angle along the references axis
                 dz_qc = ref_axis[:-1, 2] - ref_axis[1:, 2]
                 dy_qc = ref_axis[:-1, 1] - ref_axis[1:, 1]
                 theta_x = np.arctan(dz_qc / dy_qc)
@@ -996,46 +1345,69 @@ class Rotate(om.ExplicitComponent):
                 # Prepend with 0 so that root is not rotated
                 rad_theta_x = np.append(theta_x, 0.0)
 
+                # Compute a common factor used in several partial computations
                 fact = 1.0 / (1.0 + (dz_qc / dy_qc) ** 2)
 
+                # Compute the derivative of theta_x along the ref_axis
                 dthx_dq = np.zeros((ny, 3))
+
+                # Derivative of y component of ref_axis
                 dthx_dq[:-1, 1] = -dz_qc * fact / dy_qc**2
+
+                # Derivative of z component of ref_axis
                 dthx_dq[:-1, 2] = fact / dy_qc
 
             else:
+                # Symmetry plane index
                 root_index = int((ny - 1) / 2)
+
+                # This computes the change in dihedral angle along the references axis for the left span
                 dz_qc_left = ref_axis[:root_index, 2] - ref_axis[1 : root_index + 1, 2]
                 dy_qc_left = ref_axis[:root_index, 1] - ref_axis[1 : root_index + 1, 1]
                 theta_x_left = np.arctan(dz_qc_left / dy_qc_left)
+
+                # This computes the change in dihedral angle along the references axis for the right span
                 dz_qc_right = ref_axis[root_index + 1 :, 2] - ref_axis[root_index:-1, 2]
                 dy_qc_right = ref_axis[root_index + 1 :, 1] - ref_axis[root_index:-1, 1]
                 theta_x_right = np.arctan(dz_qc_right / dy_qc_right)
 
-                # Concatenate thetas
+                # Concatenate thetas and put a 0 at the root
                 rad_theta_x = np.concatenate((theta_x_left, np.zeros(1), theta_x_right))
 
+                # Compute a common factors used in several partial computations for each span
                 fact_left = 1.0 / (1.0 + (dz_qc_left / dy_qc_left) ** 2)
                 fact_right = 1.0 / (1.0 + (dz_qc_right / dy_qc_right) ** 2)
 
+                # Compute the derivative of theta_x along the ref_axis
                 dthx_dq = np.zeros((ny, 3))
+
+                # Derivative of y component of ref_axis for both spans
                 dthx_dq[:root_index, 1] = -dz_qc_left * fact_left / dy_qc_left**2
                 dthx_dq[root_index + 1 :, 1] = -dz_qc_right * fact_right / dy_qc_right**2
+
+                # Derivative of z component of ref_axis for both spans
                 dthx_dq[:root_index, 2] = fact_left / dy_qc_left
                 dthx_dq[root_index + 1 :, 2] = fact_right / dy_qc_right
 
         else:
             rad_theta_x = 0.0
 
+        # Why not use numpy deg2rad?
         deg2rad = np.pi / 180.0
+
+        # Twist angle in radians
         rad_theta_y = theta_y * deg2rad
 
+        # Initialize the rotation matrices at all spanwise stations
         mats = np.zeros((ny, 3, 3), dtype=type(rad_theta_y[0]))
 
+        # Precompute sins and cos
         cos_rtx = np.cos(rad_theta_x)
         cos_rty = np.cos(rad_theta_y)
         sin_rtx = np.sin(rad_theta_x)
         sin_rty = np.sin(rad_theta_y)
 
+        # Assemble the rotation matricies for every spanwise station
         mats[:, 0, 0] = cos_rty
         mats[:, 0, 2] = sin_rty
         mats[:, 1, 0] = sin_rtx * sin_rty
@@ -1045,6 +1417,7 @@ class Rotate(om.ExplicitComponent):
         mats[:, 2, 1] = sin_rtx
         mats[:, 2, 2] = cos_rtx * cos_rty
 
+        # Assemble the derivative of the rotation matrix entries
         dmats_dthy = np.zeros((ny, 3, 3))
         dmats_dthy[:, 0, 0] = -sin_rty * deg2rad
         dmats_dthy[:, 0, 2] = cos_rty * deg2rad
@@ -1053,21 +1426,40 @@ class Rotate(om.ExplicitComponent):
         dmats_dthy[:, 2, 0] = -cos_rtx * cos_rty * deg2rad
         dmats_dthy[:, 2, 2] = -cos_rtx * sin_rty * deg2rad
 
+        # Apply the derivative of the rotation matrix to the mesh using the same tensor operation used in compute
         d_dthetay = np.einsum("ikj, mij -> mik", dmats_dthy, mesh - ref_axis)
+
+        # Declare the d mesh/ d twist partial
         partials["mesh", "twist"] = d_dthetay.flatten()
 
+        # Length of initial diagonal
         nn = nx * ny * 9
+
+        # Assign the transformation matrices to it and tile nx times to cover the whole mesh
         partials["mesh", "in_mesh"][:nn] = np.tile(mats.flatten(), nx)
 
-        # Quarter chord direct contribution.
+        # Reference axis direct contribution.
+        # Create a set of identity matrices for each spanwise station
         eye = np.tile(np.eye(3).flatten(), ny).reshape(ny, 3, 3)
+
+        # Subtract the rotation matrices at each spanwise station
         d_qch = (eye - mats).flatten()
 
+        # Length of the ref_axis contribution to diagonal
         nqc = ny * 9
+
+        # LE derivative contribution
         partials["mesh", "in_mesh"][:nqc] += (1 - self.ref_axis_pos) * d_qch
+
+        # TE derivative contribution
         partials["mesh", "in_mesh"][nn - nqc : nn] += self.ref_axis_pos * d_qch
 
+        # Option to include mesh rotations about x-axis
         if rotate_x:
+            # This part computes the leading and trailing edge diagonal terms that exist when theta_x is computed
+            # from the reference axis geometry which is sensitive to the leading and trailing edge points
+
+            # Generate derviative of rotation matrices wrt to theta_x at each spanwise station
             dmats_dthx = np.zeros((ny, 3, 3))
             dmats_dthx[:, 1, 0] = cos_rtx * sin_rty
             dmats_dthx[:, 1, 1] = -sin_rtx
@@ -1076,46 +1468,80 @@ class Rotate(om.ExplicitComponent):
             dmats_dthx[:, 2, 1] = cos_rtx
             dmats_dthx[:, 2, 2] = -sin_rtx * cos_rty
 
+            # Apply each rotation matrix to its spanwise station using a tensor operation
             d_dthetax = np.einsum("ikj, mij -> mik", dmats_dthx, mesh - ref_axis)
+
+            # Multiply the dervative of the ref_axis in the y and z directions at each spanwise station
             d_dq = np.einsum("ijk, jm -> ijkm", d_dthetax, dthx_dq)
 
+            # Flatten the result
             d_dq_flat = d_dq.flatten()
 
+            # Subtract a row from the full mesh
             del_n = nn - 9 * ny
+
+            # Compute incides for the next two blocks of partials
             nn2 = nn + del_n
             nn3 = nn2 + del_n
+
+            # LE contribution: excludes LE partials
             partials["mesh", "in_mesh"][nn:nn2] = (1 - self.ref_axis_pos) * d_dq_flat[-del_n:]
+
+            # TE contribution: excludes TE partials
             partials["mesh", "in_mesh"][nn2:nn3] = self.ref_axis_pos * d_dq_flat[:del_n]
 
-            # Contribution back to main diagonal.
+            # This also includes contributions back to main diagonal.
+
+            # Contribution only covers a single mesh row (le or te)
             del_n = 9 * ny
+
+            # LE contribution: main diagonal contribution excludes TE
             partials["mesh", "in_mesh"][:nqc] += (1 - self.ref_axis_pos) * d_dq_flat[:del_n]
+
+            # TE contribution: main diagonal contribution excludes LE
             partials["mesh", "in_mesh"][nn - nqc : nn] += self.ref_axis_pos * d_dq_flat[-del_n:]
 
-            # Quarter chord direct contribution.
+            # This contribution accounts for the position of the reference axis itself.
+
+            # Tile the result from the earlier main diagonal reference axis contribution
             d_qch_od = np.tile(d_qch.flatten(), nx - 1)
+
+            # Add to the le and te diagonal terms
             partials["mesh", "in_mesh"][nn:nn2] += (1 - self.ref_axis_pos) * d_qch_od
             partials["mesh", "in_mesh"][nn2:nn3] += self.ref_axis_pos * d_qch_od
 
-            # off-off diagonal pieces
+            # off-off diagonal pieces: OD contributions that exist when theta_x is computed from the reference axis
+            # geometry which is sensitive to the positions of the spanwise stations relative to the root.
             if symmetry:
+                # Compute d_dq_flat again but with the right tip(symmetry plane) excluded
                 d_dq_flat = d_dq[:, :-1, :, :].flatten()
 
+                # Entire mesh size minus a row
                 del_n = nn - 9 * nx
+
+                # LE contribution
                 nn4 = nn3 + del_n
                 partials["mesh", "in_mesh"][nn3:nn4] = -(1 - self.ref_axis_pos) * d_dq_flat
+
+                # TE contribution
                 nn5 = nn4 + del_n
                 partials["mesh", "in_mesh"][nn4:nn5] = -self.ref_axis_pos * d_dq_flat
 
             else:
+                # Compute d_dq_flat again but with the root excluded
                 d_dq_flat1 = d_dq[:, :root_index, :, :].flatten()
                 d_dq_flat2 = d_dq[:, root_index + 1 :, :, :].flatten()
 
+                # Half mesh size minus a row
                 del_n = nx * root_index * 9
+
+                # LE contribution for both spans
                 nn4 = nn3 + del_n
                 partials["mesh", "in_mesh"][nn3:nn4] = -(1 - self.ref_axis_pos) * d_dq_flat1
                 nn5 = nn4 + del_n
                 partials["mesh", "in_mesh"][nn4:nn5] = -(1 - self.ref_axis_pos) * d_dq_flat2
+
+                # TE contribution for both spans
                 nn6 = nn5 + del_n
                 partials["mesh", "in_mesh"][nn5:nn6] = -self.ref_axis_pos * d_dq_flat1
                 nn7 = nn6 + del_n

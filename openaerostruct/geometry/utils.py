@@ -1,6 +1,6 @@
 import numpy as np
 from numpy import cos, sin, tan
-import warnings
+import copy
 
 # openvsp python interface
 try:
@@ -10,10 +10,26 @@ except ImportError:
     vsp = None
     dg = None
 
-from openaerostruct.geometry.CRM_definitions import get_crm_points
+import openmdao.api as om
+from openmdao.utils.om_warnings import warn_deprecation
+from openaerostruct.meshing.section_mesh_generator import generate_mesh as generate_section_mesh
+
+# import functions for backward compatibility with old scripts
+from openaerostruct.meshing.mesh_generator import (
+    generate_mesh as _generate_mesh,
+    gen_rect_mesh as _gen_rect_mesh,
+    gen_crm_mesh as _gen_crm_mesh,
+    get_default_geo_dict as _get_default_geo_dict,
+)
+
+from openaerostruct.meshing.utils import (
+    regen_chordwise_panels as _regen_chordwise_panels,
+    getFullMesh as _getFullMesh,
+    write_tecplot as _write_tecplot,
+)
 
 
-def rotate(mesh, theta_y, symmetry, rotate_x=True):
+def rotate(mesh, theta_y, symmetry, rotate_x=True, ref_axis_pos=0.25):
     """
     Compute rotation matrices given mesh and rotation angles in degrees.
 
@@ -27,7 +43,9 @@ def rotate(mesh, theta_y, symmetry, rotate_x=True):
         Flag set to True if surface is reflected about y=0 plane.
     rotate_x : boolean
         Flag set to True if the user desires the twist variable to always be
-        applied perpendicular to the wing (say, in the case of a winglet).
+        applied perpendicular to the wing. To clarify, this is to ensure that non-planar surfaces
+        such as winglets are twisted correctly about their axis. The winglets themselves have
+        to be created with zshear or a user created mesh.
 
     Returns
     -------
@@ -35,44 +53,61 @@ def rotate(mesh, theta_y, symmetry, rotate_x=True):
         Nodal mesh defining the twisted aerodynamic surface.
 
     """
-    te = mesh[-1]
-    le = mesh[0]
-    quarter_chord = 0.25 * te + 0.75 * le
 
+    # Get trailing edge coordinates (ny, 3)
+    te = mesh[-1]
+    # Get leading edge coordinates (ny, 3)
+    le = mesh[0]
+    # Linear interpolation to compute the ref_axis coordinates (ny, 3)
+    ref_axis = ref_axis_pos * te + (1 - ref_axis_pos) * le
+
+    # Get number of spanwise stations (ny)
     nx, ny, _ = mesh.shape
 
+    # Option to include mesh rotations about x-axis
     if rotate_x:
-        # Compute spanwise z displacements along quarter chord
+        # Compute x-axis rotation angle distribution using spanwise z displacements along quarter chord
         if symmetry:
-            dz_qc = quarter_chord[:-1, 2] - quarter_chord[1:, 2]
-            dy_qc = quarter_chord[:-1, 1] - quarter_chord[1:, 1]
+            # This computes the change in dihedral angle along the references axis
+            dz_qc = ref_axis[:-1, 2] - ref_axis[1:, 2]
+            dy_qc = ref_axis[:-1, 1] - ref_axis[1:, 1]
             theta_x = np.arctan(dz_qc / dy_qc)
 
             # Prepend with 0 so that root is not rotated
             rad_theta_x = np.append(theta_x, 0.0)
         else:
             root_index = int((ny - 1) / 2)
-            dz_qc_left = quarter_chord[:root_index, 2] - quarter_chord[1 : root_index + 1, 2]
-            dy_qc_left = quarter_chord[:root_index, 1] - quarter_chord[1 : root_index + 1, 1]
+            dz_qc_left = ref_axis[:root_index, 2] - ref_axis[1 : root_index + 1, 2]
+            dy_qc_left = ref_axis[:root_index, 1] - ref_axis[1 : root_index + 1, 1]
             theta_x_left = np.arctan(dz_qc_left / dy_qc_left)
-            dz_qc_right = quarter_chord[root_index + 1 :, 2] - quarter_chord[root_index:-1, 2]
-            dy_qc_right = quarter_chord[root_index + 1 :, 1] - quarter_chord[root_index:-1, 1]
+            dz_qc_right = ref_axis[root_index + 1 :, 2] - ref_axis[root_index:-1, 2]
+            dy_qc_right = ref_axis[root_index + 1 :, 1] - ref_axis[root_index:-1, 1]
             theta_x_right = np.arctan(dz_qc_right / dy_qc_right)
 
-            # Concatenate thetas
+            # Concatenate thetas with 0 at the root so it's not rotated
             rad_theta_x = np.concatenate((theta_x_left, np.zeros(1), theta_x_right))
 
     else:
+        # If there is no rotation about x applied then the angle is 0
         rad_theta_x = 0.0
 
     rad_theta_y = theta_y * np.pi / 180.0
 
+    # Initialize rotation matrix
+    # Each spanwise (ny) station needs it's own 3x3 rotation matrix so this is 3D array of size (ny, 3, 3)
     mats = np.zeros((ny, 3, 3), dtype=type(rad_theta_y[0]))
 
+    # Compute sin and cos of angles for the matrix
     cos_rtx = cos(rad_theta_x)
     cos_rty = cos(rad_theta_y)
     sin_rtx = sin(rad_theta_x)
     sin_rty = sin(rad_theta_y)
+
+    # Each rotation matrix is 3x3 and is the product Rx(rad_theta_x)Ry(rad_theta_y)
+    # Rx = [[0, 0, 0], [0, cos(rad_theta_x), -sin(rad_theta_x)], [0, sin(rad_theta_x), cos(rad_theta_x)]]
+    # Ry = [[cos(rad_theta_y),0,-sin(rad_theta_y)], [0, 0, 0], [-sin(rad_theta_y), 0, cos(rad_theta_y)]]
+    # RxRy = [[cos(rad_theta_y), 0, sin(rad_theta_y)],[sin(rad_theta_x)*sin(rad_theta_y), cos(rad_theta_x), -sin(rad_theta_x)*cos(rad_theta_y)], ...
+    # [-cos(rad_theta_x)*sin(rad_theta_y), sin(rad_theta_x), cos(rad_theta_x)*cos(rad_theta_y)]]
 
     mats[:, 0, 0] = cos_rty
     mats[:, 0, 2] = sin_rty
@@ -83,10 +118,15 @@ def rotate(mesh, theta_y, symmetry, rotate_x=True):
     mats[:, 2, 1] = sin_rtx
     mats[:, 2, 2] = cos_rtx * cos_rty
 
-    mesh[:] = np.einsum("ikj, mij -> mik", mats, mesh - quarter_chord) + quarter_chord
+    # Multiply each point on the mesh by the rotation matrix associated with its spanwise station
+    # i - spanwise station index (ny)
+    # m - chordwise station index
+    # k - output vector(After rotation)
+    # j - inputs vector(Before rotation)
+    mesh[:] = np.einsum("ikj, mij -> mik", mats, mesh - ref_axis) + ref_axis
 
 
-def scale_x(mesh, chord_dist):
+def scale_x(mesh, chord_dist, ref_axis_pos=0.25):
     """
     Modify the chords along the span of the wing by scaling only the x-coord.
 
@@ -102,14 +142,19 @@ def scale_x(mesh, chord_dist):
     mesh[nx, ny, 3] : numpy array
         Nodal mesh with the new chord lengths.
     """
+    # Get trailing edge coordinates (ny, 3)
     te = mesh[-1]
+    # Get leading edge coordinates (ny, 3)
     le = mesh[0]
-    quarter_chord = 0.25 * te + 0.75 * le
+    # Linear interpolation to compute the reference axis coordinates (ny, 3)
+    ref_axis = ref_axis_pos * te + (1 - ref_axis_pos) * le
 
+    # Get number of spanwise stations (ny)
     ny = mesh.shape[1]
 
+    # Loop over each spanwise station and scale its x coodinates by chord_dist[i]
     for i in range(ny):
-        mesh[:, i, 0] = (mesh[:, i, 0] - quarter_chord[i, 0]) * chord_dist[i] + quarter_chord[i, 0]
+        mesh[:, i, 0] = (mesh[:, i, 0] - ref_axis[i, 0]) * chord_dist[i] + ref_axis[i, 0]
 
 
 def shear_x(mesh, xshear):
@@ -128,6 +173,7 @@ def shear_x(mesh, xshear):
     mesh[nx, ny, 3] : numpy array
         Nodal mesh with the new chord lengths.
     """
+    # Add the xshear distribution to all x coordinates
     mesh[:, :, 0] += xshear
 
 
@@ -146,6 +192,7 @@ def shear_y(mesh, yshear):
     mesh[nx, ny, 3] : numpy array
         Nodal mesh with the new span widths.
     """
+    # Add the yshear distribution to all x coordinates
     mesh[:, :, 1] += yshear
 
 
@@ -165,6 +212,7 @@ def shear_z(mesh, zshear):
     mesh[nx, ny, 3] : numpy array
         Nodal mesh with the new chord lengths.
     """
+    # Add the zshear distribution to all x coordinates
     mesh[:, :, 2] += zshear
 
 
@@ -209,7 +257,7 @@ def sweep(mesh, sweep_angle, symmetry):
         dx_left = -(le[:ny2, 1] - y0) * tan_theta
         dx = np.hstack((dx_left, dx_right))
 
-    # dx added spanwise.
+    # dx added to mesh x coordinates spanwise.
     mesh[:, :, 0] += dx
 
 
@@ -252,11 +300,11 @@ def dihedral(mesh, dihedral_angle, symmetry):
         dz_left = -(le[:ny2, 1] - y0) * tan_theta
         dz = np.hstack((dz_left, dz_right))
 
-    # dz added spanwise.
+    # dz added to z coordinates spanwise.
     mesh[:, :, 2] += dz
 
 
-def stretch(mesh, span, symmetry):
+def stretch(mesh, span, symmetry, ref_axis_pos=0.25):
     """
     Stretch mesh in spanwise direction to reach specified span.
 
@@ -276,10 +324,10 @@ def stretch(mesh, span, symmetry):
 
     """
 
-    # Set the span along the quarter-chord line
+    # Set the span along the reference axis
     le = mesh[0]
     te = mesh[-1]
-    quarter_chord = 0.25 * te + 0.75 * le
+    ref_axis = ref_axis_pos * te + (1 - ref_axis_pos) * le
 
     # The user always deals with the full span, so if they input a specific
     # span value and have symmetry enabled, we divide this value by 2.
@@ -288,12 +336,12 @@ def stretch(mesh, span, symmetry):
 
     # Compute the previous span and determine the scalar needed to reach the
     # desired span
-    prev_span = quarter_chord[-1, 1] - quarter_chord[0, 1]
-    s = quarter_chord[:, 1] / prev_span
+    prev_span = ref_axis[-1, 1] - ref_axis[0, 1]
+    s = ref_axis[:, 1] / prev_span
     mesh[:, :, 1] = s * span
 
 
-def taper(mesh, taper_ratio, symmetry):
+def taper(mesh, taper_ratio, symmetry, ref_axis_pos=0.25):
     """
     Alter the spanwise chord linearly to produce a tapered wing. Note that
     we apply taper around the quarter-chord line.
@@ -317,425 +365,28 @@ def taper(mesh, taper_ratio, symmetry):
     # Get mesh parameters and the quarter-chord
     le = mesh[0]
     te = mesh[-1]
-    num_x, num_y, _ = mesh.shape
-    quarter_chord = 0.25 * te + 0.75 * le
-    x = quarter_chord[:, 1]
-    span = x[-1] - x[0]
+    ref_axis = ref_axis_pos * te + (1 - ref_axis_pos) * le
+    x = ref_axis[:, 1]
 
     # If symmetric, solve for the correct taper ratio, which is a linear
-    # interpolation problem
+    # interpolation problem (assume symmetry axis is not necessarily at y = 0)
     if symmetry:
-        xp = np.array([-span, 0.0])
+        xp = np.array([x[0], x[-1]])
         fp = np.array([taper_ratio, 1.0])
 
     # Otherwise, we set up an interpolation problem for the entire wing, which
-    # consists of two linear segments
+    # consists of two linear segments (assume symmetry axis is not necessarily at y = 0)
     else:
-        xp = np.array([-span / 2, 0.0, span / 2])
+        xp = np.array([x[0], x[((len(x) + 1) // 2) - 1], x[-1]])
         fp = np.array([taper_ratio, 1.0, taper_ratio])
 
-    taper = np.interp(x.real, xp.real, fp.real)
+    # Interpolate over quarter chord line to compute the taper at each spanwise stations
+    taper = np.interp(x, xp, fp)
 
     # Modify the mesh based on the taper amount computed per spanwise section
-    mesh[:] = np.einsum("ijk, j->ijk", mesh - quarter_chord, taper) + quarter_chord
-
-
-def gen_rect_mesh(num_x, num_y, span, chord, span_cos_spacing=0.0, chord_cos_spacing=0.0):
-    """
-    Generate simple rectangular wing mesh.
-
-    Parameters
-    ----------
-    num_x : float
-        Desired number of chordwise node points for the final mesh.
-    num_y : float
-        Desired number of chordwise node points for the final mesh.
-    span : float
-        Total wingspan.
-    chord : float
-        Root chord.
-    span_cos_spacing : float (optional)
-        Blending ratio of uniform and cosine spacing in the spanwise direction.
-        A value of 0. corresponds to uniform spacing and a value of 1.
-        corresponds to regular cosine spacing. This increases the number of
-        spanwise node points near the wingtips.
-    chord_cos_spacing : float (optional)
-        Blending ratio of uniform and cosine spacing in the chordwise direction.
-        A value of 0. corresponds to uniform spacing and a value of 1.
-        corresponds to regular cosine spacing. This increases the number of
-        chordwise node points near the wingtips.
-
-    Returns
-    -------
-    mesh[nx, ny, 3] : numpy array
-        Rectangular nodal mesh defining the final aerodynamic surface with the
-        specified parameters.
-    """
-
-    mesh = np.zeros((num_x, num_y, 3))
-    ny2 = (num_y + 1) // 2
-
-    # --- spanwise discretization ---
-    # Hotfix a special case for spacing bunched at the root and tips
-    if span_cos_spacing == 2.0:
-        beta = np.linspace(0, np.pi, ny2)
-
-        # mixed spacing with span_cos_spacing as a weighting factor
-        # this is for the spanwise spacing
-        cosine = 0.25 * (1 - np.cos(beta))  # cosine spacing
-        uniform = np.linspace(0, 0.5, ny2)[::-1]  # uniform spacing
-        half_wing = cosine[::-1] * span_cos_spacing + (1 - span_cos_spacing) * uniform
-        full_wing = np.hstack((-half_wing[:-1], half_wing[::-1])) * span
-
-    else:
-        beta = np.linspace(0, np.pi / 2, ny2)
-
-        # mixed spacing with span_cos_spacing as a weighting factor
-        # this is for the spanwise spacing
-        cosine = 0.5 * np.cos(beta)  # cosine spacing
-        uniform = np.linspace(0, 0.5, ny2)[::-1]  # uniform spacing
-        half_wing = cosine * span_cos_spacing + (1 - span_cos_spacing) * uniform
-        full_wing = np.hstack((-half_wing[:-1], half_wing[::-1])) * span
-
-    # --- chordwise discretization ---
-    cosine = 0.5 * (1 - np.cos(np.linspace(0, np.pi, num_x)))  # cosine spacing from 0 to 1
-    uniform = np.linspace(0, 1, num_x)  # uniform spacing
-    # mixed spacing with chord_cos_spacing as a weighting factor
-    wing_x = cosine * chord_cos_spacing + (1 - chord_cos_spacing) * uniform
-    wing_x *= chord  # apply chord length
-
-    # --- form 3D mesh array ---
-    for ind_x in range(num_x):
-        for ind_y in range(num_y):
-            mesh[ind_x, ind_y, :] = [wing_x[ind_x], full_wing[ind_y], 0]
-
-    return mesh
-
-
-def gen_crm_mesh(num_x, num_y, span_cos_spacing=0.0, chord_cos_spacing=0.0, wing_type="CRM:jig"):
-    """
-    Generate Common Research Model wing mesh.
-
-    Parameters
-    ----------
-    num_x : float
-        Desired number of chordwise node points for the final mesh.
-    num_y : float
-        Desired number of chordwise node points for the final mesh.
-    span : float
-        Total wingspan.
-    chord : float
-        Root chord.
-    span_cos_spacing : float (optional)
-        Blending ratio of uniform and cosine spacing in the spanwise direction.
-        A value of 0. corresponds to uniform spacing and a value of 1.
-        corresponds to regular cosine spacing. This increases the number of
-        spanwise node points near the wingtips.
-    chord_cos_spacing : float (optional)
-        Blending ratio of uniform and cosine spacing in the chordwise direction.
-        A value of 0. corresponds to uniform spacing and a value of 1.
-        corresponds to regular cosine spacing. This increases the number of
-        chordwise node points near the wingtips.
-    wing_type : string (optional)
-        Describes the desired CRM shape. Current options are:
-        "CRM:jig" (undeformed jig shape),
-        "CRM:alpha_2.75" (shape from wind tunnel testing at a=2.75 from DPW6)
-
-    Returns
-    -------
-    mesh[nx, ny, 3] : numpy array
-        Rectangular nodal mesh defining the final aerodynamic surface with the
-        specified parameters.
-    eta : numpy array
-        Spanwise locations of the airfoil slices. Later used in the
-        interpolation function to obtain correct twist values at
-        points along the span that are not aligned with these slices.
-    twist : numpy array
-        Twist along the span at the spanwise eta locations. We use these twists
-        as training points for interpolation to obtain twist values at
-        arbitrary points along the span.
-
-    """
-
-    # Call an external function to get the data points for the specific CRM
-    # type requested. See `CRM_definitions.py` for more information and the
-    # raw data.
-    raw_crm_points = get_crm_points(wing_type)
-
-    # If this is a jig shape, remove all z-deflection to create a
-    # poor person's version of the undeformed CRM.
-    if "jig" in wing_type or "CRM" == wing_type:
-        raw_crm_points[:, 3] = 0.0
-
-    # Get the leading edge of the raw crm points
-    le = np.vstack((raw_crm_points[:, 1], raw_crm_points[:, 2], raw_crm_points[:, 3]))
-
-    # Get the chord, twist(in correct order), and eta values from the points
-    chord = raw_crm_points[:, 5]
-    twist = raw_crm_points[:, 4][::-1]
-    eta = raw_crm_points[:, 0]
-
-    # Get the trailing edge of the crm points, based on the chord + le distance.
-    # Note that we do not account for twist here; instead we set that using
-    # the twist design variable later in run_classes.py.
-    te = np.vstack((raw_crm_points[:, 1] + chord, raw_crm_points[:, 2], raw_crm_points[:, 3]))
-
-    # Get the number of points that define this CRM shape and create a mesh
-    # array based on this size
-    n_raw_points = raw_crm_points.shape[0]
-    mesh = np.empty((2, n_raw_points, 3))
-
-    # Set the leading and trailing edges of the mesh matrix
-    mesh[0, :, :] = le.T
-    mesh[1, :, :] = te.T
-
-    # Convert the mesh points to meters from inches.
-    raw_mesh = mesh * 0.0254
-
-    # Create the blended spacing using the user input for span_cos_spacing
-    ny2 = (num_y + 1) // 2
-    beta = np.linspace(0, np.pi / 2, ny2)
-
-    # Distribution for cosine spacing
-    cosine = np.cos(beta)
-
-    # Distribution for uniform spacing
-    uniform = np.linspace(0, 1.0, ny2)[::-1]
-
-    # Combine the two distrubtions using span_cos_spacing as the weighting factor.
-    # span_cos_spacing == 1. is for fully cosine, 0. for uniform
-    lins = cosine * span_cos_spacing + (1 - span_cos_spacing) * uniform
-
-    # Populate a mesh object with the desired num_y dimension based on
-    # interpolated values from the raw CRM points.
-    mesh = np.empty((2, ny2, 3))
-    for j in range(2):
-        for i in range(3):
-            mesh[j, :, i] = np.interp(lins[::-1], eta, raw_mesh[j, :, i].real)
-
-    # That is just one half of the mesh and we later expect the full mesh,
-    # even if we're using symmetry == True.
-    # So here we mirror and stack the two halves of the wing.
-    full_mesh = getFullMesh(right_mesh=mesh)
-
-    # If we need to add chordwise panels, do so
-    if num_x > 2:
-        full_mesh = add_chordwise_panels(full_mesh, num_x, chord_cos_spacing)
-
-    return full_mesh, eta, twist
-
-
-def add_chordwise_panels(mesh, num_x, chord_cos_spacing):
-    """
-    Generate a new mesh with multiple chordwise panels.
-
-    Parameters
-    ----------
-    mesh[nx, ny, 3] : numpy array
-        Nodal mesh defining the initial aerodynamic surface with only
-        the leading and trailing edges defined.
-    num_x : float
-        Desired number of chordwise node points for the final mesh.
-    chord_cos_spacing : float
-        Blending ratio of uniform and cosine spacing in the chordwise direction.
-        A value of 0. corresponds to uniform spacing and a value of 1.
-        corresponds to regular cosine spacing. This increases the number of
-        chordwise node points near the wingtips.
-
-    Returns
-    -------
-    new_mesh[nx, ny, 3] : numpy array
-        Nodal mesh defining the final aerodynamic surface with the
-        specified number of chordwise node points.
-
-    """
-
-    # Obtain mesh and num properties
-    num_y = mesh.shape[1]
-
-    # chordwise discretization
-    cosine = 0.5 * (1 - np.cos(np.linspace(0, np.pi, num_x)))  # cosine spacing from 0 to 1
-    uniform = np.linspace(0, 1, num_x)  # uniform spacing
-    # mixed spacing with chord_cos_spacing as a weighting factor
-    wing_x = cosine * chord_cos_spacing + (1 - chord_cos_spacing) * uniform
-
-    # Obtain the leading and trailing edges
-    le = mesh[0, :, :]
-    te = mesh[-1, :, :]
-
-    # Create a new mesh with the desired num_x and set the leading and trailing edge values
-    new_mesh = np.zeros((num_x, num_y, 3))
-    new_mesh[0, :, :] = le
-    new_mesh[-1, :, :] = te
-
-    for i in range(1, num_x - 1):
-        w = wing_x[i]
-        new_mesh[i, :, :] = (1 - w) * le + w * te
-
-    return new_mesh
-
-
-def get_default_geo_dict():
-    """
-    Obtain the default settings for the surface descriptions. Note that
-    these defaults are overwritten based on user input for each surface.
-    Each dictionary describes one surface.
-
-    Returns
-    -------
-    defaults : dict
-        A python dict containing the default surface-level settings.
-    """
-
-    defaults = {
-        # Wing definition
-        "num_x": 3,  # number of chordwise points
-        "num_y": 5,  # number of spanwise points
-        "span_cos_spacing": 0,  # 0 for uniform spanwise panels
-        # 1 for cosine-spaced panels
-        # any value between 0 and 1 for
-        # a mixed spacing
-        "chord_cos_spacing": 0.0,  # 0 for uniform chordwise panels
-        # 1 for cosine-spaced panels
-        # any value between 0 and 1 for
-        # a mixed spacing
-        "wing_type": "rect",  # initial shape of the wing
-        # either 'CRM' or 'rect'
-        # 'CRM' can have different options
-        # after it, such as 'CRM:alpha_2.75'
-        # for the CRM shape at alpha=2.75
-        "symmetry": True,  # if true, model one half of wing
-        # reflected across the plane y = 0
-        "offset": np.zeros((3)),  # coordinates to offset
-        # the surface from its default location
-        # Simple Geometric Variables
-        "span": 10.0,  # full wingspan, even for symmetric cases
-        "root_chord": 1.0,  # root chord
-        "num_twist_cp": 2,  # number of twist controling point, only relevant for CRM wings.
-    }
-
-    return defaults
-
-
-def generate_mesh(input_dict):
-    """
-    Generate an OAS mesh.
-
-    Parameters
-    ----------
-    input_dict : dict
-        Dictionary containing user-provided parameters for the surface definition.
-        See the following for more information:
-        https://mdolab-openaerostruct.readthedocs-hosted.com/en/latest/user_reference/mesh_surface_dict.html#mesh-dict
-
-    Returns
-    -------
-    mesh : numpy array
-        Nodal coordinates defining the mesh.
-        shape = (nx, ny, 3),
-        where nx is the number of chordwise discretization nodes, ny is the number of spanwise discretization nodes.
-        If input_dict["symmetry"] is True, mesh defines left half of wing.
-    twist : numpy array, optional
-        Only for CRM wing (input_dict["wing_type"] == "CRM").
-        Twist values at the spanwise locations.
-
-    """
-
-    # Get defaults and update surface with the user-provided input
-    surf_dict = get_default_geo_dict()
-
-    # Warn if a user provided a key that is not implemented
-    user_defined_keys = input_dict.keys()
-    for key in user_defined_keys:
-        if key not in surf_dict:
-            warnings.warn(
-                "Key `{}` in mesh_dict is not implemented and will be ignored".format(key),
-                category=RuntimeWarning,
-                stacklevel=2,
-            )
-    # Warn if a user did not define important keys
-    for key in ["num_x", "num_y", "wing_type", "symmetry"]:
-        if key not in user_defined_keys:
-            warnings.warn(
-                "Missing `{}` in mesh_dict. The default value of {} will be used.".format(key, surf_dict[key]),
-                category=RuntimeWarning,
-                stacklevel=2,
-            )
-
-    # Apply user-defined options
-    surf_dict.update(input_dict)
-
-    # Warn if a user defined span and root_chord for CRM
-    if surf_dict["wing_type"] == "CRM":
-        if "span" in user_defined_keys or "root_chord" in user_defined_keys:
-            warnings.warn(
-                "`span` and `root_chord` in mesh_dict will be ignored for the CRM wing.",
-                category=RuntimeWarning,
-                stacklevel=2,
-            )
-
-    num_x = surf_dict["num_x"]
-    num_y = surf_dict["num_y"]
-    span_cos_spacing = surf_dict["span_cos_spacing"]
-    chord_cos_spacing = surf_dict["chord_cos_spacing"]
-
-    # Check to make sure that an odd number of spanwise points (num_y) was provided
-    if not num_y % 2:
-        raise ValueError("num_y must be an odd number.")
-
-    # Generate rectangular mesh
-    if surf_dict["wing_type"] == "rect":
-        span = surf_dict["span"]
-        chord = surf_dict["root_chord"]
-        mesh = gen_rect_mesh(num_x, num_y, span, chord, span_cos_spacing, chord_cos_spacing)
-
-    # Generate CRM mesh. Note that this outputs twist information
-    # based on the data from the CRM definition paper, so we save
-    # this twist information to the surf_dict.
-    elif "CRM" in surf_dict["wing_type"]:
-        mesh, eta, twist = gen_crm_mesh(num_x, num_y, span_cos_spacing, chord_cos_spacing, surf_dict["wing_type"])
-        surf_dict["crm_twist"] = twist
-
-    else:
-        raise NameError("wing_type option not understood. Must be either a type of " + '"CRM" or "rect".')
-
-    # Chop the mesh in half if using symmetry during analysis.
-    # Note that this means that the provided mesh should be the full mesh
-    if surf_dict["symmetry"]:
-        num_y = int((num_y + 1) / 2)
-        mesh = mesh[:, :num_y, :]
-
-    # Apply the user-provided coordinate offset to position the mesh
-    mesh = mesh + surf_dict["offset"]
-
-    # If CRM wing, then compute the jig twist values.
-    # Interpolate the twist values from the CRM wing definition to the twist
-    # control points.
-    if "CRM" in surf_dict["wing_type"]:
-        num_twist = surf_dict["num_twist_cp"]
-
-        # If the surface is symmetric, simply interpolate the initial
-        # twist_cp values based on the mesh data
-        if surf_dict["symmetry"]:
-            twist = np.interp(np.linspace(0, 1, num_twist), eta, surf_dict["crm_twist"])
-        else:
-            # If num_twist is odd, create the twist vector and mirror it
-            # then stack the two together, but remove the duplicated twist
-            # value.
-            if num_twist % 2:
-                twist = np.interp(np.linspace(0, 1, (num_twist + 1) // 2), eta, surf_dict["crm_twist"])
-                twist = np.hstack((twist[:-1], twist[::-1]))
-
-            # If num_twist is even, mirror the twist vector and stack
-            # them together
-            else:
-                twist = np.interp(np.linspace(0, 1, num_twist // 2), eta, surf_dict["crm_twist"])
-                twist = np.hstack((twist, twist[::-1]))
-
-        return mesh, twist
-
-    else:
-        return mesh
+    # j - spanwise station index (ny)
+    # Broadcast taper array over the mesh along spanwise(j) index multiply it by the x and z coordinates
+    mesh[:] = np.einsum("ijk, j->ijk", mesh - ref_axis, taper) + ref_axis
 
 
 def generate_vsp_surfaces(vsp_file, symmetry=False, include=None, scale=1.0):
@@ -1022,66 +673,6 @@ def write_FFD_file(surface, mx, my):
     return filename
 
 
-def writeMesh(mesh, filename):
-    """
-    Writes the OAS mesh in Tecplot .dat file format, for visualization and debugging purposes.
-
-    Parameters
-    ----------
-    mesh[nx,ny,3] : numpy array
-        The OAS mesh to be written.
-    filename : str
-        The file name including the .dat extension.
-    """
-    num_y = mesh.shape[0]
-    num_x = mesh.shape[1]
-    f = open(filename, "w")
-    f.write("\t\t1\n")
-    f.write("\t\t%d\t\t%d\t\t%d\n" % (num_y, num_x, 1))
-
-    x = mesh[:, :, 0]
-    y = mesh[:, :, 1]
-    z = mesh[:, :, 2]
-
-    for dim in [x, y, z]:
-        for iy in range(num_x):
-            row = dim[:, iy]
-            for val in row:
-                f.write("\t{: 3.6f}".format(val))
-            f.write("\n")
-    f.close()
-
-
-def getFullMesh(left_mesh=None, right_mesh=None):
-    """
-    For a symmetric wing, OAS only keeps and does computation on the left half.
-    This script mirros the OAS mesh and attaches it to the existing mesh to
-    obtain the full mesh.
-
-    Parameters
-    ----------
-    left_mesh[nx,ny,3] or right_mesh : numpy array
-        The half mesh to be mirrored.
-
-    Returns
-    -------
-    full_mesh[nx,2*ny-1,3] : numpy array
-        The computed full mesh.
-    """
-    if left_mesh is None and right_mesh is None:
-        raise ValueError("Either the left or right mesh need to be supplied.")
-    elif left_mesh is not None and right_mesh is not None:
-        raise ValueError("Please only provide either left or right mesh, not both.")
-    elif left_mesh is not None:
-        right_mesh = np.flip(left_mesh, axis=1).copy()
-        right_mesh[:, :, 1] *= -1
-    else:
-        left_mesh = np.flip(right_mesh, axis=1).copy()
-        left_mesh[:, :, 1] *= -1
-    full_mesh = np.concatenate((left_mesh, right_mesh[:, 1:, :]), axis=1)
-    return full_mesh
-
-
 def plot3D_meshes(file_name, zero_tol=0):
     """
     Reads in multi-surface meshes from a Plot3D mesh file for VLM analysis.
@@ -1132,3 +723,276 @@ def plot3D_meshes(file_name, zero_tol=0):
         mesh_dict[name] = mesh_list[i]
 
     return mesh_dict
+
+
+def build_section_dicts(surface):
+    """This utility function takes a multi-section surface dictionary and outputs a list
+    of individual section surface dictionaries so the geometry group for each individual
+    section can be initialized.
+
+    Parameters
+    ----------
+    surface: dict
+        OpenAeroStruct multi-section surface dictionary
+
+    Returns
+    -------
+    section_surfaces : list
+        List of OpenAeroStruct surface dictionaries for each individual surface
+
+    """
+    # Get number of sections
+    num_sections = surface["num_sections"]
+
+    if surface["meshes"] == "gen-meshes":
+        # Verify that all required inputs for automatic mesh generation are provided for each section
+        if len(surface["ny"]) != num_sections:
+            raise ValueError("Number of spanwise points needs to be provided for each section")
+        if len(surface["taper"]) != num_sections:
+            raise ValueError("Taper needs to be provided for each section")
+        if len(surface["span"]) != num_sections:
+            raise ValueError("Span needs to be provided for each section")
+        if len(surface["sweep"]) != num_sections:
+            raise ValueError("Sweep needs to be provided for each section")
+
+        # Generate unified and individual section meshes
+        _, sec_meshes = generate_section_mesh(surface)
+    else:
+        # Allow user to provide mesh for each section
+        if len(surface["meshes"]) != num_sections:
+            raise ValueError("A mesh needs to be provided for each section.")
+        sec_meshes = surface["meshes"]
+
+    if len(surface["sec_name"]) != num_sections:
+        raise ValueError("A name needs to be provided for each section.")
+
+    # List of support keys for multi-section wings
+    # NOTE: make sure this is consistent to the documentation's surface dict page
+    target_keys = [
+        # Essential Info
+        "num_section",
+        "symmetry",
+        "S_ref_type",
+        "ref_axis_pos",
+        # wing definition
+        "span",
+        "taper",
+        "sweep",
+        "dihedral",
+        "twist_cp",
+        "chord_cp",
+        "xshear_cp",
+        "yshear_cp",
+        "zshear_cp",
+        # aerodynamics
+        "CL0",
+        "CD0",
+        "with_viscous",
+        "with_wave",
+        "groundplane",
+        "k_lam",
+        "t_over_c_cp",
+        "c_max_t",
+    ]
+
+    # Constructs a list of section dictionaries and adds the specified supported keys and values from the mult-section surface dictionary.
+    surface_sections = []
+    num_sections = surface["num_sections"]
+
+    for i in range(num_sections):
+        section = {}
+        for k in set(surface).intersection(target_keys):
+            if type(surface[k]) is list:
+                # Reset taper, sweep, and span so that OAS doesn't apply the the transformations again
+                if k == "taper":
+                    section[k] = 1.0
+                elif k == "sweep":
+                    section[k] = 0.0
+                elif k == "span":
+                    if surface["symmetry"]:
+                        section[k] = 2.0 * surface[k][i]
+                    else:
+                        section[k] = surface[k][i]
+                else:
+                    section[k] = surface[k][i]
+            else:
+                section[k] = surface[k]
+        section["mesh"] = sec_meshes[i]
+        section["name"] = surface["sec_name"][i]
+        surface_sections.append(section)
+    return surface_sections
+
+
+def unify_mesh(sections, shift_uni_mesh=True):
+    """
+    Function that produces a unified mesh from all the individual wing section meshes.
+
+    Parameters
+    ----------
+    sections : list
+        List of section OpenAeroStruct surface dictionaries
+
+    shift_uni_mesh : bool
+        Flag that shifts sections so that their leading edges are coincident. Intended to keep sections from seperating
+        or intersecting during scalar span or sweep operations without the use of the constraint component.
+
+    Returns
+    -------
+    uni_mesh : numpy array
+        Unfied surface mesh in OAS format
+    """
+    for i_sec in np.arange(0, len(sections) - 1):
+        mesh = sections[i_sec]["mesh"]
+
+        if i_sec == 0:
+            uni_mesh = copy.deepcopy(mesh[:, :-1, :])
+        else:
+            if shift_uni_mesh:
+                # translate or shift uni_mesh (outer sections) to align leading edge at unification boundary
+                last_mesh = sections[i_sec - 1]["mesh"]
+                uni_mesh = uni_mesh - last_mesh[0, -1, :] + mesh[0, 0, :]
+
+            uni_mesh = np.concatenate([uni_mesh, mesh[:, :-1, :]], axis=1)
+
+    # Stitch the results into a singular mesh
+    mesh = sections[len(sections) - 1]["mesh"]
+    if len(sections) == 1:
+        uni_mesh = copy.deepcopy(mesh)
+    else:
+        uni_mesh = np.concatenate([uni_mesh, mesh], axis=1)
+
+    return uni_mesh
+
+
+def build_multi_spline(out_name, num_sections, control_points):
+    """This function returns an OpenMDAO Independent Variable Component with an output vector appropriately
+    named and sized to function as an unified set of B-spline control poitns that join multiple sections by construction.
+
+    Parameters
+    ----------
+    out_name: string
+        Name of the output to assign to the B-spline
+    num_sections : int
+        Number of sections
+    control_points: list
+        List of B-spline control point arrays corresponding to each section
+
+    Returns
+    -------
+    spline_control : OpenMDAO component object
+        The unified B-spline control point indpendent variable component
+
+    """
+    if len(control_points) != num_sections:
+        raise Exception("Target sections need to match with control points!")
+
+    single_sections = len([cp for cp in control_points if len(cp) == 1])
+
+    control_poin_vec = np.ones(len(np.concatenate(control_points)) - (num_sections - 1 - single_sections))
+
+    spline_control = om.IndepVarComp()
+    spline_control.add_output("{}_spline".format(out_name), val=control_poin_vec)
+
+    return spline_control
+
+
+def connect_multi_spline(prob, section_surfaces, sec_cp, out_name, comp_name, geom_name, return_bind_inds=False):
+    """This function connects the the unified B-spline component with the individual B-splines
+    of each section. There is a point of overlap at each section so that each edge control point control the edge
+    controls points of each section's B-spline. This is how section joining by consturction is acheived.
+    An issue occurs however when a B-spline in a particular section only has one control point. In this case the one
+    section control point is bound to the left edge B-spline component control point. As result, there is nothing to
+    maintain C0 continuity with the next section. As result a constraint will need to be manually set. To facilitate this,
+    the array bind_inds will contain a list of the B-spline control point indicies that will need to be manually constrained to
+    their previous sections.
+
+
+    Parameters
+    ----------
+    prob : OpenMDAO problem object
+        The OpenAeroStruct problem object with the unified B-spline component added.
+    section_surfaces : list
+        List of the surface dictionaries for each section.
+    sec_cp : list
+        List of B-spline control point arrays for each section.
+    out_name: string
+        Name of the unified B-spline component output to connect from
+    comp_name: string
+        Name of the unified B-spline component added to the problem object
+    geom_name : string
+        Name of the multi-section geometry group
+    return_bind_inds: bool
+        Return list of unjoined unified B-spline inidices. Default is False.
+
+    Returns
+    -------
+    bind_inds : list
+        List of unified B-spline control point indicies not connected due to the presence of a single control point section.(Only if return bind_inds specified)
+
+    """
+    acc = 0
+    bind_inds = []
+    for i, section in enumerate(section_surfaces):
+        point_count = len(sec_cp[i])
+        src_inds = np.arange(acc, acc + point_count)
+        acc += point_count - 1
+        if point_count == 1:
+            acc += 1
+            bind_inds.append(acc)
+        prob.model.connect(
+            "{}.{}".format(comp_name, out_name) + "_spline",
+            geom_name + "." + section["name"] + ".{}".format(out_name),
+            src_indices=src_inds,
+        )
+
+    if return_bind_inds:
+        return bind_inds
+
+
+def generate_mesh(input_dict):
+    warn_deprecation(
+        "generate_mesh has been moved to mesh_generator.py. Importing from utils.py is deprecated and will be removed in a future release."
+    )
+    return _generate_mesh(input_dict)
+
+
+def gen_rect_mesh(num_x, num_y, span, chord, span_cos_spacing=0.0, chord_cos_spacing=0.0):
+    warn_deprecation(
+        "gen_rect_mesh has been moved to mesh_generator.py. Importing from utils.py is deprecated and will be removed in a future release."
+    )
+    return _gen_rect_mesh(num_x, num_y, span, chord, span_cos_spacing=0.0, chord_cos_spacing=0.0)
+
+
+def gen_crm_mesh(num_x, num_y, span_cos_spacing=0.0, chord_cos_spacing=0.0, wing_type="CRM:jig"):
+    warn_deprecation(
+        "gen_crm_mesh has been moved to mesh_generator.py. Importing from utils.py is deprecated and will be removed in a future release."
+    )
+    return _gen_crm_mesh(num_x, num_y, span_cos_spacing=0.0, chord_cos_spacing=0.0, wing_type="CRM:jig")
+
+
+def add_chordwise_panels(mesh, num_x, chord_cos_spacing):
+    warn_deprecation(
+        "add_chordwise_panels has been moved to mesh_generator.py and renamed to regen_chordwise_panels. Importing from utils.py is deprecated and will be removed in a future release."
+    )
+    return _regen_chordwise_panels(mesh, num_x, chord_cos_spacing)
+
+
+def get_default_geo_dict():
+    warn_deprecation(
+        "get_default_geo_dict has been moved to mesh_generator.py and renamed to regen_chordwise_panels. Importing from utils.py is deprecated and will be removed in a future release."
+    )
+    return _get_default_geo_dict()
+
+
+def writeMesh(mesh, filename):
+    warn_deprecation(
+        "writeMesh has been moved to mesh_generator.py and renamed to write_tecplot. Importing from utils.py is deprecated and will be removed in a future release."
+    )
+    return _write_tecplot(mesh, filename)
+
+
+def getFullMesh(left_mesh=None, right_mesh=None):
+    warn_deprecation(
+        "getFullMesh has been moved to mesh_generator.py. Importing from utils.py is deprecated and will be removed in a future release."
+    )
+    return _getFullMesh(left_mesh=None, right_mesh=None)

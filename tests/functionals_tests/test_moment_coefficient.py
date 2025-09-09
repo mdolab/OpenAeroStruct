@@ -16,10 +16,8 @@ class Test(unittest.TestCase):
 
         comp = MomentCoefficient(surfaces=surfaces)
 
-        run_test(self, comp)
+        run_test(self, comp, complex_flag=True, method="cs")
 
-    # This is known to have some issues for sufficiently small values of S_ref_total
-    # There is probably a derivative bug somewhere in the moment_coefficient.py calcs
     def test2(self):
         surfaces = get_default_surfaces()
 
@@ -30,13 +28,15 @@ class Test(unittest.TestCase):
         indep_var_comp = om.IndepVarComp()
 
         indep_var_comp.add_output("S_ref_total", val=1e4, units="m**2")
+        indep_var_comp.add_output("cg", val=np.array([-10.0, 10.0, -10.0]), units="m")
 
         group.add_subsystem("moment_calc", comp)
         group.add_subsystem("indep_var_comp", indep_var_comp)
 
         group.connect("indep_var_comp.S_ref_total", "moment_calc.S_ref_total")
+        group.connect("indep_var_comp.cg", "moment_calc.cg")
 
-        run_test(self, group)
+        run_test(self, group, complex_flag=True, method="cs")
 
 
 if __name__ == "__main__":

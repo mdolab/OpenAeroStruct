@@ -6,7 +6,7 @@ import openmdao.api as om
 from openmdao.utils.assert_utils import assert_check_partials
 
 from openaerostruct.aerodynamics.mesh_point_forces import MeshPointForces
-from openaerostruct.geometry.utils import generate_mesh
+from openaerostruct.meshing.mesh_generator import generate_mesh
 from openaerostruct.utils.testing import run_test, get_default_surfaces
 
 

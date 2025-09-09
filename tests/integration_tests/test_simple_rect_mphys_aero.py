@@ -5,15 +5,15 @@ import numpy as np
 import openmdao.api as om
 from openmdao.utils.assert_utils import assert_near_equal, assert_check_partials
 
-from openaerostruct.geometry.utils import generate_mesh
+from openaerostruct.meshing.mesh_generator import generate_mesh
 from openaerostruct.geometry.geometry_group import Geometry
 from openaerostruct.aerodynamics.aero_groups import AeroPoint
 from openaerostruct.mphys import AeroBuilder
 
 # check if mphys is available
 try:
-    from mphys import Multipoint  # noqa: F401
-    from mphys.scenario_aerodynamic import ScenarioAerodynamic  # noqa: F401
+    from mphys.core import Multipoint, MPhysVariables  # noqa: F401
+    from mphys.scenarios import ScenarioAerodynamic  # noqa: F401
 
     mphys_flag = True
 except ModuleNotFoundError:
@@ -27,6 +27,8 @@ rho = 0.38
 vel = 248.136
 re = 1e6
 cg = np.zeros((3))
+
+FlowVars = MPhysVariables.Aerodynamics.FlowConditions
 
 
 @unittest.skipUnless(mphys_flag, "MPhys is required.")
@@ -85,12 +87,12 @@ class Test(unittest.TestCase):
         class Top(Multipoint):
             def setup(self):
                 dvs = self.add_subsystem("dvs", om.IndepVarComp(), promotes=["*"])
-                dvs.add_output("aoa", val=aoa, units="deg")
-                dvs.add_output("yaw", val=beta, units="deg")
+                dvs.add_output(FlowVars.ANGLE_OF_ATTACK, val=aoa, units="deg")
+                dvs.add_output(FlowVars.YAW_ANGLE, val=beta, units="deg")
                 dvs.add_output("rho", val=rho, units="kg/m**3")
-                dvs.add_output("mach", mach)
+                dvs.add_output(FlowVars.MACH_NUMBER, mach)
                 dvs.add_output("v", vel, units="m/s")
-                dvs.add_output("reynolds", re, units="1/m")
+                dvs.add_output(FlowVars.REYNOLDS_NUMBER, re, units="1/m")
                 dvs.add_output("cg", val=cg, units="m")
 
                 # Create mphys builder for aero solver
@@ -101,10 +103,21 @@ class Test(unittest.TestCase):
                 # Create mesh component and connect with solver
                 self.add_subsystem("mesh", aero_builder.get_mesh_coordinate_subsystem())
                 self.mphys_add_scenario("aero_point_0", ScenarioAerodynamic(aero_builder=aero_builder))
-                self.connect("mesh.x_aero0", "aero_point_0.x_aero")
+                self.connect(
+                    f"mesh.{MPhysVariables.Aerodynamics.Surface.Mesh.COORDINATES}",
+                    f"aero_point_0.{MPhysVariables.Aerodynamics.Surface.COORDINATES}",
+                )
 
                 # Connect dv ivc's to solver
-                for dv in ["aoa", "yaw", "rho", "mach", "v", "reynolds", "cg"]:
+                for dv in [
+                    FlowVars.ANGLE_OF_ATTACK,
+                    FlowVars.YAW_ANGLE,
+                    FlowVars.MACH_NUMBER,
+                    FlowVars.REYNOLDS_NUMBER,
+                    "rho",
+                    "v",
+                    "cg",
+                ]:
                     self.connect(dv, f"aero_point_0.{dv}")
 
         prob = om.Problem()

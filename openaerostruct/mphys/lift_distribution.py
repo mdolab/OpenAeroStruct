@@ -1,4 +1,5 @@
 import numpy as np
+import scipy as sp
 
 from openmdao.api import ExplicitComponent
 import os
@@ -108,7 +109,7 @@ class LiftDistribution(ExplicitComponent):
             total_lift_dist += np.interp(y, y_station, surface_lift_dist, left=0, right=0)
 
         # Compute the normalized lift distribution by integrating
-        total_lift = np.trapz(total_lift_dist, y)
+        total_lift = sp.integrate.trapezoid(total_lift_dist, y)
         span = y_max - y_min
         # Normalize the lift distribution so that the area under the curve is
         # unity

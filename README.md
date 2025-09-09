@@ -89,26 +89,9 @@ John P. Jasa, Shamsheer S. Chauhan, Justin S. Gray, and Joaquim R. R. A. Martins
 	Year = {2019}}
 ```
 
-Version Information
--------------------
-The oldest and latest versions of the dependencies that we test regularly are the following (other versions may work, but no guarantees):
-
-| Dependency         | oldest | latest |
-| ------------------ | ------ | ------ |
-| Python             | 3.8    | 3.11   |
-| NumPy              | 1.20   | latest |
-| SciPy              | 1.6.0  | latest |
-| OpenMDAO           | 3.15   | latest |
-| MPhys              | 1.0.0  | latest |
-| Matplotlib         | latest | latest |
-| pyGeo (optional)   | 1.6.0  | latest |
-| OpenVSP (optional) | 3.27.1 | 3.27.1 |
-
-If you are looking to use the previous version of OpenAeroStruct which uses OpenMDAO 1.7.4, use OpenAeroStruct 1.0 from [here](https://github.com/mdolab/OpenAeroStruct/releases).
-
 License
 -------
-Copyright 2018-2023 MDO Lab
+Copyright 2018 MDO Lab
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

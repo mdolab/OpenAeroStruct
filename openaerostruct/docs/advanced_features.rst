@@ -12,6 +12,7 @@ These examples show some advanced features in OpenAeroStruct.
    advanced_features/geometry_manipulation.rst
    advanced_features/custom_mesh_example.rst
    advanced_features/openvsp_mesh_example.rst
+   advanced_features/multi_section_surfaces.rst
    advanced_features/multiple_surfaces.rst
    advanced_features/multipoint.rst
    advanced_features/multipoint_parallel.rst
@@ -20,4 +21,5 @@ These examples show some advanced features in OpenAeroStruct.
    advanced_features/openconcept_coupling.rst
    advanced_features/customizing_prob_setup.rst
    advanced_features/mphys_coupling.rst
+   advanced_features/stability_derivatives.rst
    advanced_features/composites_walkthrough.rst

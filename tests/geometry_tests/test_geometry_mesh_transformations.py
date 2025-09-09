@@ -1,4 +1,5 @@
-""" Unit tests for each geometry mesh transformation component."""
+"""Unit tests for each geometry mesh transformation component."""
+
 import numpy as np
 
 import unittest
@@ -17,11 +18,14 @@ from openaerostruct.geometry.geometry_mesh_transformations import (
     ShearZ,
     Rotate,
 )
-from openaerostruct.geometry.utils import generate_mesh
+from openaerostruct.meshing.mesh_generator import generate_mesh
 
 # These have been chosen so that each dimension of the intermediate ndarrays is unique.
 NY = 7
 NX = 5
+
+# Flag to set if OpenMDAO reports should be generated during tests or not
+GENERATE_OM_REPORTS = False
 
 
 def get_mesh(symmetry):
@@ -64,7 +68,7 @@ class Test(unittest.TestCase):
         symmetry = False
         mesh = get_mesh(symmetry)
 
-        prob = om.Problem()
+        prob = om.Problem(reports=GENERATE_OM_REPORTS)
         group = prob.model
 
         val = self.rng.random(1)
@@ -83,10 +87,29 @@ class Test(unittest.TestCase):
         symmetry = True
         mesh = get_mesh(symmetry)
 
-        prob = om.Problem()
+        prob = om.Problem(reports=GENERATE_OM_REPORTS)
         group = prob.model
 
         val = self.rng.random(1)
+        ref_axis_pos = self.rng.random(1)
+
+        comp = Taper(val=val, mesh=mesh, symmetry=symmetry, ref_axis_pos=ref_axis_pos)
+        group.add_subsystem("comp", comp)
+
+        prob.setup()
+        prob.run_model()
+
+        check = prob.check_partials(compact_print=True, abs_err_tol=1e-5, rel_err_tol=1e-5)
+        assert_check_partials(check, atol=1e-6, rtol=1e-6)
+
+    def test_taper_symmetry_one(self):
+        symmetry = True
+        mesh = get_mesh(symmetry)
+
+        prob = om.Problem(reports=GENERATE_OM_REPORTS)
+        group = prob.model
+
+        val = 1.0
         ref_axis_pos = self.rng.random(1)
 
         comp = Taper(val=val, mesh=mesh, symmetry=symmetry, ref_axis_pos=ref_axis_pos)
@@ -102,7 +125,7 @@ class Test(unittest.TestCase):
         symmetry = False
         mesh = get_mesh(symmetry)
 
-        prob = om.Problem()
+        prob = om.Problem(reports=GENERATE_OM_REPORTS)
         group = prob.model
 
         val = self.rng.random(NY)
@@ -124,7 +147,7 @@ class Test(unittest.TestCase):
         symmetry = True
         mesh = get_mesh(symmetry)
 
-        prob = om.Problem()
+        prob = om.Problem(reports=GENERATE_OM_REPORTS)
         group = prob.model
 
         val = self.rng.random(NY)
@@ -147,7 +170,7 @@ class Test(unittest.TestCase):
         mesh = get_mesh(symmetry)
 
         # Test for chord_scaling_pos at trailing edge
-        prob = om.Problem()
+        prob = om.Problem(reports=GENERATE_OM_REPORTS)
         group = prob.model
 
         val = self.rng.random(NY)
@@ -180,7 +203,7 @@ class Test(unittest.TestCase):
         # initial chord
         chord_in = mesh_in[-1, 0, 0] - mesh_in[0, 0, 0]  # TE - LE
 
-        prob = om.Problem()
+        prob = om.Problem(reports=GENERATE_OM_REPORTS)
         group = prob.model
         comp = ScaleX(val=np.ones(3), mesh_shape=mesh_in.shape)
         group.add_subsystem("comp", comp)
@@ -202,7 +225,7 @@ class Test(unittest.TestCase):
         symmetry = False
         mesh = get_mesh(symmetry)
 
-        prob = om.Problem()
+        prob = om.Problem(reports=GENERATE_OM_REPORTS)
         group = prob.model
 
         val = self.rng.random(1)
@@ -223,7 +246,7 @@ class Test(unittest.TestCase):
         symmetry = True
         mesh = get_mesh(symmetry)
 
-        prob = om.Problem()
+        prob = om.Problem(reports=GENERATE_OM_REPORTS)
         group = prob.model
 
         val = self.rng.random(1)
@@ -244,7 +267,7 @@ class Test(unittest.TestCase):
         symmetry = False
         mesh = get_mesh(symmetry)
 
-        prob = om.Problem()
+        prob = om.Problem(reports=GENERATE_OM_REPORTS)
         group = prob.model
 
         val = self.rng.random(NY)
@@ -265,7 +288,7 @@ class Test(unittest.TestCase):
         symmetry = False
         mesh = get_mesh(symmetry)
 
-        prob = om.Problem()
+        prob = om.Problem(reports=GENERATE_OM_REPORTS)
         group = prob.model
 
         val = self.rng.random(1)
@@ -287,7 +310,7 @@ class Test(unittest.TestCase):
         symmetry = True
         mesh = get_mesh(symmetry)
 
-        prob = om.Problem()
+        prob = om.Problem(reports=GENERATE_OM_REPORTS)
         group = prob.model
 
         val = self.rng.random(1)
@@ -309,7 +332,7 @@ class Test(unittest.TestCase):
         symmetry = False
         mesh = get_mesh(symmetry)
 
-        prob = om.Problem()
+        prob = om.Problem(reports=GENERATE_OM_REPORTS)
         group = prob.model
 
         val = self.rng.random(NY)
@@ -330,7 +353,7 @@ class Test(unittest.TestCase):
         symmetry = False
         mesh = get_mesh(symmetry)
 
-        prob = om.Problem()
+        prob = om.Problem(reports=GENERATE_OM_REPORTS)
         group = prob.model
 
         val = 15.0 * self.rng.random(1)
@@ -351,7 +374,7 @@ class Test(unittest.TestCase):
         symmetry = True
         mesh = get_mesh(symmetry)
 
-        prob = om.Problem()
+        prob = om.Problem(reports=GENERATE_OM_REPORTS)
         group = prob.model
 
         val = self.rng.random(1)
@@ -372,7 +395,7 @@ class Test(unittest.TestCase):
         symmetry = False
         mesh = get_mesh(symmetry)
 
-        prob = om.Problem()
+        prob = om.Problem(reports=GENERATE_OM_REPORTS)
         group = prob.model
 
         val = self.rng.random(NY)
@@ -393,7 +416,7 @@ class Test(unittest.TestCase):
         symmetry = False
         mesh = get_mesh(symmetry)
 
-        prob = om.Problem()
+        prob = om.Problem(reports=GENERATE_OM_REPORTS)
         group = prob.model
 
         val = self.rng.random(NY)
@@ -415,7 +438,7 @@ class Test(unittest.TestCase):
         symmetry = True
         mesh = get_mesh(symmetry)
 
-        prob = om.Problem()
+        prob = om.Problem(reports=GENERATE_OM_REPORTS)
         group = prob.model
 
         val = self.rng.random(NY)
@@ -437,7 +460,7 @@ class Test(unittest.TestCase):
         symmetry = False
         mesh = get_mesh(symmetry)
 
-        prob = om.Problem()
+        prob = om.Problem(reports=GENERATE_OM_REPORTS)
         group = prob.model
 
         val = self.rng.random(NY)

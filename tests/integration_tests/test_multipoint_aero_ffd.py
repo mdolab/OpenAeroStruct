@@ -13,7 +13,8 @@ except ModuleNotFoundError:
 @unittest.skipUnless(pygeo_flag, "pyGeo is required.")
 class Test(unittest.TestCase):
     def test(self):
-        from openaerostruct.geometry.utils import generate_mesh, write_FFD_file
+        from openaerostruct.meshing.mesh_generator import generate_mesh
+        from openaerostruct.geometry.utils import write_FFD_file
         from openaerostruct.geometry.geometry_group import Geometry
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
         from openaerostruct.integration.multipoint_comps import MultiCD

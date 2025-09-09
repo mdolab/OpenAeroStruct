@@ -2,7 +2,7 @@ from openmdao.utils.assert_utils import assert_near_equal
 import unittest
 import numpy as np
 
-from openaerostruct.geometry.utils import generate_mesh
+from openaerostruct.meshing.mesh_generator import generate_mesh
 
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
 
@@ -401,8 +401,8 @@ class Test(unittest.TestCase):
 
         prob.run_model()
 
-        assert_near_equal(prob["AS_point_0.fuelburn"][0], 87333.56998786073, 1e-5)
-        assert_near_equal(prob["wing.structural_mass"][0], 34500.40422127632, 1e-5)
+        assert_near_equal(prob["AS_point_0.fuelburn"][0], 85296.25551779529, 1e-5)
+        assert_near_equal(prob["wing.structural_mass"][0], 29707.645593713547, 1e-5)
 
 
 if __name__ == "__main__":

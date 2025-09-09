@@ -22,7 +22,10 @@ class TubeGroup(om.Group):
             comp = self.add_subsystem(
                 "thickness_bsp",
                 om.SplineComp(
-                    method="bsplines", x_interp_val=x_interp, num_cp=n_cp, interp_options={"order": min(n_cp, 4)}
+                    method="bsplines",
+                    x_interp_val=x_interp,
+                    num_cp=n_cp,
+                    interp_options={"order": min(n_cp, 4), "x_cp_start": 0, "x_cp_end": 1},
                 ),
                 promotes_inputs=["thickness_cp"],
                 promotes_outputs=["thickness"],
@@ -37,7 +40,10 @@ class TubeGroup(om.Group):
             comp = self.add_subsystem(
                 "radius_bsp",
                 om.SplineComp(
-                    method="bsplines", x_interp_val=x_interp, num_cp=n_cp, interp_options={"order": min(n_cp, 4)}
+                    method="bsplines",
+                    x_interp_val=x_interp,
+                    num_cp=n_cp,
+                    interp_options={"order": min(n_cp, 4), "x_cp_start": 0, "x_cp_end": 1},
                 ),
                 promotes_inputs=["radius_cp"],
                 promotes_outputs=["radius"],

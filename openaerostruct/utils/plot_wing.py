@@ -1,4 +1,4 @@
-""" Script to plot results from aero, struct, or aerostruct optimization.
+"""Script to plot results from aero, struct, or aerostruct optimization.
 
 Usage is `plot_wing __name__` for user-named database.
 

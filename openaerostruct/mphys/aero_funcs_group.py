@@ -1,4 +1,5 @@
 import openmdao.api as om
+from mphys.core import MPhysVariables
 
 from openaerostruct.aerodynamics.functionals import VLMFunctionals
 from openaerostruct.functionals.total_aero_performance import TotalAeroPerformance
@@ -23,9 +24,9 @@ class AeroFuncsGroup(om.Group):
         self.surfaces = self.options["surfaces"]
         self.user_specified_Sref = self.options["user_specified_Sref"]
 
-        self.set_input_defaults("aoa", val=0.0, units="deg")
-        self.set_input_defaults("yaw", val=0.0, units="deg")
-        self.set_input_defaults("mach", val=0.0)
+        self.set_input_defaults(MPhysVariables.Aerodynamics.FlowConditions.ANGLE_OF_ATTACK, val=0.0, units="deg")
+        self.set_input_defaults(MPhysVariables.Aerodynamics.FlowConditions.YAW_ANGLE, val=0.0, units="deg")
+        self.set_input_defaults(MPhysVariables.Aerodynamics.FlowConditions.MACH_NUMBER, val=0.0)
 
         proms_in = []
         for surface in self.surfaces:
@@ -35,10 +36,10 @@ class AeroFuncsGroup(om.Group):
                 VLMFunctionals(surface=surface),
                 promotes_inputs=[
                     "v",
-                    ("alpha", "aoa"),
-                    ("beta", "yaw"),
-                    ("Mach_number", "mach"),
-                    ("re", "reynolds"),
+                    ("alpha", MPhysVariables.Aerodynamics.FlowConditions.ANGLE_OF_ATTACK),
+                    ("beta", MPhysVariables.Aerodynamics.FlowConditions.YAW_ANGLE),
+                    ("Mach_number", MPhysVariables.Aerodynamics.FlowConditions.MACH_NUMBER),
+                    ("re", MPhysVariables.Aerodynamics.FlowConditions.REYNOLDS_NUMBER),
                     "rho",
                 ],
             )
@@ -89,5 +90,5 @@ class AeroFuncsGroup(om.Group):
                     base_name=self.options["scenario_name"],
                     output_dir=self.options["output_dir"],
                 ),
-                promotes_inputs=proms_in + ["*"],
+                promotes_inputs=proms_in + [("alpha", MPhysVariables.Aerodynamics.FlowConditions.ANGLE_OF_ATTACK), "*"],
             )

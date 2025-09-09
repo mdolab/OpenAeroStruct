@@ -70,6 +70,18 @@ def check_surface_dict_keys(surface):
         # FFD
         "mx",
         "my",
+        # Multisection
+        "is_multi_section",
+        "num_sections",
+        "sec_name",
+        "meshes",
+        "root_chord",
+        "span",
+        "ny",
+        "nx",
+        "bpanels",
+        "cpanels",
+        "root_section",
     ]
     # keys that are required when useComposite is True
     compositeInputs = [

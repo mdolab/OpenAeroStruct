@@ -4,10 +4,9 @@ import unittest
 class Test(unittest.TestCase):
     def test(self):
         # docs checkpoint 0
-        from openaerostruct.geometry.utils import generate_mesh
+        from openaerostruct.meshing.mesh_generator import generate_mesh
 
-        from openmdao.utils.assert_utils import assert_near_equal
-        from openaerostruct.utils.testing import assert_check_totals
+        from openmdao.utils.assert_utils import assert_near_equal, assert_check_totals
 
         # Create a dictionary to store options about the mesh
         mesh_dict = {"num_y": 7, "num_x": 2, "wing_type": "CRM", "symmetry": True, "num_twist_cp": 5}
@@ -49,7 +48,7 @@ class Test(unittest.TestCase):
             compact_print=True,
             out_stream=None,
         )
-        assert_check_totals(totals, atol=1e-2, rtol=1e-5)
+        assert_check_totals(totals, atol=1e-5, rtol=1e-5)
 
     def setup_problem(self, mesh, twist_cp):
         """

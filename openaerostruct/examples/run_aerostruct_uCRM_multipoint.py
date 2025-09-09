@@ -21,7 +21,7 @@ older version of OAS (very slight differences due to numerical errors, etc.)
 
 import numpy as np
 
-from openaerostruct.geometry.utils import generate_mesh
+from openaerostruct.meshing.mesh_generator import generate_mesh
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
 import openmdao.api as om
 from openaerostruct.structures.wingbox_fuel_vol_delta import WingboxFuelVolDelta

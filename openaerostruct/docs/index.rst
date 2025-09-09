@@ -72,6 +72,65 @@ Source Docs
 
    _srcdocs/index.rst
 
+---------------
+Please Cite Us!
+---------------
+
+If you use OpenAeroStruct, please cite the `following paper <https://www.researchgate.net/publication/322991521_Open-source_coupled_aerostructural_optimization_using_Python>`_:
+
+John P. Jasa, John T. Hwang, and Joaquim R. R. A. Martins. "Open-source coupled aerostructural optimization using Python." Structural and Multidisciplinary Optimization 57.4 (2018): 1815-1827. DOI: 10.1007/s00158-018-1912-8
+
+.. code-block:: bibtex
+
+   @article{Jasa2018a,
+	   Author = {John P. Jasa and John T. Hwang and Joaquim R. R. A. Martins},
+	   Doi = {10.1007/s00158-018-1912-8},
+	   Journal = {Structural and Multidisciplinary Optimization},
+	   Month = {April},
+	   Number = {4},
+	   Pages = {1815--1827},
+	   Publisher = {Springer},
+	   Title = {Open-source coupled aerostructural optimization using {Python}},
+	   Volume = {57},
+	   Year = {2018}
+   }
+
+
+If you use the wingbox structural model, fuel-weight inertial loads, or structural-weight inertial loads, please also cite the `following paper <https://www.researchgate.net/publication/327654423_Low-Fidelity_Aerostructural_Optimization_of_Aircraft_Wings_with_a_Simplified_Wingbox_Model_Using_OpenAeroStruct>`_:
+
+Shamsheer S. Chauhan and Joaquim R. R. A. Martins, “Low-Fidelity Aerostructural Optimization of Aircraft Wings with a Simplified Wingbox Model Using OpenAeroStruct,” Proceedings of the 6th International Conference on Engineering Optimization, EngOpt 2018, Springer, Lisbon, Portugal, September 2018, pp. 418–431. doi:10.1007/978-3-319-97773-7 38
+
+.. code-block:: bibtex
+
+   @inproceedings{Chauhan2018b,
+	   Author = {Shamsheer S. Chauhan and Joaquim R. R. A. Martins},
+	   Address = {Lisbon, Portugal},
+	   Booktitle = {Proceedings of the 6th International Conference on Engineering Optimization, EngOpt 2018},
+	   Doi = {10.1007/978-3-319-97773-7_38},
+	   Pages = {418-431},
+	   Publisher = {Springer},
+	   Title = {Low-Fidelity Aerostructural Optimization of Aircraft Wings with a Simplified Wingbox Model Using {OpenAeroStruct}},
+	   Year = {2018}
+   }
+
+
+If using point-mass loads or thrust loads, please cite the following `paper (https://www.researchgate.net/publication/333806174_How_Certain_Physical_Considerations_Impact_Aerostructural_Wing_Optimization)`_.
+
+John P. Jasa, Shamsheer S. Chauhan, Justin S. Gray, and Joaquim R. R. A. Martins, “How Certain Physical Considerations Impact Aerostructural Wing Optimization,” AIAA/ISSMO Multidisciplinary Analysis and Optimization Conference, Dallas, TX, 2019. doi:10.2514/6.2019-3242
+
+.. code-block:: bibtex
+
+   @inproceedings{Jasa2019c,
+	   Author = {John P. Jasa and Shamsheer S. Chauhan and Justin S. Gray and Joaquim R. R. A. Martins},
+	   Address = {Dallas, TX},
+	   Booktitle = {AIAA/ISSMO Multidisciplinary Analysis and Optimization Conference},
+	   Doi = {10.2514/6.2019-3242},
+	   Title = {How Certain Physical Considerations Impact Aerostructural Wing Optimization},
+	   Month = {June},
+	   Year = {2019}}
+   }
+
+
 Notes
 =====
 

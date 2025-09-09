@@ -4,10 +4,11 @@ import unittest
 
 class Test(unittest.TestCase):
     def test(self):
+        # docs checkpoint 0
         import numpy as np
         import openmdao.api as om
 
-        from openaerostruct.geometry.utils import generate_mesh
+        from openaerostruct.meshing.mesh_generator import generate_mesh
         from openaerostruct.geometry.geometry_group import Geometry
         from openaerostruct.aerodynamics.aero_groups import AeroPoint
         from openaerostruct.integration.multipoint_comps import MultiCD
@@ -127,6 +128,7 @@ class Test(unittest.TestCase):
         # Set up the problem and run optimization.
         prob.setup()
         prob.run_driver()
+        # docs checkpoint 1
 
         assert_near_equal(prob["aero_point_0.wing_perf.CL"][0], 0.45, 1e-6)
         assert_near_equal(prob["aero_point_0.wing_perf.CD"][0], 0.030502881726099183, 1e-6)

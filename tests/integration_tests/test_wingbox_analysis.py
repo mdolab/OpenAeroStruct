@@ -1,6 +1,6 @@
 import numpy as np
 import unittest
-from openaerostruct.geometry.utils import generate_mesh
+from openaerostruct.meshing.mesh_generator import generate_mesh
 from openaerostruct.structures.struct_groups import SpatialBeamAlone
 from openmdao.utils.assert_utils import assert_check_partials, assert_near_equal
 import openmdao.api as om
@@ -333,7 +333,7 @@ class Test(unittest.TestCase):
         assert_check_partials(data, atol=1e20, rtol=1e-6)
 
         prob.run_driver()
-        assert_near_equal(prob["wing.structural_mass"], 16675.586037621928, 1e-6)
+        assert_near_equal(prob["wing.structural_mass"], 16932.20046986, 1e-6)
 
 
 if __name__ == "__main__":

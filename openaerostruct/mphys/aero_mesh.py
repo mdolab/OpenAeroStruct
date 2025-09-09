@@ -1,5 +1,6 @@
 import numpy as np
 import openmdao.api as om
+from mphys.core import MPhysVariables
 
 from openaerostruct.mphys.utils import get_number_of_nodes, get_src_indices
 
@@ -26,7 +27,7 @@ class AeroMesh(om.IndepVarComp):
         else:
             xpts = np.zeros(0)
         self.add_output(
-            "x_aero0",
+            MPhysVariables.Aerodynamics.Surface.Mesh.COORDINATES,
             distributed=True,
             val=xpts,
             shape=xpts.size,

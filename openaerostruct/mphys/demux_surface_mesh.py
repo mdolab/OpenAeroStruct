@@ -1,4 +1,5 @@
 import openmdao.api as om
+from mphys.core import MPhysVariables
 
 from openaerostruct.mphys.utils import get_number_of_nodes, get_src_indices
 
@@ -12,7 +13,7 @@ class DemuxSurfaceMesh(om.ExplicitComponent):
 
     Parameters
     ----------
-    x_aero[system_size*3] : numpy array
+    MPhysVariables.Aerodynamics.Surface.COORDINATES[system_size*3] : numpy array
         Flattened aero mesh coordinates for all lifting surfaces.
 
     Returns
@@ -32,7 +33,7 @@ class DemuxSurfaceMesh(om.ExplicitComponent):
 
         # OpenMDAO part of setup
         self.add_input(
-            "x_aero",
+            MPhysVariables.Aerodynamics.Surface.COORDINATES,
             distributed=False,
             shape=self.nnodes * 3,
             units="m",
@@ -54,16 +55,22 @@ class DemuxSurfaceMesh(om.ExplicitComponent):
     def compute(self, inputs, outputs):
         for surface in self.surfaces:
             surf_name = surface["name"]
-            outputs[surf_name + "_def_mesh"] = inputs["x_aero"][self.src_indices[surf_name]]
+            outputs[surf_name + "_def_mesh"] = inputs[MPhysVariables.Aerodynamics.Surface.COORDINATES][
+                self.src_indices[surf_name]
+            ]
 
     def compute_jacvec_product(self, inputs, d_inputs, d_outputs, mode):
         if mode == "fwd":
             for surface in self.surfaces:
                 surf_name = surface["name"]
-                if "x_aero" in d_inputs and surf_name + "_def_mesh" in d_outputs:
-                    d_outputs[surf_name + "_def_mesh"] += d_inputs["x_aero"][self.src_indices[surf_name]]
+                if MPhysVariables.Aerodynamics.Surface.COORDINATES in d_inputs and surf_name + "_def_mesh" in d_outputs:
+                    d_outputs[surf_name + "_def_mesh"] += d_inputs[MPhysVariables.Aerodynamics.Surface.COORDINATES][
+                        self.src_indices[surf_name]
+                    ]
         if mode == "rev":
             for surface in self.surfaces:
                 surf_name = surface["name"]
-                if "x_aero" in d_inputs and surf_name + "_def_mesh" in d_outputs:
-                    d_inputs["x_aero"][self.src_indices[surf_name]] += d_outputs[surf_name + "_def_mesh"]
+                if MPhysVariables.Aerodynamics.Surface.COORDINATES in d_inputs and surf_name + "_def_mesh" in d_outputs:
+                    d_inputs[MPhysVariables.Aerodynamics.Surface.COORDINATES][self.src_indices[surf_name]] += d_outputs[
+                        surf_name + "_def_mesh"
+                    ]
