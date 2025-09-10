@@ -112,6 +112,12 @@ def compute_composite_stiffness(surface):
     ply_angles = surface["ply_angles"]
     num_plies = len(ply_fractions)
 
+    # check inputs
+    if len(ply_fractions) != len(ply_angles):
+        raise ValueError("Length of ply_fractions and ply_angles must be equal")
+    if sum(ply_fractions) != 1:
+        raise ValueError("Sum of ply_fractions must be 1")
+
     # finding the Q matrix
     Q = np.zeros((3, 3))
     Q[0, 0] = E1 / (1 - v12 * v21)

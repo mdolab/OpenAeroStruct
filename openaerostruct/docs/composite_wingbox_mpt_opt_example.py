@@ -74,11 +74,6 @@ surf_dict = {
     "c_max_t": 0.38,  # chordwise location of maximum thickness
     # docs checkpoint 6
     # Structural values are based on aluminum 7075
-    "E": 73.1e9,  # [Pa] Young's modulus
-    "G": (73.1e9 / 2 / 1.33),  # [Pa] shear modulus (calculated using E and the Poisson's ratio here)
-    "yield": 420.0e6,  # [Pa] yield stress
-    "mrho": 2.78e3,  # [kg/m^3] material density
-    "strength_factor_for_upper_skin": 1.0,  # the yield stress is multiplied by this factor for the upper skin
     "wing_weight_ratio": 1.25,
     "exact_failure_constraint": False,  # if false, use KS function
     "struct_weight_relief": True,
@@ -87,7 +82,9 @@ surf_dict = {
     "fuel_density": 803.0,  # [kg/m^3] fuel density (only needed if the fuel-in-wing volume constraint is used)
     "Wf_reserve": 15000.0,  # [kg] reserve fuel mass
     # docs checkpoint 7
+    # Composite material parameters
     "useComposite": True,
+    "mrho": 1550,  # [kg/m^3]
     "safety_factor": 1.5,
     "ply_angles": [0, 45, -45, 90],
     "ply_fractions": [0.10, 0.25, 0.25, 0.40],
@@ -102,6 +99,12 @@ surf_dict = {
     "sigma_12max": 71.0e6,
     # docs checkpoint 8
 }
+
+# docs checkpoint 9
+# Compute effective E and G for composite material
+from openaerostruct.structures.utils import compute_composite_stiffness  # noqa: E402
+compute_composite_stiffness(surf_dict)
+# docs checkpoint 10
 
 surfaces = [surf_dict]
 

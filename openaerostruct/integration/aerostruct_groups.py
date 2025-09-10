@@ -15,7 +15,6 @@ from openaerostruct.aerodynamics.compressible_states import CompressibleVLMState
 from openaerostruct.structures.tube_group import TubeGroup
 from openaerostruct.structures.wingbox_group import WingboxGroup
 from openaerostruct.utils.check_surface_dict import check_surface_dict_keys
-from openaerostruct.structures.utils import compute_composite_stiffness
 import openmdao.api as om
 
 
@@ -430,11 +429,6 @@ class AerostructPoint(om.Group):
 
         for surface in surfaces:
             name = surface["name"]
-
-            # if useComposite is enabled, compute the effective E and G values for the composite material
-            useComposite = "useComposite" in surface.keys() and surface["useComposite"]
-            if useComposite:
-                compute_composite_stiffness(surface)
 
             # Connect the output of the loads component with the FEM
             # displacement parameter. This links the coupling within the coupled
