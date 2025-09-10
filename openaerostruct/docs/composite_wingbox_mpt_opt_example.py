@@ -1,13 +1,10 @@
 # Ignore the #docs checkpoint comments. They are just used to split up the code for the documentation webpage.
-# docs checkpoint 0
 
 import numpy as np
 from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
 from openaerostruct.structures.wingbox_fuel_vol_delta import WingboxFuelVolDelta
 import openmdao.api as om
-
-# docs checkpoint 1
 
 # Provide coordinates for a portion of an airfoil for the wingbox cross-section as an nparray with dtype=complex (to work with the complex-step approximation for derivatives).
 # These should be for an airfoil with the chord scaled to 1.
@@ -22,8 +19,6 @@ upper_y = np.array([ 0.0447,  0.046,  0.0472,  0.0484,  0.0495,  0.0505,  0.0514
 lower_y = np.array([-0.0447, -0.046, -0.0473, -0.0485, -0.0496, -0.0506, -0.0515, -0.0524, -0.0532, -0.054, -0.0547, -0.0554, -0.056, -0.0565, -0.057, -0.0575, -0.0579, -0.0583, -0.0586, -0.0589, -0.0592, -0.0594, -0.0595, -0.0596, -0.0597, -0.0598, -0.0598, -0.0598, -0.0598, -0.0597, -0.0596, -0.0594, -0.0592, -0.0589, -0.0586, -0.0582, -0.0578, -0.0573, -0.0567, -0.0561, -0.0554, -0.0546, -0.0538, -0.0529, -0.0519, -0.0509, -0.0497, -0.0485, -0.0472, -0.0458, -0.0444], dtype="complex128")
 # fmt: on
 
-# docs checkpoint 2
-
 # Create a dictionary to store options about the surface
 mesh_dict = {
     "num_y": 15,
@@ -37,8 +32,6 @@ mesh_dict = {
 
 mesh, twist_cp = generate_mesh(mesh_dict)
 
-# docs checkpoint 3
-
 surf_dict = {
     # Wing definition
     "name": "wing",  # give the surface some name
@@ -51,13 +44,11 @@ surf_dict = {
     "data_x_lower": lower_x,
     "data_y_upper": upper_y,
     "data_y_lower": lower_y,
-    # docs checkpoint 4
     "twist_cp": np.array([4.0, 5.0, 8.0, 9.0]),  # [deg]
     "spar_thickness_cp": np.array([0.004, 0.005, 0.008, 0.01]),  # [m]
     "skin_thickness_cp": np.array([0.005, 0.01, 0.015, 0.025]),  # [m]
     "t_over_c_cp": np.array([0.08, 0.08, 0.10, 0.08]),
     "original_wingbox_airfoil_t_over_c": 0.12,
-    # docs checkpoint 5
     # Aerodynamic deltas.
     # These CL0 and CD0 values are added to the CL and CD
     # obtained from aerodynamic analysis of the surface to get
@@ -72,7 +63,6 @@ surf_dict = {
     "k_lam": 0.05,  # fraction of chord with laminar
     # flow, used for viscous drag
     "c_max_t": 0.38,  # chordwise location of maximum thickness
-    # docs checkpoint 6
     # Structural values are based on aluminum 7075
     "wing_weight_ratio": 1.25,
     "exact_failure_constraint": False,  # if false, use KS function
@@ -81,7 +71,7 @@ surf_dict = {
     "n_point_masses": 1,  # number of point masses in the system; in this case, the engine (omit option if no point masses)
     "fuel_density": 803.0,  # [kg/m^3] fuel density (only needed if the fuel-in-wing volume constraint is used)
     "Wf_reserve": 15000.0,  # [kg] reserve fuel mass
-    # docs checkpoint 7
+    # docs checkpoint 0
     # Composite material parameters
     "useComposite": True,
     "mrho": 1550,  # [kg/m^3]
@@ -97,18 +87,16 @@ surf_dict = {
     "sigma_t2": 64.0e6,
     "sigma_c2": 228.0e6,
     "sigma_12max": 71.0e6,
-    # docs checkpoint 8
+    # docs checkpoint 1
 }
 
-# docs checkpoint 9
+# docs checkpoint 2
 # Compute effective E and G for composite material
 from openaerostruct.structures.utils import compute_composite_stiffness  # noqa: E402
 compute_composite_stiffness(surf_dict)
-# docs checkpoint 10
+# docs checkpoint 3
 
 surfaces = [surf_dict]
-
-# docs checkpoint 9
 
 # Create the problem and assign the model group
 prob = om.Problem()
@@ -125,13 +113,9 @@ indep_var_comp.add_output(
 indep_var_comp.add_output("rho", val=np.array([0.348, 1.225]), units="kg/m**3")
 indep_var_comp.add_output("speed_of_sound", val=np.array([295.07, 340.294]), units="m/s")
 
-# docs checkpoint 10
-
 indep_var_comp.add_output("CT", val=0.53 / 3600, units="1/s")
 indep_var_comp.add_output("R", val=14.307e6, units="m")
 indep_var_comp.add_output("W0_without_point_masses", val=128000 + surf_dict["Wf_reserve"], units="kg")
-
-# docs checkpoint 11
 
 indep_var_comp.add_output("load_factor", val=np.array([1.0, 2.5]))
 indep_var_comp.add_output("alpha", val=0.0, units="deg")
@@ -139,13 +123,9 @@ indep_var_comp.add_output("alpha_maneuver", val=0.0, units="deg")
 
 indep_var_comp.add_output("empty_cg", val=np.zeros((3)), units="m")
 
-# docs checkpoint 12
-
 indep_var_comp.add_output("fuel_mass", val=10000.0, units="kg")
 
 prob.model.add_subsystem("prob_vars", indep_var_comp, promotes=["*"])
-
-# docs checkpoint 12.5
 
 point_masses = np.array([[10.0e3]])
 
@@ -159,8 +139,6 @@ prob.model.add_subsystem(
     "W0_comp", om.ExecComp("W0 = W0_without_point_masses + 2 * sum(point_masses)", units="kg"), promotes=["*"]
 )
 
-# docs checkpoint 13
-
 # Loop over each surface in the surfaces list
 for surface in surfaces:
     # Get the surface name and create a group to contain components
@@ -172,8 +150,6 @@ for surface in surfaces:
     # Add groups to the problem with the name of the surface.
     prob.model.add_subsystem(name, aerostruct_group)
 
-# docs checkpoint 14
-
 # Loop through and add a certain number of aerostruct points
 for i in range(2):
     point_name = "AS_point_{}".format(i)
@@ -183,8 +159,6 @@ for i in range(2):
     AS_point = AerostructPoint(surfaces=surfaces, internally_connect_fuelburn=False)
 
     prob.model.add_subsystem(point_name, AS_point)
-
-    # docs checkpoint 15
 
     # Connect flow properties to the analysis point
     prob.model.connect("v", point_name + ".v", src_indices=[i])
@@ -199,8 +173,6 @@ for i in range(2):
     prob.model.connect("load_factor", point_name + ".load_factor", src_indices=[i])
     prob.model.connect("fuel_mass", point_name + ".total_perf.L_equals_W.fuelburn")
     prob.model.connect("fuel_mass", point_name + ".total_perf.CG.fuelburn")
-
-    # docs checkpoint 16
 
     for surface in surfaces:
         name = surface["name"]
@@ -240,13 +212,8 @@ for i in range(2):
         prob.model.connect("point_masses", coupled_name + ".point_masses")
         prob.model.connect("point_mass_locations", coupled_name + ".point_mass_locations")
 
-
-# docs checkpoint 17
-
 prob.model.connect("alpha", "AS_point_0" + ".alpha")
 prob.model.connect("alpha_maneuver", "AS_point_1" + ".alpha")
-
-# docs checkpoint 18
 
 # Here we add the fuel volume constraint componenet to the model
 prob.model.add_subsystem("fuel_vol_delta", WingboxFuelVolDelta(surface=surface))
@@ -260,13 +227,9 @@ if surf_dict["distributed_fuel_weight"]:
     prob.model.connect("wing.struct_setup.fuel_vols", "AS_point_1.coupled.wing.struct_states.fuel_vols")
     prob.model.connect("fuel_mass", "AS_point_1.coupled.wing.struct_states.fuel_mass")
 
-# docs checkpoint 19
-
 comp = om.ExecComp("fuel_diff = (fuel_mass - fuelburn) / fuelburn", units="kg")
 prob.model.add_subsystem("fuel_diff", comp, promotes_inputs=["fuel_mass"], promotes_outputs=["fuel_diff"])
 prob.model.connect("AS_point_0.fuelburn", "fuel_diff.fuelburn")
-
-# docs checkpoint 20
 
 prob.model.add_objective("AS_point_0.fuelburn", scaler=1e-5)
 
@@ -276,31 +239,19 @@ prob.model.add_design_var("wing.skin_thickness_cp", lower=0.003, upper=0.1, scal
 prob.model.add_design_var("wing.geometry.t_over_c_cp", lower=0.07, upper=0.2, scaler=10.0)
 prob.model.add_design_var("alpha_maneuver", lower=-15.0, upper=15)
 
-# docs checkpoint 21
-
 prob.model.add_constraint("AS_point_0.CL", equals=0.5)
-
-# docs checkpoint 22
 
 prob.model.add_constraint("AS_point_1.L_equals_W", equals=0.0)
 prob.model.add_constraint("AS_point_1.wing_perf.failure", upper=0.0)
 
-# docs checkpoint 23
-
 prob.model.add_constraint("fuel_vol_delta.fuel_vol_delta", lower=0.0)
-
-# docs checkpoint 24
 
 prob.model.add_design_var("fuel_mass", lower=0.0, upper=2e5, scaler=1e-5)
 prob.model.add_constraint("fuel_diff", equals=0.0)
 
-# docs checkpoint 25
-
 prob.driver = om.ScipyOptimizeDriver()
 prob.driver.options["optimizer"] = "SLSQP"
 prob.driver.options["tol"] = 1e-2
-
-# docs checkpoint 26
 
 recorder = om.SqliteRecorder("aerostruct.db")
 prob.driver.add_recorder(recorder)
@@ -342,18 +293,12 @@ prob.driver.recording_options["record_constraints"] = True
 prob.driver.recording_options["record_desvars"] = True
 prob.driver.recording_options["record_inputs"] = True
 
-# docs checkpoint 27
-
 # Set up the problem
 prob.setup()
 
 # change linear solver for aerostructural coupled adjoint
 prob.model.AS_point_0.coupled.linear_solver = om.LinearBlockGS(iprint=0, maxiter=30, use_aitken=True)
 prob.model.AS_point_1.coupled.linear_solver = om.LinearBlockGS(iprint=0, maxiter=30, use_aitken=True)
-
-# om.view_model(prob)
-
-# prob.check_partials(form='central', compact_print=True)
 
 prob.run_driver()
 
@@ -363,5 +308,3 @@ print(
     prob["wing.structural_mass"][0] / surf_dict["wing_weight_ratio"],
     "[kg]",
 )
-
-# docs checkpoint 28

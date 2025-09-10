@@ -1,14 +1,19 @@
 .. _Composites Walkthrough:
 
-A walkthrough of the composites model
-=====================================
+Composite material
+==================
 
 This page will walk you through the composites model in OpenAeroStruct.
 The composites module allows you to define composite material properties and laminate layups for the wing structure.
 
+Model setup
+-----------
+
+First, define the following parameters in `surface` dictionary:
+
 .. literalinclude:: ../composite_wingbox_mpt_opt_example.py
-  :start-after: checkpoint 7
-  :end-before: checkpoint 8
+  :start-after: checkpoint 0
+  :end-before: checkpoint 1
 
 Here,  ``useComposite`` is a boolean variable that is set to True to enable the composites model and ``safety_factor`` is the factor of safety used for determining the Tsai-Wu based failure
 criteria of the composite material. The composite material properties are defined using the following variables:
@@ -29,9 +34,27 @@ criteria of the composite material. The composite material properties are define
     The composites failure model doesn't use the ``strength_factor_for_upper_skin`` option from the surface dictionary.
     If you want to apply a knockdown factor on the compressive strength to account for buckling, you should scale down the values of ``sigma_c1`` and ``sigma_c2``.
 
+Next, call a utility function to compute the effective E and G for the composite material:
+
+.. literalinclude:: ../composite_wingbox_mpt_opt_example.py
+  :start-after: checkpoint 2
+  :end-before: checkpoint 3
+
+The rest of the model setup is the same as the original metallic problem.
+OpenAeroStruct will compute the failure metric based on the Tsai-Wu failure criteria instead of the von Mises failure criteria when we set ``useComposite`` to True.
+But this is done automatically within ``AerostructPoint``, so you don't need to do anything special.
+
+Theory
+------
+
+Approximation of the Moduli of Elasticity
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Currently, the moduli of elasticity of the entire FEM spatial beam model are assumed to be isotropic
-in 2D plane so as to not change the entire model and is left for the future works. The values of the
-moduli of elasticity are found using The unidirectional ply properties are used to find the stiffness matrix of the plies:
+in 2D plane so as to not change the entire model and is left for the future works.
+The values of the moduli of elasticity are found using the following procedure.
+
+The unidirectional ply properties are used to find the stiffness matrix of the plies:
 
 .. math::
 
@@ -80,12 +103,16 @@ The effective compliance matrix is found using the following equation:
 The effective laminate properties are found using the following equations:
 
 .. math::
-    E_{11} = \frac{1}{S_{eff_{11}}}\\
+    E = \frac{1}{S_{eff_{11}}}\\
     G = \frac{1}{S_{eff_{66}}}
 
-These moduli of elasticility values are hence used to determine the stiffness matrix of the entire FEM spatial beam model. Thereafter, at the 4 critical points in the wingbox (mentioned in the aerostruct-wingbox walkthrough),
-the strains are calculated for each of the constituent plies by transforming the strains at the critical points to the laminate coordinate system. This is done using the following equation:\\
-using the transformation:
+These moduli of elasticility values are hence used to determine the stiffness matrix of the entire FEM spatial beam model.
+
+Tsai-Wu Failure Criteria
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Thereafter, at the 4 critical points in the wingbox (mentioned in the aerostruct-wingbox walkthrough),
+the strains are calculated for each of the constituent plies by transforming the strains at the critical points to the laminate coordinate system. This is done using the following equation:
 
 .. math::
 
@@ -119,7 +146,7 @@ The strains are then used to calculate the stresses in the laminate using the fo
     \gamma_{12}
     \end{pmatrix}
 
-These local axial and shear stresses are then utilized to calculate the value of the **Strength Ratios** for each ply using Equation 5, where the coefficients are defined by:
+These local axial and shear stresses are then utilized to calculate the value of the **Strength Ratios**, where the coefficients are defined by:
 
 .. math::
 
@@ -148,7 +175,7 @@ In order to implement the safety factor in the Tsai-Wu failure criteria, the equ
     a &= F_1 \sigma_1 + F_2 \sigma_2 \\
     b &= F_{11} \sigma_1^2 + F_{22} \sigma_2^2 + F_{12} \sigma_1 \sigma_2
 
-We hence caclulate the **Strength Ratios** using the formula:
+We hence calculate the **Strength Ratios** using the formula:
 
 .. math::
 
@@ -171,8 +198,18 @@ where :math:`g` is :math:`\left( \frac{SR}{SR_{\text{lim}}} - 1 \right)` value f
 
 The failure is determined by the value of :math:`\hat{g}_{KS}(\rho, g)` exceeding 0.
 
-The effect of using composites can be seen in the following figure. A Pareto-optimal front is generated for the wingbox model using Isotropic (Almunim) and Orthotropic (Carbon Fiber Reinforced Polymer) materials.
+Results
+-------
+
+The effect of using composites can be seen in the following figure. A Pareto-optimal front is generated for the wingbox model using Isotropic (Aluminum) and Orthotropic (Carbon Fiber Reinforced Polymer) materials.
 
 .. image:: /advanced_features/figs/compositeModelPareto.png
    :width: 600
    :align: center
+
+
+Complete script
+---------------
+
+.. embed-code::
+  openaerostruct.docs.composite_wingbox_mpt_opt_example
