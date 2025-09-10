@@ -1,5 +1,3 @@
-# Ignore the #docs checkpoint comments. They are just used to split up the code for the documentation webpage.
-
 import numpy as np
 from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
@@ -71,7 +69,6 @@ surf_dict = {
     "n_point_masses": 1,  # number of point masses in the system; in this case, the engine (omit option if no point masses)
     "fuel_density": 803.0,  # [kg/m^3] fuel density (only needed if the fuel-in-wing volume constraint is used)
     "Wf_reserve": 15000.0,  # [kg] reserve fuel mass
-    # docs checkpoint 0
     # Composite material parameters
     "useComposite": True,
     "mrho": 1550,  # [kg/m^3]
@@ -87,14 +84,11 @@ surf_dict = {
     "sigma_t2": 64.0e6,
     "sigma_c2": 228.0e6,
     "sigma_12max": 71.0e6,
-    # docs checkpoint 1
 }
 
-# docs checkpoint 2
 # Compute effective E and G for composite material
 from openaerostruct.structures.utils import compute_composite_stiffness  # noqa: E402
 compute_composite_stiffness(surf_dict)
-# docs checkpoint 3
 
 surfaces = [surf_dict]
 

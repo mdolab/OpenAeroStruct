@@ -9,15 +9,10 @@ The composites module allows you to define composite material properties and lam
 Model setup
 -----------
 
-First, define the following parameters in `surface` dictionary:
+First, define the following parameters in the `surface` dictionary:
 
-.. literalinclude:: ../composite_wingbox_mpt_opt_example.py
-  :start-after: checkpoint 0
-  :end-before: checkpoint 1
-
-Here,  ``useComposite`` is a boolean variable that is set to True to enable the composites model and ``safety_factor`` is the factor of safety used for determining the Tsai-Wu based failure
-criteria of the composite material. The composite material properties are defined using the following variables:
-
+- ``useComposite`` is a boolean variable that is set to True to enable the composites model criteria.
+- ``safety_factor`` is the factor of safety used for determining the Tsai-Wu based failure
 - ``ply_angles`` is a list of the angles of the plies with respect to the x-axis.
 - ``ply_fractions`` is a list of the ply fractions of the plies. (Should be the same length as ``ply_angles``, with the sum of the fractions equal to 1).
 - ``E1`` is the modulus of elasticity in the fiber direction.
@@ -34,11 +29,13 @@ criteria of the composite material. The composite material properties are define
     The composites failure model doesn't use the ``strength_factor_for_upper_skin`` option from the surface dictionary.
     If you want to apply a knockdown factor on the compressive strength to account for buckling, you should scale down the values of ``sigma_c1`` and ``sigma_c2``.
 
-Next, call a utility function to compute the effective E and G for the composite material:
+Next, call a utility function to compute the effective E and G for the composite material.
+The following function adds ``E`` and ``G`` to ``surface``.
 
-.. literalinclude:: ../composite_wingbox_mpt_opt_example.py
-  :start-after: checkpoint 2
-  :end-before: checkpoint 3
+.. code-block:: python
+
+    from openaerostruct.structures.utils import compute_composite_stiffness  # noqa: E402
+    compute_composite_stiffness(surf_dict)
 
 The rest of the model setup is the same as the original metallic problem.
 OpenAeroStruct will compute the failure metric based on the Tsai-Wu failure criteria instead of the von Mises failure criteria when we set ``useComposite`` to True.
@@ -212,4 +209,4 @@ Complete script
 ---------------
 
 .. embed-code::
-  openaerostruct.docs.composite_wingbox_mpt_opt_example
+  openaerostruct.examples.run_aerostruct_uCRM_composite_wingbox
