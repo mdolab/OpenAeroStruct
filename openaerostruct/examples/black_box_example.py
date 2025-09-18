@@ -52,7 +52,8 @@ surface = {
     # Structural values are based on aluminum 7075
     "E": 70.0e9,  # [Pa] Young's modulus of the spar
     "G": 30.0e9,  # [Pa] shear modulus of the spar
-    "yield": 500.0e6 / 2.5,  # [Pa] yield stress divided by 2.5 for limiting case
+    "yield": 500.0e6,
+    "safety_factor": 2.5,  # [Pa] yield stress divided by 2.5 for limiting case
     "mrho": 3.0e3,  # [kg/m^3] material density
     "fem_origin": 0.35,  # normalized chordwise location of the spar
     "wing_weight_ratio": 2.0,

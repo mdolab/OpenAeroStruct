@@ -22,3 +22,4 @@ These examples show some advanced features in OpenAeroStruct.
    advanced_features/customizing_prob_setup.rst
    advanced_features/mphys_coupling.rst
    advanced_features/stability_derivatives.rst
+   advanced_features/composites_walkthrough.rst
