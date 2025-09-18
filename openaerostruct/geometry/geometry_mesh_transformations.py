@@ -1,5 +1,6 @@
 """A set of components that manipulate geometry mesh
-based on high-level design parameters."""
+based on high-level design parameters.
+"""
 
 import numpy as np
 

@@ -11,7 +11,7 @@ class VLMGeometry(om.ExplicitComponent):
     Some of the quantities, like `normals`, are used to compute the RHS
     of the AIC linear system.
 
-    parameters
+    Parameters
     ----------
     def_mesh[nx, ny, 3] : numpy array
         Array defining the nodal coordinates of the lifting surface.

@@ -1,6 +1,9 @@
 # Ignore OpenMDAO reports folders
 **/reports/
 
+# pre-commit config file that should be manually copied from the mdolab/.github repo.
+.pre-commit-config.yaml
+
 *.pyc
 *.py~
 *.db

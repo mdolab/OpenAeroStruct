@@ -21,8 +21,7 @@ class GeometryMesh(om.ExplicitComponent):
     If parameters are not active (they do not deform the mesh), then
     they will not be given to this component.
 
-    Parameters
-    ----------
+
 
     Returns
     -------

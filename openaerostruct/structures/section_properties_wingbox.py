@@ -227,12 +227,10 @@ class SectionPropertiesWingbox(om.ExplicitComponent):
         x2 = x_up_diff
 
         I_horiz_1 = 2 * (
-            (
-                1.0 / 12.0 * a**3 * x2**4
-                + 1.0 / 3.0 * a**2 * x2**3 * b
-                + 1.0 / 2.0 * a * x2**2 * b**2
-                + 1.0 / 3.0 * b**3 * x2
-            )
+            1.0 / 12.0 * a**3 * x2**4
+            + 1.0 / 3.0 * a**2 * x2**3 * b
+            + 1.0 / 2.0 * a * x2**2 * b**2
+            + 1.0 / 3.0 * b**3 * x2
         )
         I_horiz_2 = x2 * skin_thickness * (y_up_add / 2 - skin_thickness / 2 - centroid) ** 2
 
@@ -246,12 +244,10 @@ class SectionPropertiesWingbox(om.ExplicitComponent):
         I_horiz += np.sum(
             2
             * (
-                (
-                    1.0 / 12.0 * a**3 * x2**4
-                    + 1.0 / 3.0 * a**2 * x2**3 * b
-                    + 1.0 / 2.0 * a * x2**2 * b**2
-                    + 1.0 / 3.0 * b**3 * x2
-                )
+                1.0 / 12.0 * a**3 * x2**4
+                + 1.0 / 3.0 * a**2 * x2**3 * b
+                + 1.0 / 2.0 * a * x2**2 * b**2
+                + 1.0 / 3.0 * b**3 * x2
             ),
             axis=0,
         )

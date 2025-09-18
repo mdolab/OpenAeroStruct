@@ -1,6 +1,7 @@
 """Optimizes the section chord distribution of a two section symmetrical wing with thickenss and viscous effects accounted
 for. This examples is similar to the inviscid case but explains how to connect the unified t/c B-spline to the OAS performance
-component for correct viscous drag computation. This example is referenced as part of the multi-section tutorial."""
+component for correct viscous drag computation. This example is referenced as part of the multi-section tutorial.
+"""
 
 import numpy as np
 
@@ -169,7 +170,7 @@ meshUni = prob.get_val(name + "." + unification_name + "." + name + "_uni_mesh")
 
 # Plot the results
 def plot_meshes(meshes):
-    """this function plots to plot the mesh"""
+    """This function plots to plot the mesh"""
     plt.figure(figsize=(8, 4))
     for i, mesh in enumerate(meshes):
         mesh_x = mesh[:, :, 0]

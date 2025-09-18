@@ -1,5 +1,6 @@
 """Optimizes the section twist distribution of a two section symmetrical wing using the construction-based approach for section
-joining and the aerostructural tube model. This example is referenced as part of the multi-section tutorial."""
+joining and the aerostructural tube model. This example is referenced as part of the multi-section tutorial.
+"""
 
 # docs checkpoint 0
 import numpy as np

@@ -7,7 +7,7 @@ from openaerostruct.structures.utils import norm
 class Weight(om.ExplicitComponent):
     """Compute total weight and center-of-gravity location of the spar elements.
 
-    parameters
+    Parameters
     ----------
     A[ny-1] : numpy array
         Areas for each FEM element.

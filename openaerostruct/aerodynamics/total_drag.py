@@ -4,7 +4,7 @@ import openmdao.api as om
 class TotalDrag(om.ExplicitComponent):
     """Calculate total drag in force units.
 
-    parameters
+    Parameters
     ----------
     CDi : float
         Induced coefficient of drag (CD) for the lifting surface.

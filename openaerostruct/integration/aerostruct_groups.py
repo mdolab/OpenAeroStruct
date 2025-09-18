@@ -341,7 +341,7 @@ class AerostructPoint(om.Group):
             "compressible",
             types=bool,
             default=False,
-            desc="Turns on compressibility correction for moderate Mach number " "flows. Defaults to False.",
+            desc="Turns on compressibility correction for moderate Mach number flows. Defaults to False.",
         )
         self.options.declare(
             "rotational", False, types=bool, desc="Set to True to turn on support for computing angular velocities"

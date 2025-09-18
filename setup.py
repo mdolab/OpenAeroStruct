@@ -68,4 +68,3 @@ setup(
     plot_wingbox=openaerostruct.utils.plot_wingbox:disp_plot
     """,
 )
-

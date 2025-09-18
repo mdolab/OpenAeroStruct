@@ -9,7 +9,7 @@ class NonIntersectingThickness(om.ExplicitComponent):
     itself in the center of the spar. Basically, the thickness must be less
     than or equal to the radius.
 
-    parameters
+    Parameters
     ----------
     thickness[ny-1] : numpy array
         Thickness of each element of the FEM spar.
