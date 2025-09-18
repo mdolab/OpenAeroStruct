@@ -3,6 +3,7 @@ import unittest
 
 import openmdao
 
+
 # skip this test on OpenMDAO 3.40.0 because it fails due to a bug in OM 3.40.0
 @unittest.skipIf(openmdao.__version__ == "3.40.0", "Skipped on OpenMDAO 3.40.0")
 class Test(unittest.TestCase):
