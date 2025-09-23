@@ -1,4 +1,4 @@
-""" Manipulate geometry mesh based on high-level design parameters. """
+"""Manipulate geometry mesh based on high-level design parameters."""
 
 import numpy as np
 

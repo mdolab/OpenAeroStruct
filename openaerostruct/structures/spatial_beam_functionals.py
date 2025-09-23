@@ -13,7 +13,8 @@ from openaerostruct.structures.failure_ks import FailureKS
 
 class SpatialBeamFunctionals(om.Group):
     """Group that contains the spatial beam functionals used to evaluate
-    performance."""
+    performance.
+    """
 
     def initialize(self):
         self.options.declare("surface", types=dict)

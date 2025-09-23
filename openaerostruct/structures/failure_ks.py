@@ -19,7 +19,7 @@ class FailureKS(om.ExplicitComponent):
     the failure constraints. A lower value is more conservative while a greater
     value is more aggressive (closer approximation to the max() function).
 
-    parameters
+    Parameters
     ----------
     vonmises : ny-1 x 2 numpy array
         von Mises stress magnitudes for each FEM element.

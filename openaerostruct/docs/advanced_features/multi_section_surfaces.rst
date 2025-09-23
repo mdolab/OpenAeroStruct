@@ -3,9 +3,9 @@
 Multi-section surfaces for aerodynamic problems
 ==========================
 
-OpenAeroStruct features the ability to specify surfaces as a series of sequentially connected sections. 
-Rather than controling the geometry of the surface as a whole, the optimizer can control the geometric parameters of each section individually using any of the geometric transformations available in OpenAeroStruct. 
-This feature was developed for the modular wing morphing applications but can be useful in situations where the user wishes to optimize a particular wing section while leaving the others fixed. 
+OpenAeroStruct features the ability to specify surfaces as a series of sequentially connected sections.
+Rather than controling the geometry of the surface as a whole, the optimizer can control the geometric parameters of each section individually using any of the geometric transformations available in OpenAeroStruct.
+This feature was developed for the modular wing morphing applications but can be useful in situations where the user wishes to optimize a particular wing section while leaving the others fixed.
 
 This example script demonstrate the usage of the multi-section wing geometry features in OpenAeroStruct.
 We first start with the induced drag minimization of a simple two-section symmetrical wing.
@@ -30,22 +30,22 @@ Next, we setup the flow variables.
    :end-before: checkpoint 3
 
 
-Giving the optimizer control of each wing section without any measure to constrain them can lead to undesirable geometries, such as wing sections separating from each other or large kinks appearing along the span, that cause numerical deficiencies in the optimization. 
-This concern is addressed by enforcing C0 continuity along the span-wise junctions between the sections. 
-C0 continuity can be enforced for any geometric parameter OAS controls for a given section. 
-For example, the tip chord or twist of a given section should match the root chord or twist of the subsequent section. 
-There are two approaches for enforcing C0 continuity between sections: a construction-based approach and a constraint-based approach. 
+Giving the optimizer control of each wing section without any measure to constrain them can lead to undesirable geometries, such as wing sections separating from each other or large kinks appearing along the span, that cause numerical deficiencies in the optimization.
+This concern is addressed by enforcing C0 continuity along the span-wise junctions between the sections.
+C0 continuity can be enforced for any geometric parameter OAS controls for a given section.
+For example, the tip chord or twist of a given section should match the root chord or twist of the subsequent section.
+There are two approaches for enforcing C0 continuity between sections: a construction-based approach and a constraint-based approach.
 
-The constaint-based approach involves explicitly setting a position constraint that joins the surface points at section junctions to a specified tolerance. 
+The constaint-based approach involves explicitly setting a position constraint that joins the surface points at section junctions to a specified tolerance.
 This constraint is useful if the user desires a high degree of customization in how section are attached to each other.
 The number of linear constraints can quickly grow for problems with many sections.
 By reducing the degree of customization in section attachment, it is possible to eliminate these additional constraints and maintain C0 continuity using the construction-based approach.
 The remainder of this section describes the construction-based approach while the constraint-based approach is described in the subsequent section.
 
 
-Continuity by construction is enforced by assigning the B-spline control points located at section edges to the same independent variable controlled by the optimizer. 
-Enforcing C0 continuity by construction applies to geometric parameters that employ B-spline parametrization in OAS. 
-These include chord distribution, twist distribution, shear distribution in all three directions, and thickness and radius distributions for structural spars. 
+Continuity by construction is enforced by assigning the B-spline control points located at section edges to the same independent variable controlled by the optimizer.
+Enforcing C0 continuity by construction applies to geometric parameters that employ B-spline parametrization in OAS.
+These include chord distribution, twist distribution, shear distribution in all three directions, and thickness and radius distributions for structural spars.
 
 
 .. literalinclude:: /advanced_features/scripts/basic_2_sec_construction.py
@@ -57,7 +57,7 @@ The multi-section unification component built into the multi-section geometry gr
 This shifting is able to keep the sections together during span, sweep, and dihedral changes at the leading edge but enforcing full C0 continuity may still require the construction based approach described above.
 
 .. note::
-  Mesh shifting cannot compensate for taper transformations. 
+  Mesh shifting cannot compensate for taper transformations.
   Instead, the constraint-based approach should be used with the scaler taper variable.
   Alternatively, the effect of linear taper can be emulated by using two chord B-spline control points.
 
@@ -66,7 +66,7 @@ This shifting is able to keep the sections together during span, sweep, and dihe
    It is advised to disable mesh shifting by passing the following option into the multi-section geometery group.
 
    .. code-block:: python
-      
+
       shift_uni_mesh = False
 
 
@@ -103,7 +103,7 @@ We then finish by plotting the result.
    :end-before: checkpoint 8
 
 
-The following shows the resulting optimized mesh. 
+The following shows the resulting optimized mesh.
 The result is identical regardless of if the constraint-based or construction-based joining approahces are used.
 
 .. image:: /advanced_features/figs/multi_section_2_sym.png
@@ -114,7 +114,7 @@ Constraint-based Approach
 
 Setting up the multi-section goemetry group with the constrint-based approach for section joining requires a slightly different inital setup.
 The constraint can be enforced at the leading and/or trailing edge of each segment junction in any combination of x, y, or z directions.
-A fully differentiated implementation that facilitates setting this constraint is incorporated into OAS. This approach is robust but introduces at least two linear constraints per segment junction. 
+A fully differentiated implementation that facilitates setting this constraint is incorporated into OAS. This approach is robust but introduces at least two linear constraints per segment junction.
 The steps required to setup the multi-section geometry group by constraint feature differences from the construction-based approach starting at the geometry group setup.
 
 

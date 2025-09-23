@@ -8,7 +8,8 @@ from openaerostruct.structures.fuel_vol import WingboxFuelVol
 
 class SpatialBeamSetup(om.Group):
     """Group that sets up the spatial beam components and assembles the
-    stiffness matrix."""
+    stiffness matrix.
+    """
 
     def initialize(self):
         self.options.declare("surface", types=dict)

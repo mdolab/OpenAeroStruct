@@ -273,7 +273,6 @@ class Test(unittest.TestCase):
             "data_x_lower": lower_x,
             "data_y_upper": upper_y,
             "data_y_lower": lower_y,
-            "strength_factor_for_upper_skin": 1.0,
             # Aerodynamic performance of the lifting surface at
             # an angle of attack of 0 (alpha=0).
             # These CL0 and CD0 values are added to the CL and CD

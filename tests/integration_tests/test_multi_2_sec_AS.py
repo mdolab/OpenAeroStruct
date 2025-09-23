@@ -1,6 +1,7 @@
 """We verify the results of the two-section aerostructural optimization using both the construction and constraint
 methods of joining sections. The result should be the same so we compare with the same reference value. We also perform
-the same optimization for an asymmetical two-section mesh which is compared against its own reference value."""
+the same optimization for an asymmetical two-section mesh which is compared against its own reference value.
+"""
 
 from openmdao.utils.assert_utils import assert_near_equal
 import unittest

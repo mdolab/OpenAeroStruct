@@ -6,7 +6,7 @@ import openmdao.api as om
 class StructuralCG(om.ExplicitComponent):
     """Compute center-of-gravity location of the spar elements.
 
-    parameters
+    Parameters
     ----------
     A[ny-1] : numpy array
         Areas for each FEM element.

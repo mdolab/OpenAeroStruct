@@ -350,7 +350,8 @@ def get_two_section_surface(sym=True, visc=False):
 
 def get_single_section_surface():
     """Create a dictionary with info and options about the aerodynamic
-    single section lifting surface"""
+    single section lifting surface
+    """
 
     # Create a dictionary to store options about the mesh
     mesh_dict = {
@@ -459,7 +460,8 @@ def get_two_section_surface_AS(sym=True):
 
 def get_single_section_surface_AS():
     """Create a dictionary with info and options about the aerodynamic
-    single section lifting surface"""
+    single section lifting surface
+    """
 
     # Create a dictionary to store options about the mesh
     mesh_dict = {

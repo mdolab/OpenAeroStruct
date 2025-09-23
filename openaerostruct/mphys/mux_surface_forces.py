@@ -41,7 +41,7 @@ class MuxSurfaceForces(om.ExplicitComponent):
                 distributed=False,
                 shape=mesh.shape,
                 units="N",
-                desc="Array defining the aero forces " "on mesh nodes of the lifting surface.",
+                desc="Array defining the aero forces on mesh nodes of the lifting surface.",
                 tags=["mphys_coupling"],
             )
 

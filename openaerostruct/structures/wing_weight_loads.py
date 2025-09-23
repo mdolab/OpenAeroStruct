@@ -112,7 +112,7 @@ class StructureWeightLoads(om.ExplicitComponent):
         nym1_rand = rng.random(nym1)
 
         dzm_dnodes_pattern = (
-            (diags(nym1_rand * nym1_rand) * self.ddel0__dnodes + diags(nym1_rand * nym1_rand) * self.ddel1__dnodes)
+            diags(nym1_rand * nym1_rand) * self.ddel0__dnodes + diags(nym1_rand * nym1_rand) * self.ddel1__dnodes
         ).tocsr()
 
         dbm3_dnodes = (

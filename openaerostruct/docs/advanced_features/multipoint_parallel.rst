@@ -17,7 +17,7 @@ We first import MPI.
 If this line does not work, make sure that you have a working MPI installation.
 
 .. code-block::
-    
+
     from mpi4py import MPI
 
 You may need to turn off the numpy multithreading.
@@ -32,9 +32,9 @@ The name of environment variable may be different depending on the system.
 Then, let's set up the problem in the same way as the serial runscript.
 
 .. code-block::
-    
+
     prob = om.Problem()
-    
+
     # Setup problem information in indep_var_comp
     ...
 
@@ -227,6 +227,6 @@ The actual speedup you can get depends on your problem setups, such as number of
    * - Serial
      - 1.451
      - 5.775
-   * - Parallel 
+   * - Parallel
      - 0.840
      - 4.983
