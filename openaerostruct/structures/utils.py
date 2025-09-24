@@ -74,23 +74,38 @@ def transformation_matrix(theta):
 
     Returns
     -------
-    T : numpy array
-        Transformation matrix.
+    T_sigma : numpy array
+        Stress transformation matrix.
+    T_eps : numpy array
+        Strain transformation matrix.
     """
     theta = theta * np.pi / 180
     c = np.cos(theta)
     s = np.sin(theta)
-    T = np.zeros((3, 3))
-    T[0, 0] = c**2
-    T[0, 1] = s**2
-    T[0, 2] = 2 * s * c
-    T[1, 0] = s**2
-    T[1, 1] = c**2
-    T[1, 2] = -2 * s * c
-    T[2, 0] = -s * c
-    T[2, 1] = s * c
-    T[2, 2] = c**2 - s**2
-    return T
+
+    T_sigma = np.zeros((3, 3))
+    T_sigma[0, 0] = c**2
+    T_sigma[0, 1] = s**2
+    T_sigma[0, 2] = 2 * s * c
+    T_sigma[1, 0] = s**2
+    T_sigma[1, 1] = c**2
+    T_sigma[1, 2] = -2 * s * c
+    T_sigma[2, 0] = -s * c
+    T_sigma[2, 1] = s * c
+    T_sigma[2, 2] = c**2 - s**2
+
+    T_eps = np.zeros((3, 3))
+    T_eps[0, 0] = c**2
+    T_eps[0, 1] = s**2
+    T_eps[0, 2] = s * c
+    T_eps[1, 0] = s**2
+    T_eps[1, 1] = c**2
+    T_eps[1, 2] = -s * c
+    T_eps[2, 0] = -2 * s * c
+    T_eps[2, 1] = 2 * s * c
+    T_eps[2, 2] = c**2 - s**2
+
+    return T_sigma, T_eps
 
 
 def compute_composite_stiffness(surface):
@@ -135,8 +150,8 @@ def compute_composite_stiffness(surface):
     Q_bar_eff = np.zeros((3, 3))
     for i in range(num_plies):
         theta = ply_angles[i]
-        T = transformation_matrix(theta)
-        Q_bar[i] = np.dot(np.dot(np.linalg.inv(T), Q), T)
+        T_sigma, T_eps = transformation_matrix(theta)
+        Q_bar[i] = T_sigma @ Q @ np.linalg.inv(T_eps)
         Q_bar_eff += ply_fractions[i] * Q_bar[i]
 
     S_bar_eff = np.linalg.inv(Q_bar_eff)
