@@ -2,7 +2,7 @@ import numpy as np
 
 import openmdao.api as om
 
-from openaerostruct.structures.utils import norm, unit
+from openaerostruct.structures.utils import norm, unit, transformation_matrix
 
 
 class TsaiWuWingbox(om.ExplicitComponent):
@@ -82,6 +82,14 @@ class TsaiWuWingbox(om.ExplicitComponent):
         self.sigma_t2 = surface["sigma_t2"]
         self.sigma_12max = surface["sigma_12max"]
 
+        # sanity check: all strength values should be positive
+        if self.sigma_c1 <= 0:
+            raise ValueError("Composite material strength: sigma_c1 must be positive")
+        if self.sigma_c2 <= 0:
+            raise ValueError("Composite material strength: sigma_c2 must be positive")
+        if self.sigma_12max <= 0:
+            raise ValueError("Composite material strength: sigma_12max must be positive")
+
         self.declare_partials("*", "*", method="cs")
 
     def compute(self, inputs, outputs):
@@ -102,11 +110,13 @@ class TsaiWuWingbox(om.ExplicitComponent):
         T = np.zeros((3, 3), dtype=dtype)
         x_gl = np.array([1, 0, 0], dtype=dtype)
 
-        E1 = self.E1
-        E2 = self.E2
-        G12 = self.G12
-        nu_12 = self.nu12
-        nu_21 = self.nu21
+        # Define ply stiffness matrix, will use this later to compute ply stress from strain
+        Q = np.zeros((3, 3))
+        Q[0, 0] = self.E1 / (1 - self.nu12 * self.nu21)
+        Q[0, 1] = self.nu12 * self.E2 / (1 - self.nu12 * self.nu21)
+        Q[1, 0] = Q[0, 1]
+        Q[1, 1] = self.E2 / (1 - self.nu12 * self.nu21)
+        Q[2, 2] = self.G12
 
         num_elems = self.ny - 1
         for ielem in range(num_elems):
@@ -158,111 +168,75 @@ class TsaiWuWingbox(om.ExplicitComponent):
                 / (2 * spar_thickness[ielem])
             )
 
-            # The strain combinations for the 4 elements under consideration: (split into epsilonx, epsilony and gammatau)
-            # Defining the epsilon_elem array for the epsionx, epsiony and gammatau for each element
+            # The strain combinations for the 4 critical points (see Fig. 4 of Chauhan 2019 OAS wingbox paper)
+            # Define the epsilon_elem array for [epsion_x, epsion_y, gamma_tau] for each critical point
             epsilon_elem = np.zeros((4, 3), dtype=dtype)
 
-            # Element 1:
+            # Critical point 0: top skin & rear spar
             epsilon_elem[0, 0] = top_bending_strain + rear_bending_strain + axial_strain
             epsilon_elem[0, 1] = 0
             epsilon_elem[0, 2] = torsion_shear_strain
 
-            # Element 2:
+            # Critical point 1: bottom skin & front spar
             epsilon_elem[1, 0] = bottom_bending_strain + front_bending_strain + axial_strain
             epsilon_elem[1, 1] = 0
             epsilon_elem[1, 2] = torsion_shear_strain
 
-            # Element 3:
+            # Critical point 2: front spar
             epsilon_elem[2, 0] = front_bending_strain + axial_strain
             epsilon_elem[2, 1] = 0
-            epsilon_elem[2, 2] = torsion_shear_strain + vertical_shear_strain
+            epsilon_elem[2, 2] = torsion_shear_strain - vertical_shear_strain
 
-            # Element 4:
+            # Critical point 3: rear spar
             epsilon_elem[3, 0] = rear_bending_strain + axial_strain
             epsilon_elem[3, 1] = 0
-            epsilon_elem[3, 2] = -torsion_shear_strain + vertical_shear_strain
+            epsilon_elem[3, 2] = torsion_shear_strain + vertical_shear_strain
 
-            # defining the array for ply-orientation angles:
+            # Define the array for ply-orientation angles:
             ply_angles = self.ply_angles
             num_plies = len(ply_angles)
 
-            # defining the epsilon_elem_ply array for the epsilon1, epsilon2 and gamma12 for each ply
+            # Convert strain from the laminate frame to ply local frame for each ply
             epsilon_elem_ply = np.zeros((4, num_plies, 3), dtype=dtype)
             sigma_elem_ply = np.zeros((4, num_plies, 3), dtype=dtype)
-
-            # running a loop over the 4 elements and the number of plies to calculate the epsilon_elem_ply array
-            for elem_num in range(4):
+            for point_num in range(4):
                 for ply_num in range(num_plies):
-                    epsilon_elem_ply[elem_num, ply_num, 0] = (
-                        epsilon_elem[elem_num, 0] * np.cos(np.radians(ply_angles[ply_num])) ** 2
-                        + epsilon_elem[elem_num, 1] * np.sin(np.radians(ply_angles[ply_num])) ** 2
-                        + 2
-                        * epsilon_elem[elem_num, 2]
-                        * np.sin(np.radians(ply_angles[ply_num]))
-                        * np.cos(np.radians(ply_angles[ply_num]))
-                    )
-                    epsilon_elem_ply[elem_num, ply_num, 1] = (
-                        epsilon_elem[elem_num, 0] * np.sin(np.radians(ply_angles[ply_num])) ** 2
-                        + epsilon_elem[elem_num, 1] * np.cos(np.radians(ply_angles[ply_num])) ** 2
-                        - 2
-                        * epsilon_elem[elem_num, 2]
-                        * np.sin(np.radians(ply_angles[ply_num]))
-                        * np.cos(np.radians(ply_angles[ply_num]))
-                    )
-                    epsilon_elem_ply[elem_num, ply_num, 2] = (
-                        -epsilon_elem[elem_num, 0]
-                        * np.sin(np.radians(ply_angles[ply_num]))
-                        * np.cos(np.radians(ply_angles[ply_num]))
-                        + epsilon_elem[elem_num, 1]
-                        * np.sin(np.radians(ply_angles[ply_num]))
-                        * np.cos(np.radians(ply_angles[ply_num]))
-                        + epsilon_elem[elem_num, 2]
-                        * (np.cos(np.radians(ply_angles[ply_num])) ** 2 - np.sin(np.radians(ply_angles[ply_num])) ** 2)
-                    )
+                    _, T_eps = transformation_matrix(-ply_angles[ply_num])
+                    epsilon_elem_ply[point_num, ply_num, :] = T_eps @ epsilon_elem[point_num, :]
 
-            # defining the Q matrix for the material:
-            Q11 = E1 / (1 - nu_12 * nu_21)
-            Q22 = E2 / (1 - nu_12 * nu_21)
-            Q12 = nu_12 * E2 / (1 - nu_12 * nu_21)
-            Q21 = Q12
-            Q66 = G12
-
-            # converting the strains to stresses using strain-stress relations
-            for elem_num in range(4):
+            # ==============================================================================
+            #  Stress and strength ratio
+            # ==============================================================================
+            # Compute stresses of each ply using strain-stress relations
+            for point_num in range(4):
                 for ply_num in range(num_plies):
-                    epsilon1 = epsilon_elem_ply[elem_num, ply_num, 0]
-                    epsilon2 = epsilon_elem_ply[elem_num, ply_num, 1]
-                    gamma12 = epsilon_elem_ply[elem_num, ply_num, 2]
+                    sigma_elem_ply[point_num, ply_num, :] = Q @ epsilon_elem_ply[point_num, ply_num, :]
 
-                    sigma1 = Q11 * epsilon1 + Q12 * epsilon2
-                    sigma2 = Q21 * epsilon1 + Q22 * epsilon2
-                    sigma12 = Q66 * gamma12
+            # ---------- debugging --------------
+            # Compute von Mises stress
+            # for point_num in range(4):
+            #     for ply_num in range(num_plies):
+            #         s1 = sigma_elem_ply[point_num, ply_num, 0]
+            #         s2 = sigma_elem_ply[point_num, ply_num, 1]
+            #         s12 = sigma_elem_ply[point_num, ply_num, 2]
+            #         vonmises_stress = np.sqrt(s1**2 + s2**2 - s1 * s2 + 3 * s12**2)
+            #         print("Element", ielem, "Point", point_num, "Ply", ply_num, "vonmises_stress =", vonmises_stress / 1e6)
+            # # --- end debugging --------------
 
-                    # assigning the stresses to the sigma_elem_ply array
-                    sigma_elem_ply[elem_num, ply_num, 0] = sigma1
-                    sigma_elem_ply[elem_num, ply_num, 1] = sigma2
-                    sigma_elem_ply[elem_num, ply_num, 2] = sigma12
+            # Define the constants for the Tsai-Wu Strength Ratios
+            F1 = 1 / self.sigma_t1 - 1 / self.sigma_c1
+            F11 = 1 / (self.sigma_t1 * self.sigma_c1)
+            F2 = 1 / self.sigma_t2 - 1 / self.sigma_c2
+            F22 = 1 / (self.sigma_t2 * self.sigma_c2)
+            F66 = 1 / (self.sigma_12max**2)
 
-            sigma_c1 = self.sigma_c1
-            sigma_t1 = self.sigma_t1
-            sigma_c2 = self.sigma_c2
-            sigma_t2 = self.sigma_t2
-            sigma_12max = self.sigma_12max
-
-            # defining the constants for the Tsai-Wu Strength Ratios
-            F1 = 1 / sigma_t1 - 1 / sigma_c1
-            F11 = 1 / (sigma_t1 * sigma_c1)
-            F2 = 1 / sigma_t2 - 1 / sigma_c2
-            F22 = 1 / (sigma_t2 * sigma_c2)
-            F66 = 1 / (sigma_12max**2)
-
-            # Finding the Tsai-Wu Strength Ratios for each ply in each element and storing them in the tsaiwu_sr array
-            for elem_num in range(4):
+            # Find the Tsai-Wu Strength Ratios for each ply in each element and storing them in the tsaiwu_sr array
+            for point_num in range(4):
                 for ply_num in range(num_plies):
-                    a = F1 * sigma_elem_ply[elem_num, ply_num, 0] + F2 * sigma_elem_ply[elem_num, ply_num, 1]
+                    a = F1 * sigma_elem_ply[point_num, ply_num, 0] + F2 * sigma_elem_ply[point_num, ply_num, 1]
                     b = (
-                        F11 * sigma_elem_ply[elem_num, ply_num, 0] ** 2
-                        + F22 * sigma_elem_ply[elem_num, ply_num, 1] ** 2
-                        + F66 * sigma_elem_ply[elem_num, ply_num, 2] ** 2
+                        F11 * sigma_elem_ply[point_num, ply_num, 0] ** 2
+                        + F22 * sigma_elem_ply[point_num, ply_num, 1] ** 2
+                        + F66 * sigma_elem_ply[point_num, ply_num, 2] ** 2
                     )
-                    tsaiwu_sr[ielem, elem_num * num_plies + ply_num] = 0.5 * (a + np.sqrt(a**2 + 4 * b))
+                    tsaiwu_sr[ielem, point_num * num_plies + ply_num] = 0.5 * (a + np.sqrt(a**2 + 4 * b))
