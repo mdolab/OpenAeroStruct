@@ -1,6 +1,6 @@
 .. _Composites Walkthrough:
 
-Composite material
+Composite Material
 ==================
 
 This page will walk you through the composites model in OpenAeroStruct.
@@ -70,7 +70,7 @@ We then transform the stiffness matrix of each ply as a function of the ply angl
 
     \bar{Q} = T_\sigma Q T_\varepsilon^{-1}
 
-where :math:`T_sigma`, :math:`T_varepsilon` are the stress and strain transformation matrices, respectively.
+where :math:`T_\sigma`, :math:`T_\varepsilon` are the stress and strain transformation matrices, respectively.
 
 The effective stiffness matrix for the laminate is found using the weighted sum of the stiffness matrices of the plies,
 using their respective ply fraction:
@@ -193,4 +193,4 @@ Here is an example runscript of composite wing aerostructural optimization.
 This roughly follows the setup of "Simple Transonic Wing" by `Gray and Martins 2024 <https://www.researchgate.net/publication/377154425_A_Proposed_Benchmark_Model_for_Practical_Aeroelastic_Optimization_of_Aircraft_Wings>`_.
 
 .. embed-code::
-  openaerostruct.examples.run_aerostruct_composite_benchmark_wing
+  ../examples/run_aerostruct_composite_benchmark_wing.py
