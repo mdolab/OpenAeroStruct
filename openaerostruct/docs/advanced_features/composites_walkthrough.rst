@@ -37,9 +37,9 @@ The following function adds ``E`` and ``G`` to ``surface``.
     from openaerostruct.structures.utils import compute_composite_stiffness  # noqa: E402
     compute_composite_stiffness(surf_dict)
 
-The rest of the model setup is the same as the original metallic problem.
-OpenAeroStruct will compute the failure metric based on the Tsai-Wu failure criteria instead of the von Mises failure criteria when we set ``useComposite`` to True.
-But this is done automatically within ``AerostructPoint``, so you don't need to do anything special.
+The rest of the model setup is the same as aluminum wing aerostructural problems.
+OpenAeroStruct will compute the failure metric based on the Tsai-Wu failure criterion instead of the von Mises failure criterion when we set ``useComposite`` to True.
+But this is done automatically within ``AerostructPoint``, so you don't need to do anything about it.
 
 Theory
 ------
@@ -195,18 +195,12 @@ where :math:`g` is :math:`\left( \frac{SR}{SR_{\text{lim}}} - 1 \right)` value f
 
 The failure is determined by the value of :math:`\hat{g}_{KS}(\rho, g)` exceeding 0.
 
-Results
--------
 
-The effect of using composites can be seen in the following figure. A Pareto-optimal front is generated for the wingbox model using Isotropic (Aluminum) and Orthotropic (Carbon Fiber Reinforced Polymer) materials.
+Example runscript
+-----------------
 
-.. image:: /advanced_features/figs/compositeModelPareto.png
-   :width: 600
-   :align: center
-
-
-Complete script
----------------
+Here is an example runscript of composite wing aerostructural optimization.
+This roughly follows the setup of "Simple Transonic Wing" by `Gray and Martins 2024 <https://www.researchgate.net/publication/377154425_A_Proposed_Benchmark_Model_for_Practical_Aeroelastic_Optimization_of_Aircraft_Wings>`_.
 
 .. embed-code::
-  openaerostruct.examples.run_aerostruct_uCRM_composite_wingbox
+  openaerostruct.examples.run_aerostruct_composite_benchmark_wing
