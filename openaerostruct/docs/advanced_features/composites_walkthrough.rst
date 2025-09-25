@@ -34,7 +34,7 @@ The following function adds ``E`` and ``G`` to ``surface``.
 
 .. code-block:: python
 
-    from openaerostruct.structures.utils import compute_composite_stiffness  # noqa: E402
+    from openaerostruct.structures.utils import compute_composite_stiffness
     compute_composite_stiffness(surf_dict)
 
 The rest of the model setup is the same as aluminum wing aerostructural problems.
@@ -64,26 +64,16 @@ The unidirectional ply properties are used to find the stiffness matrix of the p
 where :math:`E_1` and :math:`E_2` are the moduli of elasticity in the fiber direction and transverse direction, respectively,
 :math:`\nu_{12}` and :math:`\nu_{21}` are the Poisson's ratios, and :math:`G_{12}` is the shear modulus.
 
-The transformed reduced stiffness matrix is found using the following equation:
+We then transform the stiffness matrix of each ply as a function of the ply angle by
 
 .. math::
 
-    \bar{Q} = T^T Q T
+    \bar{Q} = T_\sigma Q T_\varepsilon^{-1}
 
-where :math:`T` is the transformation matrix. The transformation matrix is found using the following equation:
+where :math:`T_sigma`, :math:`T_varepsilon` are the stress and strain transformation matrices, respectively.
 
-.. math::
-
-    T = \begin{bmatrix}
-    \cos \theta & \sin \theta & 0 \\
-    -\sin \theta & \cos \theta & 0 \\
-    0 & 0 & 1
-    \end{bmatrix}
-
-where :math:`\theta` is the angle of the ply with respect to the x-axis.
-
-The effective reduced stiffness matrix for the laminate is found using the weighted sum of the reduced stiffness matrices of the plies,
-using their respective ply fraction constituition:
+The effective stiffness matrix for the laminate is found using the weighted sum of the stiffness matrices of the plies,
+using their respective ply fraction:
 
 .. math::
 
@@ -119,7 +109,7 @@ the strains are calculated for each of the constituent plies by transforming the
     \gamma_{12}
     \end{pmatrix}
     =
-    [T]
+    [T_\varepsilon]
     \begin{pmatrix}
     \epsilon_x \\
     \epsilon_y \\
@@ -190,7 +180,7 @@ where :math:`g` is :math:`\left( \frac{SR}{SR_{\text{lim}}} - 1 \right)` value f
 
 .. math::
 
-    SR_{\text{lim}} = \frac{1}{FOS}
+    SR_{\text{lim}} = \frac{1}{\text{safety factor}}
 
 
 The failure is determined by the value of :math:`\hat{g}_{KS}(\rho, g)` exceeding 0.
