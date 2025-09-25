@@ -208,21 +208,20 @@ class Test(unittest.TestCase):
     def test_analysis(self):
         prob = setup_problem()
         prob.run_model()
-        om.n2(prob)
 
-        assert_near_equal(prob.get_val("AS_point_0.fuelburn", "kg"), 83707.98577079792, 1e-5)
+        assert_near_equal(prob.get_val("AS_point_0.fuelburn", "kg"), 82966.91616709, 1e-5)
         assert_near_equal(prob.get_val("wing.structural_mass", "kg"), 16350.358583141326, 1e-5)
-        assert_near_equal(prob.get_val("AS_point_0.wing_perf.tsaiwu_sr")[0, 0], 0.78689446, 1e-5)
-        assert_near_equal(prob.get_val("AS_point_0.wing_perf.failure"), 0.85868875, 1e-5)
+        assert_near_equal(prob.get_val("AS_point_0.wing_perf.tsaiwu_sr")[0, 0], 0.77079144, 1e-5)
+        assert_near_equal(prob.get_val("AS_point_0.wing_perf.failure"), 0.81973662, 1e-5)
 
-    # def test_optimization(self):
-    #     prob = setup_problem()
-    #     prob.run_driver()
+    def test_optimization(self):
+        prob = setup_problem()
+        prob.run_driver()
 
-    #     assert_near_equal(prob.get_val("AS_point_0.fuelburn", "kg"), 82770.69056028806, 1e-3)
-    #     assert_near_equal(prob.get_val("wing.structural_mass", "kg"), 23400.659828565844, 1e-3)
-    #     assert_near_equal(prob.get_val("AS_point_0.wing_perf.tsaiwu_sr")[0, 0], 0.42648799, 1e-3)
-    #     assert_near_equal(prob.get_val("AS_point_0.wing_perf.failure"), 0, 1e-3)
+        assert_near_equal(prob.get_val("AS_point_0.fuelburn", "kg"), 82194.24094301, 1e-3)
+        assert_near_equal(prob.get_val("wing.structural_mass", "kg"), 22896.21787536, 1e-3)
+        assert_near_equal(prob.get_val("AS_point_0.wing_perf.tsaiwu_sr")[0, 0], 0.4258275682134, 1e-3)
+        assert_near_equal(prob.get_val("AS_point_0.wing_perf.failure"), 0, 1e-3)
 
 
 if __name__ == "__main__":
