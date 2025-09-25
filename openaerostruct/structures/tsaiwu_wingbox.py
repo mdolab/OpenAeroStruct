@@ -212,17 +212,6 @@ class TsaiWuWingbox(om.ExplicitComponent):
                 for ply_num in range(num_plies):
                     sigma_elem_ply[point_num, ply_num, :] = Q @ epsilon_elem_ply[point_num, ply_num, :]
 
-            # ---------- debugging --------------
-            # Compute von Mises stress
-            # for point_num in range(4):
-            #     for ply_num in range(num_plies):
-            #         s1 = sigma_elem_ply[point_num, ply_num, 0]
-            #         s2 = sigma_elem_ply[point_num, ply_num, 1]
-            #         s12 = sigma_elem_ply[point_num, ply_num, 2]
-            #         vonmises_stress = np.sqrt(s1**2 + s2**2 - s1 * s2 + 3 * s12**2)
-            #         print("Element", ielem, "Point", point_num, "Ply", ply_num, "vonmises_stress =", vonmises_stress / 1e6)
-            # # --- end debugging --------------
-
             # Define the constants for the Tsai-Wu Strength Ratios
             F1 = 1 / self.sigma_t1 - 1 / self.sigma_c1
             F11 = 1 / (self.sigma_t1 * self.sigma_c1)
