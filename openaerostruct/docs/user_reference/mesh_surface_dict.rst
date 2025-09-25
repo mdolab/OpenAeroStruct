@@ -248,7 +248,7 @@ The surface dict will be provided to Groups, including ``Geometry``, ``AeroPoint
       - Maximum yield stress of the material.
     * - safety_factor
       - 1.5
-      - 
+      -
       - Factor of safety for the material.
     * - mrho
       - 2.78e3

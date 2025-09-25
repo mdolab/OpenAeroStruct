@@ -23,6 +23,7 @@ upper_y = np.array([ 0.0447,  0.046,  0.0472,  0.0484,  0.0495,  0.0505,  0.0514
 lower_y = np.array([-0.0447, -0.046, -0.0473, -0.0485, -0.0496, -0.0506, -0.0515, -0.0524, -0.0532, -0.054, -0.0547, -0.0554, -0.056, -0.0565, -0.057, -0.0575, -0.0579, -0.0583, -0.0586, -0.0589, -0.0592, -0.0594, -0.0595, -0.0596, -0.0597, -0.0598, -0.0598, -0.0598, -0.0598, -0.0597, -0.0596, -0.0594, -0.0592, -0.0589, -0.0586, -0.0582, -0.0578, -0.0573, -0.0567, -0.0561, -0.0554, -0.0546, -0.0538, -0.0529, -0.0519, -0.0509, -0.0497, -0.0485, -0.0472, -0.0458, -0.0444], dtype="complex128")
 # fmt: on
 
+
 def setup_problem():
     """Setup OpenMDAO problem for CRM analysis or optimization with composite wingbox model."""
     # Create a dictionary to store options about the surface
@@ -164,9 +165,7 @@ def setup_problem():
             # Connect performance calculation variables
             prob.model.connect(name + ".nodes", com_name + "nodes")
             prob.model.connect(name + ".cg_location", point_name + "." + "total_perf." + name + "_cg_location")
-            prob.model.connect(
-                name + ".structural_mass", point_name + "." + "total_perf." + name + "_structural_mass"
-            )
+            prob.model.connect(name + ".structural_mass", point_name + "." + "total_perf." + name + "_structural_mass")
 
             # Connect wingbox properties to von Mises stress calcs
             prob.model.connect(name + ".Qz", com_name + "Qz")
