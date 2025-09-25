@@ -2,7 +2,6 @@
 Aerostructural optimization example of the "Simple Composite Wing" from:
 Gray and Martins, A Proposed Benchmark Model for Practical Aeroelastic Optimization of Aircraft Wings, AIAA 2024-2775.
 https://www.researchgate.net/publication/377154425_A_Proposed_Benchmark_Model_for_Practical_Aeroelastic_Optimization_of_Aircraft_Wings
-
 """
 
 import matplotlib.pyplot as plt
@@ -10,6 +9,7 @@ import numpy as np
 from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
 from openaerostruct.structures.wingbox_fuel_vol_delta import WingboxFuelVolDelta
+from openaerostruct.structures.utils import compute_composite_stiffness
 import openmdao.api as om
 
 # --- Case control ---
@@ -30,8 +30,6 @@ lower_y = np.array([-0.04604238094970181, -0.048404951781293726, -0.050507699798
 # --- Geometry and analysis options ---
 # Create a dictionary to store options about the surface
 mesh_dict = {
-    # "num_y": 19,
-    # "num_x": 4,
     "num_y": 51,
     "num_x": 7,
     "wing_type": "rect",
@@ -80,22 +78,12 @@ surf_dict = {
     "distributed_fuel_weight": True,
     "fuel_density": 804.0,  # [kg/m^3] fuel density (only needed if the fuel-in-wing volume constraint is used)
     "Wf_reserve": 2000.0,  # [kg] reserve fuel mass
-
-    # Structural values are based on aluminum 7075
-    # "E": 73.1e9,  # [Pa] Young's modulus
-    # "G": (73.1e9 / 2 / 1.33),  # [Pa] shear modulus (calculated using E and the Poisson's ratio here)
-    # "yield": 420.0e6,  # [Pa] yield stress
-    # "safety_factor": 1.5,  # safety factor
-    # "mrho": 2.78e3,  # [kg/m^3] material density
-    # "strength_factor_for_upper_skin": 1.0,  # the yield stress is multiplied by this factor for the upper skin
-
     # Composite material parameters
     "useComposite": True,
     "mrho": 1550,  # [kg/m^3]
     "safety_factor": 1.5,
     "ply_angles": [0, 45, -45, 90],
     "ply_fractions": [0.4441, 0.222, 0.222, 0.1119],  # skin layup from Gray 2024
-    # "ply_fractions": [0.25, 0.25, 0.25, 0.25],
     "E1": 117.7e9,
     "E2": 9.7e9,
     "nu12": 0.35,
@@ -108,9 +96,7 @@ surf_dict = {
 }
 
 # Compute effective E and G for composite material
-if "useComposite" in surf_dict.keys() and surf_dict["useComposite"]:
-    from openaerostruct.structures.utils import compute_composite_stiffness  # noqa: E402
-    compute_composite_stiffness(surf_dict)
+compute_composite_stiffness(surf_dict)
 
 surfaces = [surf_dict]
 
@@ -256,14 +242,6 @@ prob.model.connect("AS_point_0.coupled.wing.S_ref", "wing_loading.wing_area")
 # prob.driver.options["optimizer"] = "SLSQP"
 # prob.driver.options["tol"] = 1e-8
 
-# # The following are the optimizer settings used for the EngOpt conference paper
-# # Uncomment them if you can use SNOPT
-# prob.driver = om.pyOptSparseDriver()
-# prob.driver.options['optimizer'] = "SNOPT"
-# prob.driver.opt_settings['Major optimality tolerance'] = 5e-6
-# prob.driver.opt_settings['Major feasibility tolerance'] = 1e-8
-# prob.driver.opt_settings['Major iterations limit'] = 200
-
 prob.driver = om.pyOptSparseDriver()
 prob.driver.options['print_results'] = True
 prob.driver.options['optimizer'] = 'SNOPT'
@@ -297,12 +275,12 @@ if case_name in ["Case1", "Case2", "Case3"]:
 if case_name in ["Case2", "Case3"]:
     twist_indices = range(len(surf_dict["twist_cp"]) - 1)   # exclude root twist = last index
     prob.model.add_design_var("wing.twist_cp", lower=-15.0, upper=15.0, scaler=0.1, indices=twist_indices)
-    prob.model.add_design_var("wing.gt_over_c_cp", lower=0.07, upper=0.2, scaler=10.0)
+    prob.model.add_design_var("wing.geometry.t_over_c_cp", lower=0.07, upper=0.2, scaler=10.0)
 
 # planform variable
 if case_name in ["Case3"]:
-    prob.model.add_design_var("wing.span", lower=25, upper=40, ref=28.0)
-    prob.model.add_design_var("wing.chord_cp", lower=1.0, upper=5.0, ref=1.5)
+    prob.model.add_design_var("wing.geometry.span", lower=25, upper=40, ref=28.0)
+    prob.model.add_design_var("wing.geometry.chord_cp", lower=1.0, upper=8.0, ref=1.5)
     prob.model.add_design_var("wing.sweep", lower=15.0, upper=35.0, ref=28.18)
 
     # constraint wing loading
@@ -318,48 +296,67 @@ if case_name in ["Case2", "Case3"]:
 prob.setup()
 
 # change linear solver for aerostructural coupled adjoint
-# prob.model.AS_point_0.coupled.linear_solver = om.LinearBlockGS(iprint=0, maxiter=30, use_aitken=True)
-# prob.model.AS_point_1.coupled.linear_solver = om.LinearBlockGS(iprint=0, maxiter=30, use_aitken=True)
 prob.model.AS_point_0.coupled.linear_solver = om.PETScKrylov(assemble_jac=True, iprint=0, rhs_checking=True)
 prob.model.AS_point_0.coupled.linear_solver.precon = om.LinearRunOnce(iprint=-1)
 prob.model.AS_point_1.coupled.linear_solver = om.PETScKrylov(assemble_jac=True, iprint=0, rhs_checking=True)
 prob.model.AS_point_1.coupled.linear_solver.precon = om.LinearRunOnce(iprint=-1)
 
+# Use LinearBlockGS instead if you don't have PETSc installed
+# prob.model.AS_point_0.coupled.linear_solver = om.LinearBlockGS(iprint=0, maxiter=30, use_aitken=True)
+# prob.model.AS_point_1.coupled.linear_solver = om.LinearBlockGS(iprint=0, maxiter=30, use_aitken=True)
+
 prob.run_driver()
 
-print("Fuel burn =", prob.get_val("AS_point_0.fuelburn", units="kg")[0], "[kg]")
-print("Wingbox structure mass =", prob.get_val("wing.structural_mass", units="kg")[0] / surf_dict["wing_weight_ratio"], "[kg] (sum of full wing)")
-print("Wing total mass =", prob.get_val("wing.structural_mass", units="kg")[0], "[kg] (sum of full wing, after applying wing_weight_ratio calibration)")
-print("Cruise CD =", prob.get_val("AS_point_0.CD")[0])
-print("Cruise CL =", prob.get_val("AS_point_0.CL")[0])
-print("Cruise L/D =", prob.get_val("AS_point_0.CL")[0] / prob.get_val("AS_point_0.CD")[0])
+om.n2(prob, show_browser=False, outfile="n2_simple_transonic_wing.html")
 
+# --- Print results ---
+fuel_burn = prob.get_val("AS_point_0.fuelburn", units="kg")[0]
+wing_mass = prob.get_val("wing.structural_mass", units="kg")[0]
+cruise_CD = prob.get_val("AS_point_0.CD")[0]
+cruise_CL = prob.get_val("AS_point_0.CL")[0]
+cruise_LbyD = cruise_CL / cruise_CD
+
+print("\n--------------------------------")
+print("Fuel burn =", fuel_burn, "[kg]")
+print("Wingbox structure mass =", wing_mass / surf_dict["wing_weight_ratio"], "[kg]")
+print("Wing total mass =", wing_mass, "[kg]")
+print("Cruise CD =", cruise_CD)
+print("Cruise CL =", cruise_CL)
+print("Cruise L/D =", cruise_LbyD)
+
+print("\nComposite effective stiffness:")
 print('E =', surf_dict["E"] / 1e9)
 print('G =', surf_dict["G"] / 1e9)
 
+print("\nStructural variables")
 print('Spar thickness cp =', prob.get_val("wing.spar_thickness_cp", units="mm"), "[mm] (tip to root)")
 print('Skin thickness cp =', prob.get_val("wing.skin_thickness_cp", units="mm"), "[mm] (tip to root)")
 
-# --- plot planform ---
-om.n2(prob, show_browser=False)
+print("\nAero/aerostructural variables")
+print('Twist cp =', prob.get_val("wing.twist_cp", units="deg"), "[deg] (tip to root)")
+print('t/c cp =', prob.get_val("wing.geometry.t_over_c_cp"), "(tip to root)")
 
+print("\nPlanform variables")
+print('Span =', prob.get_val("wing.geometry.span", units="m"), "[m]")
+print('Chord cp =', prob.get_val("wing.geometry.chord_cp"), "[m] (tip, root)")
+print('LE sweep =', prob.get_val("wing.sweep", units="deg"), "[deg]")
+
+# --- plot planform ---
 mesh = prob.get_val("wing.mesh")
-# plot mesh
 mesh_x = mesh[:, :, 0]
 mesh_y = mesh[:, ::-1, 1] * -1
 le_root_x = mesh[0, -1, 0]
 mesh_x -= le_root_x
 
 plt.figure()
-plt.plot(mesh_y[0, :], mesh_x[0, :], color='k')
-plt.plot(mesh_y[-1, :], mesh_x[-1, :], color='k')
-plt.plot(mesh_y[:, 0], mesh_x[:, 0], color='k')
-plt.plot(mesh_y[:, -1], mesh_x[:, -1], color='k')
+plt.plot(mesh_y[0, :], mesh_x[0, :], color='k')  # LE
+plt.plot(mesh_y[-1, :], mesh_x[-1, :], color='k')  # TE
+plt.plot(mesh_y[:, 0], mesh_x[:, 0], color='k')  # tip
+plt.plot(mesh_y[:, -1], mesh_x[:, -1], color='k')  # root
 plt.axis('equal')
-# invert x axis
 plt.gca().invert_xaxis()
 plt.grid()
-plt.savefig("simple_transonic_wing_planform.svg")
+plt.savefig("simple_transonic_wing_planform.pdf", bbox_inches='tight')
 
 # --- plot structural thickness ---
 y = mesh_y[0, :]
@@ -369,18 +366,16 @@ skin_t_step = np.concatenate([[skin_thickness[0]], skin_thickness])
 spar_t_step = np.concatenate([[spar_thickness[0]], spar_thickness])
 
 fig, axs = plt.subplots(2, 1, figsize=(6, 6))
-axs[0].step(y, skin_t_step, where='pre', color='C3', lw=2)
+axs[0].step(y, skin_t_step, where='pre', lw=2)
 axs[0].set_ylabel("Skin Thickness (mm)")
 axs[0].set_xticklabels([])
-axs[0].set_yticks([0, 4, 8, 12, 16])
 
-axs[1].step(y, spar_t_step, where='pre', color='C3', lw=2)
+axs[1].step(y, spar_t_step, where='pre', lw=2)
 axs[1].set_ylabel("Spar Thickness (mm)")
 axs[1].set_xlabel("Spanwise (m)")
-axs[1].set_yticks([0, 2, 4, 6])
-plt.savefig("simple_transonic_wing_thickness.svg")
+plt.savefig("simple_transonic_wing_thickness.pdf", bbox_inches='tight')
 
-# --- plot twist ---
+# --- plot twist and t/c---
 # jig twist
 jig_mesh = prob.get_val("wing.mesh", units="m")
 jig_LE = jig_mesh[0, :, :]
@@ -402,12 +397,21 @@ maneuver_TE = maneuver_mesh[-1, :, :]
 maneuver_chord = maneuver_TE[:, 0] - maneuver_LE[:, 0]
 twist_maneuver = np.arctan2(maneuver_LE[:, 2] - maneuver_TE[:, 2], maneuver_chord) * 180 / np.pi
 
-plt.figure(figsize=(6, 2))
-plt.plot(y, twist_cruise[::-1], 'o-', markersize=3, color='k')
-plt.plot(y, twist_maneuver[::-1], 'o-', markersize=3, color='k')
-plt.yticks([-3, -2, -1, 0])
-plt.xlabel("Spanwise (m)")
-plt.ylabel("Twist (deg)")
-plt.savefig("simple_transonic_wing_twist.svg")
+fig, axs = plt.subplots(2, 1, figsize=(6, 6))
+axs[0].plot(y, twist_jig[::-1], color='darkgray', label='jig')
+axs[0].plot(y, twist_cruise[::-1], color='C0', label='1g cruise')
+axs[0].plot(y, twist_maneuver[::-1], color='C1', label='2.5g pull-up')
+axs[0].set_xticklabels([])
+axs[0].set_ylabel("Twist (deg)")
+axs[0].legend()
+
+# t/c
+t_over_c = prob.get_val("wing.t_over_c").ravel()[::-1]
+t_over_c_step = np.concatenate([[t_over_c[0]], t_over_c])
+axs[1].step(y, t_over_c_step, where='pre', color='C0')
+axs[1].set_xlabel("Spanwise (m)")
+axs[1].set_ylabel("t/c")
+axs[1].set_xlabel("Spanwise (m)")
+plt.savefig("simple_transonic_wing_twist_tc.pdf", bbox_inches='tight')
 
 plt.show()

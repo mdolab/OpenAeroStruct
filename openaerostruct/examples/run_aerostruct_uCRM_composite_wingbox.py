@@ -7,6 +7,7 @@ import numpy as np
 from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
 from openaerostruct.structures.wingbox_fuel_vol_delta import WingboxFuelVolDelta
+from openaerostruct.structures.utils import compute_composite_stiffness
 import openmdao.api as om
 
 # Provide coordinates for a portion of an airfoil for the wingbox cross-section as an nparray with dtype=complex (to work with the complex-step approximation for derivatives).
@@ -82,15 +83,14 @@ surf_dict = {
     "E2": 9.7e9,
     "nu12": 0.35,
     "G12": 4.8e9,
-    "sigma_t1": 1648.0e6,
-    "sigma_c1": 1034.0e6,
-    "sigma_t2": 64.0e6,
-    "sigma_c2": 228.0e6,
-    "sigma_12max": 71.0e6,
+    "sigma_t1": 1648.0e6,  # longitudinal tensile strength
+    "sigma_c1": 1034.0e6,  # longitudinal compressive strength
+    "sigma_t2": 64.0e6,  # transverse tensile strength
+    "sigma_c2": 228.0e6,  # transverse compressive strength
+    "sigma_12max": 71.0e6,  # maximum shear strength
 }
 
 # Compute effective E and G for composite material
-from openaerostruct.structures.utils import compute_composite_stiffness  # noqa: E402
 compute_composite_stiffness(surf_dict)
 
 surfaces = [surf_dict]
