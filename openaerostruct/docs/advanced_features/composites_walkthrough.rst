@@ -11,7 +11,7 @@ Model setup
 
 First, define the following parameters in the `surface` dictionary:
 
-- ``useComposite`` is a boolean variable that is set to True to enable the composites model criteria.
+- ``useComposite`` is a boolean variable that is set to True to enable the composites model mode.
 - ``safety_factor`` is the factor of safety used for determining the Tsai-Wu based failure
 - ``ply_angles`` is a list of the angles of the plies with respect to the x-axis.
 - ``ply_fractions`` is a list of the ply fractions of the plies. (Should be the same length as ``ply_angles``, with the sum of the fractions equal to 1).
@@ -77,7 +77,7 @@ using their respective ply fraction:
 
 .. math::
 
-    Q_{eff} = \sum_{i=1}^{n} f_i Q_{bar_i}
+    Q_{eff} = \sum_{i=1}^{n} f_i \bar{Q}_i
 
 where :math:`f_i` is the ply fraction of the :math:`i^{th}` ply.
 
@@ -93,9 +93,9 @@ The effective laminate properties are found using the following equations:
     E = \frac{1}{S_{eff_{11}}}\\
     G = \frac{1}{S_{eff_{66}}}
 
-These moduli of elasticility values are hence used to determine the stiffness matrix of the entire FEM spatial beam model.
+These moduli of elasticity values are hence used to determine the stiffness matrix of the entire FEM spatial beam model.
 
-Tsai-Wu Failure Criteria
+Tsai-Wu Failure Criterion
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Thereafter, at the 4 critical points in the wingbox (mentioned in the aerostruct-wingbox walkthrough),
@@ -149,14 +149,14 @@ These local axial and shear stresses are then utilized to calculate the value of
 
 where :math:`S_L^{(+)} \text{and} S_L^{(-)}` are the longitudinal strengths in tension and compression respectively,
 :math:`S_T^{(+)} \text{and} S_T^{(-)}` are the transverse strengths in tension and compression respectively and
-:math:`S_{LT}^{(+)}` is the shear strength of a ply. The strength ratios are then used to calculate the Tsai-Wu based failure criteria for each ply.
-The Tsai-Wu failure criteria is given by:
+:math:`S_{LT}^{(+)}` is the shear strength of a ply. The strength ratios are then used to calculate the Tsai-Wu based failure criterion for each ply.
+The Tsai-Wu failure criterion is given by:
 
 .. math::
 
     F_1 \sigma_1 + F_2 \sigma_2 + F_{11} \sigma_1^2 + F_{22} \sigma_2^2 + F_{66} \tau_{12}^2 = 1
 
-In order to implement the safety factor in the Tsai-Wu failure criteria, the equation is re-written as:
+In order to implement the safety factor in the Tsai-Wu failure criterion, the equation is re-written as:
 
 .. math::
     a &= F_1 \sigma_1 + F_2 \sigma_2 \\
