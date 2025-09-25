@@ -77,7 +77,6 @@ class FailureKS(om.ExplicitComponent):
         self.declare_partials("*", "*")
 
     def compute(self, inputs, outputs):
-
         stress_array = inputs[self.input_name]
 
         fmax = np.max(stress_array / self.stress_limit - 1)

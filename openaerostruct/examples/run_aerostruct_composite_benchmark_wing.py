@@ -130,7 +130,12 @@ prob.model.add_subsystem("prob_vars", indep_var_comp, promotes=["*"])
 
 # Compute mid-cruise fuel mass
 mid_cruise_fuel_mass_comp = om.ExecComp("fuel_mid_cruise = fuel_mass / 2", units="kg")
-prob.model.add_subsystem("mid_cruise_fuel_mass", mid_cruise_fuel_mass_comp, promotes_inputs=["fuel_mass"], promotes_outputs=["fuel_mid_cruise"])
+prob.model.add_subsystem(
+    "mid_cruise_fuel_mass",
+    mid_cruise_fuel_mass_comp,
+    promotes_inputs=["fuel_mass"],
+    promotes_outputs=["fuel_mid_cruise"],
+)
 
 # Add geometry groups
 for surface in surfaces:
@@ -233,7 +238,9 @@ wing_loading_comp = om.ExecComp(
     MTOW={"units": "kg"},
     wing_area={"units": "m**2"},
 )
-wing_loading_group.add_subsystem("wing_loading", wing_loading_comp, promotes_inputs=["MTOW"], promotes_outputs=["wing_loading"])
+wing_loading_group.add_subsystem(
+    "wing_loading", wing_loading_comp, promotes_inputs=["MTOW"], promotes_outputs=["wing_loading"]
+)
 prob.model.connect("AS_point_0.coupled.wing.S_ref", "wing_loading.wing_area")
 
 # --- Optimizer settings ---
@@ -243,15 +250,15 @@ prob.model.connect("AS_point_0.coupled.wing.S_ref", "wing_loading.wing_area")
 # prob.driver.options["tol"] = 1e-8
 
 prob.driver = om.pyOptSparseDriver()
-prob.driver.options['print_results'] = True
-prob.driver.options['optimizer'] = 'SNOPT'
-prob.driver.opt_settings['Major iterations limit'] = 100
-prob.driver.opt_settings['Major feasibility tolerance'] = 1e-6
-prob.driver.opt_settings['Major optimality tolerance'] = 1e-6
-prob.driver.opt_settings['Verify level'] = -1
-prob.driver.opt_settings['Function precision'] = 1e-10
-prob.driver.opt_settings['Hessian full memory'] = 1
-prob.driver.opt_settings['Hessian frequency'] = 100
+prob.driver.options["print_results"] = True
+prob.driver.options["optimizer"] = "SNOPT"
+prob.driver.opt_settings["Major iterations limit"] = 100
+prob.driver.opt_settings["Major feasibility tolerance"] = 1e-6
+prob.driver.opt_settings["Major optimality tolerance"] = 1e-6
+prob.driver.opt_settings["Verify level"] = -1
+prob.driver.opt_settings["Function precision"] = 1e-10
+prob.driver.opt_settings["Hessian full memory"] = 1
+prob.driver.opt_settings["Hessian frequency"] = 100
 
 # --- Define optimization problem ---
 if case_name == "Case1":
@@ -273,7 +280,7 @@ if case_name in ["Case1", "Case2", "Case3"]:
 
 # twist and t/c variables
 if case_name in ["Case2", "Case3"]:
-    twist_indices = range(len(surf_dict["twist_cp"]) - 1)   # exclude root twist = last index
+    twist_indices = range(len(surf_dict["twist_cp"]) - 1)  # exclude root twist = last index
     prob.model.add_design_var("wing.twist_cp", lower=-15.0, upper=15.0, scaler=0.1, indices=twist_indices)
     prob.model.add_design_var("wing.geometry.t_over_c_cp", lower=0.07, upper=0.2, scaler=10.0)
 
@@ -325,21 +332,21 @@ print("Cruise CL =", cruise_CL)
 print("Cruise L/D =", cruise_LbyD)
 
 print("\nComposite effective stiffness:")
-print('E =', surf_dict["E"] / 1e9)
-print('G =', surf_dict["G"] / 1e9)
+print("E =", surf_dict["E"] / 1e9)
+print("G =", surf_dict["G"] / 1e9)
 
 print("\nStructural variables")
-print('Spar thickness cp =', prob.get_val("wing.spar_thickness_cp", units="mm"), "[mm] (tip to root)")
-print('Skin thickness cp =', prob.get_val("wing.skin_thickness_cp", units="mm"), "[mm] (tip to root)")
+print("Spar thickness cp =", prob.get_val("wing.spar_thickness_cp", units="mm"), "[mm] (tip to root)")
+print("Skin thickness cp =", prob.get_val("wing.skin_thickness_cp", units="mm"), "[mm] (tip to root)")
 
 print("\nAero/aerostructural variables")
-print('Twist cp =', prob.get_val("wing.twist_cp", units="deg"), "[deg] (tip to root)")
-print('t/c cp =', prob.get_val("wing.geometry.t_over_c_cp"), "(tip to root)")
+print("Twist cp =", prob.get_val("wing.twist_cp", units="deg"), "[deg] (tip to root)")
+print("t/c cp =", prob.get_val("wing.geometry.t_over_c_cp"), "(tip to root)")
 
 print("\nPlanform variables")
-print('Span =', prob.get_val("wing.geometry.span", units="m"), "[m]")
-print('Chord cp =', prob.get_val("wing.geometry.chord_cp"), "[m] (tip, root)")
-print('LE sweep =', prob.get_val("wing.sweep", units="deg"), "[deg]")
+print("Span =", prob.get_val("wing.geometry.span", units="m"), "[m]")
+print("Chord cp =", prob.get_val("wing.geometry.chord_cp"), "[m] (tip, root)")
+print("LE sweep =", prob.get_val("wing.sweep", units="deg"), "[deg]")
 
 # --- plot planform ---
 mesh = prob.get_val("wing.mesh")
@@ -349,14 +356,14 @@ le_root_x = mesh[0, -1, 0]
 mesh_x -= le_root_x
 
 plt.figure()
-plt.plot(mesh_y[0, :], mesh_x[0, :], color='k')  # LE
-plt.plot(mesh_y[-1, :], mesh_x[-1, :], color='k')  # TE
-plt.plot(mesh_y[:, 0], mesh_x[:, 0], color='k')  # tip
-plt.plot(mesh_y[:, -1], mesh_x[:, -1], color='k')  # root
-plt.axis('equal')
+plt.plot(mesh_y[0, :], mesh_x[0, :], color="k")  # LE
+plt.plot(mesh_y[-1, :], mesh_x[-1, :], color="k")  # TE
+plt.plot(mesh_y[:, 0], mesh_x[:, 0], color="k")  # tip
+plt.plot(mesh_y[:, -1], mesh_x[:, -1], color="k")  # root
+plt.axis("equal")
 plt.gca().invert_xaxis()
 plt.grid()
-plt.savefig("simple_transonic_wing_planform.pdf", bbox_inches='tight')
+plt.savefig("simple_transonic_wing_planform.pdf", bbox_inches="tight")
 
 # --- plot structural thickness ---
 y = mesh_y[0, :]
@@ -366,14 +373,14 @@ skin_t_step = np.concatenate([[skin_thickness[0]], skin_thickness])
 spar_t_step = np.concatenate([[spar_thickness[0]], spar_thickness])
 
 fig, axs = plt.subplots(2, 1, figsize=(6, 6))
-axs[0].step(y, skin_t_step, where='pre', lw=2)
+axs[0].step(y, skin_t_step, where="pre", lw=2)
 axs[0].set_ylabel("Skin Thickness (mm)")
 axs[0].set_xticklabels([])
 
-axs[1].step(y, spar_t_step, where='pre', lw=2)
+axs[1].step(y, spar_t_step, where="pre", lw=2)
 axs[1].set_ylabel("Spar Thickness (mm)")
 axs[1].set_xlabel("Spanwise (m)")
-plt.savefig("simple_transonic_wing_thickness.pdf", bbox_inches='tight')
+plt.savefig("simple_transonic_wing_thickness.pdf", bbox_inches="tight")
 
 # --- plot twist and t/c---
 # jig twist
@@ -398,9 +405,9 @@ maneuver_chord = maneuver_TE[:, 0] - maneuver_LE[:, 0]
 twist_maneuver = np.arctan2(maneuver_LE[:, 2] - maneuver_TE[:, 2], maneuver_chord) * 180 / np.pi
 
 fig, axs = plt.subplots(2, 1, figsize=(6, 6))
-axs[0].plot(y, twist_jig[::-1], color='darkgray', label='jig')
-axs[0].plot(y, twist_cruise[::-1], color='C0', label='1g cruise')
-axs[0].plot(y, twist_maneuver[::-1], color='C1', label='2.5g pull-up')
+axs[0].plot(y, twist_jig[::-1], color="darkgray", label="jig")
+axs[0].plot(y, twist_cruise[::-1], color="C0", label="1g cruise")
+axs[0].plot(y, twist_maneuver[::-1], color="C1", label="2.5g pull-up")
 axs[0].set_xticklabels([])
 axs[0].set_ylabel("Twist (deg)")
 axs[0].legend()
@@ -408,10 +415,10 @@ axs[0].legend()
 # t/c
 t_over_c = prob.get_val("wing.t_over_c").ravel()[::-1]
 t_over_c_step = np.concatenate([[t_over_c[0]], t_over_c])
-axs[1].step(y, t_over_c_step, where='pre', color='C0')
+axs[1].step(y, t_over_c_step, where="pre", color="C0")
 axs[1].set_xlabel("Spanwise (m)")
 axs[1].set_ylabel("t/c")
 axs[1].set_xlabel("Spanwise (m)")
-plt.savefig("simple_transonic_wing_twist_tc.pdf", bbox_inches='tight')
+plt.savefig("simple_transonic_wing_twist_tc.pdf", bbox_inches="tight")
 
 plt.show()

@@ -7,7 +7,7 @@ class FailureExact(om.ExplicitComponent):
     """
     Output individual failure constraints on each FEM element.
 
-    parameters
+    Parameters
     ----------
     vonmises : ny-1 x 2 numpy array
         von Mises stress magnitudes for each FEM element.
