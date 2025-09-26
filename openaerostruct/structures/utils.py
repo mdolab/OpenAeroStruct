@@ -63,9 +63,25 @@ def radii(mesh, t_c=0.15):
     return t_c * mean_chords * 0.5
 
 
-def transformation_matrix(theta):
+def compute_lamina_transformation_matrix(theta):
     """
-    Function to find the transformation matrix for a given angle.
+    Compute the stress and strain transformation matrices for a given ply angle.
+
+    This is the matrix $T$ that transforms stresses and strains from the global to the material coordinate system:
+
+    .. math::
+        \begin{bmatrix}
+        \sigma_1 \\\\
+        \sigma_2 \\\\
+        \tau_{12}
+        \end{bmatrix}
+        =
+        T
+        \begin{bmatrix}
+        \sigma_x \\\\
+        \sigma_y \\\\
+        \tau_{xy}
+        \end{bmatrix}
 
     Parameters
     ----------
@@ -74,38 +90,25 @@ def transformation_matrix(theta):
 
     Returns
     -------
-    T_sigma : numpy array
-        Stress transformation matrix.
-    T_eps : numpy array
-        Strain transformation matrix.
+    T : numpy array
+        Transformation matrix.
     """
-    theta = theta * np.pi / 180
+    theta = np.deg2rad(theta)
     c = np.cos(theta)
     s = np.sin(theta)
 
-    T_sigma = np.zeros((3, 3))
-    T_sigma[0, 0] = c**2
-    T_sigma[0, 1] = s**2
-    T_sigma[0, 2] = 2 * s * c
-    T_sigma[1, 0] = s**2
-    T_sigma[1, 1] = c**2
-    T_sigma[1, 2] = -2 * s * c
-    T_sigma[2, 0] = -s * c
-    T_sigma[2, 1] = s * c
-    T_sigma[2, 2] = c**2 - s**2
+    T = np.zeros((3, 3))
+    T[0, 0] = c**2
+    T[0, 1] = s**2
+    T[0, 2] = 2 * s * c
+    T[1, 0] = s**2
+    T[1, 1] = c**2
+    T[1, 2] = -2 * s * c
+    T[2, 0] = -s * c
+    T[2, 1] = s * c
+    T[2, 2] = c**2 - s**2
 
-    T_eps = np.zeros((3, 3))
-    T_eps[0, 0] = c**2
-    T_eps[0, 1] = s**2
-    T_eps[0, 2] = s * c
-    T_eps[1, 0] = s**2
-    T_eps[1, 1] = c**2
-    T_eps[1, 2] = -s * c
-    T_eps[2, 0] = -2 * s * c
-    T_eps[2, 1] = 2 * s * c
-    T_eps[2, 2] = c**2 - s**2
-
-    return T_sigma, T_eps
+    return T
 
 
 def compute_composite_stiffness(surface):
@@ -146,12 +149,14 @@ def compute_composite_stiffness(surface):
     Q[2, 2] = G12
 
     # finding the Q_bar matrix for each ply in the form of a 3D Array
+    # See https://www.efunda.com/formulae/solid_mechanics/composites/comp_lamina_arbitrary.cfm for reference
     Q_bar = np.zeros((num_plies, 3, 3))
     Q_bar_eff = np.zeros((3, 3))
     for i in range(num_plies):
         theta = ply_angles[i]
-        T_sigma, T_eps = transformation_matrix(theta)
-        Q_bar[i] = T_sigma @ Q @ np.linalg.inv(T_eps)
+        T = compute_lamina_transformation_matrix(theta)
+        T_inv = np.linalg.inv(T)
+        Q_bar[i] = T_inv @ Q @ T_inv.T
         Q_bar_eff += ply_fractions[i] * Q_bar[i]
 
     S_bar_eff = np.linalg.inv(Q_bar_eff)

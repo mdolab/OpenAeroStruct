@@ -2,7 +2,7 @@ import numpy as np
 
 import openmdao.api as om
 
-from openaerostruct.structures.utils import norm, unit, transformation_matrix
+from openaerostruct.structures.utils import norm, unit, compute_lamina_transformation_matrix
 
 
 class TsaiWuWingbox(om.ExplicitComponent):
@@ -144,7 +144,7 @@ class TsaiWuWingbox(om.ExplicitComponent):
             # this is strain
             axial_strain = (u1x - u0x) / L
 
-            # this is torsion strain
+            # this is shear strain due to torsion (note this is gamma_xy or 2*epsilon_xy)
             torsion_shear_strain = J[ielem] / L * (r1x - r0x) / 2 / spar_thickness[ielem] / A_enc[ielem]
 
             # this is bending strain for the top skin
@@ -201,8 +201,12 @@ class TsaiWuWingbox(om.ExplicitComponent):
             sigma_elem_ply = np.zeros((4, num_plies, 3), dtype=dtype)
             for point_num in range(4):
                 for ply_num in range(num_plies):
-                    _, T_eps = transformation_matrix(-ply_angles[ply_num])
-                    epsilon_elem_ply[point_num, ply_num, :] = T_eps @ epsilon_elem[point_num, :]
+                    lam_transorm_mat = compute_lamina_transformation_matrix(-ply_angles[ply_num])
+                    # We need to use the inverse transpose of the transformation matrix to convert strains because we
+                    # are using the engineering shear strain (gamma_xy = 2*epsilon_xy)
+                    epsilon_elem_ply[point_num, ply_num, :] = (
+                        np.linalg.inv(lam_transorm_mat).T @ epsilon_elem[point_num, :]
+                    )
 
             # ==============================================================================
             #  Stress and strength ratio
