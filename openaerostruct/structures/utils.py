@@ -61,3 +61,110 @@ def radii(mesh, t_c=0.15):
     chords = np.sqrt(np.sum(vectors**2, axis=1))
     mean_chords = 0.5 * chords[:-1] + 0.5 * chords[1:]
     return t_c * mean_chords * 0.5
+
+
+def compute_lamina_transformation_matrix(theta):
+    """
+    Compute the stress and strain transformation matrices for a given ply angle.
+
+    This is the matrix $T$ that transforms stresses and strains from the global to the material coordinate system:
+
+    .. math::
+        \begin{bmatrix}
+        \sigma_1 \\\\
+        \sigma_2 \\\\
+        \tau_{12}
+        \end{bmatrix}
+        =
+        T
+        \begin{bmatrix}
+        \sigma_x \\\\
+        \sigma_y \\\\
+        \tau_{xy}
+        \end{bmatrix}
+
+    Parameters
+    ----------
+    theta : float
+        Angle in degrees.
+
+    Returns
+    -------
+    T : numpy array
+        Transformation matrix.
+    """
+    theta = np.deg2rad(theta)
+    c = np.cos(theta)
+    s = np.sin(theta)
+
+    T = np.zeros((3, 3))
+    T[0, 0] = c**2
+    T[0, 1] = s**2
+    T[0, 2] = 2 * s * c
+    T[1, 0] = s**2
+    T[1, 1] = c**2
+    T[1, 2] = -2 * s * c
+    T[2, 0] = -s * c
+    T[2, 1] = s * c
+    T[2, 2] = c**2 - s**2
+
+    return T
+
+
+def compute_composite_stiffness(surface):
+    """
+    Function to compute the effective E and G stiffness values for a composite material,
+    based on the ply_fractions, ply angles and individual fiber and matrix properties.
+
+    Parameters
+    ----------
+    surface : dict
+        OpenAeroStruct surface dictionary.
+    """
+    E1 = surface["E1"]
+    E2 = surface["E2"]
+    v12 = surface["nu12"]
+    G12 = surface["G12"]
+    v21 = (E2 / E1) * v12
+    ply_fractions = surface["ply_fractions"]
+    ply_angles = surface["ply_angles"]
+    num_plies = len(ply_fractions)
+
+    # check inputs
+    if len(ply_fractions) != len(ply_angles):
+        raise ValueError("Length of ply_fractions and ply_angles must be equal")
+    if sum(ply_fractions) != 1:
+        raise ValueError("Sum of ply_fractions must be 1")
+
+    # finding the Q matrix
+    Q = np.zeros((3, 3))
+    Q[0, 0] = E1 / (1 - v12 * v21)
+    Q[0, 1] = v12 * E2 / (1 - v12 * v21)
+    Q[0, 2] = 0
+    Q[1, 0] = v21 * E1 / (1 - v12 * v21)
+    Q[1, 1] = E2 / (1 - v12 * v21)
+    Q[1, 2] = 0
+    Q[2, 0] = 0
+    Q[2, 1] = 0
+    Q[2, 2] = G12
+
+    # finding the Q_bar matrix for each ply in the form of a 3D Array
+    # See https://www.efunda.com/formulae/solid_mechanics/composites/comp_lamina_arbitrary.cfm for reference
+    Q_bar = np.zeros((num_plies, 3, 3))
+    Q_bar_eff = np.zeros((3, 3))
+    for i in range(num_plies):
+        theta = ply_angles[i]
+        T = compute_lamina_transformation_matrix(theta)
+        T_inv = np.linalg.inv(T)
+        Q_bar[i] = T_inv @ Q @ T_inv.T
+        Q_bar_eff += ply_fractions[i] * Q_bar[i]
+
+    S_bar_eff = np.linalg.inv(Q_bar_eff)
+    E_eff = 1 / S_bar_eff[0, 0]
+    G_eff = 1 / S_bar_eff[2, 2]
+
+    # replacing the values in the surface dictionary
+    surface["E"] = E_eff
+    surface["G"] = G_eff
+
+    # no need to return anything as the values are updated in the surface dictionary (call by reference)

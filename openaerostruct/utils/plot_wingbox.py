@@ -7,7 +7,6 @@ and this can be used as a starting point.
 The usage, for example, if running a case from the `examples` directory would be `python ../utils/plot_wingbox.py aerostruct.db`.
 """
 
-
 import sys
 import numpy as np
 from openmdao.recorders.sqlite_reader import SqliteCaseReader

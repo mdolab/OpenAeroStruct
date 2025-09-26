@@ -5,6 +5,7 @@ import openmdao.api as om
 # from openaerostruct.structures.spar_within_wing import SparWithinWing
 from openaerostruct.structures.vonmises_tube import VonMisesTube
 from openaerostruct.structures.vonmises_wingbox import VonMisesWingbox
+from openaerostruct.structures.tsaiwu_wingbox import TsaiWuWingbox
 from openaerostruct.structures.non_intersecting_thickness import NonIntersectingThickness
 from openaerostruct.structures.failure_exact import FailureExact
 from openaerostruct.structures.failure_ks import FailureKS
@@ -26,7 +27,7 @@ class SpatialBeamFunctionals(om.Group):
         #          Energy(surface=surface),
         #          promotes=['*'])
 
-        if surface["fem_model_type"] == "tube":
+        if surface["fem_model_type"].lower() == "tube":
             self.add_subsystem(
                 "thicknessconstraint",
                 NonIntersectingThickness(surface=surface),
@@ -40,24 +41,44 @@ class SpatialBeamFunctionals(om.Group):
                 promotes_inputs=["radius", "nodes", "disp"],
                 promotes_outputs=["vonmises"],
             )
-        elif surface["fem_model_type"] == "wingbox":
-            self.add_subsystem(
-                "vonmises",
-                VonMisesWingbox(surface=surface),
-                promotes_inputs=[
-                    "Qz",
-                    "J",
-                    "A_enc",
-                    "spar_thickness",
-                    "htop",
-                    "hbottom",
-                    "hfront",
-                    "hrear",
-                    "nodes",
-                    "disp",
-                ],
-                promotes_outputs=["vonmises"],
-            )
+
+        elif surface["fem_model_type"].lower() == "wingbox":
+            if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
+                self.add_subsystem(
+                    "tsaiwu_sr",
+                    TsaiWuWingbox(surface=surface),
+                    promotes_inputs=[
+                        "Qz",
+                        "J",
+                        "A_enc",
+                        "spar_thickness",
+                        "htop",
+                        "hbottom",
+                        "hfront",
+                        "hrear",
+                        "nodes",
+                        "disp",
+                    ],
+                    promotes_outputs=["tsaiwu_sr"],
+                )
+            else:  # using the Isotropic wingbox
+                self.add_subsystem(
+                    "vonmises",
+                    VonMisesWingbox(surface=surface),
+                    promotes_inputs=[
+                        "Qz",
+                        "J",
+                        "A_enc",
+                        "spar_thickness",
+                        "htop",
+                        "hbottom",
+                        "hfront",
+                        "hrear",
+                        "nodes",
+                        "disp",
+                    ],
+                    promotes_outputs=["vonmises"],
+                )
         else:
             raise NameError("Please select a valid `fem_model_type` from either `tube` or `wingbox`.")
 
@@ -68,10 +89,24 @@ class SpatialBeamFunctionals(om.Group):
         #          promotes=['*'])
 
         if surface["exact_failure_constraint"]:
+            if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
+                promotedinput = "tsaiwu_sr"
+            else:  # using the Isotropic structures
+                promotedinput = "vonmises"
+
             self.add_subsystem(
-                "failure", FailureExact(surface=surface), promotes_inputs=["vonmises"], promotes_outputs=["failure"]
+                "failure",
+                FailureExact(surface=surface),
+                promotes_inputs=[promotedinput],
+                promotes_outputs=["failure"],
             )
+
         else:
+            if "useComposite" in surface.keys() and surface["useComposite"]:  # using the Composite wingbox
+                promotedinput = "tsaiwu_sr"
+            else:  # using the Isotropic structures
+                promotedinput = "vonmises"
+
             self.add_subsystem(
-                "failure", FailureKS(surface=surface), promotes_inputs=["vonmises"], promotes_outputs=["failure"]
+                "failure", FailureKS(surface=surface), promotes_inputs=[promotedinput], promotes_outputs=["failure"]
             )

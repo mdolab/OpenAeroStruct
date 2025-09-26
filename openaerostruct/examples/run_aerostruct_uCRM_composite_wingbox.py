@@ -1,21 +1,13 @@
 """
-This example script can be used to run a multipoint aerostructural optimization
-for a wing based on the Bombardier Q400 with the wingbox model.
-We create a custom mesh for this wing in this script.
-The fuel burn from the cruise flight-point is the objective function and a 2.5g
-maneuver flight-point is used for the structural sizing.
-After running the optimization, use the 'plot_wingbox.py' script in the utils/
-directory (e.g., as 'python ../utils/plot_wingbox.py aerostruct.db' if running
-from this directory) to visualize the results.
-This visualization script is based on the plot_wing.py script.
-It's still under development and will probably not work as it is for other types of
-cases for now.
+This example is a composite material version of the uCRM multipoint optimization with the wingbox structure model.
+Original uCRM runscript with Aluminum material can be found in run_aerostruct_uCRM_multipoint.py.
 """
 
 import numpy as np
-
+from openaerostruct.geometry.utils import generate_mesh
 from openaerostruct.integration.aerostruct_groups import AerostructGeometry, AerostructPoint
 from openaerostruct.structures.wingbox_fuel_vol_delta import WingboxFuelVolDelta
+from openaerostruct.structures.utils import compute_composite_stiffness
 import openmdao.api as om
 
 # Provide coordinates for a portion of an airfoil for the wingbox cross-section as an nparray with dtype=complex (to work with the complex-step approximation for derivatives).
@@ -31,33 +23,18 @@ upper_y = np.array([ 0.0447,  0.046,  0.0472,  0.0484,  0.0495,  0.0505,  0.0514
 lower_y = np.array([-0.0447, -0.046, -0.0473, -0.0485, -0.0496, -0.0506, -0.0515, -0.0524, -0.0532, -0.054, -0.0547, -0.0554, -0.056, -0.0565, -0.057, -0.0575, -0.0579, -0.0583, -0.0586, -0.0589, -0.0592, -0.0594, -0.0595, -0.0596, -0.0597, -0.0598, -0.0598, -0.0598, -0.0598, -0.0597, -0.0596, -0.0594, -0.0592, -0.0589, -0.0586, -0.0582, -0.0578, -0.0573, -0.0567, -0.0561, -0.0554, -0.0546, -0.0538, -0.0529, -0.0519, -0.0509, -0.0497, -0.0485, -0.0472, -0.0458, -0.0444], dtype="complex128")
 # fmt: on
 
-# Here we create a custom mesh for the wing
-# It is evenly spaced with nx chordwise nodal points and ny spanwise nodal points for the half-span
+# Create a dictionary to store options about the surface
+mesh_dict = {
+    "num_y": 51,
+    "num_x": 7,
+    "wing_type": "uCRM_based",
+    "symmetry": True,
+    "chord_cos_spacing": 0,
+    "span_cos_spacing": 0,
+    "num_twist_cp": 6,
+}
 
-span = 28.42  # wing span in m
-root_chord = 3.34  # root chord in m
-
-nx = 3  # number of chordwise nodal points (should be odd)
-ny = 11  # number of spanwise nodal points for the half-span
-
-# Initialize the 3-D mesh object. Chordwise, spanwise, then the 3D coordinates.
-mesh = np.zeros((nx, ny, 3))
-
-# Start away from the symmetry plane and approach the plane as the array indices increase.
-# The form of this 3-D array can be very confusing initially.
-# For each node we are providing the x, y, and z coordinates.
-# x is chordwise, y is spanwise, and z is up.
-# For example (for a mesh with 5 chordwise nodes and 15 spanwise nodes for the half wing), the node for the leading edge at the tip would be specified as mesh[0, 0, :] = np.array([1.1356, -14.21, 0.])
-# and the node at the trailing edge at the root would be mesh[4, 14, :] = np.array([3.34, 0., 0.]).
-# We only provide the left half of the wing because we use symmetry.
-# Print the following mesh and elements of the mesh to better understand the form.
-
-mesh[:, :, 1] = np.linspace(-span / 2, 0, ny)
-mesh[0, :, 0] = 0.34 * root_chord * np.linspace(1.0, 0.0, ny)
-mesh[2, :, 0] = root_chord * (np.linspace(0.4, 1.0, ny) + 0.34 * np.linspace(1.0, 0.0, ny))
-mesh[1, :, 0] = (mesh[2, :, 0] + mesh[0, :, 0]) / 2
-
-# print(mesh)
+mesh, twist_cp = generate_mesh(mesh_dict)
 
 surf_dict = {
     # Wing definition
@@ -66,14 +43,14 @@ surf_dict = {
     "S_ref_type": "wetted",  # how we compute the wing area,
     # can be 'wetted' or 'projected'
     "mesh": mesh,
-    "twist_cp": np.array([6.0, 7.0, 7.0, 7.0]),
+    "twist_cp": np.array([4.0, 5.0, 8.0, 8.0, 8.0, 9.0]),
     "fem_model_type": "wingbox",
     "data_x_upper": upper_x,
     "data_x_lower": lower_x,
     "data_y_upper": upper_y,
     "data_y_lower": lower_y,
-    "spar_thickness_cp": np.array([0.004, 0.004, 0.004, 0.004]),  # [m]
-    "skin_thickness_cp": np.array([0.003, 0.006, 0.010, 0.012]),  # [m]
+    "spar_thickness_cp": np.array([0.004, 0.005, 0.005, 0.008, 0.008, 0.01]),  # [m]
+    "skin_thickness_cp": np.array([0.005, 0.01, 0.015, 0.020, 0.025, 0.026]),
     "original_wingbox_airfoil_t_over_c": 0.12,
     # Aerodynamic deltas.
     # These CL0 and CD0 values are added to the CL and CD
@@ -82,28 +59,39 @@ surf_dict = {
     # These CL0 and CD0 values do not vary wrt alpha.
     # They can be used to account for things that are not included, such as contributions from the fuselage, nacelles, tail surfaces, etc.
     "CL0": 0.0,
-    "CD0": 0.0142,
+    "CD0": 0.0078,
     "with_viscous": True,  # if true, compute viscous drag
     "with_wave": True,  # if true, compute wave drag
     # Airfoil properties for viscous drag calculation
     "k_lam": 0.05,  # percentage of chord with laminar
     # flow, used for viscous drag
     "c_max_t": 0.38,  # chordwise location of maximum thickness
-    "t_over_c_cp": np.array([0.1, 0.1, 0.15, 0.15]),
-    # Structural values are based on aluminum 7075
-    "E": 73.1e9,  # [Pa] Young's modulus
-    "G": (73.1e9 / 2 / 1.33),  # [Pa] shear modulus (calculated using E and the Poisson's ratio here)
-    "yield": 420.0e6,  # [Pa] yield stress
-    "safety_factor": 1.5,  # safety factor
-    "mrho": 2.78e3,  # [kg/m^3] material density
-    "strength_factor_for_upper_skin": 1.0,  # the yield stress is multiplied by this factor for the upper skin
+    "t_over_c_cp": np.array([0.08, 0.08, 0.08, 0.10, 0.10, 0.08]),
     "wing_weight_ratio": 1.25,
     "exact_failure_constraint": False,  # if false, use KS function
     "struct_weight_relief": True,
     "distributed_fuel_weight": True,
     "fuel_density": 803.0,  # [kg/m^3] fuel density (only needed if the fuel-in-wing volume constraint is used)
-    "Wf_reserve": 500.0,  # [kg] reserve fuel mass
+    "Wf_reserve": 15000.0,  # [kg] reserve fuel mass
+    # Composite material parameters
+    "useComposite": True,
+    "mrho": 1550,  # [kg/m^3]
+    "safety_factor": 1.5,
+    "ply_angles": [0, 45, -45, 90],
+    "ply_fractions": [0.625, 0.125, 0.125, 0.125],
+    "E1": 117.7e9,
+    "E2": 9.7e9,
+    "nu12": 0.35,
+    "G12": 4.8e9,
+    "sigma_t1": 1648.0e6,  # longitudinal tensile strength
+    "sigma_c1": 1034.0e6,  # longitudinal compressive strength
+    "sigma_t2": 64.0e6,  # transverse tensile strength
+    "sigma_c2": 228.0e6,  # transverse compressive strength
+    "sigma_12max": 71.0e6,  # maximum shear strength
 }
+
+# Compute effective E and G for composite material
+compute_composite_stiffness(surf_dict)
 
 surfaces = [surf_dict]
 
@@ -112,23 +100,23 @@ prob = om.Problem()
 
 # Add problem information as an independent variables component
 indep_var_comp = om.IndepVarComp()
-indep_var_comp.add_output("v", val=np.array([0.5 * 310.95, 0.3 * 340.294]), units="m/s")
+indep_var_comp.add_output("v", val=np.array([0.85 * 295.07, 0.64 * 340.294]), units="m/s")
 indep_var_comp.add_output("alpha", val=0.0, units="deg")
 indep_var_comp.add_output("alpha_maneuver", val=0.0, units="deg")
-indep_var_comp.add_output("Mach_number", val=np.array([0.5, 0.3]))
+indep_var_comp.add_output("Mach_number", val=np.array([0.85, 0.64]))
 indep_var_comp.add_output(
     "re",
-    val=np.array([0.569 * 310.95 * 0.5 * 1.0 / (1.56 * 1e-5), 1.225 * 340.294 * 0.3 * 1.0 / (1.81206 * 1e-5)]),
+    val=np.array([0.348 * 295.07 * 0.85 * 1.0 / (1.43 * 1e-5), 1.225 * 340.294 * 0.64 * 1.0 / (1.81206 * 1e-5)]),
     units="1/m",
 )
-indep_var_comp.add_output("rho", val=np.array([0.569, 1.225]), units="kg/m**3")
-indep_var_comp.add_output("CT", val=0.43 / 3600, units="1/s")
-indep_var_comp.add_output("R", val=2e6, units="m")
-indep_var_comp.add_output("W0", val=25400 + surf_dict["Wf_reserve"], units="kg")
-indep_var_comp.add_output("speed_of_sound", val=np.array([310.95, 340.294]), units="m/s")
+indep_var_comp.add_output("rho", val=np.array([0.348, 1.225]), units="kg/m**3")
+indep_var_comp.add_output("CT", val=0.53 / 3600, units="1/s")
+indep_var_comp.add_output("R", val=14.307e6, units="m")
+indep_var_comp.add_output("W0", val=148000 + surf_dict["Wf_reserve"], units="kg")
+indep_var_comp.add_output("speed_of_sound", val=np.array([295.07, 340.294]), units="m/s")
 indep_var_comp.add_output("load_factor", val=np.array([1.0, 2.5]))
 indep_var_comp.add_output("empty_cg", val=np.zeros((3)), units="m")
-indep_var_comp.add_output("fuel_mass", val=3000.0, units="kg")
+indep_var_comp.add_output("fuel_mass", val=10000.0, units="kg")
 
 prob.model.add_subsystem("prob_vars", indep_var_comp, promotes=["*"])
 
@@ -148,7 +136,7 @@ for i in range(2):
     point_name = "AS_point_{}".format(i)
     # Connect the parameters within the model for each aerostruct point
 
-    # Create the aero point group and add it to the model
+    # Create the aerostruct point group and add it to the model
     AS_point = AerostructPoint(surfaces=surfaces, internally_connect_fuelburn=False)
 
     prob.model.add_subsystem(point_name, AS_point)
@@ -224,7 +212,7 @@ prob.model.connect("AS_point_0.fuelburn", "fuel_diff.fuelburn")
 ## Use these settings if you do not have pyOptSparse or SNOPT
 prob.driver = om.ScipyOptimizeDriver()
 prob.driver.options["optimizer"] = "SLSQP"
-prob.driver.options["tol"] = 1e-4
+prob.driver.options["tol"] = 1e-8
 
 # # The following are the optimizer settings used for the EngOpt conference paper
 # # Uncomment them if you can use SNOPT
@@ -283,7 +271,7 @@ prob.model.add_design_var("wing.geometry.t_over_c_cp", lower=0.07, upper=0.2, sc
 prob.model.add_design_var("fuel_mass", lower=0.0, upper=2e5, scaler=1e-5)
 prob.model.add_design_var("alpha_maneuver", lower=-15.0, upper=15)
 
-prob.model.add_constraint("AS_point_0.CL", equals=0.6)
+prob.model.add_constraint("AS_point_0.CL", equals=0.5)
 prob.model.add_constraint("AS_point_1.L_equals_W", equals=0.0)
 prob.model.add_constraint("AS_point_1.wing_perf.failure", upper=0.0)
 
@@ -293,7 +281,16 @@ prob.model.add_constraint("fuel_diff", equals=0.0)
 # Set up the problem
 prob.setup()
 
+# change linear solver for aerostructural coupled adjoint
+prob.model.AS_point_0.coupled.linear_solver = om.LinearBlockGS(iprint=0, maxiter=30, use_aitken=True)
+prob.model.AS_point_1.coupled.linear_solver = om.LinearBlockGS(iprint=0, maxiter=30, use_aitken=True)
+
+# om.n2(prob)
+
+# prob.check_partials(form='central', compact_print=True)
+
 prob.run_driver()
+# prob.run_model()
 
 print("The fuel burn value is", prob["AS_point_0.fuelburn"][0], "[kg]")
 print(
