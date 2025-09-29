@@ -43,6 +43,7 @@ def check_surface_dict_keys(surface):
         "E",
         "G",
         "yield",
+        "safety_factor",
         "mrho",
         "fem_origin",
         "wing_weight_ratio",
@@ -64,6 +65,8 @@ def check_surface_dict_keys(surface):
         "data_y_upper",
         "data_x_lower",
         "data_y_lower",
+        # tsaiwu_wingbox structure
+        "useComposite",
         # FFD
         "mx",
         "my",
@@ -80,6 +83,23 @@ def check_surface_dict_keys(surface):
         "cpanels",
         "root_section",
     ]
+    # keys that are required when useComposite is True
+    compositeInputs = [
+        "safety_factor",
+        "ply_angles",
+        "ply_fractions",
+        "E1",
+        "E2",
+        "nu12",
+        "G12",
+        "sigma_t1",
+        "sigma_c1",
+        "sigma_t2",
+        "sigma_c2",
+        "sigma_12max",
+    ]
+
+    keys_implemented = list(set(keys_implemented + compositeInputs))
 
     for key in surface.keys():
         if key not in keys_implemented:
@@ -87,4 +107,35 @@ def check_surface_dict_keys(surface):
                 "Key `{}` in surface dict is (likely) not supported in OAS and will be ignored".format(key),
                 category=RuntimeWarning,
                 stacklevel=2,
+            )
+
+    # adding checks for using the composite failure model
+    # check1: if useComposite is True, then the following keys must be present
+    useComposite = "useComposite" in surface.keys() and surface["useComposite"]
+    if useComposite:
+        for key in compositeInputs:
+            if key not in surface.keys():
+                raise ValueError(
+                    f"{key} not found in surface dict, when `useComposite` is True, the following keys must be present: {compositeInputs}",
+                )
+
+    # check2: if useComposite is True, then 'fem_model_type' must be 'wingbox'
+    if useComposite and surface.get("fem_model_type", "") != "wingbox":
+        raise ValueError(
+            "`fem_model_type` must be 'wingbox' when `useComposite` is True",
+        )
+
+    # check3: if useComposite is True, then length of ply_angles and ply_fractions must be equal
+    if useComposite:
+        if len(surface["ply_angles"]) != len(surface["ply_fractions"]):
+            raise ValueError(
+                "Length of `ply_angles` and `ply_fractions` arrays must be equal",
+            )
+
+    # check5: if useComposite is True, then the ply fractions should add to 1
+    if useComposite:
+        plyFracSum = sum(surface["ply_fractions"])
+        if abs(plyFracSum - 1) > 1e-2:
+            raise ValueError(
+                f"Sum of `ply_fractions` ({surface['ply_fractions']}) is {plyFracSum} must be 1.",
             )

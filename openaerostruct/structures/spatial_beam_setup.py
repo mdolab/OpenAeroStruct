@@ -40,7 +40,7 @@ class SpatialBeamSetup(om.Group):
             promotes_outputs=["cg_location"],
         )
 
-        if surface["fem_model_type"] == "wingbox":
+        if "wingbox" in surface["fem_model_type"].lower():
             self.add_subsystem(
                 "fuel_vol",
                 WingboxFuelVol(surface=surface),

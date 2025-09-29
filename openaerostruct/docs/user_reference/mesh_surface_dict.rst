@@ -243,9 +243,13 @@ The surface dict will be provided to Groups, including ``Geometry``, ``AeroPoint
       - Pa
       - Shear modulus
     * - yield
-      - 420.0e6 / 1.5
+      - 420.0e6
       - Pa
-      - Allowable yield stress including the safety factor.
+      - Maximum yield stress of the material.
+    * - safety_factor
+      - 1.5
+      -
+      - Factor of safety for the material.
     * - mrho
       - 2.78e3
       - kg/m^3

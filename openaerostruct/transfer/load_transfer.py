@@ -34,7 +34,7 @@ class LoadTransfer(om.ExplicitComponent):
         self.nx = nx = surface["mesh"].shape[0]
         self.ny = ny = surface["mesh"].shape[1]
 
-        if surface["fem_model_type"] == "tube":
+        if surface["fem_model_type"].lower() == "tube":
             self.fem_origin = surface["fem_origin"]
         else:
             y_upper = surface["data_y_upper"]
