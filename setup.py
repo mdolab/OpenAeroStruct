@@ -54,7 +54,7 @@ setup(
     package_data={"openaerostruct": ["tests/*.py", "*/tests/*.py", "*/*/tests/*.py"]},
     install_requires=[
         # Remember to update the oldest versions in docs/installation.rst
-        "openmdao>=3.35,<=3.39",
+        "openmdao>=3.35",
         "numpy>=1.21",
         "scipy>=1.7",
         "matplotlib",
@@ -68,3 +68,4 @@ setup(
     plot_wingbox=openaerostruct.utils.plot_wingbox:disp_plot
     """,
 )
+
