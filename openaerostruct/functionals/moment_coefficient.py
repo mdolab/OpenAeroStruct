@@ -144,6 +144,7 @@ class MomentCoefficient(om.ExplicitComponent):
         partials["CM", "S_ref_total"] = -M * fact / S_ref_total
 
         partials["CM", "cg"][:] = 0.0
+        partials["M", "cg"][:] = 0.0
 
         # Loop through each surface.
         for j, surface in enumerate(self.options["surfaces"]):
@@ -153,6 +154,8 @@ class MomentCoefficient(om.ExplicitComponent):
 
             partials["CM", name + "_sec_forces"][:] = 0.0
             partials["CM", name + "_b_pts"][:] = 0.0
+            partials["M", name + "_sec_forces"][:] = 0.0
+            partials["M", name + "_b_pts"][:] = 0.0
 
             b_pts = inputs[name + "_b_pts"]
             widths = inputs[name + "_widths"]
