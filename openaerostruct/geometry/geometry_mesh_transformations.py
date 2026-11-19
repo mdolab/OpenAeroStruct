@@ -1455,6 +1455,13 @@ class Rotate(om.ExplicitComponent):
         # TE derivative contribution
         partials["mesh", "in_mesh"][nn - nqc : nn] += self.ref_axis_pos * d_qch
 
+        # Indices of the leading and trailing edge blocks of the partials, which hold the
+        # contributions of the LE and TE points to the rest of the mesh. A chordwise row
+        # of the mesh occupies 9 * ny entries, so these do not depend on rotate_x.
+        del_n = nn - 9 * ny
+        nn2 = nn + del_n
+        nn3 = nn2 + del_n
+
         # Option to include mesh rotations about x-axis
         if rotate_x:
             # This part computes the leading and trailing edge diagonal terms that exist when theta_x is computed
@@ -1478,13 +1485,6 @@ class Rotate(om.ExplicitComponent):
             # Flatten the result
             d_dq_flat = d_dq.flatten()
 
-            # Subtract a row from the full mesh
-            del_n = nn - 9 * ny
-
-            # Compute incides for the next two blocks of partials
-            nn2 = nn + del_n
-            nn3 = nn2 + del_n
-
             # LE contribution: excludes LE partials
             partials["mesh", "in_mesh"][nn:nn2] = (1 - self.ref_axis_pos) * d_dq_flat[-del_n:]
 
@@ -1501,15 +1501,6 @@ class Rotate(om.ExplicitComponent):
 
             # TE contribution: main diagonal contribution excludes LE
             partials["mesh", "in_mesh"][nn - nqc : nn] += self.ref_axis_pos * d_dq_flat[-del_n:]
-
-            # This contribution accounts for the position of the reference axis itself.
-
-            # Tile the result from the earlier main diagonal reference axis contribution
-            d_qch_od = np.tile(d_qch.flatten(), nx - 1)
-
-            # Add to the le and te diagonal terms
-            partials["mesh", "in_mesh"][nn:nn2] += (1 - self.ref_axis_pos) * d_qch_od
-            partials["mesh", "in_mesh"][nn2:nn3] += self.ref_axis_pos * d_qch_od
 
             # off-off diagonal pieces: OD contributions that exist when theta_x is computed from the reference axis
             # geometry which is sensitive to the positions of the spanwise stations relative to the root.
@@ -1547,3 +1538,13 @@ class Rotate(om.ExplicitComponent):
                 partials["mesh", "in_mesh"][nn5:nn6] = -self.ref_axis_pos * d_dq_flat1
                 nn7 = nn6 + del_n
                 partials["mesh", "in_mesh"][nn6:nn7] = -self.ref_axis_pos * d_dq_flat2
+
+        # This contribution accounts for the position of the reference axis itself, which
+        # moves the LE and TE points whether or not the mesh is rotated about the x-axis.
+
+        # Tile the result from the earlier main diagonal reference axis contribution
+        d_qch_od = np.tile(d_qch.flatten(), nx - 1)
+
+        # Add to the le and te diagonal terms
+        partials["mesh", "in_mesh"][nn:nn2] += (1 - self.ref_axis_pos) * d_qch_od
+        partials["mesh", "in_mesh"][nn2:nn3] += self.ref_axis_pos * d_qch_od
